@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiClient } from '../../api/apiClient';
 
 const ALLOWED_DOMAIN = 'isu.edu.ph';
 
@@ -19,20 +20,25 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState({ text: '', type: 'error' });
 
-    const handleLogin = async (event) => {
-        event.preventDefault();
-        setIsLoading(true);
-        setMessage({ text: '', type: 'error' });
+const handleLogin = async (event) => {
+    event.preventDefault();
+    setIsLoading(true);
+    setMessage({ text: '', type: 'error' });
 
-        await new Promise(resolve => setTimeout(resolve, 1500)); 
+    try {
+        // Use the imported apiClient to call the backend
+        const response = await apiClient.signInWithMagicLink(email);
+        
+        // Handle a successful response from the server
+        setMessage({ text: response.message, type: 'success' });
+        setEmail(''); 
+        
+    } catch (error) {
+        // Handle any errors thrown by the apiClient (e.g., invalid domain)
+        setMessage({ text: error.message, type: 'error' });
+    }
 
-        if (email.endsWith(`@${ALLOWED_DOMAIN}`)) {
-            setMessage({ text: 'Success! Please check your email for a login link.', type: 'success' });
-            setEmail('');
-        } else {
-            setMessage({ text: `Access is restricted to @${ALLOWED_DOMAIN} emails only.`, type: 'error' });
-        }
-        setIsLoading(false);
+    setIsLoading(false);
     };
 
     const messageColor = message.type === 'success' ? 'text-emerald-400' : 'text-red-400';
