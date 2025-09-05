@@ -4,25 +4,16 @@ import os
 from supabase import create_client, Client
 from fastapi.middleware.cors import CORSMiddleware 
 
-# --- Configuration ---
-# In a real app, these would be in a .env file. For your project, you can get them
-# from your Supabase project settings (Settings > API).
 SUPABASE_URL = "https://cvcxqsdwtcvwgdftsdtp.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2Y3hxc2R3dGN2d2dkZnRzZHRwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjY5NDY1MCwiZXhwIjoyMDcyMjcwNjUwfQ.rJV3LyGdq-EWu_iqcR--Whk986PQch1UfNZ_0TPOZ5Y"
 ALLOWED_DOMAIN = "isu.edu.ph" 
 
-
-# --- Initialize Supabase Client ---
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# --- Initialize FastAPI App ---
 app = FastAPI()
 
-# --- CORS Configuration ---
-# This is the new section that fixes the connection issue.
-# It tells the backend to allow requests from your React frontend.
 origins = [
-    "http://localhost:5173", # The address of your React app
+    "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
 
@@ -30,10 +21,10 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"], # Allows all methods (GET, POST, etc.)
+    allow_methods=["*"],
     allow_headers=["*"],
 )
-# --- End CORS Configuration ---
+
 
 
 # --- Pydantic Model ---
