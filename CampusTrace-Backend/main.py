@@ -26,32 +26,28 @@ app.add_middleware(
 )
 
 
-
-# --- Pydantic Model ---
 class SignInRequest(BaseModel):
     email: EmailStr
 
-# --- API Endpoint ---
 @app.post("/api/auth/signin")
 async def handle_magic_link_signin(payload: SignInRequest):
     user_email = payload.email
+    domain = user_email.split('@')[1]
 
-    if not user_email.endswith(f"@{ALLOWED_DOMAIN}"):
+    response = supabase.table('allowed_domains').select('university_id').eq('domain_name', domain).execute()
+    
+    if not response.data:   
         raise HTTPException(
             status_code=403,
-            detail="Access is restricted to university email addresses only."
+            detail="This email domain is not registered with any university on the platform."
         )
 
     try:
-        supabase.auth.sign_in_with_otp({
-            "email": user_email,
-        })
+        supabase.auth.sign_in_with_otp({"email": user_email})
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Could not send login link: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
     return {"message": "Login link sent successfully."}
-
-# A simple root endpoint to check if the server is running
 @app.get("/")
 def read_root():
     return {"status": "Campus Trace backend is running!"}
