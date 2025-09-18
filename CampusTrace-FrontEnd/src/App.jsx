@@ -14,7 +14,6 @@ const mockUser = {
   email: 'developer@isu.edu.ph',
 };
 
-// This is a flag to easily switch between development and normal mode
 const DEV_MODE = true;
 
 
@@ -43,7 +42,6 @@ function App() {
       }
 
       if (session) {
-        // If a user is logged in, fetch their profile from the database.
         const { data, error } = await supabase
           .from('profiles')
           .select('role')
@@ -56,7 +54,6 @@ function App() {
           setProfile(data); // Store the profile data in state
         }
       } else {
-        // If the user logs out, clear the profile and go to the landing page.
         setProfile(null);
         setAuthPage('landing');
       }
@@ -104,17 +101,13 @@ function App() {
 
 
     if (session && profile) {
-    // If a session and profile exist, check the role.
     if (profile.role === 'admin') {
-      // If the role is 'admin', show the AdminDashboardLayout.
       return (
         <AdminDashboardLayout user={session.user}>
-          {/* You can put admin-specific page content here */}
           <div>Admin Content</div> 
         </AdminDashboardLayout>
       );
     } else {
-      // Otherwise, show the regular DashboardLayout for 'members'.
       return (
         <DashboardLayout user={session.user}>
           <UserMainPage/>
@@ -122,7 +115,7 @@ function App() {
       );
     }
   } else {
-    // If there's no session, show the public pages.
+    
     return authPage === 'login' 
       ? <LoginPage /> 
       : <LandingPage onNavigateToLogin={navigateToLogin} />;
