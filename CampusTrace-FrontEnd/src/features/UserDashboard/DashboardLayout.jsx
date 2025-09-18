@@ -34,10 +34,9 @@ export default function DashboardLayout({ children, user }) {
 
     return (
         <div className="min-h-screen bg-zinc-950 text-zinc-300 flex font-sans">
-            {/* --- Sidebar Navigation --- */}
+            {/* Sidebar Navigation */}
             <aside className={`relative bg-black border-r border-zinc-800 flex flex-col p-4 transition-all duration-300 ease-in-out ${open ? 'w-64' : 'w-20'}`}>
                 
-                {/* --- NEW FLOATING COLLAPSE/EXPAND BUTTON --- */}
                 <button 
                     onClick={() => setOpen(!open)} 
                     className="absolute -right-3 top-9 z-10 p-1.5 bg-zinc-800 border border-zinc-700 text-zinc-400 rounded-full hover:bg-zinc-700 hover:text-white transition-colors"
@@ -75,7 +74,7 @@ export default function DashboardLayout({ children, user }) {
                 </div>
             </aside>
 
-            {/* --- Main Content Area --- */}
+            {/*Main Content Area*/}
             <div className="flex-grow flex flex-col">
                 {/* Top Header Bar */}
                 <header className="bg-black/70 backdrop-blur-sm border-b border-zinc-800">

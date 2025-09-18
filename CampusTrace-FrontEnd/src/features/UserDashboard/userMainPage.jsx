@@ -1,3 +1,6 @@
+
+{/* Example lang to ng user main page, Hindi pa ito yung final*/}
+
 import React from 'react';
 import { LogOut, ArrowRight } from 'lucide-react';
 
