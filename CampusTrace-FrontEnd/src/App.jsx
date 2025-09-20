@@ -14,7 +14,7 @@ const mockUser = {
   email: 'developer@isu.edu.ph',
 };
 
-const DEV_MODE = true;
+// const DEV_MODE = true;
 
 
 function App() {
@@ -24,12 +24,11 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (DEV_MODE) return;
+    // if (DEV_MODE) return;
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setIsLoading(false);  
     });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async(_event, session) => {
       console.log("onAuthStateChange fired!");
       console.log("Event type:", _event);
@@ -51,7 +50,7 @@ function App() {
         if (error) {
           console.error('Error fetching profile:', error);
         } else {
-          setProfile(data); // Store the profile data in state
+          setProfile(data); 
         }
       } else {
         setProfile(null);
@@ -64,19 +63,20 @@ function App() {
   }, []);
 
 
+{/* Gamitin niyo to pag gusto niyong i edit lang yung specific page, para hindi makadami ng send kay supabase */}
 
-    if (DEV_MODE) {
-    return (
-      <DashboardLayout user1={mockUser}>
-        {/* The {children} prop needs content. 
-          Put a placeholder here to simulate a real page.
-        */}
+  //   if (DEV_MODE) {
+  //   return (
+  //     <DashboardLayout user1={mockUser}>
+  //       {/* The {children} prop needs content. 
+  //         Put a placeholder here to simulate a real page.
+  //       */}
 
-        <UserMainPage />
+  //       <UserMainPage />
 
-      </DashboardLayout>
-    );
-  }
+  //     </DashboardLayout>
+  //   );
+  // }
 
 
   // if(DEV_MODE){
@@ -111,6 +111,7 @@ function App() {
       return (
         <DashboardLayout user={session.user}>
           <UserMainPage/>
+          {/* <UserProfilePage/> */}
         </DashboardLayout>
       );
     }

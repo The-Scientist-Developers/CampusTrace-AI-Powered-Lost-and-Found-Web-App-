@@ -1,4 +1,4 @@
-import React from 'react';  
+import React from 'react';
 
 const SecureIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-zinc-400">
@@ -28,11 +28,11 @@ export default function LandingPage({ onNavigateToLogin }) {
                         <div className="flex items-center">
                             <span className="text-2xl font-bold text-red">Campus Trace</span>
                         </div>
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center">
                             <button 
                                 onClick={onNavigateToLogin} 
-                                className="px-5 py-2 bg-red text-zinc-950 text-sm font-semibold rounded-lg shadow-md hover:bg-zinc-300 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-black m-3">
-                                Log in
+                                className="px-5 py-2 bg-red text-white text-sm font-semibold rounded-lg shadow-md hover:bg-red focus:outline-none focus:ring-2 focus:ring-red focus:ring-offset-2 focus:ring-offset-black transition-colors">
+                                Log In
                             </button>
                         </div>
                     </div>
@@ -42,16 +42,16 @@ export default function LandingPage({ onNavigateToLogin }) {
             <main>
                 <section className="min-h-screen flex items-center pt-20">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                        <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl">
-                            The single, trusted hub for our university's lost and found.
+                        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white">
+                            The single, trusted hub for your university's lost and found.
                         </h1>
                         <p className="mt-6 max-w-2xl mx-auto text-lg text-zinc-400">
-                            Ang popogi namin sir, diba?
+                            Stop scrolling through endless social media feeds. Campus Trace is a modern web app designed to efficiently connect lost items with their owners using smart, AI-powered technology.
                         </p>
                         <div className="mt-8">
                             <button 
                                 onClick={onNavigateToLogin}
-                                className="px-8 py-3 bg-red text-zinc-950 text-base font-semibold rounded-lg shadow-md hover:bg-zinc-300 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-zinc-950">
+                                className="px-8 py-3 bg-red text-white text-base font-semibold rounded-lg shadow-md hover:bg-red focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:ring-offset-zinc-950 transition-colors">
                                 Get Started
                             </button>
                         </div>
@@ -64,10 +64,10 @@ export default function LandingPage({ onNavigateToLogin }) {
                             <h2 className="text-3xl font-bold text-white">Why Campus Trace?</h2>
                             <p className="mt-4 text-lg text-zinc-400">A modern solution to an old problem.</p>
                         </div>
-                        <div className="mt-16 grid md:grid-cols-3 gap-12">
-
+                        
+                        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-12">
                             <div className="text-center">
-                                <div className="flex items-center justify-center h-16 w-16 mx-auto bg-zinc-900 rounded-full ">
+                                <div className="flex items-center justify-center h-16 w-16 mx-auto bg-zinc-900 rounded-full">
                                     <SecureIcon />  
                                 </div>
                                 <h3 className="mt-6 text-xl font-semibold text-white">Secure & Verified</h3>

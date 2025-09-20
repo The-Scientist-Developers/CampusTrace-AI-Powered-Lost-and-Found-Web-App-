@@ -13,7 +13,6 @@
 
   export const apiClient = {
     /**
-     * Sends a sign-in request to the backend to trigger a magic link.
      * @param {string} email - The user's email address.
      * @returns {Promise<object>} - The JSON response from the server.
      */
@@ -32,6 +31,18 @@
       }
 
       return response.json();
+    },
+
+
+    async getRecentActivity(){
+      const response = await fetch(`${API_BASE_URL}/recent-activity`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch recent activity.');
     }
+    return response.json();
+    }
+
   };
+
+
 

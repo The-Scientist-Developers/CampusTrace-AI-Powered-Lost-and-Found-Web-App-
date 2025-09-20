@@ -42,7 +42,7 @@ export default function LoginPage() {
                 
                 <div className="text-center">
                     <LogoIcon />
-                    <h2 className="mt-6 text-3xl font-bold tracking-tight text-zinc-100">
+                    <h2 className="mt-6 text-2xl sm:text-3xl font-bold tracking-tight text-zinc-100">
                         Campus Trace
                     </h2>
                     <p className="mt-2 text-sm text-zinc-400">
@@ -70,10 +70,10 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="group relative flex w-full justify-center rounded-md border border-transparent bg-red   py-3 px-4 text-sm font-semibold text-zinc-950 hover:bg-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 focus:ring-offset-zinc-950 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="group relative flex w-full justify-center rounded-md border border-transparent bg-red py-3 px-4 text-sm font-semibold text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:ring-offset-zinc-950 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                                <LockIcon className="h-5 w-5 text-zinc-500" />
+                                <LockIcon className="h-5 w-5 text-red-100" />
                             </span>
                             {isLoading ? 'Sending Link...' : 'Send Magic Link'}
                         </button>

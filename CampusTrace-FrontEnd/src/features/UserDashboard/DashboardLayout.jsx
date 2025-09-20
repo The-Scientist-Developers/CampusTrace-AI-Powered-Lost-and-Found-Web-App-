@@ -76,10 +76,10 @@ export default function DashboardLayout({ children, user }) {
 
             {/*Main Content Area*/}
             <div className="flex-grow flex flex-col">
-                {/* Top Header Bar */}
+
                 <header className="bg-black/70 backdrop-blur-sm border-b border-zinc-800">
                     <div className="flex items-center justify-between h-16 px-4 sm:px-8">
-                        {/* "Post new item" BUTTON */}
+
                         <button className='flex items-center gap-2 px-4 py-2 bg-red text-white font-semibold text-sm rounded-md hover:bg-blue-700 transition-colors'>
                            <Plus className="w-4 h-4" />
                            Post New Item

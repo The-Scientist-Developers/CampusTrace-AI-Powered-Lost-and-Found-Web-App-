@@ -82,7 +82,6 @@ const AdminDashboardLayout = ({ children, user, onNavigateToOut}) => {
         </div>
       </aside>
 
-      {/* --- Main Area (Header + Page Content) --- */}
       <div className="flex-1 flex flex-col overflow-hidden">
         
         {/* Header Bar - Styled like the user dashboard header */}
@@ -103,7 +102,6 @@ const AdminDashboardLayout = ({ children, user, onNavigateToOut}) => {
           </div>
         </header>
 
-        {/* This is where the actual page content will be rendered */}
         <main className="flex-1 p-6 overflow-y-auto">
             {children}
         </main>
