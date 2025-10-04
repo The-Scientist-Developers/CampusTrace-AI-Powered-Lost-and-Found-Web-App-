@@ -1,0 +1,282 @@
+import React, { useState, useEffect } from "react";
+import { supabase } from "../../../api/apiClient"; // Ensure this path is correct
+import {
+  Users,
+  Clock,
+  FileCheck,
+  Percent,
+  Activity,
+  MessageSquare,
+  UserCheck,
+} from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
+
+// --- Helper: A small, reusable card for the top stats ---
+const StatCard = ({ title, value, icon: Icon, color }) => (
+  <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-xl shadow-lg">
+    <div className="flex items-center gap-4">
+      <div className={`p-3 rounded-lg bg-${color}-500/10`}>
+        <Icon className={`w-6 h-6 text-${color}-400`} />
+      </div>
+      <div>
+        <p className="text-3xl font-bold text-white">{value}</p>
+        <p className="text-sm text-neutral-400">{title}</p>
+      </div>
+    </div>
+  </div>
+);
+
+// --- Helper: A component for each item in the Recent Activity list ---
+const ActivityItem = ({ text, time, icon: Icon }) => (
+  <li className="flex gap-4 pb-4">
+    <div className="relative">
+      <div className="h-full w-px bg-neutral-700"></div>
+      <div className="absolute left-1/2 top-1 -translate-x-1/2 p-1.5 bg-neutral-800 rounded-full">
+        <Icon className="w-4 h-4 text-neutral-400" />
+      </div>
+    </div>
+    <div>
+      <p className="text-neutral-200 text-sm">{text}</p>
+      <p className="text-xs text-neutral-500">{time}</p>
+    </div>
+  </li>
+);
+
+// --- Main Admin Overview Component ---
+export default function AdminMainPage({ user }) {
+  // State for all our dynamic data
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    awaitingModeration: 0,
+    activePosts: 0,
+    recoveryRate: 0,
+  });
+  const [weeklyPosts, setWeeklyPosts] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchAdminData = async () => {
+      try {
+        // --- Fetch all data concurrently for performance ---
+        const [
+          userCountRes,
+          moderationCountRes,
+          activePostsRes,
+          recoveredPostsRes,
+          weeklyPostsRes,
+          activityRes,
+        ] = await Promise.all([
+          supabase.from("profiles").select("id", { count: "exact" }),
+          supabase
+            .from("posts")
+            .select("id", { count: "exact" })
+            .eq("status", "Awaiting Moderation"),
+          supabase
+            .from("posts")
+            .select("id", { count: "exact" })
+            .eq("status", "Active"),
+          supabase
+            .from("posts")
+            .select("id", { count: "exact" })
+            .eq("status", "Recovered"),
+          // Fetch posts from the last 7 days for the chart
+          supabase
+            .from("posts")
+            .select("created_at")
+            .gte(
+              "created_at",
+              new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+            ),
+          // Fetch latest 5 activities
+          supabase
+            .from("activity_log")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(5),
+        ]);
+
+        // --- Check for Supabase errors and fall back to safe defaults ---
+        const responses = [
+          { name: "userCountRes", res: userCountRes },
+          { name: "moderationCountRes", res: moderationCountRes },
+          { name: "activePostsRes", res: activePostsRes },
+          { name: "recoveredPostsRes", res: recoveredPostsRes },
+          { name: "weeklyPostsRes", res: weeklyPostsRes },
+          { name: "activityRes", res: activityRes },
+        ];
+
+        for (const r of responses) {
+          if (r.res && r.res.error) {
+            console.error(`${r.name} returned error:`, r.res.error);
+          }
+        }
+
+        const activeCount = (activePostsRes && activePostsRes.count) || 0;
+        const recoveredCount =
+          (recoveredPostsRes && recoveredPostsRes.count) || 0;
+        const totalPosts = activeCount + recoveredCount;
+        const recoveryRate =
+          totalPosts > 0 ? Math.round((recoveredCount / totalPosts) * 100) : 0;
+
+        setStats({
+          totalUsers: (userCountRes && userCountRes.count) || 0,
+          awaitingModeration:
+            (moderationCountRes && moderationCountRes.count) || 0,
+          activePosts: activeCount,
+          recoveryRate: `${recoveryRate}%`,
+        });
+
+        // --- Process Weekly Chart Data ---
+        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        const postsPerDay = Array(7)
+          .fill(0)
+          .map((_, i) => ({
+            name: days[(new Date().getDay() - 6 + i + 7) % 7], // Logic to get last 7 days in order
+            posts: 0,
+          }));
+
+        const weeklyData = (weeklyPostsRes && weeklyPostsRes.data) || [];
+        weeklyData.forEach((post) => {
+          if (!post || !post.created_at) return;
+          const dayIndex = new Date(post.created_at).getDay();
+          const matchingDay = postsPerDay.find(
+            (d) => d.name === days[dayIndex]
+          );
+          if (matchingDay) matchingDay.posts++;
+        });
+        setWeeklyPosts(postsPerDay);
+
+        // --- Process Recent Activity ---
+        if (activityRes && activityRes.error) {
+          console.warn("activityRes error", activityRes.error);
+        }
+        setRecentActivity((activityRes && activityRes.data) || []);
+      } catch (err) {
+        console.error("Error fetching admin data:", err);
+        setError("Failed to load admin overview data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAdminData();
+  }, []);
+
+  // --- Render Logic ---
+  if (loading) {
+    return (
+      <div className="p-8 text-center text-zinc-400">
+        Loading Admin Overview...
+      </div>
+    );
+  }
+  if (error) {
+    return <div className="p-8 text-center text-red">{error}</div>;
+  }
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8 space-y-8 animate-fadeIn">
+      {/* Header */}
+      <h1 className="text-4xl font-bold text-white">Admin Overview</h1>
+
+      {/* Stat Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard
+          title="Total Users"
+          value={stats.totalUsers}
+          icon={Users}
+          color="blue"
+        />
+        <StatCard
+          title="Posts Awaiting Moderation"
+          value={stats.awaitingModeration}
+          icon={Clock}
+          color="yellow"
+        />
+        <StatCard
+          title="Total Active Posts"
+          value={stats.activePosts}
+          icon={FileCheck}
+          color="green"
+        />
+        <StatCard
+          title="Recovery Rate"
+          value={stats.recoveryRate}
+          icon={Percent}
+          color="red"
+        />
+      </div>
+
+      {/* Chart and Activity Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Posts Per Week Chart */}
+        <div className="lg:col-span-2 bg-neutral-900 border border-neutral-800 p-6 rounded-xl shadow-lg">
+          <h2 className="text-xl font-bold text-white mb-6">Posts Per Week</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart
+              data={weeklyPosts}
+              margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+            >
+              <XAxis
+                dataKey="name"
+                stroke="#6b7280"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                stroke="#6b7280"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip
+                cursor={{ fill: "rgba(156, 163, 175, 0.1)" }}
+                contentStyle={{
+                  backgroundColor: "#171717",
+                  border: "1px solid #404040",
+                  borderRadius: "0.5rem",
+                }}
+              />
+              <Bar dataKey="posts" radius={[4, 4, 0, 0]}>
+                {weeklyPosts.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={"#ef4444"} /> // Using your red theme color
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Recent Activity Feed */}
+        <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-xl shadow-lg">
+          <h2 className="text-xl font-bold text-white mb-6">Recent Activity</h2>
+          <ul className="space-y-4">
+            {recentActivity.map((activity) => (
+              <ActivityItem
+                key={activity.id}
+                text={activity.description}
+                time={new Date(activity.created_at).toLocaleString()}
+                icon={
+                  activity.type === "new_post"
+                    ? MessageSquare
+                    : activity.type === "approved_post"
+                    ? UserCheck
+                    : Activity
+                }
+              />
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}

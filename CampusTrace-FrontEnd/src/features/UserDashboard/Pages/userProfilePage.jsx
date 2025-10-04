@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../api/apiClient';
 
 
-export default function UserProfilePage({user}){
+export default function UserProfilePage(){
     return(
 
         <div>

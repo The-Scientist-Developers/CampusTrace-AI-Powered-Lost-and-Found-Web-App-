@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, HTTPException, Body, Depends
 from pydantic import BaseModel, EmailStr
 import os
@@ -5,18 +6,18 @@ from supabase import create_client, Client
 from fastapi.middleware.cors import CORSMiddleware 
 from fastapi import APIRouter
 from typing import List
+from config import get_settings  
 
-SUPABASE_URL = "https://cvcxqsdwtcvwgdftsdtp.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2Y3hxc2R3dGN2d2dkZnRzZHRwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjY5NDY1MCwiZXhwIjoyMDcyMjcwNjUwfQ.rJV3LyGdq-EWu_iqcR--Whk986PQch1UfNZ_0TPOZ5Y"
+settings = get_settings()
+
+SUPABASE_URL = settings.PYTHON_SUPABASE_URL
+SUPABASE_KEY = settings.PYTHON_SUPABASE_KEY
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = FastAPI()
 
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
+origins = settings.CORS_ORIGINS
 
 app.add_middleware(
     CORSMiddleware,
@@ -84,7 +85,6 @@ async def handle_magic_link_signin(payload: SignInRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
     return {"message": "Login link sent successfully."}
-
 
 @app.get("/")
 def read_root():
