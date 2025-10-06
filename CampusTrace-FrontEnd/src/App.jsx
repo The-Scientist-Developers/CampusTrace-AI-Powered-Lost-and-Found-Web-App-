@@ -19,6 +19,8 @@ import UserProfilePage from "./features/UserDashboard/Pages/userProfilePage";
 import AdminMainPage from "./features/AdminDashboard/Pages/AdminMainPage";
 import PostNewItem from "./features/UserDashboard/Pages/userPostItems";
 import UserManagementPage from "./features/AdminDashboard/Pages/adminUserManagement";
+import PostModerationPage from "./features/AdminDashboard/Pages/postModerationPage";
+import AdminSettingsPage from "./features/AdminDashboard/Pages/adminSettings";
 
 function PrivateRouter({ children, isLoading, session }) {
   if (isLoading) {
@@ -205,6 +207,8 @@ function App() {
           {/* Nested pages for the Admin Dashboard. */}
           <Route index element={<AdminMainPage />} />
           <Route path="user-management" element={<UserManagementPage />} />
+          <Route path="post-moderation" element={<PostModerationPage />} />
+          <Route path="settings" element={<AdminSettingsPage />} />
         </Route>
       </Routes>
     </Router>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../../../api/apiClient"; // Ensure this path is correct
 import {
+  Settings as SettingsIcon,
   Users,
   Clock,
   FileCheck,
@@ -78,20 +79,19 @@ export default function AdminMainPage({ user }) {
         ] = await Promise.all([
           supabase.from("profiles").select("id", { count: "exact" }),
           supabase
-            .from("posts")
+            .from("items")
             .select("id", { count: "exact" })
-            .eq("status", "Awaiting Moderation"),
+            .eq("moderation_status", "pending"),
           supabase
-            .from("posts")
+            .from("items")
             .select("id", { count: "exact" })
-            .eq("status", "Active"),
+            .eq("moderation_status", "approved"),
           supabase
-            .from("posts")
+            .from("items")
             .select("id", { count: "exact" })
-            .eq("status", "Recovered"),
-          // Fetch posts from the last 7 days for the chart
+            .eq("moderation_status", "recovered"),
           supabase
-            .from("posts")
+            .from("items")
             .select("created_at")
             .gte(
               "created_at",
@@ -99,7 +99,7 @@ export default function AdminMainPage({ user }) {
             ),
           // Fetch latest 5 activities
           supabase
-            .from("activity_log")
+            .from("items")
             .select("*")
             .order("created_at", { ascending: false })
             .limit(5),
@@ -174,7 +174,8 @@ export default function AdminMainPage({ user }) {
   // --- Render Logic ---
   if (loading) {
     return (
-      <div className="p-8 text-center text-zinc-400">
+      <div className="flex justify-center items-center h-full p-8 text-zinc-400">
+        <SettingsIcon className="w-8 h-8 animate-spin mr-3" />
         Loading Admin Overview...
       </div>
     );

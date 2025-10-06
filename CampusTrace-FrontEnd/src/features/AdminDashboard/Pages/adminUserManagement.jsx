@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../../../api/apiClient";
-import { Search, Shield, Ban, User } from "lucide-react";
+import {
+  Search,
+  Shield,
+  Ban,
+  User,
+  Settings as SettingsIcon,
+} from "lucide-react";
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
@@ -44,7 +50,6 @@ export default function UserManagement() {
 
       if (error) throw error;
 
-      alert(`User ${!currentStatus ? "banned" : "unbanned"} successfully`);
       fetchUsers(); // Refresh list
     } catch (error) {
       alert("Action failed");
@@ -74,6 +79,15 @@ export default function UserManagement() {
       user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-full p-8 text-zinc-400">
+        <SettingsIcon className="w-8 h-8 animate-spin mr-3" />
+        Loading User Managemnt...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

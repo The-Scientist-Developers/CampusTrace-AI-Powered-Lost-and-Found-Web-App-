@@ -21,7 +21,11 @@ import {
 // Menu items configuration
 const menuItems = [
   { href: "/admin", label: "Overview", icon: Home, exact: true },
-  { href: "/admin/moderation", label: "Post Moderation", icon: ShieldCheck },
+  {
+    href: "/admin/post-moderation",
+    label: "Post Moderation",
+    icon: ShieldCheck,
+  },
   { href: "/admin/user-management", label: "User Management", icon: Users },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
