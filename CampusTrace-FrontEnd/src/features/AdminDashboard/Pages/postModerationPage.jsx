@@ -125,7 +125,8 @@ const PostDetailsModal = ({ post, onClose, onUpdateStatus }) => {
 };
 
 // --- Main Post Moderation Component ---
-export default function PostModerationPage() {
+export default function PostModerationPage({ user }) {
+  // <-- Pass 'user' prop
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -133,16 +134,39 @@ export default function PostModerationPage() {
   const [selectedPost, setSelectedPost] = useState(null);
 
   useEffect(() => {
+    // Check if user object exists before fetching data
+    if (!user?.id) {
+      setLoading(false); // Stop loading if no user
+      return;
+    }
+
     const fetchPostsForModeration = async () => {
-      setLoading(true); // Set loading to true at the start of fetch
+      setLoading(true);
       try {
+        // Get the admin's own university_id first
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("university_id")
+          .eq("id", user.id) // Use the passed user ID
+          .single();
+
+        if (profileError) throw profileError;
+
+        const adminUniversityId = profile?.university_id;
+        if (!adminUniversityId) {
+          throw new Error("Admin university not found.");
+        }
+
+        // Fetch posts for moderation, filtered by the admin's university
         let query = supabase
           .from("items")
           .select(
             "id,title,description,category,location,image_url,ai_tags,moderation_status,profiles(id,full_name,email)"
           )
+          .eq("university_id", adminUniversityId)
           .order("created_at", { ascending: false });
 
+        // Apply status filter if selected
         if (filter !== "All") {
           query = query.eq("moderation_status", filter);
         }
@@ -153,14 +177,14 @@ export default function PostModerationPage() {
         setPosts(data || []);
       } catch (err) {
         console.error("Error fetching posts for moderation:", err);
-        setError("Failed to load post data. " + err.message);
+        setError("Failed to load post data. " + (err?.message || err));
       } finally {
         setLoading(false);
       }
     };
 
     fetchPostsForModeration();
-  }, [filter]);
+  }, [filter, user?.id]); // Re-run effect if filter or user ID changes
 
   const handleUpdateStatus = async (postId, newStatus) => {
     try {

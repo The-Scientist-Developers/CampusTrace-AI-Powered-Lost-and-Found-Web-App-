@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../../api/apiClient";
+import { toast } from "react-hot-toast"; // For notifications
 import {
   Search,
   Shield,
@@ -8,108 +9,123 @@ import {
   Settings as SettingsIcon,
 } from "lucide-react";
 
-export default function UserManagement() {
+// Debounce hook to prevent API calls on every keystroke
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+}
+
+export default function UserManagement({ user }) {
+  // <-- Prop is named 'user'
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  const fetchUsers = useCallback(async () => {
+    // Check if the user object is available before fetching
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
 
-  const fetchUsers = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: adminProfile, error: profileError } = await supabase
         .from("profiles")
-        .select(
-          `
-          *,
-          items:items(count)
-        `
-        )
+        .select("university_id")
+        .eq("id", user.id) // <-- CORRECTED: Use 'user.id'
+        .single();
+
+      if (profileError) throw profileError;
+      const adminUniversityId = adminProfile.university_id;
+
+      if (!adminUniversityId) {
+        throw new Error("Admin university ID not found.");
+      }
+
+      let query = supabase
+        .from("profiles")
+        .select(`*, items:items(count)`)
+        .eq("university_id", adminUniversityId)
         .order("created_at", { ascending: false });
 
+      if (debouncedSearchTerm) {
+        query = query.or(
+          `full_name.ilike.%${debouncedSearchTerm}%,email.ilike.%${debouncedSearchTerm}%`
+        );
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
-      setUsers(data);
+      setUsers(data || []);
     } catch (error) {
-      console.error("Error:", error);
-      alert("Failed to load users");
+      console.error("Error fetching users:", error);
+      toast.error("Failed to load users.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [debouncedSearchTerm, user?.id]); // <-- CORRECTED: Use 'user?.id'
 
-  // Simple ban/unban function
-  const toggleBan = async (userId, currentStatus) => {
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  const handleUpdate = async (userId, updateData) => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
-        .update({ is_banned: !currentStatus })
-        .eq("id", userId);
+        .update(updateData)
+        .eq("id", userId)
+        .select() // Use select() to get the updated row back
+        .single();
 
       if (error) throw error;
 
-      fetchUsers(); // Refresh list
+      setUsers((currentUsers) =>
+        currentUsers.map((u) => (u.id === userId ? data : u))
+      );
+      toast.success("User updated successfully!");
     } catch (error) {
-      alert("Action failed");
+      console.error("Action failed:", error);
+      toast.error("Action failed.");
     }
   };
 
-  // Change user role
-  const changeRole = async (userId, newRole) => {
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ role: newRole })
-        .eq("id", userId);
+  const toggleBan = (userId, currentStatus) =>
+    handleUpdate(userId, { is_banned: !currentStatus });
+  const changeRole = (userId, newRole) =>
+    handleUpdate(userId, { role: newRole });
 
-      if (error) throw error;
-
-      alert("Role updated successfully");
-      fetchUsers();
-    } catch (error) {
-      alert("Failed to update role");
-    }
-  };
-
-  // Filter users based on search
-  const filteredUsers = users.filter(
-    (user) =>
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-full p-8 text-zinc-400">
-        <SettingsIcon className="w-8 h-8 animate-spin mr-3" />
-        Loading User Managemnt...
-      </div>
-    );
-  }
-
+  // The JSX part of your component is already correct and doesn't need changes.
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-white">User Management</h2>
-        <p className="text-zinc-400 mt-1">Manage users and their roles</p>
+        <p className="text-zinc-400 mt-1">
+          Manage users and their roles for your university
+        </p>
       </div>
 
-      {/* Search Bar */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
         <input
           type="text"
-          placeholder="Search users..."
+          placeholder="Search by name or email..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-10 pr-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500"
         />
       </div>
 
-      {/* Users Table */}
       <div className="bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden">
         <table className="w-full">
           <thead className="bg-zinc-800/50 border-b border-zinc-800">
@@ -119,7 +135,9 @@ export default function UserManagement() {
               <th className="text-left p-4 text-zinc-400 font-medium">
                 Status
               </th>
-              <th className="text-left p-4 text-zinc-400 font-medium">Items</th>
+              <th className="text-left p-4 text-zinc-400 font-medium">
+                Items Posted
+              </th>
               <th className="text-left p-4 text-zinc-400 font-medium">
                 Actions
               </th>
@@ -132,14 +150,14 @@ export default function UserManagement() {
                   Loading...
                 </td>
               </tr>
-            ) : filteredUsers.length === 0 ? (
+            ) : users.length === 0 ? (
               <tr>
                 <td colSpan="5" className="text-center p-8 text-zinc-500">
-                  No users found
+                  No users found.
                 </td>
               </tr>
             ) : (
-              filteredUsers.map((user) => (
+              users.map((user) => (
                 <tr
                   key={user.id}
                   className="border-b border-zinc-800 hover:bg-zinc-800/30"
@@ -154,11 +172,13 @@ export default function UserManagement() {
                   </td>
                   <td className="p-4">
                     <select
-                      value={user.role || "user"}
+                      value={user.role || "member"} // changed from user to member
                       onChange={(e) => changeRole(user.id, e.target.value)}
                       className="px-3 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm"
                     >
-                      <option value="user">User</option>
+                      <option value="member">Member</option> // changed from
+                      user to member
+                      <option value="moderator">Moderator</option>
                       <option value="admin">Admin</option>
                     </select>
                   </td>
@@ -173,7 +193,7 @@ export default function UserManagement() {
                       {user.is_banned ? "Banned" : "Active"}
                     </span>
                   </td>
-                  <td className="p-4 text-white">
+                  <td className="p-4 text-white text-center">
                     {user.items?.[0]?.count || 0}
                   </td>
                   <td className="p-4">
@@ -193,41 +213,6 @@ export default function UserManagement() {
             )}
           </tbody>
         </table>
-      </div>
-
-      {/* Simple Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-zinc-900 rounded-lg p-4 border border-zinc-800">
-          <div className="flex items-center gap-3">
-            <User className="w-8 h-8 text-blue-400" />
-            <div>
-              <p className="text-zinc-400 text-sm">Total Users</p>
-              <p className="text-2xl font-bold text-white">{users.length}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-zinc-900 rounded-lg p-4 border border-zinc-800">
-          <div className="flex items-center gap-3">
-            <Shield className="w-8 h-8 text-purple-400" />
-            <div>
-              <p className="text-zinc-400 text-sm">Admins</p>
-              <p className="text-2xl font-bold text-white">
-                {users.filter((u) => u.role === "admin").length}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-zinc-900 rounded-lg p-4 border border-zinc-800">
-          <div className="flex items-center gap-3">
-            <Ban className="w-8 h-8 text-red-400" />
-            <div>
-              <p className="text-zinc-400 text-sm">Banned</p>
-              <p className="text-2xl font-bold text-white">
-                {users.filter((u) => u.is_banned).length}
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

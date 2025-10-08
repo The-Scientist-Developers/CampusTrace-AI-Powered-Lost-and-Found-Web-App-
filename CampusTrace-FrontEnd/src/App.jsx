@@ -205,10 +205,19 @@ function App() {
           }
         >
           {/* Nested pages for the Admin Dashboard. */}
-          <Route index element={<AdminMainPage />} />
-          <Route path="user-management" element={<UserManagementPage />} />
-          <Route path="post-moderation" element={<PostModerationPage />} />
-          <Route path="settings" element={<AdminSettingsPage />} />
+          <Route index element={<AdminMainPage user={session?.user} />} />
+          <Route
+            path="user-management"
+            element={<UserManagementPage user={session?.user} />}
+          />
+          <Route
+            path="post-moderation"
+            element={<PostModerationPage user={session?.user} />}
+          />
+          <Route
+            path="settings"
+            element={<AdminSettingsPage user={session?.user} />}
+          />
         </Route>
       </Routes>
     </Router>

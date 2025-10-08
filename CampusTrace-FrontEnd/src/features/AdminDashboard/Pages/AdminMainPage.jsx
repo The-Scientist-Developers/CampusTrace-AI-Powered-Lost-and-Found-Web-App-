@@ -66,73 +66,101 @@ export default function AdminMainPage({ user }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // 1. Add a check to ensure we have the user object
+    if (!user) {
+      setLoading(false);
+      setError("User not available to fetch admin data.");
+      return;
+    }
+
     const fetchAdminData = async () => {
       try {
-        // --- Fetch all data concurrently for performance ---
+        // --- 2. First, get the admin's own university_id ---
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("university_id")
+          .eq("id", user.id)
+          .single();
+
+        if (profileError) throw profileError;
+
+        const adminUniversityId = profile.university_id;
+        if (!adminUniversityId) {
+          throw new Error(
+            "Admin university not found. Please ensure the admin profile has a university ID."
+          );
+        }
+
+        // --- 3. Now, run all queries filtered by the admin's university_id ---
         const [
           userCountRes,
           moderationCountRes,
-          activePostsRes,
+          approvedPostsRes,
           recoveredPostsRes,
           weeklyPostsRes,
           activityRes,
         ] = await Promise.all([
-          supabase.from("profiles").select("id", { count: "exact" }),
+          supabase
+            .from("profiles")
+            .select("id", { count: "exact" })
+            .eq("university_id", adminUniversityId),
           supabase
             .from("items")
             .select("id", { count: "exact" })
-            .eq("moderation_status", "pending"),
+            .eq("moderation_status", "pending")
+            .eq("university_id", adminUniversityId),
           supabase
             .from("items")
             .select("id", { count: "exact" })
-            .eq("moderation_status", "approved"),
+            .eq("moderation_status", "approved")
+            .eq("university_id", adminUniversityId),
           supabase
             .from("items")
             .select("id", { count: "exact" })
-            .eq("moderation_status", "recovered"),
+            .eq("moderation_status", "recovered")
+            .eq("university_id", adminUniversityId),
           supabase
             .from("items")
             .select("created_at")
             .gte(
               "created_at",
               new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-            ),
-          // Fetch latest 5 activities
+            )
+            .eq("university_id", adminUniversityId),
           supabase
             .from("items")
             .select("*")
             .order("created_at", { ascending: false })
-            .limit(5),
+            .limit(5)
+            .eq("university_id", adminUniversityId),
         ]);
 
-        // --- Check for Supabase errors and fall back to safe defaults ---
-        const responses = [
-          { name: "userCountRes", res: userCountRes },
-          { name: "moderationCountRes", res: moderationCountRes },
-          { name: "activePostsRes", res: activePostsRes },
-          { name: "recoveredPostsRes", res: recoveredPostsRes },
-          { name: "weeklyPostsRes", res: weeklyPostsRes },
-          { name: "activityRes", res: activityRes },
+        // --- Error Checking for all Promises ---
+        const results = [
+          userCountRes,
+          moderationCountRes,
+          approvedPostsRes,
+          recoveredPostsRes,
+          weeklyPostsRes,
+          activityRes,
         ];
-
-        for (const r of responses) {
-          if (r.res && r.res.error) {
-            console.error(`${r.name} returned error:`, r.res.error);
-          }
+        for (const res of results) {
+          if (res.error) throw res.error;
         }
 
-        const activeCount = (activePostsRes && activePostsRes.count) || 0;
-        const recoveredCount =
-          (recoveredPostsRes && recoveredPostsRes.count) || 0;
-        const totalPosts = activeCount + recoveredCount;
+        // --- Process Stats ---
+        const approvedCount = approvedPostsRes.count || 0;
+        const recoveredCount = recoveredPostsRes.count || 0;
+        const totalResolvedPosts = approvedCount + recoveredCount;
         const recoveryRate =
-          totalPosts > 0 ? Math.round((recoveredCount / totalPosts) * 100) : 0;
+          totalResolvedPosts > 0
+            ? Math.round((recoveredCount / totalResolvedPosts) * 100)
+            : 0;
 
         setStats({
-          totalUsers: (userCountRes && userCountRes.count) || 0,
-          awaitingModeration:
-            (moderationCountRes && moderationCountRes.count) || 0,
-          activePosts: activeCount,
+          totalUsers: userCountRes.count || 0,
+          awaitingModeration: moderationCountRes.count || 0,
+          activePosts: approvedCount, // 'Active' posts are those that are 'approved'
           recoveryRate: `${recoveryRate}%`,
         });
 
@@ -140,36 +168,30 @@ export default function AdminMainPage({ user }) {
         const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
         const postsPerDay = Array(7)
           .fill(0)
-          .map((_, i) => ({
-            name: days[(new Date().getDay() - 6 + i + 7) % 7], // Logic to get last 7 days in order
-            posts: 0,
-          }));
+          .map((_, i) => {
+            const date = new Date();
+            date.setDate(date.getDate() - (6 - i));
+            return { name: days[date.getDay()], posts: 0 };
+          });
 
-        const weeklyData = (weeklyPostsRes && weeklyPostsRes.data) || [];
-        weeklyData.forEach((post) => {
-          if (!post || !post.created_at) return;
+        weeklyPostsRes.data.forEach((post) => {
           const dayIndex = new Date(post.created_at).getDay();
-          const matchingDay = postsPerDay.find(
-            (d) => d.name === days[dayIndex]
-          );
-          if (matchingDay) matchingDay.posts++;
+          const dayEntry = postsPerDay.find((d) => d.name === days[dayIndex]);
+          if (dayEntry) dayEntry.posts++;
         });
         setWeeklyPosts(postsPerDay);
 
         // --- Process Recent Activity ---
-        if (activityRes && activityRes.error) {
-          console.warn("activityRes error", activityRes.error);
-        }
-        setRecentActivity((activityRes && activityRes.data) || []);
+        setRecentActivity(activityRes.data || []);
       } catch (err) {
         console.error("Error fetching admin data:", err);
-        setError("Failed to load admin overview data.");
+        setError("Failed to load admin overview data. " + err.message);
       } finally {
         setLoading(false);
       }
     };
     fetchAdminData();
-  }, []);
+  }, [user]);
 
   // --- Render Logic ---
   if (loading) {
@@ -250,7 +272,7 @@ export default function AdminMainPage({ user }) {
               />
               <Bar dataKey="posts" radius={[4, 4, 0, 0]}>
                 {weeklyPosts.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={"#ef4444"} /> // Using your red theme color
+                  <Cell key={`cell-${index}`} fill={"#ef4444"} />
                 ))}
               </Bar>
             </BarChart>
@@ -260,22 +282,28 @@ export default function AdminMainPage({ user }) {
         {/* Recent Activity Feed */}
         <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-xl shadow-lg">
           <h2 className="text-xl font-bold text-white mb-6">Recent Activity</h2>
-          <ul className="space-y-4">
-            {recentActivity.map((activity) => (
-              <ActivityItem
-                key={activity.id}
-                text={activity.description}
-                time={new Date(activity.created_at).toLocaleString()}
-                icon={
-                  activity.type === "new_post"
-                    ? MessageSquare
-                    : activity.type === "approved_post"
-                    ? UserCheck
-                    : Activity
-                }
-              />
-            ))}
-          </ul>
+          {recentActivity.length > 0 ? (
+            <ul className="space-y-4">
+              {recentActivity.map((activity) => (
+                <ActivityItem
+                  key={activity.id}
+                  text={activity.description}
+                  time={new Date(activity.created_at).toLocaleString()}
+                  icon={
+                    activity.type === "new_post"
+                      ? MessageSquare
+                      : activity.type === "approved_post"
+                      ? UserCheck
+                      : Activity
+                  }
+                />
+              ))}
+            </ul>
+          ) : (
+            <p className="text-neutral-500 text-sm">
+              No recent activity for this university.
+            </p>
+          )}
         </div>
       </div>
     </div>

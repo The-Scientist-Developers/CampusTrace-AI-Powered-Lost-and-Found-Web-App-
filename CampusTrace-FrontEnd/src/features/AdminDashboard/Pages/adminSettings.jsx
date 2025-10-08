@@ -3,6 +3,8 @@ import { supabase } from "../../../api/apiClient"; // Make sure this path is cor
 import { Toaster, toast } from "react-hot-toast"; // For notifications
 import { Settings as SettingsIcon, ShieldCheck, Users } from "lucide-react";
 
+// --- Reusable UI Helper Components ---
+
 const SectionCard = ({ title, description, icon: Icon, children }) => (
   <div className="bg-neutral-900 border border-neutral-800 rounded-xl shadow-lg p-6 mb-8">
     <div className="flex items-start gap-4 mb-4">
@@ -83,7 +85,7 @@ const SubmitButton = ({
 
 // --- Main AdminSettings Component ---
 
-export default function AdminSettingsPage() {
+export default function AdminSettingsPage({ user }) {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -93,68 +95,100 @@ export default function AdminSettingsPage() {
   const [autoApprovePosts, setAutoApprovePosts] = useState(false);
   const [keywordBlacklist, setKeywordBlacklist] = useState([]);
   const [keywordInput, setKeywordInput] = useState("");
+  const [adminUniversityId, setAdminUniversityId] = useState(null);
 
-  // Fetches settings from the 'site_settings' table when the component loads
+  // Fetches settings scoped to the admin's university
   useEffect(() => {
+    if (!user?.id) {
+      setLoading(false);
+      toast.error("User not found. Cannot load settings.");
+      return;
+    }
+
     const fetchSettings = async () => {
       setLoading(true);
-      const { data, error } = await supabase.from("site_settings").select("*");
-
-      if (error) {
-        console.error("Error fetching settings:", error);
-        toast.error("Failed to load settings.");
-        setLoading(false);
-        return;
-      }
-
-      // Convert the array of settings from the DB into a simple key-value object
-      const settingsMap = data.reduce((acc, setting) => {
-        acc[setting.setting_key] = setting.setting_value;
-        return acc;
-      }, {});
-
-      // Set the state with values from the database, providing defaults
-      setSiteName(settingsMap.site_name || "Campus Trace");
-      setContactEmail(settingsMap.contact_email || "");
-      setAutoApprovePosts(settingsMap.auto_approve_posts === "true"); // Convert string 'true'/'false' to boolean
-
       try {
+        // Step 1: Get the admin's university_id from their profile
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("university_id")
+          .eq("id", user.id)
+          .single();
+
+        if (profileError || !profile?.university_id) {
+          throw new Error("Could not determine admin's university.");
+        }
+
+        const universityId = profile.university_id;
+        setAdminUniversityId(universityId);
+
+        // Step 2: Fetch settings for that specific university
+        const { data, error } = await supabase
+          .from("site_settings")
+          .select("*")
+          .eq("university_id", universityId);
+
+        if (error) throw error;
+
+        // Convert the array of settings from the DB into a simple key-value object
+        const settingsMap = data.reduce((acc, setting) => {
+          acc[setting.setting_key] = setting.setting_value;
+          return acc;
+        }, {});
+
+        // Set the state with values from the database, providing defaults
+        setSiteName(settingsMap.site_name || "Campus Trace");
+        setContactEmail(settingsMap.contact_email || "");
+        setAutoApprovePosts(settingsMap.auto_approve_posts === "true");
+
         const keywords = JSON.parse(settingsMap.keyword_blacklist || "[]");
         setKeywordBlacklist(keywords);
-      } catch (e) {
-        console.error("Failed to parse keyword blacklist:", e);
-        setKeywordBlacklist([]);
+      } catch (err) {
+        console.error("Error fetching settings:", err);
+        toast.error("Failed to load settings.");
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
     fetchSettings();
-  }, []);
+  }, [user]);
 
-  // Saves all current settings back to the database
+  // Saves all current settings back to the database for the specific university
   const handleSaveSettings = useCallback(async () => {
+    if (!adminUniversityId) {
+      toast.error("Cannot save settings without a university ID.");
+      return;
+    }
+
     setIsSaving(true);
 
-    // Prepare the data in the format Supabase expects for an upsert
     const updates = [
-      { setting_key: "site_name", setting_value: siteName },
-      { setting_key: "contact_email", setting_value: contactEmail },
       {
+        university_id: adminUniversityId,
+        setting_key: "site_name",
+        setting_value: siteName,
+      },
+      {
+        university_id: adminUniversityId,
+        setting_key: "contact_email",
+        setting_value: contactEmail,
+      },
+      {
+        university_id: adminUniversityId,
         setting_key: "auto_approve_posts",
         setting_value: autoApprovePosts.toString(),
       },
       {
+        university_id: adminUniversityId,
         setting_key: "keyword_blacklist",
         setting_value: JSON.stringify(keywordBlacklist),
       },
     ];
 
     try {
-      // 'upsert' will INSERT new settings and UPDATE existing ones
-      const { error } = await supabase
-        .from("site_settings")
-        .upsert(updates, { onConflict: "setting_key" });
+      // 'upsert' will INSERT new settings and UPDATE existing ones based on the primary key (university_id, setting_key)
+      const { error } = await supabase.from("site_settings").upsert(updates);
       if (error) throw error;
       toast.success("Settings saved successfully!");
     } catch (error) {
@@ -163,7 +197,13 @@ export default function AdminSettingsPage() {
     } finally {
       setIsSaving(false);
     }
-  }, [siteName, contactEmail, autoApprovePosts, keywordBlacklist]);
+  }, [
+    siteName,
+    contactEmail,
+    autoApprovePosts,
+    keywordBlacklist,
+    adminUniversityId,
+  ]);
 
   // Handler to add a new keyword to the blacklist
   const handleAddKeyword = () => {
@@ -171,7 +211,7 @@ export default function AdminSettingsPage() {
     if (newKeyword && !keywordBlacklist.includes(newKeyword)) {
       setKeywordBlacklist([...keywordBlacklist, newKeyword]);
     }
-    setKeywordInput(""); // Clear the input field
+    setKeywordInput("");
   };
 
   // Handler to remove a keyword
@@ -202,11 +242,11 @@ export default function AdminSettingsPage() {
       {/* General Settings */}
       <SectionCard
         title="General"
-        description="Configure basic information and core functionality."
+        description="Configure basic information for your university's instance."
         icon={SettingsIcon}
       >
         <SettingInput
-          label="Site Name"
+          label="Site Name / University Name"
           value={siteName}
           onChange={(e) => setSiteName(e.target.value)}
         />
@@ -274,7 +314,7 @@ export default function AdminSettingsPage() {
                   {keyword}
                   <button
                     onClick={() => handleRemoveKeyword(keyword)}
-                    className="hover:text-red"
+                    className="hover:text-red text-lg leading-none"
                   >
                     &times;
                   </button>
