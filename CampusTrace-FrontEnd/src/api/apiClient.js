@@ -7,6 +7,24 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+async function getAccessToken() {
+  try {
+    if (supabase.auth?.getSession) {
+      const { data } = await supabase.auth.getSession();
+      return data?.session?.access_token || null;
+    }
+
+    if (supabase.auth?.session) {
+      const session = supabase.auth.session();
+      return session?.access_token || null;
+    }
+  } catch (error) {
+    console.error("Failed to obtain auth token", error);
+  }
+
+  return null;
+}
+
 export const apiClient = {
   /**
    * @param {string} email - The user's email address.
@@ -30,7 +48,12 @@ export const apiClient = {
   },
 
   async getRecentActivity() {
-    const response = await fetch(`${API_BASE_URL}/recent-activity`);
+    const token = await getAccessToken();
+    const response = await fetch(`${API_BASE_URL}/api/items/recent-activity`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
     if (!response.ok) {
       throw new Error("Failed to fetch recent activity.");
     }
@@ -40,17 +63,7 @@ export const apiClient = {
   async banUser(userId, isBanned = true) {
     if (!userId) throw new Error("userId is required");
 
-    let token;
-    try {
-      if (supabase.auth?.getSession) {
-        const { data } = await supabase.auth.getSession();
-        token = data?.session?.access_token;
-      } else if (supabase.auth?.session) {
-        const session = supabase.auth.session();
-
-        token = session?.access_token;
-      }
-    } catch (e) {}
+    const token = await getAccessToken();
 
     const response = await fetch(
       `${API_BASE_URL}/admin/users/${encodeURIComponent(userId)}/ban`,
@@ -76,17 +89,7 @@ export const apiClient = {
     if (!userId) throw new Error("userId is required");
     if (!newRole) throw new Error("newRole is required");
 
-    let token;
-    try {
-      if (supabase.auth?.getSession) {
-        const { data } = await supabase.auth.getSession();
-        token = data?.session?.access_token;
-      } else if (supabase.auth?.session) {
-        const session = supabase.auth.session();
-
-        token = session?.access_token;
-      }
-    } catch (e) {}
+    const token = await getAccessToken();
 
     const response = await fetch(
       `${API_BASE_URL}/admin/users/${encodeURIComponent(userId)}/role`,
@@ -112,17 +115,7 @@ export const apiClient = {
     if (!itemId) throw new Error("itemId is required");
     if (!status) throw new Error("status is required");
 
-    let token;
-    try {
-      if (supabase.auth?.getSession) {
-        const { data } = await supabase.auth.getSession();
-        token = data?.session?.access_token;
-      } else if (supabase.auth?.session) {
-        const session = supabase.auth.session();
-
-        token = session?.access_token;
-      }
-    } catch (e) {}
+    const token = await getAccessToken();
 
     const response = await fetch(
       `${API_BASE_URL}/admin/items/${encodeURIComponent(itemId)}/status`,
@@ -141,6 +134,33 @@ export const apiClient = {
       throw new Error(
         `Failed to post status update: ${response.status} ${text}`
       );
+    }
+
+    return response.json();
+  },
+
+  async updateProfile({ fullName, avatarFile }) {
+    const token = await getAccessToken();
+
+    const formData = new FormData();
+    if (typeof fullName === "string") {
+      formData.append("full_name", fullName);
+    }
+    if (avatarFile instanceof File) {
+      formData.append("avatar", avatarFile);
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/profile/`, {
+      method: "PUT",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new Error(`Failed to update profile: ${response.status} ${text}`);
     }
 
     return response.json();

@@ -1,12 +1,12 @@
-from lib2to3.pgen2 import token
 import os
-from fastapi import FastAPI, HTTPException, Body, Depends
+from pathlib import Path
+from uuid import uuid4
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Form
 from pydantic import BaseModel, EmailStr
-import os
 from supabase import create_client, Client
 from fastapi.middleware.cors import CORSMiddleware 
 from fastapi import APIRouter
-from typing import List
+from typing import List, Optional
 from config import get_settings  
 from fastapi import Header
 
@@ -44,6 +44,7 @@ class StatusUpdate(BaseModel):
 
 item_router = APIRouter(prefix="/api/items", tags=["Items"])
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
+profile_router = APIRouter(prefix="/api/profile", tags=["Profile"])
 
 async def get_current_user_id(authorization: str = Header(...)):
     if not authorization.startswith("Bearer "):
@@ -53,12 +54,10 @@ async def get_current_user_id(authorization: str = Header(...)):
 
     try:
         user_res = supabase.auth.get_user(token)
-        user = (user_res.get("data") or {}).get("user")
+        user = user_res.user if hasattr(user_res, 'user') else None
         if not user:
             raise HTTPException(401, "Invalid token")
-        if not user:
-            raise HTTPException(401, "User not authenticated")
-        return user["id"]
+        return user.id
     
     except HTTPException:
         raise
@@ -149,10 +148,77 @@ async def set_status(item_id: str, data: StatusUpdate, admin_id: str = Depends(r
     resp = supabase.table("items").update({"moderation_status": data.moderation_status}).eq("id", item_id).execute()
     return {"updated": resp.data}
     
+@profile_router.put("/")
+async def update_profile(
+    full_name: Optional[str] = Form(None),
+    avatar: Optional[UploadFile] = File(None),
+    current_user_id: str = Depends(get_current_user_id),
+):
+    try:
+        updates = {}
+
+        if full_name is not None:
+            updates["full_name"] = full_name.strip()
+
+        if avatar is not None:
+            file_suffix = Path(avatar.filename or "avatar").suffix or ""
+            filename = f"{current_user_id}/{uuid4().hex}{file_suffix}"
+            file_bytes = await avatar.read()
+
+            upload_response = supabase.storage.from_("other_images").upload(
+                path=filename,
+                file=file_bytes,
+                file_options={
+                    "content-type": avatar.content_type or "application/octet-stream",
+                    "upsert": "true",
+                },
+            )
+
+            if hasattr(upload_response, "error") and upload_response.error:
+                raise HTTPException(status_code=500, detail=f"Upload failed: {upload_response.error}")
+
+            # Get public URL
+            public_url = supabase.storage.from_("other_images").get_public_url(filename)
+            
+            if not public_url:
+                raise HTTPException(status_code=500, detail="Failed to generate avatar URL")
+
+            updates["avatar_url"] = public_url
+
+        if not updates:
+            raise HTTPException(status_code=400, detail="No profile changes supplied")
+
+        # Update profile
+        result = supabase.table("profiles").update(updates).eq("id", current_user_id).execute()
+
+        if hasattr(result, "error") and result.error:
+            raise HTTPException(status_code=500, detail=f"Update failed: {result.error}")
+
+        # Fetch updated profile
+        profile_result = (
+            supabase.table("profiles")
+            .select("id, full_name, email, avatar_url, role, is_banned")
+            .eq("id", current_user_id)
+            .single()
+            .execute()
+        )
+
+        if hasattr(profile_result, "error") and profile_result.error:
+            raise HTTPException(status_code=500, detail=f"Fetch failed: {profile_result.error}")
+
+        return {"profile": profile_result.data}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 
 app.include_router(item_router)
 app.include_router(admin_router)
+app.include_router(profile_router)
 
 @app.get("/")
 def read_root():

@@ -25,6 +25,7 @@ import MyPostsPage from "./features/UserDashboard/Pages/userMypostPage";
 import AboutUsPage from "./features/MainPages/aboutPage";
 import LearnMorePage from "./features/MainPages/learnMorePage";
 import BrowseAllPage from "./features/UserDashboard/Pages/browseAllPage";
+import HelpPage from "./features/UserDashboard/Pages/userHelpPage";
 
 function PrivateRouter({ children, isLoading, session }) {
   if (isLoading) {
@@ -205,6 +206,7 @@ function App() {
             path="browse-all"
             element={<BrowseAllPage user={session?.user} />}
           />
+          <Route path="help" element={<HelpPage user={session?.user} />} />
         </Route>
 
         {/* --- Admin Dashboard Routes (Protected by PrivateRoute and RoleBasedRoute) --- */}
