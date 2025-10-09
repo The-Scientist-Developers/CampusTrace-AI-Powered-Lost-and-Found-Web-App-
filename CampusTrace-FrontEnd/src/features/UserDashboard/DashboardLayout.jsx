@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { supabase } from "../../api/apiClient";
 import {
   NavLink as RouterNavLink,
@@ -13,7 +13,7 @@ import {
   User,
   LogOut,
   Plus,
-  Menu, // Use Menu icon for desktop toggle too
+  Menu,
   X,
   Settings,
   HelpCircle,
@@ -25,13 +25,12 @@ import logo2 from "../../Images/logo2.png";
 // Menu items configuration
 const menuItems = [
   { label: "Dashboard", icon: Grid, path: "/dashboard", exact: true },
-  { label: "My Posts", icon: FileText, path: "/dashboard/posts", badge: "12" },
-  { label: "Browse All", icon: Search, path: "/dashboard/browse" },
+  { label: "My Posts", icon: FileText, path: "/dashboard/my-posts" },
+  { label: "Browse All", icon: Search, path: "/dashboard/browse-all" },
   {
     label: "Notifications",
     icon: Bell,
     path: "/dashboard/notifications",
-    badge: "3",
   },
   { label: "Analytics", icon: TrendingUp, path: "/dashboard/analytics" },
   { label: "Profile", icon: User, path: "/dashboard/profile" },
@@ -96,6 +95,7 @@ export default function DashboardLayout({ children, user }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const [itemsPostedCount, setItemsPostedCount] = useState(0);
+  const [notificationCount, setNotificationCount] = useState(0);
 
   useEffect(() => {
     const fetchMonthlyItems = async () => {
@@ -120,6 +120,52 @@ export default function DashboardLayout({ children, user }) {
     };
     fetchMonthlyItems();
   }, []);
+
+  useEffect(() => {
+    const fetchNotificationCount = async () => {
+      if (!user?.id) return;
+      try {
+        const { count, error, status } = await supabase
+          .from("notifications")
+          .select("*", { head: true, count: "exact" })
+          .eq("recipient_id", user.id)
+          .eq("status", "unread");
+
+        if (error) {
+          // Treat missing table (404) as zero notifications.
+          if (status === 404 || error.code === "PGRST204") {
+            setNotificationCount(0);
+            return;
+          }
+          throw error;
+        }
+        setNotificationCount(count || 0);
+      } catch (err) {
+        console.debug("Notification count fetch skipped:", err?.message || err);
+        setNotificationCount(0);
+      }
+    };
+
+    fetchNotificationCount();
+  }, [user?.id]);
+
+  const computedMenuItems = useMemo(() => {
+    return menuItems.map((item) => {
+      if (item.label === "My Posts") {
+        return {
+          ...item,
+          badge: itemsPostedCount > 0 ? String(itemsPostedCount) : null,
+        };
+      }
+      if (item.label === "Notifications") {
+        return {
+          ...item,
+          badge: notificationCount > 0 ? String(notificationCount) : null,
+        };
+      }
+      return item;
+    });
+  }, [itemsPostedCount, notificationCount]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -205,7 +251,6 @@ export default function DashboardLayout({ children, user }) {
             <div>
               <span className="font-bold text-xl text-white">Campus Trace</span>
               <p className="text-xs text-zinc-500">User Dashboard</p>{" "}
-              {/* Changed to 'User Dashboard' */}
             </div>
           </div>
         </div>
@@ -258,7 +303,6 @@ export default function DashboardLayout({ children, user }) {
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <aside
-          style={{ overflowY: "hidden" }}
           className={`
             fixed md:relative inset-y-0 left-0 z-50
             bg-zinc-900/95 md:bg-black backdrop-blur-md md:backdrop-blur-none
@@ -272,9 +316,8 @@ export default function DashboardLayout({ children, user }) {
             }
             ${isSidebarOpen ? "md:w-64" : "md:w-20"}
             h-[calc(100vh-4rem)] md:h-full
-            overflow-hidden  {/* Keep aside overflow-hidden */}
+            overflow-hidden
           `}
-          onWheel={(e) => e.preventDefault()}
         >
           {/* Mobile close button (for consistency, though overlay click handles it) */}
           {mobileMenu && (
@@ -306,7 +349,7 @@ export default function DashboardLayout({ children, user }) {
           )}
 
           {/* Navigation */}
-          <nav className="flex-1 p-3 space-y-1 overflow-hidden">
+          <nav className="flex-1 p-3 space-y-1 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
             {headItems.map((item, i) => (
               <NavLink
                 key={`head-${i}`}
@@ -315,7 +358,7 @@ export default function DashboardLayout({ children, user }) {
               />
             ))}
             <div className="my-3 border-t border-zinc-800" />
-            {menuItems.map((item, i) => (
+            {computedMenuItems.map((item, i) => (
               <NavLink
                 key={`menu-${i}`}
                 item={item}

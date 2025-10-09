@@ -1,48 +1,148 @@
-  import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
-  const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = "http://localhost:8000";
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-  const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+export const apiClient = {
+  /**
+   * @param {string} email - The user's email address.
+   * @returns {Promise<object>} - The JSON response from the server.
+   */
+  async signInWithMagicLink(email) {
+    const response = await fetch(`${API_BASE_URL}/api/auth/signin`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: email }),
+    });
 
-
-  export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-
-  export const apiClient = {
-    /**
-     * @param {string} email - The user's email address.
-     * @returns {Promise<object>} - The JSON response from the server.
-     */
-    async signInWithMagicLink(email) {
-      const response = await fetch(`${API_BASE_URL}/api/auth/signin`, {
-        method: 'POST',
-        headers: {  
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: email }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'An unknown error occurred.');
-      }
-
-      return response.json();
-    },
-
-
-    async getRecentActivity(){
-      const response = await fetch(`${API_BASE_URL}/recent-activity`);
     if (!response.ok) {
-      throw new Error('Failed to fetch recent activity.');
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "An unknown error occurred.");
+    }
+
+    return response.json();
+  },
+
+  async getRecentActivity() {
+    const response = await fetch(`${API_BASE_URL}/recent-activity`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch recent activity.");
     }
     return response.json();
+  },
+
+  async banUser(userId, isBanned = true) {
+    if (!userId) throw new Error("userId is required");
+
+    let token;
+    try {
+      if (supabase.auth?.getSession) {
+        const { data } = await supabase.auth.getSession();
+        token = data?.session?.access_token;
+      } else if (supabase.auth?.session) {
+        const session = supabase.auth.session();
+
+        token = session?.access_token;
+      }
+    } catch (e) {}
+
+    const response = await fetch(
+      `${API_BASE_URL}/admin/users/${encodeURIComponent(userId)}/ban`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ is_banned: !!isBanned }),
+      }
+    );
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new Error(`Failed to ban user: ${response.status} ${text}`);
     }
 
-  };
+    return response.json();
+  },
 
+  async changeUserRole(userId, newRole) {
+    if (!userId) throw new Error("userId is required");
+    if (!newRole) throw new Error("newRole is required");
 
+    let token;
+    try {
+      if (supabase.auth?.getSession) {
+        const { data } = await supabase.auth.getSession();
+        token = data?.session?.access_token;
+      } else if (supabase.auth?.session) {
+        const session = supabase.auth.session();
 
+        token = session?.access_token;
+      }
+    } catch (e) {}
+
+    const response = await fetch(
+      `${API_BASE_URL}/admin/users/${encodeURIComponent(userId)}/role`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ role: newRole }),
+      }
+    );
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new Error(`Failed to change user role: ${response.status} ${text}`);
+    }
+
+    return response.json();
+  },
+
+  async postStatusUpdate(itemId, status) {
+    if (!itemId) throw new Error("itemId is required");
+    if (!status) throw new Error("status is required");
+
+    let token;
+    try {
+      if (supabase.auth?.getSession) {
+        const { data } = await supabase.auth.getSession();
+        token = data?.session?.access_token;
+      } else if (supabase.auth?.session) {
+        const session = supabase.auth.session();
+
+        token = session?.access_token;
+      }
+    } catch (e) {}
+
+    const response = await fetch(
+      `${API_BASE_URL}/admin/items/${encodeURIComponent(itemId)}/status`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ moderation_status: status }),
+      }
+    );
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new Error(
+        `Failed to post status update: ${response.status} ${text}`
+      );
+    }
+
+    return response.json();
+  },
+};

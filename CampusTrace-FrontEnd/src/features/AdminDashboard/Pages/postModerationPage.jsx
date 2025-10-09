@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { supabase } from "../../../api/apiClient"; // Adjust this import path to your apiClient file
+import { apiClient, supabase } from "../../../api/apiClient"; // Adjust this import path to your apiClient file
 import {
   Settings as SettingsIcon,
   Check,
@@ -204,10 +204,20 @@ export default function PostModerationPage({ user }) {
             : post
         )
       );
+      const res = await apiClient.postStatusUpdate(postId, newStatus);
+      const updated = (res.updated && res.updated[0]) || res.updated || res;
+      setPosts((currentPosts) =>
+        currentPosts.map((post) =>
+          post.id === postId
+            ? { ...post, moderation_status: updated.moderation_status }
+            : post
+        )
+      );
+
       if (selectedPost && selectedPost.id === postId) {
         setSelectedPost((prev) => ({
           ...prev,
-          moderation_status: data.moderation_status,
+          moderation_status: updated.moderation_status,
         }));
       }
     } catch (err) {

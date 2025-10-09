@@ -30,26 +30,39 @@ export default function UserMainPage({ user }) {
     const fetchDashboardData = async () => {
       try {
         // --- 1. Fetch User's "Lost" Items and Recent Community Activity ---
-        const [myLostItemsRes, communityActivityRes] = await Promise.all([
-          supabase
-            .from("items")
-            .select("*")
-            .eq("user_id", user.id)
-            .eq("status", "Lost") // Specifically fetch user's lost items
-            .order("created_at", { ascending: false })
-            .limit(5),
-          supabase
-            .from("items")
-            .select("*")
-            .order("created_at", { ascending: false })
-            .limit(5),
-        ]);
+        const [myLostItemsRes, myFoundItemsRes, communityActivityRes] =
+          await Promise.all([
+            supabase
+              .from("items")
+              .select("*")
+              .eq("user_id", user.id)
+              .eq("category", "Lost")
+              .order("created_at", { ascending: false })
+              .limit(5),
+            supabase
+              .from("items")
+              .select("*")
+              .eq("user_id", user.id)
+              .eq("category", "Found")
+              .order("created_at", { ascending: false })
+              .limit(5),
+            supabase
+              .from("items")
+              .select("*")
+              .order("created_at", { ascending: false })
+              .limit(10),
+          ]);
 
         if (myLostItemsRes.error) throw myLostItemsRes.error;
         if (communityActivityRes.error) throw communityActivityRes.error;
 
         const userLostItems = myLostItemsRes.data || [];
-        setMyRecentPosts(userLostItems); // This is now just the user's lost items
+        const userFoundItems = myFoundItemsRes.data || [];
+        const merged = [...userLostItems, ...userFoundItems]
+          .filter(Boolean)
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+        setMyRecentPosts(merged);
         setCommunityActivity(communityActivityRes.data || []);
 
         // --- 2. Fetch Possible Matches Based on User's Lost Items ---
@@ -63,9 +76,9 @@ export default function UserMainPage({ user }) {
           const { data: matchesData, error: matchesError } = await supabase
             .from("items")
             .select("*")
-            .eq("status", "Found") // It must be a "Found" item
-            .not("user_id", "eq", user.id) // It must NOT be the user's own post
-            .in("category", lostItemCategories) // The category must be one of the user's lost item categories
+            .eq("category", "Found") // Must be a "Found" item
+            .not("user_id", "eq", user.id) // Must NOT be the user's own post
+            .in("category", lostItemCategories) // Category must match user's lost items
             .limit(4);
 
           if (matchesError) throw matchesError;
@@ -142,10 +155,10 @@ export default function UserMainPage({ user }) {
         )}
       </section>
 
-      {/* --- Recent Community Activity Section (Unchanged) --- */}
+      {/* --- Recent Community Activity Section --- */}
       <section>
         <h2 className="text-2xl font-bold text-white mb-4">
-          Recent Community Activity
+          Recent Community Activity (Lost & Found)
         </h2>
         {communityActivity.length > 0 ? (
           <div className="bg-neutral-900/70 border border-neutral-800 rounded-lg p-4 divide-y divide-neutral-800">
@@ -171,31 +184,38 @@ const timeAgo = (date) => {
   if (interval > 1) return Math.floor(interval) + " years ago";
   interval = seconds / 2592000;
   if (interval > 1) return Math.floor(interval) + " months ago";
-  // ... (rest of timeAgo logic) ...
+  interval = seconds / 86400;
+  if (interval > 1) return Math.floor(interval) + " days ago";
+  interval = seconds / 3600;
+  if (interval > 1) return Math.floor(interval) + " hours ago";
+  interval = seconds / 60;
+  if (interval > 1) return Math.floor(interval) + " minutes ago";
   return Math.floor(seconds) + " seconds ago";
 };
 
 const MatchCard = ({ item }) => {
-  const isLost = item.status === "Lost";
+  const isLost = item.category === "Lost";
   const badgeClass = isLost
     ? "bg-red-900/50 text-red-400"
     : "bg-green-900/50 text-green-400";
   return (
     <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4 transition-transform hover:scale-105 cursor-pointer">
-      <div className="w-full h-32 bg-neutral-800 border border-neutral-700 rounded-md mb-4 flex items-center justify-center">
+      <div className="w-full h-32 bg-neutral-800 border border-neutral-700 rounded-md mb-4 flex items-center justify-center relative overflow-hidden">
         {item.image_url ? (
           <img
             src={item.image_url}
-            alt={item.item_name}
+            alt={item.title}
             className="w-full h-full object-cover rounded-md"
           />
         ) : (
           <p className="text-neutral-500 text-sm">No Image</p>
         )}
+        {/* Title overlay on the image */}
+        <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs font-medium px-2 py-1 truncate opacity-0 hover:opacity-100 transition-opacity">
+          {item.title}
+        </div>
       </div>
-      <h3 className="font-semibold text-neutral-100 truncate">
-        {item.item_name}
-      </h3>
+      <h3 className="font-semibold text-neutral-100 truncate">{item.title}</h3>
       <span
         className={`text-xs font-medium px-2.5 py-0.5 rounded-full mt-2 inline-block ${badgeClass}`}
       >
@@ -205,29 +225,47 @@ const MatchCard = ({ item }) => {
   );
 };
 
-const ActivityItem = ({ item }) => (
-  <a
-    href="#"
-    className="flex items-center gap-4 py-3 hover:bg-neutral-800/50 -mx-4 px-4 rounded-lg transition-colors"
-  >
-    <div className="w-12 h-12 bg-neutral-800 rounded-md flex-shrink-0 flex items-center justify-center">
-      {item.image_url ? (
-        <img
-          src={item.image_url}
-          alt={item.item_name}
-          className="w-full h-full object-cover rounded-md"
-        />
-      ) : (
-        <span className="text-xs text-neutral-500">{item.category}</span>
-      )}
-    </div>
-    <div className="flex-grow">
-      <p className="font-medium text-neutral-100 truncate">{item.item_name}</p>
-      <p className="text-sm text-neutral-400">{timeAgo(item.created_at)}</p>
-    </div>
-    <ArrowRight className="w-5 h-5 text-neutral-500" />
-  </a>
-);
+const ActivityItem = ({ item }) => {
+  const isLost = item.status === "Lost";
+  const statusBadgeClass = isLost
+    ? "bg-red-900/50 text-red-400"
+    : "bg-green-900/50 text-green-400";
+
+  return (
+    <a
+      href="#"
+      className="flex items-center gap-4 py-3 hover:bg-neutral-800/50 -mx-4 px-4 rounded-lg transition-colors"
+    >
+      <div className="w-12 h-12 bg-neutral-800 rounded-md flex-shrink-0 flex items-center justify-center relative overflow-hidden">
+        {item.image_url ? (
+          <img
+            src={item.image_url}
+            alt={item.title}
+            className="w-full h-full object-cover rounded-md"
+          />
+        ) : (
+          <span className="text-xs text-neutral-500">{item.category}</span>
+        )}
+        {/* Title overlay on the small image */}
+        <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs font-medium px-1 py-0.5 truncate opacity-0 hover:opacity-100 transition-opacity">
+          {item.title}
+        </div>
+      </div>
+      <div className="flex-grow">
+        <p className="font-medium text-neutral-100 truncate">{item.title}</p>
+        <div className="flex items-center gap-2">
+          <span
+            className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusBadgeClass}`}
+          >
+            {item.category}
+          </span>
+          <p className="text-sm text-neutral-400">{timeAgo(item.created_at)}</p>
+        </div>
+      </div>
+      <ArrowRight className="w-5 h-5 text-neutral-500" />
+    </a>
+  );
+};
 
 const EmptyState = ({
   icon: Icon,

@@ -21,6 +21,10 @@ import PostNewItem from "./features/UserDashboard/Pages/userPostItems";
 import UserManagementPage from "./features/AdminDashboard/Pages/adminUserManagement";
 import PostModerationPage from "./features/AdminDashboard/Pages/postModerationPage";
 import AdminSettingsPage from "./features/AdminDashboard/Pages/adminSettings";
+import MyPostsPage from "./features/UserDashboard/Pages/userMypostPage";
+import AboutUsPage from "./features/MainPages/aboutPage";
+import LearnMorePage from "./features/MainPages/learnMorePage";
+import BrowseAllPage from "./features/UserDashboard/Pages/browseAllPage";
 
 function PrivateRouter({ children, isLoading, session }) {
   if (isLoading) {
@@ -168,6 +172,9 @@ function App() {
           }
         ></Route>
 
+        <Route path="/about" element={<AboutUsPage />}></Route>
+        <Route path="/learn-more" element={<LearnMorePage />}></Route>
+
         {/* --- User Dashboard Routes (Protected by PrivateRoute) --- */}
         <Route
           path="/dashboard"
@@ -175,16 +182,29 @@ function App() {
             <PrivateRouter session={session} isLoading={isLoading}>
               <DashboardLayout user={session?.user}>
                 <Outlet />{" "}
-                {/* Outlet is the placeholder where nested routes will be rendered. */}
               </DashboardLayout>
             </PrivateRouter>
           }
         >
           {/* These are the nested pages inside the User Dashboard. */}
-          <Route index element={<UserMainPage />} />{" "}
+          <Route index element={<UserMainPage user={session?.user} />} />
           {/* This renders at /dashboard */}
-          <Route path="profile" element={<UserProfilePage />} />
-          <Route path="post-new" element={<PostNewItem />} />
+          <Route
+            path="profile"
+            element={<UserProfilePage user={session?.user} />}
+          />
+          <Route
+            path="post-new"
+            element={<PostNewItem user={session?.user} />}
+          />
+          <Route
+            path="my-posts"
+            element={<MyPostsPage user={session?.user} />}
+          />
+          <Route
+            path="browse-all"
+            element={<BrowseAllPage user={session?.user} />}
+          />
         </Route>
 
         {/* --- Admin Dashboard Routes (Protected by PrivateRoute and RoleBasedRoute) --- */}
