@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./api/apiClient";
 
 import {
@@ -26,6 +26,8 @@ import AboutUsPage from "./features/MainPages/aboutPage";
 import LearnMorePage from "./features/MainPages/learnMorePage";
 import BrowseAllPage from "./features/UserDashboard/Pages/browseAllPage";
 import HelpPage from "./features/UserDashboard/Pages/userHelpPage";
+import NotificationPage from "./features/UserDashboard/Pages/userNotificationPage";
+import UserSettingsPage from "./features/UserDashboard/Pages/userSettingsPage";
 
 function PrivateRouter({ children, isLoading, session }) {
   if (isLoading) {
@@ -75,70 +77,138 @@ function App() {
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // This is the main function to check for a session and get the user's role.
-    const fetchSessionAndProfile = async () => {
-      // Start by setting loading to true.
-      setIsLoading(true);
+  // Silent refresh function - does NOT touch isLoading
+  const refreshAuth = useCallback(async () => {
+    // Prevent multiple simultaneous refreshes
+    if (window.refreshInProgress) return;
+    window.refreshInProgress = true;
 
+    try {
+      console.log("🔄 Refreshing auth silently...");
+
+      // Get fresh session
       const {
-        data: { session: initialSession },
+        data: { session: freshSession },
       } = await supabase.auth.getSession();
-      setSession(initialSession);
 
-      // If a session exists, fetch the user's role from our 'profiles' table.
-      if (initialSession) {
-        const { data, error } = await supabase
+      if (freshSession?.user) {
+        // Get fresh profile
+        const { data: freshProfile } = await supabase
           .from("profiles")
-          .select("role")
-          .eq("id", initialSession.user.id)
+          .select("role, is_banned")
+          .eq("id", freshSession.user.id)
           .single();
 
-        if (error) {
-          console.error("Error fetching profile:", error);
-          setProfile(null);
-        } else {
-          setProfile(data); // Store the profile data (e.g., { role: 'admin' })
-        }
+        setSession(freshSession);
+        setProfile(freshProfile);
       } else {
-        // If there's no session, ensure the profile is also null.
+        setSession(freshSession);
         setProfile(null);
       }
 
-      // We're done with the initial check, so stop the loading screen.
-      setIsLoading(false);
+      // ✅ NO setIsLoading here - this is a background refresh
+    } catch (error) {
+      console.error("Refresh error:", error);
+    } finally {
+      window.refreshInProgress = false;
+    }
+  }, []);
+
+  // Simplified visibility change handler
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        console.log("👀 Tab visible - refreshing auth");
+        refreshAuth();
+      }
     };
 
-    // Call the function to perform the initial check.
-    fetchSessionAndProfile();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
-    // Set up a listener. Supabase will tell us if the user logs in or out in the future.
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      // When the auth state changes, update our session state.
-      setSession(newSession);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [refreshAuth]);
 
-      // If the user just logged in (newSession exists), refetch their profile.
-      if (newSession) {
-        supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", newSession.user.id)
-          .single()
-          .then(({ data, error }) => {
-            if (error) setProfile(null);
-            else setProfile(data);
-          });
-      } else {
-        // If the user just logged out, clear their profile data.
+  // Initial auth setup - ONLY time we use isLoading
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        console.log("🚀 Initializing auth...");
+
+        // Handle magic link
+        if (window.location.hash.includes("access_token")) {
+          await supabase.auth.exchangeCodeForSession(window.location.href);
+          window.history.replaceState({}, document.title, "/");
+        }
+
+        // Get session
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role, is_banned")
+            .eq("id", session.user.id)
+            .single();
+
+          setProfile(profile);
+        }
+
+        setSession(session);
+        setIsLoading(false);
+
+        // Listen for auth changes
+        const {
+          data: { subscription },
+        } = supabase.auth.onAuthStateChange(async (event, session) => {
+          console.log("Auth event:", event);
+
+          if (session?.user) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("role, is_banned")
+              .eq("id", session.user.id)
+              .single();
+
+            setProfile(profile);
+          } else {
+            setProfile(null);
+          }
+
+          setSession(session);
+
+          // Only set loading false on initial load
+          if (isLoading) {
+            setIsLoading(false);
+          }
+        });
+
+        return () => subscription.unsubscribe();
+      } catch (error) {
+        console.error("Auth error:", error);
+        setSession(null);
         setProfile(null);
+        setIsLoading(false);
       }
-    });
+    };
 
-    // This is a cleanup function. It removes the listener when the app closes to prevent memory leaks.
-    return () => subscription.unsubscribe();
-  }, []); // The empty array `[]` means this `useEffect` only runs once.
+    initAuth();
+  }, []); // Empty dependency array - only run once on mount
+
+  // Absolute failsafe - prevent infinite loading (2 seconds max)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (isLoading) {
+        console.warn("⚠️ Forcing loading to stop after timeout");
+        setIsLoading(false);
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [isLoading]);
 
   return (
     <Router>
@@ -156,7 +226,7 @@ function App() {
               <LandingPage />
             )
           }
-        ></Route>
+        />
 
         <Route
           path="/login"
@@ -171,10 +241,10 @@ function App() {
               <LoginPage />
             )
           }
-        ></Route>
+        />
 
-        <Route path="/about" element={<AboutUsPage />}></Route>
-        <Route path="/learn-more" element={<LearnMorePage />}></Route>
+        <Route path="/about" element={<AboutUsPage />} />
+        <Route path="/learn-more" element={<LearnMorePage />} />
 
         {/* --- User Dashboard Routes (Protected by PrivateRoute) --- */}
         <Route
@@ -182,14 +252,13 @@ function App() {
           element={
             <PrivateRouter session={session} isLoading={isLoading}>
               <DashboardLayout user={session?.user}>
-                <Outlet />{" "}
+                <Outlet />
               </DashboardLayout>
             </PrivateRouter>
           }
         >
           {/* These are the nested pages inside the User Dashboard. */}
           <Route index element={<UserMainPage user={session?.user} />} />
-          {/* This renders at /dashboard */}
           <Route
             path="profile"
             element={<UserProfilePage user={session?.user} />}
@@ -203,8 +272,16 @@ function App() {
             element={<MyPostsPage user={session?.user} />}
           />
           <Route
+            path="notifications"
+            element={<NotificationPage user={session?.user} />}
+          />
+          <Route
             path="browse-all"
             element={<BrowseAllPage user={session?.user} />}
+          />
+          <Route
+            path="settings"
+            element={<UserSettingsPage user={session?.user} />}
           />
           <Route path="help" element={<HelpPage user={session?.user} />} />
         </Route>
@@ -220,7 +297,7 @@ function App() {
                 isLoading={isLoading}
               >
                 <AdminDashboardLayout user={session?.user}>
-                  <Outlet /> {/* Outlet for nested admin routes. */}
+                  <Outlet />
                 </AdminDashboardLayout>
               </RoleBasedRouter>
             </PrivateRouter>

@@ -32,7 +32,6 @@ const menuItems = [
     icon: Bell,
     path: "/dashboard/notifications",
   },
-  { label: "Analytics", icon: TrendingUp, path: "/dashboard/analytics" },
   { label: "Profile", icon: User, path: "/dashboard/profile" },
 ];
 
