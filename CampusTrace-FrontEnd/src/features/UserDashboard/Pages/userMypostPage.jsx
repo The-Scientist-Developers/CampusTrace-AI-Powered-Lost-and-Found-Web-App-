@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { supabase } from "../../../api/apiClient"; // Adjust path as needed
-import { toast } from "react-hot-toast"; // For notifications
-import { Image as ImageIcon, Loader2, Trash2 } from "lucide-react"; // Icons for placeholder and loading
+import { supabase } from "../../../api/apiClient";
+import { toast } from "react-hot-toast";
+import { Image as ImageIcon, Loader2, Trash2 } from "lucide-react";
 
-// --- Helper: Post Status Badge Component ---
 const StatusBadge = ({ status }) => {
   let colorClass = "";
   let text = "";
@@ -39,14 +38,12 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-// --- Main MyPostsPage Component ---
 export default function MyPostsPage({ user }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("active"); // 'active', 'pending', 'resolved'
+  const [activeTab, setActiveTab] = useState("active");
   const [error, setError] = useState(null);
 
-  // Function to fetch posts based on the active tab and user
   const fetchPosts = useCallback(async () => {
     if (!user?.id) {
       setLoading(false);
@@ -69,10 +66,9 @@ export default function MyPostsPage({ user }) {
         category
       `
       )
-      .eq("user_id", user.id) // Filter by the current user's ID
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-    // Apply filtering based on the active tab
     if (activeTab === "active") {
       query = query.eq("moderation_status", "approved");
     } else if (activeTab === "pending") {
@@ -96,12 +92,10 @@ export default function MyPostsPage({ user }) {
     }
   }, [user, activeTab]);
 
-  // useEffect to call fetchPosts when the component mounts or dependencies change
   useEffect(() => {
     fetchPosts();
   }, [fetchPosts]);
 
-  // Function to handle post deletion
   const handleDeletePost = async (postId) => {
     if (
       !window.confirm(
@@ -112,17 +106,15 @@ export default function MyPostsPage({ user }) {
     }
 
     try {
-      // Optimistically remove the post from the UI
       setPosts((currentPosts) =>
         currentPosts.filter((post) => post.id !== postId)
       );
 
-      // Call Supabase to delete the post from the database
       const { error } = await supabase.from("items").delete().eq("id", postId);
 
       if (error) {
         toast.error("Failed to delete post.");
-        fetchPosts(); // Revert UI change by refetching
+        fetchPosts();
         throw error;
       }
 
@@ -149,7 +141,6 @@ export default function MyPostsPage({ user }) {
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <h1 className="text-4xl font-bold text-white mb-8">My Posts</h1>
 
-      {/* Tabs for filtering */}
       <div className="flex border-b border-zinc-700 mb-6">
         {["active", "pending", "resolved"].map((tab) => (
           <button
@@ -167,7 +158,6 @@ export default function MyPostsPage({ user }) {
         ))}
       </div>
 
-      {/* Display Posts */}
       {posts.length === 0 ? (
         <div className="text-center p-12 bg-neutral-900 border border-neutral-800 rounded-xl shadow-lg text-zinc-400">
           <p className="text-lg">No {activeTab} posts found.</p>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { supabase } from "../../../api/apiClient"; // Adjust path as needed
+import { supabase } from "../../../api/apiClient";
 import { toast } from "react-hot-toast";
 import {
   Search,
@@ -10,7 +10,6 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-// --- Debounce Hook (for efficient searching) ---
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
   useEffect(() => {
@@ -20,7 +19,6 @@ function useDebounce(value, delay) {
   return debouncedValue;
 }
 
-// --- Reusable Item Card ---
 const ItemCard = ({ item }) => {
   const isLost = item.status?.toLowerCase() === "lost";
   const badgeClass = isLost
@@ -54,20 +52,17 @@ const ItemCard = ({ item }) => {
   );
 };
 
-// --- Main BrowseAllPage Component ---
 export default function BrowseAllPage({ user }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // --- Filter States ---
   const [searchTerm, setSearchTerm] = useState("");
-  const debouncedSearchTerm = useDebounce(searchTerm, 500); // 500ms delay
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [statusFilter, setStatusFilter] = useState("All");
   const [categoryFilters, setCategoryFilters] = useState([]);
   const [dateFilter, setDateFilter] = useState("");
 
-  // --- Pagination States ---
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPosts, setTotalPosts] = useState(0);
   const postsPerPage = 12;
@@ -83,7 +78,6 @@ export default function BrowseAllPage({ user }) {
     setError(null);
 
     try {
-      // Get the user's university ID first
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("university_id")
@@ -95,14 +89,12 @@ export default function BrowseAllPage({ user }) {
 
       const userUniversityId = profile.university_id;
 
-      // Build the query dynamically
       let query = supabase
         .from("items")
         .select(`*, profiles(full_name, email)`, { count: "exact" })
         .eq("university_id", userUniversityId)
-        .eq("moderation_status", "approved"); // Only show approved posts
+        .eq("moderation_status", "approved");
 
-      // Apply filters
       if (statusFilter !== "All") {
         query = query.eq("status", statusFilter);
       }
@@ -118,7 +110,6 @@ export default function BrowseAllPage({ user }) {
         );
       }
 
-      // Apply pagination
       const from = (currentPage - 1) * postsPerPage;
       const to = from + postsPerPage - 1;
       query = query.range(from, to).order("created_at", { ascending: false });
@@ -163,13 +154,11 @@ export default function BrowseAllPage({ user }) {
       <h1 className="text-4xl font-bold text-white mb-8">Browse All Items</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* --- Filter Sidebar --- */}
         <aside className="lg:col-span-1 bg-neutral-900 border border-neutral-800 rounded-xl shadow-lg p-6 self-start">
           <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
             <Filter className="w-5 h-5 text-red" />
             Filters
           </h2>
-          {/* Status Filter */}
           <div className="mb-6">
             <h3 className="font-semibold text-neutral-300 mb-3">Status</h3>
             <div className="space-y-2">
@@ -191,7 +180,6 @@ export default function BrowseAllPage({ user }) {
               ))}
             </div>
           </div>
-          {/* Category Filter */}
           <div className="mb-6">
             <h3 className="font-semibold text-neutral-300 mb-3">Category</h3>
             <div className="space-y-2">
@@ -217,7 +205,6 @@ export default function BrowseAllPage({ user }) {
               ))}
             </div>
           </div>
-          {/* Date Filter */}
           <div>
             <h3 className="font-semibold text-neutral-300 mb-3">Date</h3>
             <input
@@ -229,9 +216,7 @@ export default function BrowseAllPage({ user }) {
           </div>
         </aside>
 
-        {/* --- Main Content --- */}
         <div className="lg:col-span-3">
-          {/* Search Bar */}
           <div className="relative mb-6">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500" />
             <input
@@ -249,7 +234,6 @@ export default function BrowseAllPage({ user }) {
             </button>
           </div>
 
-          {/* Item Grid */}
           {loading ? (
             <div className="flex justify-center items-center min-h-[400px]">
               <Loader2 className="w-10 h-10 animate-spin text-red" />
@@ -270,7 +254,6 @@ export default function BrowseAllPage({ user }) {
                 ))}
               </div>
 
-              {/* Pagination Controls */}
               <div className="flex justify-between items-center mt-8">
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}

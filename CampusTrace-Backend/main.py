@@ -177,7 +177,6 @@ async def update_profile(
             if hasattr(upload_response, "error") and upload_response.error:
                 raise HTTPException(status_code=500, detail=f"Upload failed: {upload_response.error}")
 
-            # Get public URL
             public_url = supabase.storage.from_("other_images").get_public_url(filename)
             
             if not public_url:
@@ -188,13 +187,11 @@ async def update_profile(
         if not updates:
             raise HTTPException(status_code=400, detail="No profile changes supplied")
 
-        # Update profile
         result = supabase.table("profiles").update(updates).eq("id", current_user_id).execute()
 
         if hasattr(result, "error") and result.error:
             raise HTTPException(status_code=500, detail=f"Update failed: {result.error}")
 
-        # Fetch updated profile
         profile_result = (
             supabase.table("profiles")
             .select("id, full_name, email, avatar_url, role, is_banned")

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { supabase, apiClient } from "../../../api/apiClient"; // Adjust path as needed
+import { supabase, apiClient } from "../../../api/apiClient";
 import { toast } from "react-hot-toast";
 import {
   User,
@@ -12,7 +12,6 @@ import {
   HelpCircle,
 } from "lucide-react";
 
-// --- Reusable Stat Card ---
 const StatCard = ({ label, value, icon: Icon }) => (
   <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-xl shadow-lg flex items-center gap-4">
     <Icon className="w-8 h-8 text-red" />
@@ -23,7 +22,6 @@ const StatCard = ({ label, value, icon: Icon }) => (
   </div>
 );
 
-// --- Main UserProfilePage Component ---
 export default function UserProfilePage({ user }) {
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -32,12 +30,10 @@ export default function UserProfilePage({ user }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  // --- State for editable fields ---
   const [fullName, setFullName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [avatarFile, setAvatarFile] = useState(null);
 
-  // --- Fetch profile and post data ---
   useEffect(() => {
     if (!user?.id) {
       setLoading(false);
@@ -59,7 +55,6 @@ export default function UserProfilePage({ user }) {
         setProfile(profileRes.data);
         setPosts(postsRes.data || []);
 
-        // Initialize editable state
         setFullName(profileRes.data.full_name || "");
         setAvatarUrl(profileRes.data.avatar_url || "");
       } catch (err) {
@@ -73,7 +68,6 @@ export default function UserProfilePage({ user }) {
     fetchData();
   }, [user]);
 
-  // --- Handler for saving profile changes ---
   const handleProfileUpdate = async () => {
     if (!profile) return;
     setIsUploading(true);
@@ -89,11 +83,11 @@ export default function UserProfilePage({ user }) {
         throw new Error("Invalid response from profile update.");
       }
 
-      setProfile(updatedProfile); // Update local profile state
+      setProfile(updatedProfile);
       setAvatarUrl(updatedProfile.avatar_url);
       setFullName(updatedProfile.full_name || "");
-      setAvatarFile(null); // Clear the file input
-      setIsEditing(false); // Exit edit mode
+      setAvatarFile(null);
+      setIsEditing(false);
       toast.success("Profile updated successfully!");
     } catch (err) {
       console.error("Error updating profile:", err);
@@ -103,16 +97,14 @@ export default function UserProfilePage({ user }) {
     }
   };
 
-  // --- Handler for avatar file input change ---
   const onAvatarChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setAvatarFile(file);
-      setAvatarUrl(URL.createObjectURL(file)); // Show a preview
+      setAvatarUrl(URL.createObjectURL(file));
     }
   };
 
-  // Calculate stats from posts
   const totalPosts = posts.length;
   const foundItems = posts.filter(
     (p) => p.status?.toLowerCase() === "found"
@@ -240,44 +232,40 @@ export default function UserProfilePage({ user }) {
         </h2>
         {posts.length > 0 ? (
           <div className="bg-neutral-900 border border-neutral-800 rounded-xl shadow-lg p-4 divide-y divide-neutral-800">
-            {posts.slice(0, 5).map(
-              (
-                post // Show up to 5 posts
-              ) => (
-                <div key={post.id} className="flex items-center gap-4 py-3">
-                  <div className="w-12 h-12 bg-neutral-800 rounded-md flex-shrink-0 flex items-center justify-center">
-                    {post.image_url ? (
-                      <img
-                        src={post.image_url}
-                        alt={post.item_name}
-                        className="w-full h-full object-cover rounded-md"
-                      />
-                    ) : (
-                      <span className="text-xs text-neutral-500">
-                        {post.category}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex-grow">
-                    <p className="font-medium text-white truncate">
-                      {post.item_name}
-                    </p>
-                    <p className="text-sm text-neutral-400">
-                      {new Date(post.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      post.moderation_status === "approved"
-                        ? "bg-green-500/20 text-green-400"
-                        : "bg-yellow-500/20 text-yellow-400"
-                    }`}
-                  >
-                    {post.moderation_status}
-                  </span>
+            {posts.slice(0, 5).map((post) => (
+              <div key={post.id} className="flex items-center gap-4 py-3">
+                <div className="w-12 h-12 bg-neutral-800 rounded-md flex-shrink-0 flex items-center justify-center">
+                  {post.image_url ? (
+                    <img
+                      src={post.image_url}
+                      alt={post.item_name}
+                      className="w-full h-full object-cover rounded-md"
+                    />
+                  ) : (
+                    <span className="text-xs text-neutral-500">
+                      {post.category}
+                    </span>
+                  )}
                 </div>
-              )
-            )}
+                <div className="flex-grow">
+                  <p className="font-medium text-white truncate">
+                    {post.item_name}
+                  </p>
+                  <p className="text-sm text-neutral-400">
+                    {new Date(post.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <span
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    post.moderation_status === "approved"
+                      ? "bg-green-500/20 text-green-400"
+                      : "bg-yellow-500/20 text-yellow-400"
+                  }`}
+                >
+                  {post.moderation_status}
+                </span>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="text-center p-12 bg-neutral-900 border border-neutral-800 rounded-xl">

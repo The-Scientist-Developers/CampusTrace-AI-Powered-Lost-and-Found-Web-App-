@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { supabase } from "../../../api/apiClient"; // Adjust path as needed
+import { supabase } from "../../../api/apiClient";
 import { toast } from "react-hot-toast";
 import { Bell, CheckCheck, MailOpen, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
-// --- Helper: timeAgo function ---
 const timeAgo = (date) => {
   const seconds = Math.floor((new Date() - new Date(date)) / 1000);
   let interval = seconds / 31536000;
@@ -20,7 +19,6 @@ const timeAgo = (date) => {
   return `${Math.floor(seconds)} seconds ago`;
 };
 
-// --- Main NotificationsPage Component ---
 export default function NotificationsPage({ user }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,7 +55,6 @@ export default function NotificationsPage({ user }) {
 
   const handleMarkAsRead = async (notificationId) => {
     try {
-      // Optimistically update the UI
       setNotifications((prev) =>
         prev.map((n) =>
           n.id === notificationId ? { ...n, status: "read" } : n
@@ -70,7 +67,6 @@ export default function NotificationsPage({ user }) {
         .eq("id", notificationId);
 
       if (error) {
-        // Revert UI on error
         fetchNotifications();
         throw error;
       }
@@ -82,7 +78,6 @@ export default function NotificationsPage({ user }) {
 
   const handleMarkAllAsRead = async () => {
     try {
-      // Optimistically update all in UI
       setNotifications((prev) => prev.map((n) => ({ ...n, status: "read" })));
 
       const { error } = await supabase

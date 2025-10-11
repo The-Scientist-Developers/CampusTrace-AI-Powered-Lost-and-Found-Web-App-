@@ -14,7 +14,6 @@ export default function PostNewItem() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  // Handler for image file selection
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -23,22 +22,14 @@ export default function PostNewItem() {
     }
   };
 
-  // Handler to remove the selected image
   const removeImage = () => {
     setImageFile(null);
     setImagePreview("");
   };
 
-  // Handler for form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-
-    // This is where you would handle the final submission to Supabase.
-    // 1. Upload the image file (if it exists) to Supabase Storage.
-    // 2. Get the public URL of the uploaded image.
-    // 3. Insert the form data (title, category, etc.) along with the image URL
-    //    into your 'posts' table in the Supabase database.
 
     try {
       let imageUrl = null;
@@ -71,12 +62,11 @@ export default function PostNewItem() {
         // Create a unique file path
         const filePath = `public/${Date.now()}_${imageFile.name}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("item_images") // Assumes a bucket named 'item-images'
+          .from("item_images")
           .upload(filePath, imageFile);
 
         if (uploadError) throw uploadError;
 
-        // Get the public URL for the uploaded file
         const { data: urlData } = supabase.storage
           .from("item_images")
           .getPublicUrl(filePath);
@@ -101,7 +91,7 @@ export default function PostNewItem() {
       if (insertError) throw insertError;
 
       alert("Item posted successfully!");
-      navigate("/dashboard"); // Navigate back to the dashboard on success
+      navigate("/dashboard");
     } catch (error) {
       console.error("Error posting item:", error);
       alert(`Error: ${error.message}`);
@@ -111,7 +101,6 @@ export default function PostNewItem() {
   };
 
   return (
-    // REMOVED max-w-4xl mx-auto p-4 from here, as DashboardLayout's main already provides it.
     <div className="text-white">
       {/* Page Header */}
       <div className="mb-8">
@@ -192,9 +181,8 @@ export default function PostNewItem() {
               </label>
               <div className="relative">
                 {" "}
-                {/* Added relative for positioning Calendar icon */}
                 <input
-                  type="date" // Use type="date" for a native date picker
+                  type="date"
                   id="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
@@ -269,7 +257,6 @@ export default function PostNewItem() {
           </div>
         </div>
 
-        {/* Form Footer with Submit Button */}
         <div className="p-6 sm:p-8 bg-black/30 border-t border-neutral-800 rounded-b-xl flex justify-end">
           <button
             type="submit"

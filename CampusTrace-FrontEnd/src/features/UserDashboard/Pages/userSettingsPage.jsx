@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { supabase } from "../../../api/apiClient"; // Adjust path as needed
-import { toast } from "react-hot-toast";
+import { supabase } from "../../../api/apiClient";
 import { Bell, AlertTriangle, Trash2, Loader2, LogOut } from "lucide-react";
 
-// --- Reusable UI Components ---
 const SectionCard = ({ title, description, children }) => (
   <div className="bg-neutral-900 border border-neutral-800 rounded-xl shadow-lg">
     <div className="p-6 border-b border-neutral-800">
@@ -43,29 +41,22 @@ const SettingToggle = ({
   </div>
 );
 
-// --- Main UserSettingsPage Component ---
 export default function UserSettingsPage({ user }) {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // --- State for settings ---
-  // In a real app, these values would come from a 'user_preferences' table
   const [matchNotifications, setMatchNotifications] = useState(true);
   const [weeklySummary, setWeeklySummary] = useState(false);
 
-  // --- Handlers for saving changes ---
   const handlePreferencesSave = async () => {
     setIsSaving(true);
-    // Placeholder logic: In a real app, you would 'upsert' these settings
-    // into a 'user_preferences' table linked to the user.id
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     toast.success("Notification preferences saved!");
     setIsSaving(false);
   };
 
   const handleDeleteAccount = async () => {
-    // A confirmation step to prevent accidental deletion
     const confirmationText = "DELETE";
     const promptResponse = window.prompt(
       `This action is irreversible. You will lose all your posts and data. To confirm, please type "${confirmationText}" below:`
@@ -78,11 +69,9 @@ export default function UserSettingsPage({ user }) {
 
     setIsDeleting(true);
     try {
-      // Call a Supabase Edge Function or RPC to delete user data and auth user
       const { error } = await supabase.rpc("delete_user_account");
       if (error) throw error;
 
-      // The onAuthStateChange listener in App.jsx will handle the redirect on logout
       toast.success("Account deleted successfully. You will be logged out.");
       await supabase.auth.signOut();
     } catch (err) {
@@ -94,7 +83,6 @@ export default function UserSettingsPage({ user }) {
   };
 
   if (loading && false) {
-    // Disabled loading for this simple version
     return (
       <div className="p-8 text-center text-zinc-400">Loading settings...</div>
     );
@@ -136,7 +124,6 @@ export default function UserSettingsPage({ user }) {
         </div>
       </SectionCard>
 
-      {/* --- Danger Zone for Account Deletion --- */}
       <div className="mt-12">
         <h2 className="text-xl font-bold text-red-500 mb-2 flex items-center gap-2">
           <AlertTriangle />

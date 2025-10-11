@@ -30,7 +30,6 @@ const faqData = [
   },
 ];
 
-// --- Reusable Accordion Item Component ---
 const AccordionItem = ({ question, answer }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -60,7 +59,6 @@ const AccordionItem = ({ question, answer }) => {
   );
 };
 
-// --- Main HelpPage Component ---
 export default function HelpPage() {
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8 animate-fadeIn">
@@ -94,7 +92,7 @@ export default function HelpPage() {
           out to our support team.
         </p>
         <a
-          href="mailto:support@campustrace.com" // Replace with your actual support email
+          href="mailto:support@campustrace.com"
           className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-red text-white font-semibold rounded-lg hover:bg-red/80 transition-colors shadow-md"
         >
           <Mail className="w-5 h-5" />

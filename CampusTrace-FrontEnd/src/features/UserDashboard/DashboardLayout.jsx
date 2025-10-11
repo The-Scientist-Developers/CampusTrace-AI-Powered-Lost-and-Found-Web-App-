@@ -139,7 +139,6 @@ export default function DashboardLayout({ children, user }) {
           .eq("status", "unread");
 
         if (error) {
-          // Treat missing table (404) as zero notifications.
           if (status === 404 || error.code === "PGRST204") {
             setNotificationCount(0);
             return;
@@ -337,7 +336,6 @@ export default function DashboardLayout({ children, user }) {
             overflow-hidden
           `}
         >
-          {/* Stats Card (only visible when sidebar is open or on mobile) */}
           {(isSidebarOpen || mobileMenu) && (
             <div className="p-3 sm:p-4 flex-shrink-0 animate-fadeIn">
               <div className="p-3 sm:p-4 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-xl border border-zinc-700/50 shadow-lg hover:shadow-xl transition-shadow duration-300">

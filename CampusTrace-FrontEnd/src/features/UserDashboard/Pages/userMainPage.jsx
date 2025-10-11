@@ -8,14 +8,12 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../../../api/apiClient"; // Make sure path is correct
-
-// ... (timeAgo, MatchCard, ActivityItem, EmptyState components can remain the same) ...
+import { supabase } from "../../../api/apiClient";
 
 export default function UserMainPage({ user }) {
   const [myRecentPosts, setMyRecentPosts] = useState([]);
   const [communityActivity, setCommunityActivity] = useState([]);
-  const [possibleMatches, setPossibleMatches] = useState([]); // <-- NEW STATE FOR MATCHES
+  const [possibleMatches, setPossibleMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -29,7 +27,6 @@ export default function UserMainPage({ user }) {
 
     const fetchDashboardData = async () => {
       try {
-        // --- 1. Fetch User's "Lost" Items and Recent Community Activity ---
         const [myLostItemsRes, myFoundItemsRes, communityActivityRes] =
           await Promise.all([
             supabase
@@ -65,20 +62,17 @@ export default function UserMainPage({ user }) {
         setMyRecentPosts(merged);
         setCommunityActivity(communityActivityRes.data || []);
 
-        // --- 2. Fetch Possible Matches Based on User's Lost Items ---
         if (userLostItems.length > 0) {
-          // Get the categories of the user's lost items
           const lostItemCategories = [
             ...new Set(userLostItems.map((item) => item.category)),
           ];
 
-          // Find "Found" items from other users that match those categories
           const { data: matchesData, error: matchesError } = await supabase
             .from("items")
             .select("*")
-            .eq("category", "Found") // Must be a "Found" item
-            .not("user_id", "eq", user.id) // Must NOT be the user's own post
-            .in("category", lostItemCategories) // Category must match user's lost items
+            .eq("category", "Found")
+            .not("user_id", "eq", user.id)
+            .in("category", lostItemCategories)
             .limit(4);
 
           if (matchesError) throw matchesError;
@@ -110,7 +104,6 @@ export default function UserMainPage({ user }) {
 
   return (
     <div className="text-white space-y-12">
-      {/* --- NEW: Possible Matches Section --- */}
       <section>
         <h2 className="text-2xl font-bold text-white mb-4">
           Possible Matches For Your Lost Items
@@ -135,7 +128,6 @@ export default function UserMainPage({ user }) {
         )}
       </section>
 
-      {/* --- My Recent Posts Section (Unchanged) --- */}
       <section>
         <h2 className="text-2xl font-bold text-white mb-4">My Recent Posts</h2>
         {myRecentPosts.length > 0 ? (
@@ -155,7 +147,6 @@ export default function UserMainPage({ user }) {
         )}
       </section>
 
-      {/* --- Recent Community Activity Section --- */}
       <section>
         <h2 className="text-2xl font-bold text-white mb-4">
           Recent Community Activity (Lost & Found)
@@ -175,8 +166,6 @@ export default function UserMainPage({ user }) {
     </div>
   );
 }
-
-// --- Helper Components (for completeness) ---
 
 const timeAgo = (date) => {
   const seconds = Math.floor((new Date() - new Date(date)) / 1000);
@@ -210,7 +199,6 @@ const MatchCard = ({ item }) => {
         ) : (
           <p className="text-neutral-500 text-sm">No Image</p>
         )}
-        {/* Title overlay on the image */}
         <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs font-medium px-2 py-1 truncate opacity-0 hover:opacity-100 transition-opacity">
           {item.title}
         </div>
@@ -246,7 +234,6 @@ const ActivityItem = ({ item }) => {
         ) : (
           <span className="text-xs text-neutral-500">{item.category}</span>
         )}
-        {/* Title overlay on the small image */}
         <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs font-medium px-1 py-0.5 truncate opacity-0 hover:opacity-100 transition-opacity">
           {item.title}
         </div>
