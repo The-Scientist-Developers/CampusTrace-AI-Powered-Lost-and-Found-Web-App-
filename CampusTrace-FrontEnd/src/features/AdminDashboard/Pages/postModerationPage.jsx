@@ -188,6 +188,7 @@ export default function PostModerationPage({ user }) {
 
   const handleUpdateStatus = async (postId, newStatus) => {
     try {
+      // This is the only call you need. It updates Supabase directly.
       const { data, error } = await supabase
         .from("items")
         .update({ moderation_status: newStatus })
@@ -197,6 +198,7 @@ export default function PostModerationPage({ user }) {
 
       if (error) throw error;
 
+      // Update the UI with the new status
       setPosts((currentPosts) =>
         currentPosts.map((post) =>
           post.id === postId
@@ -204,25 +206,18 @@ export default function PostModerationPage({ user }) {
             : post
         )
       );
-      const res = await apiClient.postStatusUpdate(postId, newStatus);
-      const updated = (res.updated && res.updated[0]) || res.updated || res;
-      setPosts((currentPosts) =>
-        currentPosts.map((post) =>
-          post.id === postId
-            ? { ...post, moderation_status: updated.moderation_status }
-            : post
-        )
-      );
 
+      // Also update the modal if it's open
       if (selectedPost && selectedPost.id === postId) {
         setSelectedPost((prev) => ({
           ...prev,
-          moderation_status: updated.moderation_status,
+          moderation_status: data.moderation_status,
         }));
       }
     } catch (err) {
       console.error("Error updating post status:", err);
-      alert(`Failed to update status: ${err.message}`);
+      // Use toast for user feedback instead of alert
+      toast.error(`Failed to update status: ${err.message}`);
     }
   };
 

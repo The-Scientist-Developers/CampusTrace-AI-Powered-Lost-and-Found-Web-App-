@@ -3,3 +3,7 @@ uvicorn[standard]
 supabase
 python-multipart
 pydantic-settings
+google-generativeai
+torch
+transformers
+Pillow

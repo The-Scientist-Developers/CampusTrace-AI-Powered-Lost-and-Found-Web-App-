@@ -5,7 +5,6 @@ import {
   useNavigate,
   useLocation,
 } from "react-router-dom";
-
 import {
   FileText,
   Search,
@@ -22,16 +21,11 @@ import {
 } from "lucide-react";
 import logo2 from "../../Images/logo2.png";
 
-// Menu items configuration
 const menuItems = [
   { label: "Dashboard", icon: Grid, path: "/dashboard", exact: true },
   { label: "My Posts", icon: FileText, path: "/dashboard/my-posts" },
   { label: "Browse All", icon: Search, path: "/dashboard/browse-all" },
-  {
-    label: "Notifications",
-    icon: Bell,
-    path: "/dashboard/notifications",
-  },
+  { label: "Notifications", icon: Bell, path: "/dashboard/notifications" },
   { label: "Profile", icon: User, path: "/dashboard/profile" },
 ];
 
@@ -44,22 +38,21 @@ const headItems = [
   { label: "Post New Item", icon: Plus, path: "/dashboard/post-new" },
 ];
 
-// NavLink component with proper active state handling
 const NavLink = ({ item, isOpen, exact }) => {
   return (
     <RouterNavLink
       to={item.path}
       end={exact}
       className={({ isActive }) => `
-        flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200
-        ${
-          isActive
-            ? "bg-gradient-to-r from-red-600/30 to-red-700/20 text-red-300 border-l-4 border-red-500 shadow-lg shadow-red-500/10"
-            : "text-zinc-400 hover:bg-zinc-800/60 hover:text-white border-l-4 border-transparent"
-        }
-        ${!isOpen ? "justify-center" : ""}
-        active:scale-95
-    `}
+                flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200
+                ${
+                  isActive
+                    ? "bg-gradient-to-r from-red-600/30 to-red-700/20 text-red-300 border-l-4 border-red-500 shadow-lg shadow-red-500/10"
+                    : "text-zinc-400 hover:bg-zinc-800/60 hover:text-white border-l-4 border-transparent"
+                }
+                ${!isOpen ? "justify-center" : ""}
+                active:scale-95
+            `}
     >
       {({ isActive }) => (
         <>
@@ -100,16 +93,57 @@ export default function DashboardLayout({ children, user }) {
   });
   const [mobileMenu, setMobileMenu] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
+  const [profile, setProfile] = useState(null);
   const [itemsPostedCount, setItemsPostedCount] = useState(0);
   const [notificationCount, setNotificationCount] = useState(0);
 
   useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchProfile = async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+      if (error) {
+        console.error("Error fetching profile:", error);
+      } else {
+        setProfile(data);
+      }
+    };
+    fetchProfile();
+
+    const profileSubscription = supabase
+      .channel("public:profiles")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${user.id}`,
+        },
+        (payload) => {
+          setProfile(payload.new);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(profileSubscription);
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!profile?.university_id) return;
+
     const fetchMonthlyItems = async () => {
       try {
         const { count, error } = await supabase
           .from("items")
           .select("*", { count: "exact", head: true })
+          .eq("university_id", profile.university_id)
           .gte(
             "created_at",
             new Date(
@@ -118,7 +152,6 @@ export default function DashboardLayout({ children, user }) {
               1
             ).toISOString()
           );
-
         if (error) throw error;
         setItemsPostedCount(count || 0);
       } catch (err) {
@@ -126,32 +159,27 @@ export default function DashboardLayout({ children, user }) {
       }
     };
     fetchMonthlyItems();
-  }, []);
+  }, [profile]);
 
   useEffect(() => {
+    if (!user?.id) return;
     const fetchNotificationCount = async () => {
-      if (!user?.id) return;
       try {
         const { count, error, status } = await supabase
           .from("notifications")
           .select("*", { head: true, count: "exact" })
           .eq("recipient_id", user.id)
           .eq("status", "unread");
-
-        if (error) {
-          if (status === 404 || error.code === "PGRST204") {
-            setNotificationCount(0);
-            return;
-          }
-          throw error;
+        if (error && status !== 406) {
+          // 406 is a range error we can ignore
+          setNotificationCount(0);
+        } else {
+          setNotificationCount(count || 0);
         }
-        setNotificationCount(count || 0);
       } catch (err) {
-        console.debug("Notification count fetch skipped:", err?.message || err);
         setNotificationCount(0);
       }
     };
-
     fetchNotificationCount();
   }, [user?.id]);
 
@@ -175,10 +203,7 @@ export default function DashboardLayout({ children, user }) {
 
   useEffect(() => {
     const handleResize = () => {
-      const isDesktop = window.innerWidth >= 768;
-      if (!isDesktop) {
-        setMobileMenu(false);
-      }
+      if (window.innerWidth < 768) setMobileMenu(false);
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
@@ -195,41 +220,31 @@ export default function DashboardLayout({ children, user }) {
   }, [location]);
 
   const handleLogout = async () => {
-    if (isLoggingOut) return;
-    try {
-      setIsLoggingOut(true);
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      navigate("/login");
-    } catch (error) {
-      console.error("Logout error:", error);
-      alert("Failed to logout. Please try again.");
-    } finally {
-      setIsLoggingOut(false);
-    }
+    setIsLoggingOut(true);
+    await supabase.auth.signOut();
+    navigate("/login");
+    setIsLoggingOut(false);
   };
 
-  const username = user?.email?.split("@")[0] || "User";
-  const initial = username[0].toUpperCase();
+  const displayName =
+    profile?.full_name || user?.email?.split("@")[0] || "User";
+  const avatarUrl =
+    profile?.avatar_url ||
+    `https://ui-avatars.com/api/?name=${displayName[0]}&background=ef4444&color=ffffff`;
 
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-zinc-950 to-black text-zinc-300 overflow-hidden">
-      {/* Mobile Menu Overlay */}
       {mobileMenu && (
         <div
-          className="fixed inset-0 bg-black/70 z-40 md:hidden animate-fadeIn"
+          className="fixed inset-0 bg-black/70 z-40 md:hidden"
           onClick={() => setMobileMenu(false)}
         />
       )}
-
-      {/* Header */}
       <header className="h-14 sm:h-16 px-3 sm:px-4 lg:px-6 bg-black/80 backdrop-blur-xl border-b border-zinc-800/60 flex items-center justify-between shadow-2xl z-30 flex-shrink-0">
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* Mobile menu button */}
           <button
             onClick={() => setMobileMenu(!mobileMenu)}
-            className="md:hidden p-1.5 sm:p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white rounded-lg transition-all duration-200 active:scale-95"
-            aria-label="Toggle mobile menu"
+            className="md:hidden p-1.5 sm:p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white rounded-lg"
           >
             {mobileMenu ? (
               <X className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -237,17 +252,12 @@ export default function DashboardLayout({ children, user }) {
               <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
             )}
           </button>
-
-          {/* Desktop sidebar toggle button */}
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="hidden md:block p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white rounded-lg transition-all duration-200 active:scale-95"
-            aria-label="Toggle sidebar"
+            className="hidden md:block p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white rounded-lg"
           >
             <Menu className="w-5 h-5" />
           </button>
-
-          {/* Main Logo and Brand in Header */}
           <div className="flex items-center gap-2">
             <img
               src={logo2}
@@ -264,10 +274,8 @@ export default function DashboardLayout({ children, user }) {
             </div>
           </div>
         </div>
-
         <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3">
-          {/* Search bar - desktop only */}
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-zinc-800/50 rounded-lg border border-zinc-700 hover:border-zinc-600 transition-colors focus-within:border-red-500/50">
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-zinc-800/50 rounded-lg border border-zinc-700">
             <Search className="w-4 h-4 text-zinc-500" />
             <input
               type="text"
@@ -275,11 +283,9 @@ export default function DashboardLayout({ children, user }) {
               className="bg-transparent text-sm outline-none w-40 xl:w-52 text-white placeholder-zinc-500"
             />
           </div>
-
-          {/* Notification bell */}
           <button
             onClick={() => navigate("/dashboard/notifications")}
-            className="p-1.5 sm:p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white rounded-lg transition-all duration-200 relative active:scale-95"
+            className="p-1.5 sm:p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white rounded-lg relative"
           >
             <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
             {notificationCount > 0 && (
@@ -288,57 +294,40 @@ export default function DashboardLayout({ children, user }) {
               </span>
             )}
           </button>
-
-          {/* Post New Item button */}
           <button
             onClick={() => navigate("/dashboard/post-new")}
-            className="px-2.5 py-1.5 sm:px-4 sm:py-2 bg-red-600 text-white font-semibold text-xs sm:text-sm
-                        rounded-lg hover:bg-red-700 active:bg-red-800 transition-all duration-200 shadow-lg hover:shadow-red-500/25 flex items-center gap-1.5 sm:gap-2 active:scale-95"
+            className="px-2.5 py-1.5 sm:px-4 sm:py-2 bg-red-600 text-white font-semibold text-xs sm:text-sm rounded-lg hover:bg-red-700 flex items-center gap-1.5 sm:gap-2"
           >
             <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span className="hidden xs:inline sm:inline">Post</span>
             <span className="hidden sm:inline">New Item</span>
           </button>
-
-          {/* User avatar - desktop only */}
           <div className="hidden sm:flex items-center gap-2">
             <img
-              src={`https://ui-avatars.com/api/?name=${initial}&background=ef4444&color=ffffff`}
+              src={avatarUrl}
               alt="User"
-              className="w-8 h-8 rounded-full border-2 border-zinc-700 hover:border-red-500 transition-colors cursor-pointer"
+              className="w-8 h-8 rounded-full border-2 border-zinc-700 hover:border-red-500 cursor-pointer"
               onClick={() => navigate("/dashboard/profile")}
             />
-            {user?.email && (
-              <span className="hidden lg:block text-sm text-zinc-400 max-w-[120px] xl:max-w-[180px] truncate">
-                {user.email}
-              </span>
-            )}
+            <span className="hidden lg:block text-sm text-zinc-400 max-w-[120px] xl:max-w-[180px] truncate">
+              {displayName}
+            </span>
           </div>
         </div>
       </header>
-
-      {/* Body container */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
         <aside
-          className={`
-            fixed md:relative inset-y-0 left-0 z-50
-            bg-zinc-900/98 md:bg-black/95 backdrop-blur-xl border-r border-zinc-800/60
-            flex flex-col transition-all duration-300 ease-in-out
-            top-14 sm:top-16 md:top-0
-            ${
-              mobileMenu
-                ? "translate-x-0 w-72 shadow-2xl"
-                : "-translate-x-full md:translate-x-0"
-            }
-            ${isSidebarOpen ? "md:w-64" : "md:w-16"}
-            h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] md:h-full
-            overflow-hidden
-          `}
+          className={`fixed md:relative inset-y-0 left-0 z-50 bg-zinc-900/98 md:bg-black/95 backdrop-blur-xl border-r border-zinc-800/60 flex flex-col transition-all duration-300 ease-in-out top-14 sm:top-16 md:top-0 ${
+            mobileMenu
+              ? "translate-x-0 w-72 shadow-2xl"
+              : "-translate-x-full md:translate-x-0"
+          } ${
+            isSidebarOpen ? "md:w-64" : "md:w-16"
+          } h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] md:h-full overflow-hidden`}
         >
           {(isSidebarOpen || mobileMenu) && (
-            <div className="p-3 sm:p-4 flex-shrink-0 animate-fadeIn">
-              <div className="p-3 sm:p-4 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-xl border border-zinc-700/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <div className="p-3 sm:p-4 flex-shrink-0">
+              <div className="p-3 sm:p-4 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-xl border border-zinc-700/50 shadow-lg">
                 <div className="flex justify-between items-center text-xs text-zinc-400 mb-2">
                   <span className="font-medium">This Month</span>
                   <div className="flex items-center gap-1 text-green-400">
@@ -353,9 +342,7 @@ export default function DashboardLayout({ children, user }) {
               </div>
             </div>
           )}
-
-          {/* Navigation */}
-          <nav className="flex-1 p-2 sm:p-3 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent hover:scrollbar-thumb-zinc-600">
+          <nav className="flex-1 p-2 sm:p-3 space-y-1 overflow-y-auto">
             {headItems.map((item, i) => (
               <NavLink
                 key={`head-${i}`}
@@ -381,12 +368,9 @@ export default function DashboardLayout({ children, user }) {
               />
             ))}
           </nav>
-
-          {/* User info & Sign Out */}
           <div className="p-2 sm:p-3 border-t border-zinc-800/60 flex-shrink-0 space-y-2 sm:space-y-3 bg-black/20">
-            {/* User info */}
             {(isSidebarOpen || mobileMenu) && user && (
-              <div className="px-3 py-2.5 bg-zinc-800/60 rounded-lg border border-zinc-700/50 hover:bg-zinc-800/80 transition-colors duration-200">
+              <div className="px-3 py-2.5 bg-zinc-800/60 rounded-lg border border-zinc-700/50">
                 <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wide">
                   Logged in as
                 </p>
@@ -395,16 +379,12 @@ export default function DashboardLayout({ children, user }) {
                 </p>
               </div>
             )}
-
-            {/* Sign out button */}
             <button
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
-                text-zinc-400 hover:bg-red-500/20 hover:text-red-400 border border-transparent hover:border-red-500/30
-                transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95
-                ${!isSidebarOpen && !mobileMenu ? "justify-center" : ""}
-              `}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:bg-red-500/20 hover:text-red-400 transition-all duration-200 disabled:opacity-50 ${
+                !isSidebarOpen && !mobileMenu ? "justify-center" : ""
+              }`}
             >
               <LogOut className="w-5 h-5 flex-shrink-0" />
               {(isSidebarOpen || mobileMenu) && (
@@ -412,14 +392,13 @@ export default function DashboardLayout({ children, user }) {
                   {isLoggingOut ? "Signing out..." : "Sign Out"}
                 </span>
               )}
+              {/* --- FIX: Corrected the variable from 'isOpen' to 'isSidebarOpen' --- */}
               {!isSidebarOpen && !mobileMenu && (
                 <span className="sr-only">Sign Out</span>
               )}
             </button>
           </div>
         </aside>
-
-        {/* Main Content */}
         <main className="flex-1 overflow-y-auto bg-gradient-to-b from-zinc-900/30 to-black/50">
           <div className="p-3 sm:p-4 md:p-6 lg:p-8 min-h-full">{children}</div>
         </main>
