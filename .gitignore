@@ -1,0 +1,13 @@
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environment folders
+venv/
+.env/
+*.venv/
+
+# Node modules
+CampusTrace-FrontEnd/node_modules/

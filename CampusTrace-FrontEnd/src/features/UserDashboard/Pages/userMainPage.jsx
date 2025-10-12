@@ -1,3 +1,5 @@
+// In CampusTrace-FrontEnd/src/features/UserDashboard/Pages/userMainPage.jsx
+
 import React, { useState, useEffect } from "react";
 import {
   LogOut,
@@ -27,25 +29,39 @@ export default function UserMainPage({ user }) {
 
     const fetchDashboardData = async () => {
       try {
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("university_id")
+          .eq("id", user.id)
+          .single();
+
+        if (profileError || !profile) {
+          throw new Error(
+            "Could not find user profile to determine university."
+          );
+        }
+        const userUniversityId = profile.university_id;
+
         const [myLostItemsRes, myFoundItemsRes, communityActivityRes] =
           await Promise.all([
             supabase
               .from("items")
               .select("*")
               .eq("user_id", user.id)
-              .eq("category", "Lost")
+              .eq("status", "Lost") // Corrected from 'category'
               .order("created_at", { ascending: false })
               .limit(5),
             supabase
               .from("items")
               .select("*")
               .eq("user_id", user.id)
-              .eq("category", "Found")
+              .eq("status", "Found") // Corrected from 'category'
               .order("created_at", { ascending: false })
               .limit(5),
             supabase
               .from("items")
               .select("*")
+              .eq("university_id", userUniversityId)
               .order("created_at", { ascending: false })
               .limit(10),
           ]);
@@ -70,7 +86,8 @@ export default function UserMainPage({ user }) {
           const { data: matchesData, error: matchesError } = await supabase
             .from("items")
             .select("*")
-            .eq("category", "Found")
+            .eq("university_id", userUniversityId)
+            .eq("status", "Found") // Corrected from 'category'
             .not("user_id", "eq", user.id)
             .in("category", lostItemCategories)
             .limit(4);
@@ -183,7 +200,7 @@ const timeAgo = (date) => {
 };
 
 const MatchCard = ({ item }) => {
-  const isLost = item.category === "Lost";
+  const isLost = item.status === "Lost";
   const badgeClass = isLost
     ? "bg-red-900/50 text-red-400"
     : "bg-green-900/50 text-green-400";
@@ -244,7 +261,7 @@ const ActivityItem = ({ item }) => {
           <span
             className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusBadgeClass}`}
           >
-            {item.category}
+            {item.status}
           </span>
           <p className="text-sm text-neutral-400">{timeAgo(item.created_at)}</p>
         </div>

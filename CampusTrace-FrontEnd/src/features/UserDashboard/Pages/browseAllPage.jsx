@@ -1,3 +1,5 @@
+// In CampusTrace-FrontEnd/src/features/UserDashboard/Pages/browseAllPage.jsx
+
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../../api/apiClient";
 import { toast } from "react-hot-toast";
@@ -8,6 +10,8 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
+  Mail,
+  MessageSquare, // Icon for other contact info
 } from "lucide-react";
 
 function useDebounce(value, delay) {
@@ -25,28 +29,62 @@ const ItemCard = ({ item }) => {
     ? "bg-red/20 text-red"
     : "bg-green-500/20 text-green-400";
 
+  const posterName =
+    item.profiles?.full_name ||
+    item.profiles?.email.split("@")[0] ||
+    "Anonymous";
+
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-xl shadow-lg overflow-hidden transition-transform hover:-translate-y-1">
-      <div className="w-full h-48 flex items-center justify-center bg-zinc-800 p-4">
+    <div className="bg-neutral-900 border border-neutral-800 rounded-xl shadow-lg overflow-hidden flex flex-col h-full transition-transform hover:-translate-y-1">
+      <div className="w-full h-48 flex items-center justify-center bg-zinc-800 p-2 relative">
         {item.image_url ? (
           <img
             src={item.image_url}
-            alt={item.item_name}
-            className="max-w-full max-h-full object-contain rounded-lg"
+            alt={item.title}
+            className="max-w-full max-h-full object-contain rounded-md"
           />
         ) : (
           <p className="text-neutral-600 text-sm">No Image</p>
         )}
-      </div>
-      <div className="p-4">
-        <h3 className="text-lg font-semibold text-white truncate">
-          {item.item_name}
-        </h3>
         <span
-          className={`text-xs font-medium px-2.5 py-1 rounded-full mt-2 inline-block ${badgeClass}`}
+          className={`absolute top-2 right-2 text-xs font-medium px-2.5 py-1 rounded-full ${badgeClass}`}
         >
           {item.status}
         </span>
+      </div>
+      <div className="p-4 flex flex-col flex-grow">
+        <h3 className="text-lg font-semibold text-white truncate mb-1">
+          {item.title}
+        </h3>
+        <p className="text-sm text-zinc-400 mb-3 line-clamp-2 flex-grow">
+          {item.description}
+        </p>
+
+        <div className="text-xs text-zinc-500 space-y-1.5 mb-4 border-t border-neutral-800 pt-3 mt-auto">
+          <p>
+            <strong>By:</strong> {posterName}
+          </p>
+          <p>
+            <strong>Location:</strong> {item.location || "N/A"}
+          </p>
+          <p>
+            <strong>Date:</strong>{" "}
+            {new Date(item.created_at).toLocaleDateString()}
+          </p>
+          {item.contact_info && (
+            <p>
+              <strong>Contact:</strong> {item.contact_info}
+            </p>
+          )}
+        </div>
+
+        <a
+          href={`mailto:${item.profiles?.email}`}
+          className="w-full text-center px-4 py-2 bg-red-600 text-white font-semibold text-sm rounded-md hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+        >
+          <Mail className="w-4 h-4" />
+          Contact via Email
+        </a>
       </div>
     </div>
   );
@@ -106,7 +144,7 @@ export default function BrowseAllPage({ user }) {
       }
       if (debouncedSearchTerm) {
         query = query.or(
-          `item_name.ilike.%${debouncedSearchTerm}%,description.ilike.%${debouncedSearchTerm}%`
+          `title.ilike.%${debouncedSearchTerm}%,description.ilike.%${debouncedSearchTerm}%`
         );
       }
 

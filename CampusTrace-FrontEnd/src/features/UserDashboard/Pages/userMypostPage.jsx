@@ -60,6 +60,8 @@ export default function MyPostsPage({ user }) {
         `
         id, 
         title, 
+        description,
+        location,
         image_url, 
         moderation_status, 
         created_at,
@@ -170,7 +172,7 @@ export default function MyPostsPage({ user }) {
           {posts.map((post) => (
             <div
               key={post.id}
-              className="group relative bg-neutral-900 border border-neutral-800 rounded-xl shadow-lg overflow-hidden transition-transform hover:-translate-y-1"
+              className="group relative bg-neutral-900 border border-neutral-800 rounded-xl shadow-lg overflow-hidden transition-transform hover:-translate-y-1 flex flex-col h-full"
             >
               <button
                 onClick={() => handleDeletePost(post.id)}
@@ -182,7 +184,7 @@ export default function MyPostsPage({ user }) {
                 <Trash2 className="w-4 h-4" />
               </button>
 
-              <div className="w-full h-48 flex items-center justify-center bg-zinc-800 p-4">
+              <div className="w-full h-48 flex items-center justify-center bg-zinc-800 p-2">
                 {post.image_url ? (
                   <img
                     src={post.image_url}
@@ -193,14 +195,28 @@ export default function MyPostsPage({ user }) {
                   <ImageIcon className="w-16 h-16 text-zinc-500" />
                 )}
               </div>
-              <div className="p-4">
-                <h3 className="text-lg font-semibold text-white truncate">
+              <div className="p-4 flex flex-col flex-grow">
+                <h3 className="text-lg font-semibold text-white truncate mb-1">
                   {post.title}
                 </h3>
-                <p className="text-zinc-500 text-sm mb-3">
-                  {post.category || "Uncategorized"}
+                <p className="text-sm text-zinc-400 mb-2 line-clamp-2 flex-grow">
+                  {post.description}
                 </p>
-                <StatusBadge status={post.moderation_status} />
+                <div className="text-xs text-zinc-500 space-y-1 mb-4 border-t border-neutral-800 pt-3 mt-auto">
+                  <p>
+                    <strong>Type:</strong> {post.category}
+                  </p>
+                  <p>
+                    <strong>Location:</strong> {post.location || "N/A"}
+                  </p>
+                  <p>
+                    <strong>Posted:</strong>{" "}
+                    {new Date(post.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="mt-auto">
+                  <StatusBadge status={post.moderation_status} />
+                </div>
               </div>
             </div>
           ))}

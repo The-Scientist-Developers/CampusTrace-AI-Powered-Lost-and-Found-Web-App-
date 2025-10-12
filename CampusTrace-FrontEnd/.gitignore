@@ -24,3 +24,9 @@ dist-ssr
 *.sw?
 
 .env
+
+# Python bytecode cache
+__pycache__/
+
+# Virtual environment directory
+venv/
