@@ -186,16 +186,6 @@ export default function AdminDashboardLayout({ children, user }) {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Search bar */}
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-zinc-800/50 rounded-lg border border-zinc-700 hover:border-zinc-600 transition-colors">
-            <Search className="w-4 h-4 text-zinc-500" />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="bg-transparent text-sm outline-none w-32 lg:w-48 text-white placeholder-zinc-500"
-            />
-          </div>
-
           {/* Notification bell */}
           <button className="p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white rounded-md transition-colors relative">
             <Bell className="w-5 h-5" />

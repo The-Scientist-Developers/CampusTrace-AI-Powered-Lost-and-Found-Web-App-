@@ -171,7 +171,6 @@ export default function DashboardLayout({ children, user }) {
           .eq("recipient_id", user.id)
           .eq("status", "unread");
         if (error && status !== 406) {
-          // 406 is a range error we can ignore
           setNotificationCount(0);
         } else {
           setNotificationCount(count || 0);
@@ -275,14 +274,6 @@ export default function DashboardLayout({ children, user }) {
           </div>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3">
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-zinc-800/50 rounded-lg border border-zinc-700">
-            <Search className="w-4 h-4 text-zinc-500" />
-            <input
-              type="text"
-              placeholder="Search items..."
-              className="bg-transparent text-sm outline-none w-40 xl:w-52 text-white placeholder-zinc-500"
-            />
-          </div>
           <button
             onClick={() => navigate("/dashboard/notifications")}
             className="p-1.5 sm:p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white rounded-lg relative"
@@ -332,7 +323,6 @@ export default function DashboardLayout({ children, user }) {
                   <span className="font-medium">This Month</span>
                   <div className="flex items-center gap-1 text-green-400">
                     <TrendingUp className="w-3.5 h-3.5" />
-                    <span className="text-[10px]">+12%</span>
                   </div>
                 </div>
                 <p className="text-2xl sm:text-3xl font-bold text-white mb-1">

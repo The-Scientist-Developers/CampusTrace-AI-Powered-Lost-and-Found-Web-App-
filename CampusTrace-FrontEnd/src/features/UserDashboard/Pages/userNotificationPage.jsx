@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { supabase } from "../../../api/apiClient";
+import { supabase } from "../../../api/apiClient"; // We'll use this for direct updates
 import { toast } from "react-hot-toast";
 import { Bell, CheckCheck, MailOpen, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -32,6 +32,7 @@ export default function NotificationsPage({ user }) {
     }
     setLoading(true);
     try {
+      // Fetch directly from Supabase since we have policies in place
       const { data, error } = await supabase
         .from("notifications")
         .select("*")
@@ -55,45 +56,38 @@ export default function NotificationsPage({ user }) {
 
   const handleMarkAsRead = async (notificationId) => {
     try {
+      // Optimistically update the UI
       setNotifications((prev) =>
         prev.map((n) =>
           n.id === notificationId ? { ...n, status: "read" } : n
         )
       );
-
+      // Update the database
       const { error } = await supabase
         .from("notifications")
         .update({ status: "read" })
         .eq("id", notificationId);
-
-      if (error) {
-        fetchNotifications();
-        throw error;
-      }
+      if (error) throw error;
     } catch (err) {
       toast.error("Failed to mark as read.");
       console.error("Error updating notification:", err);
+      fetchNotifications(); // Re-fetch to correct UI on error
     }
   };
 
   const handleMarkAllAsRead = async () => {
     try {
       setNotifications((prev) => prev.map((n) => ({ ...n, status: "read" })));
-
       const { error } = await supabase
         .from("notifications")
         .update({ status: "read" })
         .eq("recipient_id", user.id)
         .eq("status", "unread");
-
-      if (error) {
-        fetchNotifications();
-        throw error;
-      }
+      if (error) throw error;
       toast.success("All notifications marked as read!");
     } catch (err) {
       toast.error("Failed to mark all as read.");
-      console.error("Error updating all notifications:", err);
+      fetchNotifications();
     }
   };
 
@@ -109,7 +103,7 @@ export default function NotificationsPage({ user }) {
   }
 
   if (error) {
-    return <div className="p-8 text-center text-red">{error}</div>;
+    return <div className="p-8 text-center text-red-500">{error}</div>;
   }
 
   return (
@@ -122,7 +116,7 @@ export default function NotificationsPage({ user }) {
         {unreadCount > 0 && (
           <button
             onClick={handleMarkAllAsRead}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-800 text-zinc-300 font-semibold text-sm rounded-md hover:bg-zinc-700 transition"
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-800 text-zinc-300 font-semibold text-sm rounded-md hover:bg-zinc-700"
           >
             <CheckCheck className="w-4 h-4" />
             Mark All as Read ({unreadCount})
@@ -145,39 +139,43 @@ export default function NotificationsPage({ user }) {
           {notifications.map((notification) => (
             <div
               key={notification.id}
-              className={`p-4 flex items-center gap-4 transition-colors ${
-                notification.status === "unread" ? "bg-red/5" : ""
+              className={`p-4 flex items-start gap-4 transition-colors ${
+                notification.status === "unread" ? "bg-red-500/5" : ""
               }`}
             >
-              {notification.status === "unread" && (
-                <span
-                  className="w-2.5 h-2.5 bg-red rounded-full flex-shrink-0"
-                  title="Unread"
-                ></span>
-              )}
+              <div className="flex-shrink-0 mt-1">
+                {notification.status === "unread" && (
+                  <span
+                    className="w-2.5 h-2.5 bg-red-500 rounded-full flex-shrink-0"
+                    title="Unread"
+                  ></span>
+                )}
+              </div>
               <div className="flex-grow">
                 <p className="text-neutral-200">{notification.message}</p>
                 <p className="text-xs text-neutral-500 mt-1">
                   {timeAgo(notification.created_at)}
                 </p>
               </div>
-              {notification.status === "unread" && (
-                <button
-                  onClick={() => handleMarkAsRead(notification.id)}
-                  className="p-2 rounded-full text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors flex-shrink-0"
-                  title="Mark as read"
-                >
-                  <MailOpen className="w-5 h-5" />
-                </button>
-              )}
-              {notification.link_to && (
-                <Link
-                  to={notification.link_to}
-                  className="px-3 py-1 bg-zinc-700 text-white text-xs font-semibold rounded-md hover:bg-zinc-600 transition"
-                >
-                  View
-                </Link>
-              )}
+              <div className="flex-shrink-0 flex items-center gap-2">
+                {notification.status === "unread" && (
+                  <button
+                    onClick={() => handleMarkAsRead(notification.id)}
+                    className="p-2 rounded-full text-zinc-400 hover:bg-zinc-700 hover:text-white"
+                    title="Mark as read"
+                  >
+                    <MailOpen className="w-5 h-5" />
+                  </button>
+                )}
+                {notification.link_to && (
+                  <Link
+                    to={notification.link_to}
+                    className="px-3 py-1 bg-zinc-700 text-white text-xs font-semibold rounded-md hover:bg-zinc-600"
+                  >
+                    View
+                  </Link>
+                )}
+              </div>
             </div>
           ))}
         </div>
