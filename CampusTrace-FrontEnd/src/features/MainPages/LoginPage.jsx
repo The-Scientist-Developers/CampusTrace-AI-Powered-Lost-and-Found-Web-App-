@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { apiClient } from "../../api/apiClient";
+import { supabase } from "../../api/apiClient";
 
 const LockIcon = ({ className }) => (
   <svg
@@ -45,8 +45,25 @@ export default function LoginPage() {
     setMessage({ text: "", type: "error" });
 
     try {
-      const response = await apiClient.signInWithMagicLink(email);
-      setMessage({ text: response.message, type: "success" });
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email,
+        options: {
+          // This tells Supabase where to send the user back to after they click the link.
+          emailRedirectTo: window.location.origin,
+        },
+      });
+
+      if (error) {
+        throw new Error(
+          error.message ||
+            "An unknown error occurred while sending the magic link."
+        );
+      }
+
+      setMessage({
+        text: "Login link sent successfully. Please check your email.",
+        type: "success",
+      });
       setEmail("");
     } catch (error) {
       setMessage({ text: error.message, type: "error" });

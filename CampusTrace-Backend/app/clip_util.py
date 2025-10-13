@@ -11,10 +11,10 @@ def load_model():
     """Loads the CLIP model and processor into memory."""
     global model, processor
     if model is None:
-        print("➡️ Loading CLIP model... (This might take a moment on first run)")
+        print("Loading CLIP model... (This might take a moment on first run)")
         model = CLIPModel.from_pretrained(MODEL_NAME)
         processor = CLIPProcessor.from_pretrained(MODEL_NAME)
-        print("✅ CLIP model loaded successfully.")
+        print("CLIP model loaded successfully.")
 
 def get_image_embedding(image: Image.Image) -> list[float]:
     """

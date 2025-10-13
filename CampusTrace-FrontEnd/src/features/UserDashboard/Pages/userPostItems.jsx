@@ -52,8 +52,14 @@ export default function PostNewItem() {
         formData.append("image_file", imageFile);
       }
 
+      // --- FIX: Add Authorization Header ---
+      const token = (await supabase.auth.getSession()).data.session
+        ?.access_token;
       const response = await fetch("http://localhost:8000/api/items/create", {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
 

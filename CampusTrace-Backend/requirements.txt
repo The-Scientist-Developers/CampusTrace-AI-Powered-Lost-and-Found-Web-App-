@@ -3,7 +3,13 @@ uvicorn[standard]
 supabase
 python-multipart
 pydantic-settings
+email-validator
 google-generativeai
 torch
 transformers
 Pillow
+click
+h11
+PyJWT
+protobuf
+python-dotenv
