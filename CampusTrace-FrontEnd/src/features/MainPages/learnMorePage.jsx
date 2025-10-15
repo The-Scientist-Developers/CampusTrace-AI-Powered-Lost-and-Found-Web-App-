@@ -5,12 +5,14 @@ import { Server, BrainCircuit, ShieldCheck } from "lucide-react";
 const FeatureSection = ({ icon: Icon, title, children }) => (
   <section className="mb-16 animate-fade-in-up">
     <div className="flex items-center gap-4 mb-4">
-      <div className="bg-red/20 p-3 rounded-full">
-        <Icon className="w-6 h-6 text-red" />
+      <div className="bg-primary-600/10 p-3 rounded-full">
+        <Icon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
       </div>
-      <h2 className="text-3xl font-bold text-white">{title}</h2>
+      <h2 className="text-3xl font-bold text-neutral-900 dark:text-white">
+        {title}
+      </h2>
     </div>
-    <div className="text-neutral-400 text-lg space-y-4 leading-relaxed border-l-2 border-neutral-800 pl-8">
+    <div className="text-neutral-600 dark:text-neutral-400 text-lg space-y-4 leading-relaxed border-l-2 border-neutral-200 dark:border-neutral-800 pl-8 ml-5">
       {children}
     </div>
   </section>
@@ -18,13 +20,13 @@ const FeatureSection = ({ icon: Icon, title, children }) => (
 
 export default function LearnMorePage() {
   return (
-    <div className="bg-black text-zinc-300 min-h-screen pt-20 pb-12">
+    <div className="bg-white dark:bg-black text-neutral-700 dark:text-zinc-300 min-h-screen pt-28 pb-12">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <header className="text-center mb-16 animate-fade-in-up">
-          <p className="text-red font-semibold tracking-widest uppercase mb-2">
+          <p className="text-primary-600 dark:text-primary-500 font-semibold tracking-widest uppercase mb-2">
             Our Technology
           </p>
-          <h1 className="text-5xl md:text-6xl font-extrabold text-white">
+          <h1 className="text-5xl md:text-6xl font-extrabold text-neutral-900 dark:text-white">
             How It Works
           </h1>
         </header>
@@ -72,7 +74,7 @@ export default function LearnMorePage() {
         <div className="text-center mt-16 animate-fade-in-up">
           <Link
             to="/login"
-            className="px-8 py-3 bg-red text-white text-lg font-bold rounded-full shadow-xl hover:bg-red/80 transition-all transform hover:scale-105"
+            className="px-8 py-3 bg-primary-600 text-white text-lg font-bold rounded-full shadow-lg hover:bg-primary-700 transition-all transform hover:scale-105"
           >
             Join Campus Trace
           </Link>

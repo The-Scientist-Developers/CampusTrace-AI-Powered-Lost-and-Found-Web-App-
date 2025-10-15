@@ -1,5 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { supabase } from "../../api/apiClient";
+import { useTheme } from "../../contexts/ThemeContext";
+import ReCAPTCHA from "react-google-recaptcha";
+import toast from "react-hot-toast";
 
 const LockIcon = ({ className }) => (
   <svg
@@ -19,7 +22,7 @@ const LockIcon = ({ className }) => (
 
 const LogoIcon = () => (
   <svg
-    className="mx-auto h-12 w-auto text-zinc-200"
+    className="mx-auto h-12 w-auto text-neutral-700 dark:text-zinc-200"
     xmlns="http://www.w3.org/2000/svg"
     fill="none"
     viewBox="0 0 24 24"
@@ -35,98 +38,160 @@ const LogoIcon = () => (
 );
 
 export default function LoginPage() {
+  const { theme } = useTheme();
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState({ text: "", type: "error" });
+  const [captchaValue, setCaptchaValue] = useState(null);
+  const recaptchaRef = useRef();
 
-  const handleLogin = async (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    setIsLoading(true);
-    setMessage({ text: "", type: "error" });
 
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email,
-        options: {
-          // This tells Supabase where to send the user back to after they click the link.
-          emailRedirectTo: window.location.origin,
-        },
-      });
-
-      if (error) {
-        throw new Error(
-          error.message ||
-            "An unknown error occurred while sending the magic link."
-        );
-      }
-
-      setMessage({
-        text: "Login link sent successfully. Please check your email.",
-        type: "success",
-      });
-      setEmail("");
-    } catch (error) {
-      setMessage({ text: error.message, type: "error" });
+    if (!captchaValue) {
+      toast.error("Please complete the CAPTCHA.");
+      return;
     }
 
-    setIsLoading(false);
+    setIsLoading(true);
+    const toastId = toast.loading("Processing...");
+
+    try {
+      if (isSignUp) {
+        // --- Handle Sign Up via our backend for CAPTCHA verification ---
+        const response = await fetch("http://localhost:8000/api/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            password,
+            captchaToken: captchaValue,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || "Sign up failed.");
+        }
+
+        if (data.user && data.session === null) {
+          toast.success(
+            "Sign up successful! Please check your email to confirm your account.",
+            { id: toastId }
+          );
+        } else {
+          // This case handles auto-confirmation (if enabled in Supabase)
+          toast.success("Sign up successful! You are now logged in.", {
+            id: toastId,
+          });
+        }
+        // Reset form on successful signup
+        setEmail("");
+        setPassword("");
+      } else {
+        // --- Handle Sign In directly with Supabase (it has rate limiting) ---
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        toast.success("Signed in successfully!", { id: toastId });
+        // The onAuthStateChange listener in App.jsx will handle the redirect
+      }
+    } catch (error) {
+      toast.error(error.message, { id: toastId });
+    } finally {
+      setIsLoading(false);
+      setCaptchaValue(null);
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset();
+      }
+    }
   };
 
-  const messageColor =
-    message.type === "success" ? "text-green-400" : "text-red-400";
-
   return (
-    <div className="bg-zinc-950 min-h-screen flex items-center justify-center p-4">
+    <div className="bg-neutral-100 dark:bg-zinc-950 min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <LogoIcon />
-          <h2 className="mt-6 text-2xl sm:text-3xl font-bold tracking-tight text-zinc-100">
-            Campus Trace
+          <h2 className="mt-6 text-2xl sm:text-3xl font-bold tracking-tight text-neutral-800 dark:text-zinc-100">
+            {isSignUp ? "Create an Account" : "Sign in to Campus Trace"}
           </h2>
-          <p className="mt-2 text-sm text-zinc-400">
-            Sign in to find what you're looking for.
+          <p className="mt-2 text-sm text-neutral-600 dark:text-zinc-400">
+            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+            <button
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+              }}
+              className="font-medium text-primary-600 hover:text-primary-500"
+            >
+              {isSignUp ? "Sign In" : "Sign Up"}
+            </button>
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
-          <div>
-            <label htmlFor="email-address" className="sr-only">
-              Email address
-            </label>
-            <input
-              id="email-address"
-              name="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading}
-              className="relative block w-full appearance-none rounded-md border border-zinc-700 bg-zinc-900 px-3 py-3 text-zinc-100 placeholder-zinc-500 focus:z-10 focus:border-zinc-400 focus:outline-none focus:ring-zinc-400 sm:text-sm disabled:opacity-50"
-              placeholder="Enter your university email address"
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="rounded-md shadow-sm -space-y-px">
+            <div>
+              <label htmlFor="email-address" className="sr-only">
+                Email address
+              </label>
+              <input
+                id="email-address"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
+                className="relative block w-full appearance-none rounded-t-md border border-neutral-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-3 text-neutral-900 dark:text-zinc-100 placeholder-neutral-500 focus:z-10 focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm disabled:opacity-50"
+                placeholder="University email address"
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="sr-only">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete={isSignUp ? "new-password" : "current-password"}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
+                className="relative block w-full appearance-none rounded-b-md border border-neutral-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-3 text-neutral-900 dark:text-zinc-100 placeholder-neutral-500 focus:z-10 focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm disabled:opacity-50"
+                placeholder="Password"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <ReCAPTCHA
+              ref={recaptchaRef}
+              sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+              onChange={(value) => setCaptchaValue(value)}
+              theme={theme}
             />
           </div>
 
           <div>
             <button
               type="submit"
-              disabled={isLoading}
-              className="group relative flex w-full justify-center rounded-md border border-transparent bg-red py-3 px-4 text-sm font-semibold text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:ring-offset-zinc-950 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              disabled={isLoading || !captchaValue}
+              className="group relative flex w-full justify-center rounded-md border border-transparent bg-primary-600 py-3 px-4 text-sm font-semibold text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-950 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                <LockIcon className="h-5 w-5 text-red-100" />
+                <LockIcon className="h-5 w-5 text-primary-200" />
               </span>
-              {isLoading ? "Sending Link..." : "Send Magic Link"}
+              {isLoading ? "Processing..." : isSignUp ? "Sign Up" : "Sign In"}
             </button>
           </div>
         </form>
-
-        <div className="h-5">
-          {message.text && (
-            <p className={`text-sm text-center font-medium ${messageColor}`}>
-              {message.text}
-            </p>
-          )}
-        </div>
       </div>
     </div>
   );

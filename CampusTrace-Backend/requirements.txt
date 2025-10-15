@@ -13,3 +13,4 @@ h11
 PyJWT
 protobuf
 python-dotenv
+httpx

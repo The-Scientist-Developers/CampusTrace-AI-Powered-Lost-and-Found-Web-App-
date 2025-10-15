@@ -1,487 +1,3 @@
-// import React, { useState, useEffect, useCallback, useRef } from "react";
-// import { useLocation } from "react-router-dom";
-// import { supabase } from "../../../api/apiClient";
-// import { toast } from "react-hot-toast";
-// import {
-//   Search,
-//   Camera,
-//   Loader2,
-//   Filter,
-//   ChevronLeft,
-//   ChevronRight,
-//   Mail,
-//   X,
-//   ChevronDown,
-// } from "lucide-react";
-
-// function useDebounce(value, delay) {
-//   const [debouncedValue, setDebouncedValue] = useState(value);
-//   useEffect(() => {
-//     const handler = setTimeout(() => setDebouncedValue(value), delay);
-//     return () => clearTimeout(handler);
-//   }, [value, delay]);
-//   return debouncedValue;
-// }
-
-// const ItemDetailsModal = ({ item, onClose }) => {
-//   if (!item) return null;
-//   const posterName =
-//     item.profiles?.full_name ||
-//     (item.profiles?.email ? item.profiles.email.split("@")[0] : "Anonymous");
-//   return (
-//     <div
-//       className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4 animate-fadeIn"
-//       onClick={onClose}
-//     >
-//       <div
-//         className="bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-//         onClick={(e) => e.stopPropagation()}
-//       >
-//         <div className="flex justify-between items-center pb-4 border-b border-neutral-800 mb-4">
-//           <h2 className="text-2xl font-bold text-white">{item.title}</h2>
-//           <button
-//             onClick={onClose}
-//             className="p-2 rounded-full hover:bg-zinc-800 text-zinc-400 hover:text-white"
-//           >
-//             <X className="w-6 h-6" />
-//           </button>
-//         </div>
-//         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-//           <div className="w-full h-64 flex items-center justify-center bg-zinc-800 p-2 rounded-lg">
-//             {item.image_url ? (
-//               <img
-//                 src={item.image_url}
-//                 alt={item.title}
-//                 className="max-w-full max-h-full object-contain rounded-md"
-//               />
-//             ) : (
-//               <p className="text-neutral-600 text-sm">No Image</p>
-//             )}
-//           </div>
-//           <div className="space-y-4">
-//             <div>
-//               <p className="text-neutral-500 text-xs uppercase tracking-wider">
-//                 Description
-//               </p>
-//               <p className="text-neutral-300 text-sm whitespace-pre-wrap">
-//                 {item.description || "N/A"}
-//               </p>
-//             </div>
-//             <div>
-//               <p className="text-neutral-500 text-xs uppercase tracking-wider">
-//                 Posted By
-//               </p>
-//               <p className="text-white font-semibold">{posterName}</p>
-//             </div>
-//             <div>
-//               <p className="text-neutral-500 text-xs uppercase tracking-wider">
-//                 Location
-//               </p>
-//               <p className="text-neutral-300">{item.location || "N/A"}</p>
-//             </div>
-//             {item.contact_info && (
-//               <div>
-//                 <p className="text-neutral-500 text-xs uppercase tracking-wider">
-//                   Contact
-//                 </p>
-//                 <p className="text-neutral-300">{item.contact_info}</p>
-//               </div>
-//             )}
-//           </div>
-//         </div>
-//         <div className="mt-6 pt-4 border-t border-neutral-800">
-//           <a
-//             href={`mailto:${item.profiles?.email}`}
-//             className="w-full text-center px-4 py-3 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 transition flex items-center justify-center gap-2"
-//           >
-//             <Mail className="w-5 h-5" />
-//             Contact Poster via Email
-//           </a>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// const ItemCard = ({ item, onClick }) => {
-//   const isLost = item.status?.toLowerCase() === "lost";
-//   const badgeClass = isLost
-//     ? "bg-red/20 text-red"
-//     : "bg-green-500/20 text-green-400";
-//   return (
-//     <div
-//       className="bg-neutral-900 border border-neutral-800 rounded-xl shadow-lg overflow-hidden flex flex-col h-full transition-transform hover:-translate-y-1 cursor-pointer"
-//       onClick={() => onClick(item)}
-//     >
-//       <div className="w-full h-48 flex items-center justify-center bg-zinc-800 p-2 relative">
-//         {item.image_url ? (
-//           <img
-//             src={item.image_url}
-//             alt={item.title}
-//             className="max-w-full max-h-full object-contain rounded-md"
-//           />
-//         ) : (
-//           <p className="text-neutral-600 text-sm">No Image</p>
-//         )}
-//         <span
-//           className={`absolute top-2 right-2 text-xs font-medium px-2.5 py-1 rounded-full ${badgeClass}`}
-//         >
-//           {item.status}
-//         </span>
-//       </div>
-//       <div className="p-4 flex flex-col flex-grow">
-//         <h3 className="text-lg font-semibold text-white truncate mb-1">
-//           {item.title}
-//         </h3>
-//         <p className="text-sm text-zinc-400 mb-3 line-clamp-2 flex-grow">
-//           {item.description}
-//         </p>
-//       </div>
-//     </div>
-//   );
-// };
-
-// const FilterSection = ({ title, children }) => {
-//   const [isOpen, setIsOpen] = useState(true);
-//   return (
-//     <div className="border-b border-neutral-800 last:border-b-0 py-4">
-//       <button
-//         onClick={() => setIsOpen(!isOpen)}
-//         className="w-full flex justify-between items-center text-left"
-//       >
-//         <h3 className="font-semibold text-neutral-300">{title}</h3>
-//         <ChevronDown
-//           className={`w-5 h-5 text-zinc-400 transition-transform duration-300 ${
-//             isOpen ? "rotate-180" : ""
-//           }`}
-//         />
-//       </button>
-//       <div
-//         className={`overflow-hidden transition-all duration-300 ease-in-out ${
-//           isOpen ? "max-h-96 mt-4" : "max-h-0"
-//         }`}
-//       >
-//         <div className="space-y-2">{children}</div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default function BrowseAllPage({ user }) {
-//   const [posts, setPosts] = useState([]);
-//   const [loading, setLoading] = useState(true);
-//   const [isImageSearching, setIsImageSearching] = useState(false);
-//   const [error, setError] = useState(null);
-//   const [selectedItem, setSelectedItem] = useState(null);
-//   const location = useLocation();
-//   const fileInputRef = useRef(null);
-
-//   const [searchTerm, setSearchTerm] = useState("");
-//   const debouncedSearchTerm = useDebounce(searchTerm, 500);
-//   const [statusFilter, setStatusFilter] = useState("All");
-//   const [categoryFilters, setCategoryFilters] = useState([]);
-//   const [dateFilter, setDateFilter] = useState("");
-//   const [currentPage, setCurrentPage] = useState(1);
-//   const [totalPosts, setTotalPosts] = useState(0);
-//   const postsPerPage = 12;
-
-//   useEffect(() => {
-//     const itemIdFromState = location.state?.itemId;
-//     if (itemIdFromState) {
-//       const fetchItem = async () => {
-//         const { data } = await supabase
-//           .from("items")
-//           .select(`*, profiles(full_name, email)`)
-//           .eq("id", itemIdFromState)
-//           .single();
-//         if (data) setSelectedItem(data);
-//       };
-//       fetchItem();
-//     }
-//   }, [location.state]);
-
-//   const fetchPosts = useCallback(
-//     async (isSearchReset = false) => {
-//       if (!user?.id) {
-//         setLoading(false);
-//         setError("User not available.");
-//         return;
-//       }
-//       setLoading(true);
-//       if (isSearchReset) {
-//         setSearchTerm("");
-//       }
-//       setError(null);
-//       try {
-//         const { data: profile } = await supabase
-//           .from("profiles")
-//           .select("university_id")
-//           .eq("id", user.id)
-//           .single();
-//         if (!profile) throw new Error("Could not find user profile.");
-//         let query = supabase
-//           .from("items")
-//           .select(`*, profiles(full_name, email)`, { count: "exact" })
-//           .eq("university_id", profile.university_id)
-//           .eq("moderation_status", "approved");
-//         if (statusFilter !== "All") query = query.eq("status", statusFilter);
-//         if (categoryFilters.length > 0)
-//           query = query.in("category", categoryFilters);
-//         if (dateFilter) query = query.gte("created_at", dateFilter);
-//         if (debouncedSearchTerm)
-//           query = query.or(
-//             `title.ilike.%${debouncedSearchTerm}%,description.ilike.%${debouncedSearchTerm}%,ai_tags.cs.{${debouncedSearchTerm}}`
-//           );
-//         const from = (currentPage - 1) * postsPerPage;
-//         const to = from + postsPerPage - 1;
-//         query = query.range(from, to).order("created_at", { ascending: false });
-//         const { data, error, count } = await query;
-//         if (error) throw error;
-//         setPosts(data || []);
-//         setTotalPosts(count || 0);
-//       } catch (err) {
-//         console.error("Error fetching posts:", err);
-//         setError("Failed to load posts.");
-//         toast.error("Failed to load posts.");
-//       } finally {
-//         setLoading(false);
-//       }
-//     },
-//     [
-//       user,
-//       debouncedSearchTerm,
-//       statusFilter,
-//       categoryFilters,
-//       dateFilter,
-//       currentPage,
-//     ]
-//   );
-
-//   useEffect(() => {
-//     fetchPosts();
-//   }, [
-//     debouncedSearchTerm,
-//     statusFilter,
-//     categoryFilters,
-//     dateFilter,
-//     currentPage,
-//   ]);
-
-//   const handleImageSearch = async (event) => {
-//     const file = event.target.files[0];
-//     if (!file) return;
-
-//     setIsImageSearching(true);
-//     setLoading(true);
-//     setError(null);
-//     toast.loading("Analyzing image and searching...");
-
-//     const formData = new FormData();
-//     formData.append("image_file", file);
-
-//     try {
-//       // --- FIX: Get the session token ---
-//       const {
-//         data: { session },
-//       } = await supabase.auth.getSession();
-//       const token = session?.access_token;
-//       if (!token) throw new Error("Authentication token not found.");
-
-//       const response = await fetch(
-//         "http://localhost:8000/api/items/image-search",
-//         {
-//           method: "POST",
-//           // --- FIX: Add the Authorization header ---
-//           headers: {
-//             Authorization: `Bearer ${token}`,
-//           },
-//           body: formData,
-//         }
-//       );
-//       if (!response.ok) {
-//         const errorData = await response.json();
-//         throw new Error(errorData.detail || "Image search failed.");
-//       }
-//       const results = await response.json();
-//       setPosts(results);
-//       setTotalPosts(results.length);
-//       setCurrentPage(1);
-//       toast.success(`Found ${results.length} potential matches!`);
-//     } catch (err) {
-//       setError(err.message);
-//       toast.error(err.message);
-//     } finally {
-//       setIsImageSearching(false);
-//       setLoading(false);
-//       toast.dismiss();
-//       if (fileInputRef.current) fileInputRef.current.value = "";
-//     }
-//   };
-
-//   const handleCategoryChange = (category) => {
-//     setCategoryFilters((prev) =>
-//       prev.includes(category)
-//         ? prev.filter((c) => c !== category)
-//         : [...prev, category]
-//     );
-//   };
-//   const totalPages = Math.ceil(totalPosts / postsPerPage);
-
-//   return (
-//     <div className="max-w-screen-xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-//       <h1 className="text-4xl font-bold text-white mb-8">Browse All Items</h1>
-//       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-//         <aside className="lg:col-span-1 bg-neutral-900 border border-neutral-800 rounded-xl shadow-lg p-6 self-start">
-//           <h2 className="text-xl font-semibold text-white mb-2 flex items-center gap-2">
-//             <Filter className="w-5 h-5 text-red" />
-//             Filters
-//           </h2>
-
-//           <FilterSection title="Status">
-//             {["All", "Lost", "Found"].map((status) => (
-//               <label
-//                 key={status}
-//                 className="flex items-center gap-2 text-neutral-400 cursor-pointer"
-//               >
-//                 <input
-//                   type="radio"
-//                   name="status"
-//                   value={status}
-//                   checked={statusFilter === status}
-//                   onChange={(e) => setStatusFilter(e.target.value)}
-//                   className="form-radio bg-neutral-700 border-neutral-600 text-red focus:ring-red"
-//                 />
-//                 {status}
-//               </label>
-//             ))}
-//           </FilterSection>
-
-//           <FilterSection title="Category">
-//             {[
-//               "Electronics",
-//               "Documents",
-//               "Clothing",
-//               "Accessories",
-//               "Other",
-//             ].map((cat) => (
-//               <label
-//                 key={cat}
-//                 className="flex items-center gap-2 text-neutral-400 cursor-pointer"
-//               >
-//                 <input
-//                   type="checkbox"
-//                   checked={categoryFilters.includes(cat)}
-//                   onChange={() => handleCategoryChange(cat)}
-//                   className="form-checkbox bg-neutral-700 border-neutral-600 text-red focus:ring-red rounded"
-//                 />
-//                 {cat}
-//               </label>
-//             ))}
-//           </FilterSection>
-
-//           <FilterSection title="Date">
-//             <input
-//               type="date"
-//               value={dateFilter}
-//               onChange={(e) => setDateFilter(e.target.value)}
-//               className="w-full bg-neutral-800 border border-neutral-700 rounded-lg p-2 text-sm focus:ring-2 focus:ring-red"
-//             />
-//           </FilterSection>
-//         </aside>
-
-//         <div className="lg:col-span-3">
-//           <div className="relative mb-6">
-//             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500" />
-//             <input
-//               type="text"
-//               placeholder="Search by text or keywords..."
-//               value={searchTerm}
-//               onChange={(e) => setSearchTerm(e.target.value)}
-//               className="w-full pl-12 pr-12 py-3 bg-neutral-900 border border-neutral-800 rounded-xl"
-//             />
-//             <input
-//               type="file"
-//               ref={fileInputRef}
-//               hidden
-//               accept="image/*"
-//               onChange={handleImageSearch}
-//             />
-//             <button
-//               onClick={() => fileInputRef.current.click()}
-//               disabled={isImageSearching}
-//               className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white disabled:opacity-50"
-//               title="Search by image"
-//             >
-//               <Camera className="w-5 h-5" />
-//             </button>
-//           </div>
-
-//           {loading ? (
-//             <div className="flex justify-center items-center min-h-[400px]">
-//               <Loader2 className="w-10 h-10 animate-spin text-red" />
-//               {isImageSearching && (
-//                 <p className="ml-4 text-zinc-400">Analyzing image...</p>
-//               )}
-//             </div>
-//           ) : error ? (
-//             <div className="text-center p-12 bg-neutral-900 rounded-xl text-red">
-//               {error}
-//             </div>
-//           ) : posts.length === 0 ? (
-//             <div className="text-center p-12 bg-neutral-900 rounded-xl text-neutral-500">
-//               <p>No posts found.</p>
-//               {isImageSearching && (
-//                 <button
-//                   onClick={() => fetchPosts(true)}
-//                   className="mt-4 text-red underline"
-//                 >
-//                   Reset Search
-//                 </button>
-//               )}
-//             </div>
-//           ) : (
-//             <>
-//               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-//                 {posts.map((post) => (
-//                   <ItemCard
-//                     key={post.id}
-//                     item={post}
-//                     onClick={setSelectedItem}
-//                   />
-//                 ))}
-//               </div>
-//               <div className="flex justify-between items-center mt-8">
-//                 <button
-//                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-//                   disabled={currentPage === 1}
-//                   className="flex items-center gap-2 px-4 py-2 bg-neutral-800 rounded-md disabled:opacity-50"
-//                 >
-//                   <ChevronLeft className="w-4 h-4" /> Previous
-//                 </button>
-//                 <span className="text-sm text-neutral-400">
-//                   Page {currentPage} of {totalPages}
-//                 </span>
-//                 <button
-//                   onClick={() =>
-//                     setCurrentPage((p) => Math.min(totalPages, p + 1))
-//                   }
-//                   disabled={currentPage === totalPages}
-//                   className="flex items-center gap-2 px-4 py-2 bg-neutral-800 rounded-md disabled:opacity-50"
-//                 >
-//                   Next <ChevronRight className="w-4 h-4" />
-//                 </button>
-//               </div>
-//             </>
-//           )}
-//         </div>
-//       </div>
-//       <ItemDetailsModal
-//         item={selectedItem}
-//         onClose={() => setSelectedItem(null)}
-//       />
-//     </div>
-//   );
-// }
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "../../../api/apiClient";
@@ -497,7 +13,6 @@ import {
   X,
   ChevronDown,
 } from "lucide-react";
-import { useTheme } from "../../../contexts/ThemeContext";
 
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -523,12 +38,12 @@ const ItemDetailsModal = ({ item, onClose }) => {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center pb-4 border-b border-neutral-200 dark:border-neutral-800 mb-4">
-          <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">
+          <h2 className="text-2xl font-bold text-neutral-800 dark:text-white">
             {item.title}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-neutral-200 dark:hover:bg-zinc-800 text-neutral-600 dark:text-zinc-400 hover:text-neutral-900 dark:hover:text-white"
+            className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-zinc-800 text-neutral-500 dark:text-zinc-400"
           >
             <X className="w-6 h-6" />
           </button>
@@ -542,12 +57,12 @@ const ItemDetailsModal = ({ item, onClose }) => {
                 className="max-w-full max-h-full object-contain rounded-md"
               />
             ) : (
-              <p className="text-neutral-600 text-sm">No Image</p>
+              <p className="text-neutral-500 text-sm">No Image</p>
             )}
           </div>
           <div className="space-y-4">
             <div>
-              <p className="text-neutral-600 dark:text-neutral-500 text-xs uppercase tracking-wider">
+              <p className="text-neutral-500 dark:text-neutral-500 text-xs uppercase tracking-wider">
                 Description
               </p>
               <p className="text-neutral-700 dark:text-neutral-300 text-sm whitespace-pre-wrap">
@@ -555,15 +70,15 @@ const ItemDetailsModal = ({ item, onClose }) => {
               </p>
             </div>
             <div>
-              <p className="text-neutral-600 dark:text-neutral-500 text-xs uppercase tracking-wider">
+              <p className="text-neutral-500 dark:text-neutral-500 text-xs uppercase tracking-wider">
                 Posted By
               </p>
-              <p className="text-neutral-900 dark:text-white font-semibold">
+              <p className="text-neutral-800 dark:text-white font-semibold">
                 {posterName}
               </p>
             </div>
             <div>
-              <p className="text-neutral-600 dark:text-neutral-500 text-xs uppercase tracking-wider">
+              <p className="text-neutral-500 dark:text-neutral-500 text-xs uppercase tracking-wider">
                 Location
               </p>
               <p className="text-neutral-700 dark:text-neutral-300">
@@ -572,7 +87,7 @@ const ItemDetailsModal = ({ item, onClose }) => {
             </div>
             {item.contact_info && (
               <div>
-                <p className="text-neutral-600 dark:text-neutral-500 text-xs uppercase tracking-wider">
+                <p className="text-neutral-500 dark:text-neutral-500 text-xs uppercase tracking-wider">
                   Contact
                 </p>
                 <p className="text-neutral-700 dark:text-neutral-300">
@@ -585,7 +100,7 @@ const ItemDetailsModal = ({ item, onClose }) => {
         <div className="mt-6 pt-4 border-t border-neutral-200 dark:border-neutral-800">
           <a
             href={`mailto:${item.profiles?.email}`}
-            className="w-full text-center px-4 py-3 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 transition flex items-center justify-center gap-2"
+            className="w-full text-center px-4 py-3 bg-primary-600 text-white font-semibold rounded-md hover:bg-primary-700 transition flex items-center justify-center gap-2"
           >
             <Mail className="w-5 h-5" />
             Contact Poster via Email
@@ -599,11 +114,11 @@ const ItemDetailsModal = ({ item, onClose }) => {
 const ItemCard = ({ item, onClick }) => {
   const isLost = item.status?.toLowerCase() === "lost";
   const badgeClass = isLost
-    ? "bg-red/20 text-red"
-    : "bg-green-500/20 text-green-400";
+    ? "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400"
+    : "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400";
   return (
     <div
-      className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-lg overflow-hidden flex flex-col h-full transition-transform hover:-translate-y-1 cursor-pointer"
+      className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm overflow-hidden flex flex-col h-full transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer"
       onClick={() => onClick(item)}
     >
       <div className="w-full h-48 flex items-center justify-center bg-neutral-100 dark:bg-zinc-800 p-2 relative">
@@ -614,7 +129,7 @@ const ItemCard = ({ item, onClick }) => {
             className="max-w-full max-h-full object-contain rounded-md"
           />
         ) : (
-          <p className="text-neutral-600 text-sm">No Image</p>
+          <p className="text-neutral-500 text-sm">No Image</p>
         )}
         <span
           className={`absolute top-2 right-2 text-xs font-medium px-2.5 py-1 rounded-full ${badgeClass}`}
@@ -623,10 +138,10 @@ const ItemCard = ({ item, onClick }) => {
         </span>
       </div>
       <div className="p-4 flex flex-col flex-grow">
-        <h3 className="text-lg font-semibold text-neutral-900 dark:text-white truncate mb-1">
+        <h3 className="text-lg font-semibold text-neutral-800 dark:text-white truncate mb-1">
           {item.title}
         </h3>
-        <p className="text-sm text-neutral-600 dark:text-zinc-400 mb-3 line-clamp-2 flex-grow">
+        <p className="text-sm text-neutral-500 dark:text-zinc-400 mb-3 line-clamp-2 flex-grow">
           {item.description}
         </p>
       </div>
@@ -646,7 +161,7 @@ const FilterSection = ({ title, children }) => {
           {title}
         </h3>
         <ChevronDown
-          className={`w-5 h-5 text-neutral-600 dark:text-zinc-400 transition-transform duration-300 ${
+          className={`w-5 h-5 text-neutral-500 dark:text-zinc-400 transition-transform duration-300 ${
             isOpen ? "rotate-180" : ""
           }`}
         />
@@ -663,7 +178,6 @@ const FilterSection = ({ title, children }) => {
 };
 
 export default function BrowseAllPage({ user }) {
-  const { theme } = useTheme();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isImageSearching, setIsImageSearching] = useState(false);
@@ -755,13 +269,7 @@ export default function BrowseAllPage({ user }) {
 
   useEffect(() => {
     fetchPosts();
-  }, [
-    debouncedSearchTerm,
-    statusFilter,
-    categoryFilters,
-    dateFilter,
-    currentPage,
-  ]);
+  }, [fetchPosts]);
 
   const handleImageSearch = async (event) => {
     const file = event.target.files[0];
@@ -776,7 +284,6 @@ export default function BrowseAllPage({ user }) {
     formData.append("image_file", file);
 
     try {
-      // --- FIX: Get the session token ---
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -787,7 +294,6 @@ export default function BrowseAllPage({ user }) {
         "http://localhost:8000/api/items/image-search",
         {
           method: "POST",
-          // --- FIX: Add the Authorization header ---
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -825,13 +331,13 @@ export default function BrowseAllPage({ user }) {
 
   return (
     <div className="max-w-screen-xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <h1 className="text-4xl font-bold text-neutral-900 dark:text-white mb-8">
+      <h1 className="text-4xl font-bold text-neutral-800 dark:text-white mb-8">
         Browse All Items
       </h1>
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        <aside className="lg:col-span-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-lg p-6 self-start">
-          <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2 flex items-center gap-2">
-            <Filter className="w-5 h-5 text-red" />
+        <aside className="lg:col-span-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm p-6 self-start">
+          <h2 className="text-xl font-semibold text-neutral-800 dark:text-white mb-2 flex items-center gap-2">
+            <Filter className="w-5 h-5 text-primary-600" />
             Filters
           </h2>
 
@@ -847,7 +353,7 @@ export default function BrowseAllPage({ user }) {
                   value={status}
                   checked={statusFilter === status}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="form-radio bg-neutral-200 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600 text-red focus:ring-red"
+                  className="form-radio"
                 />
                 {status}
               </label>
@@ -870,32 +376,32 @@ export default function BrowseAllPage({ user }) {
                   type="checkbox"
                   checked={categoryFilters.includes(cat)}
                   onChange={() => handleCategoryChange(cat)}
-                  className="form-checkbox bg-neutral-200 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600 text-red focus:ring-red rounded"
+                  className="form-checkbox"
                 />
                 {cat}
               </label>
             ))}
           </FilterSection>
 
-          <FilterSection title="Date">
+          <FilterSection title="Date Posted After">
             <input
               type="date"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="w-full bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg p-2 text-sm text-neutral-900 dark:text-white focus:ring-2 focus:ring-red"
+              className="form-input w-full"
             />
           </FilterSection>
         </aside>
 
         <div className="lg:col-span-3">
           <div className="relative mb-6">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-600 dark:text-neutral-500" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400 dark:text-neutral-500" />
             <input
               type="text"
               placeholder="Search by text or keywords..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-12 py-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white rounded-xl"
+              className="form-input w-full pl-12 pr-12 py-3"
             />
             <input
               type="file"
@@ -907,7 +413,7 @@ export default function BrowseAllPage({ user }) {
             <button
               onClick={() => fileInputRef.current.click()}
               disabled={isImageSearching}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-600 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white disabled:opacity-50"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-primary-600 disabled:opacity-50"
               title="Search by image"
             >
               <Camera className="w-5 h-5" />
@@ -916,24 +422,24 @@ export default function BrowseAllPage({ user }) {
 
           {loading ? (
             <div className="flex justify-center items-center min-h-[400px]">
-              <Loader2 className="w-10 h-10 animate-spin text-red" />
+              <Loader2 className="w-10 h-10 animate-spin text-primary-600" />
               {isImageSearching && (
-                <p className="ml-4 text-neutral-600 dark:text-zinc-400">
+                <p className="ml-4 text-neutral-500 dark:text-zinc-400">
                   Analyzing image...
                 </p>
               )}
             </div>
           ) : error ? (
-            <div className="text-center p-12 bg-white dark:bg-neutral-900 rounded-xl text-red">
+            <div className="text-center p-12 bg-white dark:bg-neutral-900 rounded-xl text-red-600 border border-red-200 dark:border-red-800">
               {error}
             </div>
           ) : posts.length === 0 ? (
-            <div className="text-center p-12 bg-white dark:bg-neutral-900 rounded-xl text-neutral-600 dark:text-neutral-500">
+            <div className="text-center p-12 bg-white dark:bg-neutral-900 rounded-xl text-neutral-500 border border-neutral-200 dark:border-neutral-800">
               <p>No posts found.</p>
-              {isImageSearching && (
+              {(isImageSearching || debouncedSearchTerm) && (
                 <button
                   onClick={() => fetchPosts(true)}
-                  className="mt-4 text-red underline"
+                  className="mt-4 text-primary-600 hover:underline"
                 >
                   Reset Search
                 </button>
@@ -954,11 +460,11 @@ export default function BrowseAllPage({ user }) {
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="flex items-center gap-2 px-4 py-2 bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white rounded-md disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-md disabled:opacity-50 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700"
                 >
                   <ChevronLeft className="w-4 h-4" /> Previous
                 </button>
-                <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                <span className="text-sm text-neutral-500 dark:text-neutral-400">
                   Page {currentPage} of {totalPages}
                 </span>
                 <button
@@ -966,7 +472,7 @@ export default function BrowseAllPage({ user }) {
                     setCurrentPage((p) => Math.min(totalPages, p + 1))
                   }
                   disabled={currentPage === totalPages}
-                  className="flex items-center gap-2 px-4 py-2 bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white rounded-md disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-md disabled:opacity-50 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700"
                 >
                   Next <ChevronRight className="w-4 h-4" />
                 </button>

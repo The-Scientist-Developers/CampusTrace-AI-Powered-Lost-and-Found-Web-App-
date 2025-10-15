@@ -1,42 +1,25 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 const ThemeContext = createContext();
 
-export const useTheme = () => {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within ThemeProvider');
-  }
-  return context;
-};
+export const useTheme = () => useContext(ThemeContext);
 
 export const ThemeProvider = ({ children }) => {
+  // --- FIX: Default theme is now 'light' ---
   const [theme, setTheme] = useState(() => {
-    // Check if user has a saved preference
-    const savedTheme = localStorage.getItem('campus-trace-theme');
-    return savedTheme || 'dark';
+    const savedTheme = localStorage.getItem("theme");
+    return savedTheme || "light";
   });
 
   useEffect(() => {
-    // Apply theme to document root
-    const root = document.documentElement;
-    
-    // Set data-theme attribute
-    root.setAttribute('data-theme', theme);
-    
-    // Add/remove dark class for Tailwind
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-    
-    // Save to localStorage
-    localStorage.setItem('campus-trace-theme', theme);
+    const root = window.document.documentElement;
+    root.classList.remove("light", "dark");
+    root.classList.add(theme);
+    localStorage.setItem("theme", theme);
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark');
+    setTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"));
   };
 
   return (
