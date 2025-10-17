@@ -13,7 +13,6 @@ import io
 import google.generativeai as genai
 import httpx
 
-# Corrected relative imports for the 'app' directory structure
 from app.config import get_settings
 from app.matching_algorithm import calculate_match_score
 from app.clip_util import get_image_embedding
@@ -61,6 +60,14 @@ class ItemCreate(BaseModel):
     location: str
     contact_info: Optional[str] = None
 
+# --- NEW: Pydantic models for the Claim Process ---
+class ClaimCreate(BaseModel):
+    item_id: int
+    verification_message: str
+
+class ClaimRespond(BaseModel):
+    approved: bool # True to approve, False to reject
+
 class BanUpdate(BaseModel): is_banned: bool
 class RoleUpdate(BaseModel): role: str
 class StatusUpdate(BaseModel): moderation_status: str
@@ -72,6 +79,7 @@ admin_router = APIRouter(prefix="/admin", tags=["Admin"])
 profile_router = APIRouter(prefix="/api/profile", tags=["Profile"])
 onboarding_router = APIRouter(prefix="/api/onboarding", tags=["Onboarding"])
 notification_router = APIRouter(prefix="/api/notifications", tags=["Notifications"])
+claims_router = APIRouter(prefix="/api/claims", tags=["Claims"]) # --- NEW: Router for claims ---
 
 
 # ============= Onboarding Route (NEW) =============
@@ -162,9 +170,9 @@ async def verify_captcha(token: str, client_ip: Optional[str]):
         )
         result = response.json()
         if not result.get("success"):
-            print(f"❌ CAPTCHA verification failed: {result.get('error-codes')}")
+            print(f"CAPTCHA verification failed: {result.get('error-codes')}")
             raise HTTPException(status_code=400, detail="CAPTCHA verification failed.")
-        print("✅ CAPTCHA verified successfully.")
+        print("CAPTCHA verified successfully.")
         return True
 
 def create_notification(recipient_id: str, message: str, link_to: Optional[str] = None, type: str = 'general'):
@@ -177,7 +185,7 @@ def create_notification(recipient_id: str, message: str, link_to: Optional[str] 
         }).execute()
         print(f"✅ Notification created for user {recipient_id}")
     except Exception as e:
-        print(f"❌ Error creating notification: {e}")
+        print(f"Error creating notification: {e}")
 
 async def generate_ai_tags(title: str, description: str) -> Optional[List[str]]:
     if not model: return []
@@ -188,7 +196,7 @@ async def generate_ai_tags(title: str, description: str) -> Optional[List[str]]:
         tags_list = [tag.strip().lower() for tag in tags_string.split(',') if tag.strip()]
         return tags_list[:7]
     except Exception as e:
-        print(f"❌ Error generating AI tags: {e}")
+        print(f"Error generating AI tags: {e}")
         return []
 
 # ============= Auth Routes =============
@@ -246,7 +254,6 @@ async def create_item(item_data: str = Form(...), image_file: Optional[UploadFil
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @item_router.post("/image-search")
 async def search_by_image(image_file: UploadFile = File(...), user_id: str = Depends(get_current_user_id)):
     try:
@@ -277,6 +284,142 @@ async def find_matches(lost_item_id: int, user_id: str = Depends(get_current_use
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+# --- NEW: Endpoint to mark an item as recovered ---
+@item_router.put("/{item_id}/recover")
+async def mark_as_recovered(item_id: int, user_id: str = Depends(get_current_user_id)):
+    try:
+        # Check if the user is either the finder or the approved claimant
+        item_res = supabase.table("items").select("user_id, title").eq("id", item_id).single().execute()
+        if not item_res.data:
+            raise HTTPException(status_code=404, detail="Item not found.")
+        
+        finder_id = item_res.data['user_id']
+        
+        claim_res = supabase.table("claims").select("claimant_id").eq("item_id", item_id).eq("status", "approved").single().execute()
+        
+        approved_claimant_id = claim_res.data['claimant_id'] if claim_res.data else None
+
+        if user_id not in [finder_id, approved_claimant_id]:
+            raise HTTPException(status_code=403, detail="You are not authorized to perform this action.")
+            
+        # Update item status
+        update_res = supabase.table("items").update({"moderation_status": "recovered"}).eq("id", item_id).execute()
+
+        # Notify both parties
+        message = f"The item '{item_res.data['title']}' has been marked as recovered. This case is now closed."
+        if finder_id:
+            create_notification(recipient_id=finder_id, message=message, link_to="/dashboard/my-posts", type='moderation')
+        if approved_claimant_id and approved_claimant_id != finder_id:
+            create_notification(recipient_id=approved_claimant_id, message=message, link_to="/dashboard/my-posts", type='moderation')
+            
+        return {"message": "Item marked as recovered."}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============= Claims Routes (NEW) =============
+@claims_router.post("/create")
+async def submit_claim(payload: ClaimCreate, claimant_id: str = Depends(get_current_user_id)):
+    try:
+        # 1. Get the item details, especially the finder's ID
+        item_res = supabase.table("items").select("user_id, title, status").eq("id", payload.item_id).single().execute()
+        if not item_res.data:
+            raise HTTPException(status_code=404, detail="Item not found.")
+        if item_res.data['status'] != 'Found':
+            raise HTTPException(status_code=400, detail="You can only claim 'Found' items.")
+        
+        finder_id = item_res.data['user_id']
+        item_title = item_res.data['title']
+        
+        if finder_id == claimant_id:
+             raise HTTPException(status_code=400, detail="You cannot claim your own item.")
+
+        # 2. Create the claim in the database
+        claim_data = {
+            "item_id": payload.item_id,
+            "claimant_id": claimant_id,
+            "finder_id": finder_id,
+            "verification_message": payload.verification_message,
+            "status": "pending"
+        }
+        insert_res = supabase.table("claims").insert(claim_data).execute()
+        
+        # 3. Notify the finder
+        claimant_profile_res = supabase.table("profiles").select("full_name").eq("id", claimant_id).single().execute()
+        claimant_name = claimant_profile_res.data.get('full_name', 'A user') if claimant_profile_res.data else 'A user'
+
+        message = f"{claimant_name} has submitted a claim on your found item: '{item_title}'."
+        create_notification(recipient_id=finder_id, message=message, link_to="/dashboard/my-posts", type='claim')
+        
+        return {"message": "Claim submitted successfully. The finder has been notified."}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@claims_router.get("/item/{item_id}")
+async def get_claims_for_item(item_id: int, user_id: str = Depends(get_current_user_id)):
+    try:
+        # Ensure the user requesting is the finder
+        item_res = supabase.table("items").select("user_id").eq("id", item_id).eq("user_id", user_id).single().execute()
+        if not item_res.data:
+            raise HTTPException(status_code=403, detail="You are not the owner of this item.")
+            
+        claims_res = supabase.table("claims").select("*, claimant:profiles!claimant_id(full_name, email)").eq("item_id", item_id).eq("status", "pending").execute()
+        
+        return claims_res.data
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@claims_router.put("/{claim_id}/respond")
+async def respond_to_claim(claim_id: int, payload: ClaimRespond, finder_id: str = Depends(get_current_user_id)):
+    try:
+        # 1. Get claim details and verify the finder is responding
+        claim_res = supabase.table("claims").select("*, item:items(title, user_id)").eq("id", claim_id).single().execute()
+        if not claim_res.data or claim_res.data['finder_id'] != finder_id:
+            raise HTTPException(status_code=403, detail="You are not authorized to respond to this claim.")
+        
+        claim = claim_res.data
+        item_title = claim['item']['title']
+        claimant_id = claim['claimant_id']
+
+        new_status = 'approved' if payload.approved else 'rejected'
+        
+        # 2. Update the claim status
+        supabase.table("claims").update({"status": new_status}).eq("id", claim_id).execute()
+        
+        # 3. Handle notifications and side-effects
+        if payload.approved:
+            # Update item status to prevent other claims
+            supabase.table("items").update({"moderation_status": "pending_return"}).eq("id", claim['item_id']).execute()
+            
+            # Get contact info
+            finder_profile_res = supabase.table("profiles").select("email").eq("id", finder_id).single().execute()
+            claimant_profile_res = supabase.table("profiles").select("email").eq("id", claimant_id).single().execute()
+            finder_email = finder_profile_res.data['email']
+            claimant_email = claimant_profile_res.data['email']
+
+            # Notify both parties with contact info
+            finder_message = f"You approved the claim for '{item_title}'. You can now contact the claimant at {claimant_email} to arrange the return."
+            claimant_message = f"Great news! Your claim for '{item_title}' has been approved. You can contact the finder at {finder_email} to arrange the return."
+            
+            create_notification(recipient_id=finder_id, message=finder_message, type='claim_response')
+            create_notification(recipient_id=claimant_id, message=claimant_message, type='claim_response')
+
+            # Reject all other pending claims for this item
+            supabase.table("claims").update({"status": "rejected"}).eq("item_id", claim['item_id']).eq("status", "pending").execute()
+
+        else: # If rejected
+            message = f"Unfortunately, your claim for '{item_title}' was not approved by the finder."
+            create_notification(recipient_id=claimant_id, message=message, type='claim_response')
+            
+        return {"message": f"Claim has been {new_status}."}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # ============= Admin Routes =============
 @admin_router.post("/items/{item_id}/status")
@@ -341,6 +484,7 @@ app.include_router(admin_router)
 app.include_router(profile_router)
 app.include_router(notification_router)
 app.include_router(onboarding_router)
+app.include_router(claims_router) 
 
 # ============= Root Route =============
 @app.get("/")

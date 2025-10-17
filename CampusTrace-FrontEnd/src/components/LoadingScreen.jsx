@@ -1,31 +1,31 @@
-import React from 'react'
-import { motion } from 'framer-motion';
+import React from "react";
+import { motion } from "framer-motion";
 
-export default function LoadingScreen (){
+export default function LoadingScreen() {
   return (
     <motion.div
-      initial={{ y: 0 }}
-      exit={{ y: "-100%" }}
-      transition={{ duration: 0.8, ease: [0.76, 0, 0.24, 1] }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black"
+      initial={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5, ease: "easeInOut" }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-white dark:bg-black"
     >
       <div className="relative">
         <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
           className="flex flex-col items-center"
         >
           <motion.div
             animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            className="w-16 h-16 border-2 border-white border-t-transparent rounded-full mb-4"
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-12 h-12 border-4 border-neutral-200 dark:border-neutral-800 border-t-primary-600 rounded-full mb-4"
           />
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="text-white text-sm tracking-[0.3em] uppercase"
+            transition={{ delay: 0.2 }}
+            className="text-neutral-500 dark:text-neutral-400 text-sm tracking-[0.2em] uppercase"
           >
             Loading
           </motion.p>

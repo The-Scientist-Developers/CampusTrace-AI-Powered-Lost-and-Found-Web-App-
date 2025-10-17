@@ -6,7 +6,7 @@ import { Lock } from "lucide-react";
 
 export default function UpdatePasswordPage() {
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState(""); // <-- Add state for confirm password
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 

@@ -7,6 +7,9 @@ import {
   UserPlus,
   LogIn,
   Settings,
+  FilePlus,
+  Search,
+  CheckCircle,
 } from "lucide-react";
 
 const FeatureSection = ({ icon: Icon, title, children }) => (
@@ -54,9 +57,61 @@ export default function LearnMorePage() {
             How Campus Trace Works
           </p>
           <h1 className="text-5xl md:text-6xl font-extrabold text-neutral-900 dark:text-white">
-            Detailed Guide
+            A Detailed Guide
           </h1>
         </header>
+
+        {/* --- NEW: Section for General Users --- */}
+        <div className="mb-24">
+          <h2 className="text-3xl font-bold text-center text-neutral-800 dark:text-white mb-12">
+            For Students & Staff
+          </h2>
+          <div>
+            <StepCard
+              icon={UserPlus}
+              title="Sign Up with Your University Email"
+              step="1"
+            >
+              To ensure a secure community, you must sign up using your official
+              university email address. This instantly connects you to your
+              campus's private lost and found network.
+            </StepCard>
+            <StepCard
+              icon={FilePlus}
+              title="Post a Lost or Found Item"
+              step="2"
+            >
+              Use the simple form to post details about your item. If you lost
+              something, our AI will immediately start looking for matches. If
+              you found something, your post will help someone find their
+              missing item.
+            </StepCard>
+            <StepCard icon={Search} title="Find and Claim Your Item" step="3">
+              If you lost an item, check your dashboard for AI-powered "Possible
+              Matches." You can also browse all "Found" items. When you see
+              yours, click "Claim This Item." The finder will be notified to
+              review your claim.
+            </StepCard>
+            <StepCard
+              icon={CheckCircle}
+              title="Approve Claims & Recover"
+              step="4"
+            >
+              If you found an item, you'll receive notifications when someone
+              claims it. Review their claim on your "My Posts" page. Once a
+              claim is approved, the system shares contact details so you can
+              coordinate the return.
+            </StepCard>
+          </div>
+          <div className="text-center mt-8 animate-fade-in-up">
+            <Link
+              to="/login"
+              className="px-8 py-3 bg-primary-600 text-white text-lg font-bold rounded-full shadow-lg hover:bg-primary-700 transition-all transform hover:scale-105"
+            >
+              Sign Up or Log In
+            </Link>
+          </div>
+        </div>
 
         {/* Section for University Admins */}
         <div className="mb-24">
@@ -72,14 +127,13 @@ export default function LearnMorePage() {
               >
                 "For Universities"
               </Link>{" "}
-              page from the landing page. Fill out the form with your
-              university's name, your full name, your official university email,
-              and a secure password.
+              page. Fill out the form with your university's name and your
+              official admin email to create the account.
             </StepCard>
             <StepCard icon={LogIn} title="Instant Activation & Login" step="2">
               Upon submission, your university is instantly registered, your
-              administrator account is created and activated, and your email
-              domain is automatically whitelisted. You can then immediately
+              administrator account is created, and your email domain is
+              automatically whitelisted for sign-ups. You can then immediately
               proceed to the{" "}
               <Link to="/login" className="text-primary-600 hover:underline">
                 login page
@@ -89,7 +143,8 @@ export default function LearnMorePage() {
             <StepCard icon={Settings} title="Configure Your Campus" step="3">
               Once logged in, you'll be directed to the Admin Dashboard. From
               the "Settings" page, you can add more allowed email domains (e.g.,
-              for students vs. staff) and manage other campus-specific settings.
+              for students vs. staff) and manage user roles, post moderation,
+              and other campus-specific settings.
             </StepCard>
           </div>
           <div className="text-center mt-8 animate-fade-in-up">
@@ -102,7 +157,7 @@ export default function LearnMorePage() {
           </div>
         </div>
 
-        {/* Section for General Users */}
+        {/* Section for Technology */}
         <FeatureSection title="Our Technology" icon={Server}>
           <p>
             Campus Trace is built to scale. Each university operates in its own
@@ -136,10 +191,6 @@ export default function LearnMorePage() {
             their campus community by requiring sign-ups with an official
             university email address that has been approved by the campus
             administrator.
-          </p>
-          <p>
-            This password-based method is highly secure and confirms that the
-            user genuinely belongs to that institution.
           </p>
         </FeatureSection>
       </div>

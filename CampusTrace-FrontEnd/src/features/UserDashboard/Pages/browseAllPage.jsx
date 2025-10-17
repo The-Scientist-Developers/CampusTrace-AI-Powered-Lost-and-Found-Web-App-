@@ -12,7 +12,36 @@ import {
   Mail,
   X,
   ChevronDown,
+  Send,
 } from "lucide-react";
+
+// --- FIX: Moved getAccessToken out and removed 'this' ---
+async function getAccessToken() {
+  const { data } = await supabase.auth.getSession();
+  return data?.session?.access_token || null;
+}
+
+const apiClient = {
+  async submitClaim(itemId, verificationMessage) {
+    const token = await getAccessToken();
+    const response = await fetch("http://localhost:8000/api/claims/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        item_id: itemId,
+        verification_message: verificationMessage,
+      }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to submit claim.");
+    }
+    return response.json();
+  },
+};
 
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -23,11 +52,102 @@ function useDebounce(value, delay) {
   return debouncedValue;
 }
 
-const ItemDetailsModal = ({ item, onClose }) => {
+const ClaimModal = ({ item, onClose, onSubmit }) => {
+  const [verificationMessage, setVerificationMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!verificationMessage.trim()) {
+      toast.error("Please provide a verification detail.");
+      return;
+    }
+    setIsSubmitting(true);
+    const toastId = toast.loading("Submitting claim...");
+    try {
+      await onSubmit(item.id, verificationMessage);
+      toast.success("Claim submitted! The finder has been notified.", {
+        id: toastId,
+      });
+      onClose();
+    } catch (error) {
+      console.error("Claim Submission Error:", {
+        errorMessage: error.message,
+        stack: error.stack,
+        itemId: item.id,
+        timestamp: new Date().toISOString(),
+      });
+      toast.error(`Submission failed: ${error.message}`, { id: toastId });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-75 p-4 animate-fadeIn"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl p-6 w-full max-w-lg"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-2xl font-bold text-neutral-800 dark:text-white mb-2">
+          Claim Item: {item.title}
+        </h2>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
+          To verify ownership, please describe a unique detail only you would
+          know (e.g., a specific scratch, the lock screen image, an item inside
+          the bag).
+        </p>
+        <form onSubmit={handleSubmit}>
+          <textarea
+            value={verificationMessage}
+            onChange={(e) => setVerificationMessage(e.target.value)}
+            className="form-textarea w-full"
+            rows="4"
+            placeholder="Enter your secret detail here..."
+            required
+            disabled={isSubmitting}
+          />
+          <div className="flex justify-end gap-4 mt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-primary-600 text-white font-semibold rounded-md flex items-center gap-2 disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+              Submit Claim
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const ItemDetailsModal = ({ item, onClose, onClaim, user }) => {
   if (!item) return null;
   const posterName =
     item.profiles?.full_name ||
     (item.profiles?.email ? item.profiles.email.split("@")[0] : "Anonymous");
+
+  const isFoundItem = item.status?.toLowerCase() === "found";
+  const isMyOwnItem = item.profiles?.id === user?.id;
+  const showClaimButton = isFoundItem && !isMyOwnItem;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4 animate-fadeIn"
@@ -85,26 +205,27 @@ const ItemDetailsModal = ({ item, onClose }) => {
                 {item.location || "N/A"}
               </p>
             </div>
-            {item.contact_info && (
-              <div>
-                <p className="text-neutral-500 dark:text-neutral-500 text-xs uppercase tracking-wider">
-                  Contact
-                </p>
-                <p className="text-neutral-700 dark:text-neutral-300">
-                  {item.contact_info}
-                </p>
-              </div>
-            )}
           </div>
         </div>
         <div className="mt-6 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-          <a
-            href={`mailto:${item.profiles?.email}`}
-            className="w-full text-center px-4 py-3 bg-primary-600 text-white font-semibold rounded-md hover:bg-primary-700 transition flex items-center justify-center gap-2"
-          >
-            <Mail className="w-5 h-5" />
-            Contact Poster via Email
-          </a>
+          {showClaimButton ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onClaim(item);
+              }}
+              className="w-full text-center px-4 py-3 bg-primary-600 text-white font-semibold rounded-md hover:bg-primary-700 transition"
+            >
+              Claim This Item
+            </button>
+          ) : (
+            <a
+              href={`mailto:${item.profiles?.email}`}
+              className="w-full text-center block px-4 py-3 bg-primary-600 text-white font-semibold rounded-md hover:bg-primary-700 transition"
+            >
+              Contact Poster via Email
+            </a>
+          )}
         </div>
       </div>
     </div>
@@ -183,6 +304,7 @@ export default function BrowseAllPage({ user }) {
   const [isImageSearching, setIsImageSearching] = useState(false);
   const [error, setError] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [isClaiming, setIsClaiming] = useState(false);
   const location = useLocation();
   const fileInputRef = useRef(null);
 
@@ -201,7 +323,7 @@ export default function BrowseAllPage({ user }) {
       const fetchItem = async () => {
         const { data } = await supabase
           .from("items")
-          .select(`*, profiles(full_name, email)`)
+          .select(`*, profiles(id, full_name, email)`)
           .eq("id", itemIdFromState)
           .single();
         if (data) setSelectedItem(data);
@@ -231,7 +353,7 @@ export default function BrowseAllPage({ user }) {
         if (!profile) throw new Error("Could not find user profile.");
         let query = supabase
           .from("items")
-          .select(`*, profiles(full_name, email)`, { count: "exact" })
+          .select(`*, profiles(id, full_name, email)`, { count: "exact" })
           .eq("university_id", profile.university_id)
           .eq("moderation_status", "approved");
         if (statusFilter !== "All") query = query.eq("status", statusFilter);
@@ -284,10 +406,7 @@ export default function BrowseAllPage({ user }) {
     formData.append("image_file", file);
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const token = session?.access_token;
+      const token = await getAccessToken();
       if (!token) throw new Error("Authentication token not found.");
 
       const response = await fetch(
@@ -484,7 +603,17 @@ export default function BrowseAllPage({ user }) {
       <ItemDetailsModal
         item={selectedItem}
         onClose={() => setSelectedItem(null)}
+        onClaim={() => setIsClaiming(true)}
+        user={user}
       />
+      {isClaiming && selectedItem && (
+        <ClaimModal
+          item={selectedItem}
+          onClose={() => setIsClaiming(false)}
+          onSubmit={apiClient.submitClaim}
+        />
+      )}
     </div>
   );
 }
+  

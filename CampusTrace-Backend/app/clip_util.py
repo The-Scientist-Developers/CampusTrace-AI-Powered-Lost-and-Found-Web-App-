@@ -2,7 +2,6 @@ from transformers import CLIPProcessor, CLIPModel
 from PIL import Image
 import torch
 
-# This is the name of the pre-trained model we are using from Hugging Face
 MODEL_NAME = "openai/clip-vit-base-patch32"
 model = None
 processor = None
