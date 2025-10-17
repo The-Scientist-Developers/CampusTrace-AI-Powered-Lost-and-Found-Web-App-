@@ -40,75 +40,86 @@ const LogoIcon = () => (
 export default function LoginPage() {
   const { theme } = useTheme();
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false); // New state for forgot password view
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [captchaValue, setCaptchaValue] = useState(null);
   const recaptchaRef = useRef();
 
-  const handleSubmit = async (event) => {
+  const handleAuthSubmit = async (event) => {
     event.preventDefault();
-
-    if (!captchaValue) {
+    if (!captchaValue && !isForgotPassword) {
       toast.error("Please complete the CAPTCHA.");
       return;
     }
-
     setIsLoading(true);
     const toastId = toast.loading("Processing...");
-
     try {
       if (isSignUp) {
-        // --- Handle Sign Up via our backend for CAPTCHA verification ---
         const response = await fetch("http://localhost:8000/api/auth/signup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email,
-            password,
-            captchaToken: captchaValue,
-          }),
+          body: JSON.stringify({ email, password, captchaToken: captchaValue }),
         });
-
         const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.detail || "Sign up failed.");
-        }
-
-        if (data.user && data.session === null) {
-          toast.success(
-            "Sign up successful! Please check your email to confirm your account.",
-            { id: toastId }
-          );
-        } else {
-          // This case handles auto-confirmation (if enabled in Supabase)
-          toast.success("Sign up successful! You are now logged in.", {
-            id: toastId,
-          });
-        }
-        // Reset form on successful signup
+        if (!response.ok) throw new Error(data.detail || "Sign up failed.");
+        toast.success(
+          "Sign up successful! Please check your email to confirm your account.",
+          { id: toastId }
+        );
         setEmail("");
         setPassword("");
       } else {
-        // --- Handle Sign In directly with Supabase (it has rate limiting) ---
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
         toast.success("Signed in successfully!", { id: toastId });
-        // The onAuthStateChange listener in App.jsx will handle the redirect
       }
     } catch (error) {
       toast.error(error.message, { id: toastId });
     } finally {
       setIsLoading(false);
       setCaptchaValue(null);
-      if (recaptchaRef.current) {
-        recaptchaRef.current.reset();
-      }
+      if (recaptchaRef.current) recaptchaRef.current.reset();
     }
+  };
+
+  const handlePasswordReset = async (event) => {
+    event.preventDefault();
+    setIsLoading(true);
+    const toastId = toast.loading("Sending reset link...");
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/update-password`, // This is where the user will be sent after clicking the link
+      });
+      if (error) throw error;
+      toast.success("Password reset link sent! Please check your email.", {
+        id: toastId,
+      });
+      setIsForgotPassword(false); // Go back to the login view
+      setEmail("");
+    } catch (error) {
+      toast.error(error.message, { id: toastId });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const toggleView = (view) => {
+    setIsSignUp(view === "signup");
+    setIsForgotPassword(view === "forgot");
+    setEmail("");
+    setPassword("");
+    if (recaptchaRef.current) recaptchaRef.current.reset();
+  };
+
+  const getTitle = () => {
+    if (isForgotPassword) return "Reset Your Password";
+    if (isSignUp) return "Create an Account";
+    return "Sign in to Campus Trace";
   };
 
   return (
@@ -117,23 +128,23 @@ export default function LoginPage() {
         <div className="text-center">
           <LogoIcon />
           <h2 className="mt-6 text-2xl sm:text-3xl font-bold tracking-tight text-neutral-800 dark:text-zinc-100">
-            {isSignUp ? "Create an Account" : "Sign in to Campus Trace"}
+            {getTitle()}
           </h2>
-          <p className="mt-2 text-sm text-neutral-600 dark:text-zinc-400">
-            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-            <button
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-              }}
-              className="font-medium text-primary-600 hover:text-primary-500"
-            >
-              {isSignUp ? "Sign In" : "Sign Up"}
-            </button>
-          </p>
+          {!isForgotPassword && (
+            <p className="mt-2 text-sm text-neutral-600 dark:text-zinc-400">
+              {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+              <button
+                onClick={() => toggleView(isSignUp ? "login" : "signup")}
+                className="font-medium text-primary-600 hover:text-primary-500"
+              >
+                {isSignUp ? "Sign In" : "Sign Up"}
+              </button>
+            </p>
+          )}
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
+        {isForgotPassword ? (
+          <form className="mt-8 space-y-6" onSubmit={handlePasswordReset}>
             <div>
               <label htmlFor="email-address" className="sr-only">
                 Email address
@@ -147,51 +158,102 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
-                className="relative block w-full appearance-none rounded-t-md border border-neutral-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-3 text-neutral-900 dark:text-zinc-100 placeholder-neutral-500 focus:z-10 focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm disabled:opacity-50"
-                placeholder="University email address"
+                className="relative block w-full appearance-none rounded-md border border-neutral-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-3 text-neutral-900 dark:text-zinc-100 placeholder-neutral-500 focus:z-10 focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm disabled:opacity-50"
+                placeholder="Enter your email address"
               />
             </div>
             <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete={isSignUp ? "new-password" : "current-password"}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+              <button
+                type="submit"
                 disabled={isLoading}
-                className="relative block w-full appearance-none rounded-b-md border border-neutral-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-3 text-neutral-900 dark:text-zinc-100 placeholder-neutral-500 focus:z-10 focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm disabled:opacity-50"
-                placeholder="Password"
+                className="group relative flex w-full justify-center rounded-md border border-transparent bg-primary-600 py-3 px-4 text-sm font-semibold text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-950 disabled:opacity-50 transition-colors"
+              >
+                {isLoading ? "Sending..." : "Send Reset Link"}
+              </button>
+            </div>
+            <div className="text-center">
+              <button
+                onClick={() => toggleView("login")}
+                className="font-medium text-sm text-primary-600 hover:text-primary-500"
+              >
+                Back to Sign In
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form className="mt-8 space-y-6" onSubmit={handleAuthSubmit}>
+            <div className="rounded-md shadow-sm -space-y-px">
+              <div>
+                <label htmlFor="email-address-auth" className="sr-only">
+                  Email address
+                </label>
+                <input
+                  id="email-address-auth"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
+                  className="relative block w-full appearance-none rounded-t-md border border-neutral-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-3 text-neutral-900 dark:text-zinc-100 placeholder-neutral-500 focus:z-10 focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm disabled:opacity-50"
+                  placeholder="University email address"
+                />
+              </div>
+              <div>
+                <label htmlFor="password" className="sr-only">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete={isSignUp ? "new-password" : "current-password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
+                  className="relative block w-full appearance-none rounded-b-md border border-neutral-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-3 text-neutral-900 dark:text-zinc-100 placeholder-neutral-500 focus:z-10 focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm disabled:opacity-50"
+                  placeholder="Password"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="text-sm">
+                <button
+                  type="button"
+                  onClick={() => toggleView("forgot")}
+                  className="font-medium text-primary-600 hover:text-primary-500"
+                >
+                  Forgot your password?
+                </button>
+              </div>
+            </div>
+
+            <div className="flex justify-center">
+              <ReCAPTCHA
+                ref={recaptchaRef}
+                sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                onChange={(value) => setCaptchaValue(value)}
+                theme={theme}
               />
             </div>
-          </div>
 
-          <div className="flex justify-center">
-            <ReCAPTCHA
-              ref={recaptchaRef}
-              sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-              onChange={(value) => setCaptchaValue(value)}
-              theme={theme}
-            />
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading || !captchaValue}
-              className="group relative flex w-full justify-center rounded-md border border-transparent bg-primary-600 py-3 px-4 text-sm font-semibold text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-950 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                <LockIcon className="h-5 w-5 text-primary-200" />
-              </span>
-              {isLoading ? "Processing..." : isSignUp ? "Sign Up" : "Sign In"}
-            </button>
-          </div>
-        </form>
+            <div>
+              <button
+                type="submit"
+                disabled={isLoading || !captchaValue}
+                className="group relative flex w-full justify-center rounded-md border border-transparent bg-primary-600 py-3 px-4 text-sm font-semibold text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-950 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                  <LockIcon className="h-5 w-5 text-primary-200" />
+                </span>
+                {isLoading ? "Processing..." : isSignUp ? "Sign Up" : "Sign In"}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

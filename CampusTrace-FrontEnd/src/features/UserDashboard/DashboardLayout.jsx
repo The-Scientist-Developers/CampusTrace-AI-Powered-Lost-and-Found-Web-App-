@@ -28,7 +28,7 @@ const menuItems = [
   { label: "My Posts", icon: FileText, path: "/dashboard/my-posts" },
   { label: "Browse All", icon: Search, path: "/dashboard/browse-all" },
   { label: "Notifications", icon: Bell, path: "/dashboard/notifications" },
-  { label: "Profile", icon: User, path: "/dashboard/profile" },
+  { label: "Profile", icon: User, path: "/dashboard/profile" }, 
 ];
 
 const bottomItems = [
