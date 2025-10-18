@@ -204,15 +204,21 @@ async def generate_ai_tags(title: str, description: str) -> Optional[List[str]]:
 async def handle_signup(payload: AuthRequest, request: Request):
     await verify_captcha(payload.captchaToken, request.client.host)
     try:
+        print(f"Attempting signup for email: {payload.email}")
         response = supabase.auth.sign_up({
             "email": payload.email,
             "password": payload.password,
         })
+        print(f"Supabase response: {response}")
         return response
     except Exception as e:
+        print(f"Signup error: {type(e).__name__}: {str(e)}")
+        print(f"Full error: {repr(e)}")
         if hasattr(e, 'message'):
-            raise HTTPException(status_code=400, detail=e.message)
-        raise HTTPException(status_code=500, detail="An internal error occurred during sign-up.")
+            error_detail = e.message
+        else:
+            error_detail = str(e)
+        raise HTTPException(status_code=400, detail=error_detail)
 
 # ============= Item Routes =============
 @item_router.post("/create")
