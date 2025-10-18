@@ -14,3 +14,4 @@ PyJWT
 protobuf
 python-dotenv
 httpx
+sentence-transformers

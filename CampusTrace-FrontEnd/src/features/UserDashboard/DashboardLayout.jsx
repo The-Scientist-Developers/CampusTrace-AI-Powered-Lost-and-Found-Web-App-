@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "../../api/apiClient";
 import {
   NavLink as RouterNavLink,
@@ -20,6 +20,7 @@ import {
   Sun,
   Moon,
 } from "lucide-react";
+// --- FIX: Using the more compact, iconic logo ---
 import logo from "../../Images/logo1.jpg";
 import { useTheme } from "../../contexts/ThemeContext";
 
@@ -28,7 +29,7 @@ const menuItems = [
   { label: "My Posts", icon: FileText, path: "/dashboard/my-posts" },
   { label: "Browse All", icon: Search, path: "/dashboard/browse-all" },
   { label: "Notifications", icon: Bell, path: "/dashboard/notifications" },
-  { label: "Profile", icon: User, path: "/dashboard/profile" }, 
+  { label: "Profile", icon: User, path: "/dashboard/profile" },
 ];
 
 const bottomItems = [
@@ -53,7 +54,6 @@ const NavLink = ({ item, isOpen, exact }) => {
         group relative
       `}
     >
-      {/* --- FIX: Pass render prop to children to get isActive state --- */}
       {({ isActive }) => (
         <>
           <item.icon
@@ -97,35 +97,51 @@ export default function DashboardLayout({ children, user }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [profile, setProfile] = useState(null);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [siteName, setSiteName] = useState("CampusTrace");
 
-  useEffect(() => {
+  const fetchAllData = useCallback(async () => {
     if (!user?.id) return;
 
-    const fetchProfileAndNotifications = async () => {
-      // Fetch Profile
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-      if (profileError) console.error("Error fetching profile:", profileError);
-      else setProfile(profileData);
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
 
-      // Fetch Notification Count
-      const { count, error: countError } = await supabase
-        .from("notifications")
-        .select("*", { head: true, count: "exact" })
-        .eq("recipient_id", user.id)
-        .eq("status", "unread");
-      if (countError)
-        console.error("Error fetching notification count:", countError);
-      else setNotificationCount(count || 0);
-    };
+    if (profileError) {
+      console.error("Error fetching profile:", profileError);
+    } else {
+      setProfile(profileData);
 
-    fetchProfileAndNotifications();
+      if (profileData?.university_id) {
+        const { data: settingsData } = await supabase
+          .from("site_settings")
+          .select("setting_value")
+          .eq("university_id", profileData.university_id)
+          .eq("setting_key", "site_name")
+          .single();
+
+        if (settingsData) {
+          setSiteName(settingsData.setting_value);
+        }
+      }
+    }
+
+    const { count, error: countError } = await supabase
+      .from("notifications")
+      .select("*", { head: true, count: "exact" })
+      .eq("recipient_id", user.id)
+      .eq("status", "unread");
+    if (countError)
+      console.error("Error fetching notification count:", countError);
+    else setNotificationCount(count || 0);
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchAllData();
 
     const profileSubscription = supabase
-      .channel("public:profiles")
+      .channel(`public:profiles:id=eq.${user.id}`)
       .on(
         "postgres_changes",
         {
@@ -139,7 +155,7 @@ export default function DashboardLayout({ children, user }) {
       .subscribe();
 
     const notificationSubscription = supabase
-      .channel("public:notifications")
+      .channel(`public:notifications:recipient_id=eq.${user.id}`)
       .on(
         "postgres_changes",
         {
@@ -148,7 +164,7 @@ export default function DashboardLayout({ children, user }) {
           table: "notifications",
           filter: `recipient_id=eq.${user.id}`,
         },
-        () => fetchProfileAndNotifications() // Refetch on any change
+        () => fetchAllData()
       )
       .subscribe();
 
@@ -156,7 +172,7 @@ export default function DashboardLayout({ children, user }) {
       supabase.removeChannel(profileSubscription);
       supabase.removeChannel(notificationSubscription);
     };
-  }, [user?.id]);
+  }, [user?.id, fetchAllData]);
 
   const computedMenuItems = useMemo(() => {
     return menuItems.map((item) => {
@@ -202,6 +218,13 @@ export default function DashboardLayout({ children, user }) {
       displayName
     )}&background=4f46e5&color=ffffff&bold=true`;
 
+  const pageTitle =
+    menuItems.find(
+      (item) =>
+        location.pathname.includes(item.path) &&
+        (item.exact ? item.path === location.pathname : true)
+    )?.label || "Dashboard";
+
   return (
     <div className="h-screen flex flex-col bg-neutral-50 dark:bg-black text-neutral-800 dark:text-neutral-300 overflow-hidden">
       {mobileMenu && (
@@ -228,6 +251,9 @@ export default function DashboardLayout({ children, user }) {
           >
             <Menu className="w-5 h-5" />
           </button>
+          <h1 className="text-xl font-semibold text-neutral-800 dark:text-white hidden sm:block">
+            {pageTitle}
+          </h1>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -270,16 +296,22 @@ export default function DashboardLayout({ children, user }) {
             isSidebarOpen ? "md:w-64" : "md:w-20"
           } h-[calc(100vh-4rem)] md:h-full`}
         >
+          {/* --- IMPROVED SIDEBAR HEADER --- */}
           <div className="p-4 flex items-center gap-3 border-b border-neutral-200 dark:border-neutral-800 flex-shrink-0 h-16">
             <img
               src={logo}
               alt="Campus Trace Logo"
-              className="w-8 h-8 rounded-md"
+              className="w-8 h-8 rounded-md flex-shrink-0"
             />
             {(isSidebarOpen || mobileMenu) && (
-              <span className="font-bold text-lg text-neutral-800 dark:text-white">
-                CampusTrace
-              </span>
+              <div className="flex flex-col overflow-hidden">
+                <span className="font-bold text-sm text-neutral-800 dark:text-white leading-tight truncate">
+                  {siteName}
+                </span>
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                  Powered by CampusTrace
+                </span>
+              </div>
             )}
           </div>
 

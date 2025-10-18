@@ -30,7 +30,7 @@ import NotificationPage from "./features/UserDashboard/Pages/userNotificationPag
 import UserSettingsPage from "./features/UserDashboard/Pages/userSettingsPage";
 import RegisterUniversityPage from "./features/MainPages/RegisterUniversityPage";
 import UpdatePasswordPage from "./features/MainPages/UpdatePasswordPage";
-
+import AdminNotificationPage from "./features/AdminDashboard/Pages/adminNotificationPage";
 function PrivateRouter({ children, isLoading, session }) {
   if (isLoading) return <LoadingScreen />;
   if (!session) return <Navigate to="/login" replace />;
@@ -214,6 +214,10 @@ function App() {
             <Route
               path="post-moderation"
               element={<PostModerationPage user={session?.user} />}
+            />
+            <Route
+              path="notifications"
+              element={<AdminNotificationPage user={session?.user} />}
             />
             <Route
               path="settings"

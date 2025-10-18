@@ -14,8 +14,8 @@ import google.generativeai as genai
 import httpx
 
 from app.config import get_settings
-from app.matching_algorithm import calculate_match_score
 from app.clip_util import get_image_embedding
+from app.text_embedding_util import get_text_embedding
 
 # --- Configuration ---
 settings = get_settings()
@@ -60,13 +60,13 @@ class ItemCreate(BaseModel):
     location: str
     contact_info: Optional[str] = None
 
-# --- NEW: Pydantic models for the Claim Process ---
+# --- Pydantic models for the Claim Process ---
 class ClaimCreate(BaseModel):
     item_id: int
     verification_message: str
 
 class ClaimRespond(BaseModel):
-    approved: bool # True to approve, False to reject
+    approved: bool 
 
 class BanUpdate(BaseModel): is_banned: bool
 class RoleUpdate(BaseModel): role: str
@@ -82,7 +82,7 @@ notification_router = APIRouter(prefix="/api/notifications", tags=["Notification
 claims_router = APIRouter(prefix="/api/claims", tags=["Claims"]) # --- NEW: Router for claims ---
 
 
-# ============= Onboarding Route (NEW) =============
+# ============= Onboarding Route =============
 @onboarding_router.post("/register-university")
 async def register_university(payload: UniversityRegistrationRequest):
     new_university_id = None
@@ -108,7 +108,7 @@ async def register_university(payload: UniversityRegistrationRequest):
             "domain_name": admin_domain
         }).execute()
 
-        # 4. Create the admin user in Supabase Auth (trigger will now find the domain)
+        # 4. Create the admin user in Supabase Auth
         created_user_res = supabase.auth.admin.create_user({
             "email": payload.email,
             "password": payload.password,
@@ -117,7 +117,7 @@ async def register_university(payload: UniversityRegistrationRequest):
         new_user = created_user_res.user
         new_user_id = new_user.id
 
-        # 5. Update the profile with admin role and full name (trigger already created it)
+        # 5. Update the profile with admin role and full name
         supabase.table("profiles").update({
             "full_name": payload.full_name,
             "role": "admin"
@@ -156,8 +156,8 @@ async def get_current_user_id(request: Request):
 
 async def verify_captcha(token: str, client_ip: Optional[str]):
     if not settings.RECAPTCHA_SECRET_KEY:
-        print("⚠️ WARNING: RECAPTCHA_SECRET_KEY not set. Skipping verification for development.")
-        return True # Skip in dev if key is not set
+        print(" WARNING: RECAPTCHA_SECRET_KEY not set. Skipping verification for development.")
+        return True 
 
     async with httpx.AsyncClient() as client:
         response = await client.post(
@@ -183,7 +183,7 @@ def create_notification(recipient_id: str, message: str, link_to: Optional[str] 
             "link_to": link_to,
             "type": type,
         }).execute()
-        print(f"✅ Notification created for user {recipient_id}")
+        print(f"Notification created for user {recipient_id}")
     except Exception as e:
         print(f"Error creating notification: {e}")
 
@@ -222,6 +222,9 @@ async def create_item(item_data: str = Form(...), image_file: Optional[UploadFil
         ai_tags = await generate_ai_tags(item.title, item.description)
         image_url, image_embedding = None, None
 
+        combined_text = f"{item.title}. {item.description}"
+        text_embedding = get_text_embedding(combined_text)
+
         if image_file:
             image_bytes = await image_file.read()
             await image_file.seek(0) 
@@ -236,18 +239,22 @@ async def create_item(item_data: str = Form(...), image_file: Optional[UploadFil
         profile_res = supabase.table("profiles").select("university_id").eq("id", user_id).single().execute()
         if not profile_res.data: raise HTTPException(status_code=404, detail="User profile not found.")
         
-        post_data = { "title": item.title, "description": item.description, "status": item.status, "category": item.category, "location": item.location, "contact_info": item.contact_info, "ai_tags": ai_tags, "image_url": image_url, "user_id": user_id, "university_id": profile_res.data['university_id'], "image_embedding": image_embedding }
+        post_data = {
+            "title": item.title,
+            "description": item.description,
+            "status": item.status,
+            "category": item.category,
+            "location": item.location,
+            "contact_info": item.contact_info,
+            "ai_tags": ai_tags,
+            "image_url": image_url,
+            "user_id": user_id,
+            "university_id": profile_res.data['university_id'],
+            "image_embedding": image_embedding,
+            "text_embedding": text_embedding
+        }
         insert_response = supabase.table("items").insert(post_data).execute()
         new_item = insert_response.data[0]
-
-        if new_item['status'] == 'Found':
-            lost_items_res = supabase.table("items").select("*, profiles(id, full_name, email)").eq("university_id", new_item['university_id']).eq("status", "Lost").execute()
-            for lost_item in lost_items_res.data:
-                if lost_item['user_id'] != new_item['user_id']:
-                    score = calculate_match_score(lost_item, new_item)
-                    if score > 70:
-                        message = f"Potential Match Found! A recently found item, '{new_item['title']}', is a {score}% match for your lost item: '{lost_item['title']}'."
-                        create_notification(recipient_id=lost_item['user_id'], message=message, link_to="/dashboard/browse-all", type='match')
         
         return {"data": new_item}
     except Exception as e:
@@ -272,20 +279,36 @@ async def search_by_image(image_file: UploadFile = File(...), user_id: str = Dep
 @item_router.get("/find-matches/{lost_item_id}")
 async def find_matches(lost_item_id: int, user_id: str = Depends(get_current_user_id)):
     try:
-        lost_item_res = supabase.table("items").select("*").eq("id", lost_item_id).eq("user_id", user_id).single().execute()
-        if not lost_item_res.data: raise HTTPException(status_code=404, detail="Lost item not found.")
+        # 1. Get the lost item's text embedding and university ID
+        lost_item_res = supabase.table("items").select("text_embedding, university_id").eq("id", lost_item_id).eq("user_id", user_id).single().execute()
+        if not lost_item_res.data or not lost_item_res.data.get('text_embedding'):
+            raise HTTPException(status_code=404, detail="Lost item or its embedding not found.")
+        
         lost_item = lost_item_res.data
-        found_items_res = supabase.table("items").select("*, profiles(id, full_name, email)").eq("university_id", lost_item['university_id']).eq("status", "Found").eq("moderation_status", "approved").execute()
-        matches = []
-        for found_item in found_items_res.data:
-            score = calculate_match_score(lost_item, found_item)
-            if score > 40: matches.append({**found_item, "match_score": score})
-        return sorted(matches, key=lambda x: x['match_score'], reverse=True)[:5]
+        query_embedding = lost_item['text_embedding']
+        university_id = lost_item['university_id']
+
+        # 2. Call the database function to find similar 'Found' items
+        params = {
+            'p_university_id': university_id,
+            'p_query_embedding': query_embedding,
+            'p_match_threshold': 0.6,
+            'p_match_count': 5
+        }
+        matches_res = supabase.rpc('match_items_by_text', params).execute()
+        
+        if matches_res.error:
+            raise Exception(matches_res.error.message)
+
+        # 3. Convert match_score to a user-friendly percentage integer
+        matches = [{**item, "match_score": int(item['match_score'] * 100)} for item in matches_res.data]
+
+        return matches
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- NEW: Endpoint to mark an item as recovered ---
+#Endpoint to mark an item as recovered ---
 @item_router.put("/{item_id}/recover")
 async def mark_as_recovered(item_id: int, user_id: str = Depends(get_current_user_id)):
     try:
@@ -319,7 +342,7 @@ async def mark_as_recovered(item_id: int, user_id: str = Depends(get_current_use
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ============= Claims Routes (NEW) =============
+# ============= Claims Routes =============
 @claims_router.post("/create")
 async def submit_claim(payload: ClaimCreate, claimant_id: str = Depends(get_current_user_id)):
     try:
@@ -411,7 +434,7 @@ async def respond_to_claim(claim_id: int, payload: ClaimRespond, finder_id: str 
             # Reject all other pending claims for this item
             supabase.table("claims").update({"status": "rejected"}).eq("item_id", claim['item_id']).eq("status", "pending").execute()
 
-        else: # If rejected
+        else:
             message = f"Unfortunately, your claim for '{item_title}' was not approved by the finder."
             create_notification(recipient_id=claimant_id, message=message, type='claim_response')
             
@@ -464,7 +487,6 @@ async def update_profile(full_name: Optional[str] = Form(None), avatar: Optional
                 file_options={"content-type": avatar.content_type or "application/octet-stream", "upsert": "true"}
             )
             public_url = supabase.storage.from_("other_images").get_public_url(filename)
-            # Add a timestamp to bust the cache
             updates["avatar_url"] = f"{public_url}?t={uuid4().hex}"
 
         if not updates:

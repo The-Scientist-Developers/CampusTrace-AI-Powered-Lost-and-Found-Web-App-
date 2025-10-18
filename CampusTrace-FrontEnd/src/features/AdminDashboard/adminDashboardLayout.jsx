@@ -28,6 +28,7 @@ const menuItems = [
     icon: ShieldCheck,
   },
   { href: "/admin/user-management", label: "User Management", icon: Users },
+  { href: "/admin/notifications", label: "Notifications", icon: Bell },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
