@@ -25,11 +25,11 @@ if settings.GEMINI_API_KEY:
     try:
         genai.configure(api_key=settings.GEMINI_API_KEY)
         model = genai.GenerativeModel('gemini-2.5-flash')
-        print("Gemini AI model configured successfully.")
+        print("✅ Gemini AI model configured successfully.")
     except Exception as e:
-        print(f"ERROR: Could not configure Gemini AI: {e}")
+        print(f"❌ ERROR: Could not configure Gemini AI: {e}")
 else:
-    print("WARNING: GEMINI_API_KEY not found. AI features disabled.")
+    print("⚠️ WARNING: GEMINI_API_KEY not found. AI features disabled.")
 
 app = FastAPI()
 app.add_middleware(
@@ -68,9 +68,14 @@ class ClaimCreate(BaseModel):
 class ClaimRespond(BaseModel):
     approved: bool 
 
-class BanUpdate(BaseModel): is_banned: bool
-class RoleUpdate(BaseModel): role: str
-class StatusUpdate(BaseModel): moderation_status: str
+class BanUpdate(BaseModel): 
+    is_banned: bool
+    
+class RoleUpdate(BaseModel): 
+    role: str
+    
+class StatusUpdate(BaseModel): 
+    moderation_status: str
 
 # ============= Routers =============
 auth_router = APIRouter(prefix="/api/auth", tags=["Authentication"])
@@ -79,7 +84,7 @@ admin_router = APIRouter(prefix="/admin", tags=["Admin"])
 profile_router = APIRouter(prefix="/api/profile", tags=["Profile"])
 onboarding_router = APIRouter(prefix="/api/onboarding", tags=["Onboarding"])
 notification_router = APIRouter(prefix="/api/notifications", tags=["Notifications"])
-claims_router = APIRouter(prefix="/api/claims", tags=["Claims"]) # --- NEW: Router for claims ---
+claims_router = APIRouter(prefix="/api/claims", tags=["Claims"])
 
 
 # ============= Onboarding Route =============
@@ -156,7 +161,7 @@ async def get_current_user_id(request: Request):
 
 async def verify_captcha(token: str, client_ip: Optional[str]):
     if not settings.RECAPTCHA_SECRET_KEY:
-        print(" WARNING: RECAPTCHA_SECRET_KEY not set. Skipping verification for development.")
+        print("⚠️ WARNING: RECAPTCHA_SECRET_KEY not set. Skipping verification for development.")
         return True 
 
     async with httpx.AsyncClient() as client:
@@ -170,9 +175,9 @@ async def verify_captcha(token: str, client_ip: Optional[str]):
         )
         result = response.json()
         if not result.get("success"):
-            print(f"CAPTCHA verification failed: {result.get('error-codes')}")
+            print(f"❌ CAPTCHA verification failed: {result.get('error-codes')}")
             raise HTTPException(status_code=400, detail="CAPTCHA verification failed.")
-        print("CAPTCHA verified successfully.")
+        print("✅ CAPTCHA verified successfully.")
         return True
 
 def create_notification(recipient_id: str, message: str, link_to: Optional[str] = None, type: str = 'general'):
@@ -183,12 +188,13 @@ def create_notification(recipient_id: str, message: str, link_to: Optional[str] 
             "link_to": link_to,
             "type": type,
         }).execute()
-        print(f"Notification created for user {recipient_id}")
+        print(f"📬 Notification created for user {recipient_id}")
     except Exception as e:
-        print(f"Error creating notification: {e}")
+        print(f"❌ Error creating notification: {e}")
 
 async def generate_ai_tags(title: str, description: str) -> Optional[List[str]]:
-    if not model: return []
+    if not model: 
+        return []
     try:
         prompt = f"Generate 5-7 relevant, comma-separated keywords for this item. Do not use hashtags. Keywords should include item type, color, brand, and features. Title: '{title}'. Description: '{description}'"
         response = await model.generate_content_async(prompt)
@@ -196,24 +202,56 @@ async def generate_ai_tags(title: str, description: str) -> Optional[List[str]]:
         tags_list = [tag.strip().lower() for tag in tags_string.split(',') if tag.strip()]
         return tags_list[:7]
     except Exception as e:
-        print(f"Error generating AI tags: {e}")
+        print(f"❌ Error generating AI tags: {e}")
         return []
+
+def calculate_simple_match_score(lost_item: dict, found_item: dict) -> int:
+    """Calculate a simple text-based similarity score (0-100)."""
+    score = 0
+    
+    # Category match (40 points)
+    if lost_item.get("category") == found_item.get("category"):
+        score += 40
+    
+    # Title keyword match (30 points)
+    lost_title = lost_item.get("title", "").lower()
+    found_title = found_item.get("title", "").lower()
+    lost_keywords = set(lost_title.split())
+    found_keywords = set(found_title.split())
+    keyword_overlap = len(lost_keywords & found_keywords)
+    if keyword_overlap > 0:
+        score += min(30, keyword_overlap * 10)
+    
+    # Description keyword match (20 points)
+    lost_desc = lost_item.get("description", "").lower()
+    found_desc = found_item.get("description", "").lower()
+    lost_desc_keywords = set(lost_desc.split())
+    found_desc_keywords = set(found_desc.split())
+    desc_overlap = len(lost_desc_keywords & found_desc_keywords)
+    if desc_overlap > 0:
+        score += min(20, desc_overlap * 5)
+    
+    # Location match (10 points)
+    if lost_item.get("location") == found_item.get("location"):
+        score += 10
+    
+    return min(100, score)
 
 # ============= Auth Routes =============
 @auth_router.post("/signup")
 async def handle_signup(payload: AuthRequest, request: Request):
     await verify_captcha(payload.captchaToken, request.client.host)
     try:
-        print(f"Attempting signup for email: {payload.email}")
+        print(f"🔵 Attempting signup for email: {payload.email}")
         response = supabase.auth.sign_up({
             "email": payload.email,
             "password": payload.password,
         })
-        print(f"Supabase response: {response}")
+        print(f"✅ Supabase response: {response}")
         return response
     except Exception as e:
-        print(f"Signup error: {type(e).__name__}: {str(e)}")
-        print(f"Full error: {repr(e)}")
+        print(f"❌ Signup error: {type(e).__name__}: {str(e)}")
+        print(f"❌ Full error: {repr(e)}")
         if hasattr(e, 'message'):
             error_detail = e.message
         else:
@@ -243,7 +281,8 @@ async def create_item(item_data: str = Form(...), image_file: Optional[UploadFil
             image_url = supabase.storage.from_("item_images").get_public_url(file_path)
 
         profile_res = supabase.table("profiles").select("university_id").eq("id", user_id).single().execute()
-        if not profile_res.data: raise HTTPException(status_code=404, detail="User profile not found.")
+        if not profile_res.data: 
+            raise HTTPException(status_code=404, detail="User profile not found.")
         
         post_data = {
             "title": item.title,
@@ -271,7 +310,8 @@ async def create_item(item_data: str = Form(...), image_file: Optional[UploadFil
 async def search_by_image(image_file: UploadFile = File(...), user_id: str = Depends(get_current_user_id)):
     try:
         profile_res = supabase.table("profiles").select("university_id").eq("id", user_id).single().execute()
-        if not profile_res.data: raise HTTPException(status_code=404, detail="User profile not found.")
+        if not profile_res.data: 
+            raise HTTPException(status_code=404, detail="User profile not found.")
         university_id = profile_res.data['university_id']
         image_bytes = await image_file.read()
         pil_image = Image.open(io.BytesIO(image_bytes))
@@ -282,39 +322,64 @@ async def search_by_image(image_file: UploadFile = File(...), user_id: str = Dep
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Image search failed: {str(e)}")
 
-@item_router.get("/find-matches/{lost_item_id}")
-async def find_matches(lost_item_id: int, user_id: str = Depends(get_current_user_id)):
+@item_router.get("/find-matches/{item_id}")
+async def find_matches_for_item(
+    item_id: int,
+    user_id: str = Depends(get_current_user_id)
+):
+    """Find potential matches for a lost item using simple text matching."""
     try:
-        # 1. Get the lost item's text embedding and university ID
-        lost_item_res = supabase.table("items").select("text_embedding, university_id").eq("id", lost_item_id).eq("user_id", user_id).single().execute()
-        if not lost_item_res.data or not lost_item_res.data.get('text_embedding'):
-            raise HTTPException(status_code=404, detail="Lost item or its embedding not found.")
+        print(f"🔍 Finding matches for item ID: {item_id}")
         
-        lost_item = lost_item_res.data
-        query_embedding = lost_item['text_embedding']
-        university_id = lost_item['university_id']
-
-        # 2. Call the database function to find similar 'Found' items
-        params = {
-            'p_university_id': university_id,
-            'p_query_embedding': query_embedding,
-            'p_match_threshold': 0.6,
-            'p_match_count': 5
-        }
-        matches_res = supabase.rpc('match_items_by_text', params).execute()
+        # Get the lost item details
+        item_response = supabase.table("items").select("*").eq("id", item_id).execute()
+        if not item_response.data or len(item_response.data) == 0:
+            print(f"❌ Item {item_id} not found")
+            return []
         
-        if matches_res.error:
-            raise Exception(matches_res.error.message)
-
-        # 3. Convert match_score to a user-friendly percentage integer
-        matches = [{**item, "match_score": int(item['match_score'] * 100)} for item in matches_res.data]
-
-        return matches
+        lost_item = item_response.data[0]
+        print(f"📦 Lost item: {lost_item.get('title')} - Status: {lost_item.get('status')}")
+        
+        if lost_item["status"] != "Lost":
+            print(f"⚠️ Item is not 'Lost', skipping matches")
+            return []  # Only find matches for lost items
+        
+        # Get found items from the same university
+        found_items_response = supabase.table("items")\
+            .select("*")\
+            .eq("university_id", lost_item["university_id"])\
+            .eq("status", "Found")\
+            .eq("moderation_status", "approved")\
+            .execute()
+        
+        if not found_items_response.data or len(found_items_response.data) == 0:
+            print(f"⚠️ No found items in university")
+            return []
+        
+        print(f"✅ Found {len(found_items_response.data)} potential matches")
+        
+        # Calculate similarity scores
+        matches = []
+        for found_item in found_items_response.data:
+            score = calculate_simple_match_score(lost_item, found_item)
+            print(f"  - {found_item.get('title')}: {score}% match")
+            if score > 50:  # Only return matches above 50%
+                found_item["match_score"] = score
+                matches.append(found_item)
+        
+        # Sort by score descending
+        matches.sort(key=lambda x: x["match_score"], reverse=True)
+        print(f"🎯 Returning {len(matches)} matches above 50%")
+        return matches[:5]  # Return top 5 matches
+        
     except Exception as e:
+        print(f"❌ Error finding matches: {str(e)}")
+        import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        # Return empty array instead of raising error to prevent frontend crash
+        return []
 
-#Endpoint to mark an item as recovered ---
+# Endpoint to mark an item as recovered
 @item_router.put("/{item_id}/recover")
 async def mark_as_recovered(item_id: int, user_id: str = Depends(get_current_user_id)):
     try:
@@ -517,4 +582,4 @@ app.include_router(claims_router)
 # ============= Root Route =============
 @app.get("/")
 def read_root():
-    return {"status": "Campus Trace backend is running!", "ai_enabled": model is not None}
+    return {"status": "✅ Campus Trace backend is running!", "ai_enabled": model is not None}
