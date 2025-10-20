@@ -15,3 +15,4 @@ protobuf
 python-dotenv
 httpx
 sentence-transformers
+npm install react-loading-skeleton 
