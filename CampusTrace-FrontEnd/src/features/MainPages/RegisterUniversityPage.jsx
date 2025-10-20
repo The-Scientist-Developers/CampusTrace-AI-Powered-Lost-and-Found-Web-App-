@@ -145,23 +145,31 @@
 // );
 
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { Building, User, Mail, Lock } from "lucide-react";
+import {
+  Building,
+  User,
+  Mail,
+  Lock,
+  Loader2,
+  ArrowLeft,
+  CheckCircle,
+} from "lucide-react";
 
 export default function RegisterUniversityPage() {
   const [universityName, setUniversityName] = useState("");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState(""); // <-- Add state for confirm password
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
+  const [error, setError] = useState("");
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    // --- NEW: Password validation ---
     if (password.length < 6) {
       toast.error("Password must be at least 6 characters long.");
       return;
@@ -170,9 +178,9 @@ export default function RegisterUniversityPage() {
       toast.error("Passwords do not match.");
       return;
     }
-    // --- End of validation ---
 
     setIsLoading(true);
+    setError("");
     const toastId = toast.loading("Registering university...");
 
     try {
@@ -196,16 +204,40 @@ export default function RegisterUniversityPage() {
         throw new Error(data.detail || "Failed to register university.");
       }
 
-      toast.success("University registered! You can now log in.", {
+      toast.success("Registration successful! Please check your email.", {
         id: toastId,
       });
-      navigate("/login");
+      setIsSubmitted(true); // Show the verification message
     } catch (error) {
+      setError(error.message);
       toast.error(error.message, { id: toastId });
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (isSubmitted) {
+    return (
+      <div className="min-h-screen bg-neutral-50 dark:bg-zinc-950 flex items-center justify-center p-4">
+        <div className="w-full max-w-md text-center bg-white dark:bg-neutral-900 p-8 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-800">
+          <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
+          <h2 className="text-2xl font-bold text-neutral-800 dark:text-white">
+            Registration Successful!
+          </h2>
+          <p className="mt-2 text-neutral-600 dark:text-neutral-400">
+            A verification link has been sent to your email address. Please
+            check your inbox and click the link to activate your account.
+          </p>
+          <Link
+            to="/login"
+            className="mt-6 inline-block w-full px-4 py-2 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition"
+          >
+            Back to Log In
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-neutral-100 dark:bg-zinc-950 min-h-screen flex items-center justify-center p-4">
@@ -253,7 +285,6 @@ export default function RegisterUniversityPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-            {/* --- NEW: Confirm Password Field --- */}
             <InputField
               icon={Lock}
               type="password"
@@ -264,26 +295,25 @@ export default function RegisterUniversityPage() {
             />
           </div>
 
+          {error && (
+            <p className="text-sm text-red-600 text-center pt-2">{error}</p>
+          )}
+
           <div>
             <button
               type="submit"
               disabled={isLoading}
               className="group relative flex w-full justify-center rounded-md border border-transparent bg-primary-600 py-3 px-4 text-sm font-semibold text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-950 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isLoading ? "Creating Account..." : "Register & Create Account"}
+              {isLoading ? (
+                <Loader2 className="animate-spin w-5 h-5" />
+              ) : (
+                "Register & Create Account"
+              )}
             </button>
           </div>
         </form>
         <div className="space-y-4 text-center text-sm text-neutral-600 dark:text-zinc-400">
-          <p>
-            Want to know how it works for admins?{" "}
-            <Link
-              to="/learn-more"
-              className="font-medium text-primary-600 hover:text-primary-500 hover:underline"
-            >
-              Learn More
-            </Link>
-          </p>
           <p>
             Already have an account?{" "}
             <Link

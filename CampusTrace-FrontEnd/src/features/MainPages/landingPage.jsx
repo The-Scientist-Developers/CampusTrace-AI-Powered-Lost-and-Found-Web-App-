@@ -9,6 +9,7 @@ import {
   Bell,
 } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
+import logo from "../../Images/Logo.svg"; // Corrected logo import
 
 export default function LandingPage() {
   const { theme } = useTheme();
@@ -20,9 +21,14 @@ export default function LandingPage() {
             <div className="flex-shrink-0">
               <Link
                 to="/"
-                className="text-3xl font-extrabold text-primary-600 dark:text-primary-500 tracking-tight"
+                className="flex items-center gap-2 text-3xl font-extrabold text-primary-600 dark:text-primary-500 tracking-tight"
               >
-                Campus Trace
+                <img
+                  src={logo}
+                  alt="Campus Trace Logo"
+                  className="h-10 w-auto rounded-full"
+                />
+                <span className="hidden sm:inline">CampusTrace</span>
               </Link>
             </div>
             <div className="flex items-center gap-6">

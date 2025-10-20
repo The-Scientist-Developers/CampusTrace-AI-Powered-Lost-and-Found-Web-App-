@@ -1,260 +1,543 @@
-import React, { useState, useRef } from "react";
-import { supabase } from "../../api/apiClient";
-import { useTheme } from "../../contexts/ThemeContext";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { supabase } from "../../api/apiClient.js";
+import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
+import {
+  Mail,
+  Lock,
+  LogIn,
+  Loader2,
+  Eye,
+  EyeOff,
+  User,
+  AlertCircle,
+  UserPlus,
+} from "lucide-react";
+import logo from "../../Images/Logo.svg";
 import ReCAPTCHA from "react-google-recaptcha";
-import toast from "react-hot-toast";
+import { motion, AnimatePresence } from "framer-motion";
 
-const LockIcon = ({ className }) => (
-  <svg
-    className={className}
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 20 20"
-    fill="currentColor"
-    aria-hidden="true"
-  >
-    <path
-      fillRule="evenodd"
-      d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"
-      clipRule="evenodd"
-    />
-  </svg>
-);
+// Custom hook for form validation
+const useFormValidation = () => {
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
 
-const LogoIcon = () => (
-  <svg
-    className="mx-auto h-12 w-auto text-neutral-700 dark:text-zinc-200"
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-    strokeWidth="1.5"
-    stroke="currentColor"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M15.75 15.75l-2.489-2.489m0 0a3.375 3.375 0 10-4.773-4.773 3.375 3.375 0 004.774 4.774zM21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-    />
-  </svg>
-);
+  const validateEmail = (email) => {
+    if (!email) return "Email is required";
+    if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(email)) {
+      return "Invalid email address";
+    }
+    return "";
+  };
+
+  const validatePassword = (password) => {
+    if (!password) return "Password is required";
+    if (password.length < 6) return "Password must be at least 6 characters";
+    return "";
+  };
+
+  const validateName = (name) => {
+    if (!name) return "Full name is required";
+    if (name.length < 2) return "Name must be at least 2 characters";
+    return "";
+  };
+
+  const validatePasswordConfirm = (password, confirmPassword) => {
+    if (!confirmPassword) return "Please confirm your password";
+    if (password !== confirmPassword) return "Passwords do not match";
+    return "";
+  };
+
+  return {
+    errors,
+    setErrors,
+    touched,
+    setTouched,
+    validateEmail,
+    validatePassword,
+    validateName,
+    validatePasswordConfirm,
+  };
+};
+
+// Clean Input Component
+const FormInput = ({
+  icon: Icon,
+  error,
+  touched,
+  isPassword = false,
+  showPassword,
+  onTogglePassword,
+  ...props
+}) => {
+  return (
+    <div className="relative mb-6">
+      <div className="relative">
+        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+          <Icon
+            className={`h-5 w-5 transition-colors ${
+              error && touched ? "text-red-500" : "text-neutral-400"
+            }`}
+            aria-hidden="true"
+          />
+        </div>
+        <input
+          {...props}
+          type={isPassword ? (showPassword ? "text" : "password") : props.type}
+          className={`
+            block w-full rounded-md border-0 py-3 pl-10 ${
+              isPassword ? "pr-10" : "pr-4"
+            }
+            text-neutral-900 dark:text-white 
+            bg-white dark:bg-zinc-900 
+            ring-1 ring-inset 
+            placeholder:text-neutral-400 
+            focus:ring-2 focus:ring-inset 
+            sm:text-sm sm:leading-6
+            transition-all duration-200
+            ${
+              error && touched
+                ? "ring-red-500 focus:ring-red-500"
+                : "ring-neutral-300 dark:ring-zinc-700 focus:ring-primary-600"
+            }
+          `}
+        />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={onTogglePassword}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+          >
+            {showPassword ? (
+              <EyeOff className="w-5 h-5" />
+            ) : (
+              <Eye className="w-5 h-5" />
+            )}
+          </button>
+        )}
+      </div>
+      {error && touched && (
+        <motion.p
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-1 text-sm text-red-500 flex items-center gap-1"
+        >
+          <AlertCircle className="w-3 h-3" />
+          {error}
+        </motion.p>
+      )}
+    </div>
+  );
+};
 
 export default function LoginPage() {
-  const { theme } = useTheme();
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [isForgotPassword, setIsForgotPassword] = useState(false); // New state for forgot password view
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [captchaValue, setCaptchaValue] = useState(null);
-  const recaptchaRef = useRef();
+  const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    confirmPassword: "",
+    fullName: "",
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState(null);
+  const recaptchaRef = useRef(null);
+  const navigate = useNavigate();
 
-  const handleAuthSubmit = async (event) => {
-    event.preventDefault();
-    if (!captchaValue && !isForgotPassword) {
-      toast.error("Please complete the CAPTCHA.");
+  const {
+    errors,
+    setErrors,
+    touched,
+    setTouched,
+    validateEmail,
+    validatePassword,
+    validateName,
+    validatePasswordConfirm,
+  } = useFormValidation();
+
+  // Check for existing session
+  useEffect(() => {
+    const checkSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/dashboard");
+      }
+    };
+    checkSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (session) {
+          navigate("/dashboard");
+        }
+      }
+    );
+
+    return () => authListener.subscription.unsubscribe();
+  }, [navigate]);
+
+  const handleInputChange = useCallback(
+    (field, value) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+
+      // Clear error when user starts typing
+      if (errors[field]) {
+        setErrors((prev) => ({ ...prev, [field]: "" }));
+      }
+    },
+    [errors, setErrors]
+  );
+
+  const handleBlur = useCallback(
+    (field) => {
+      setTouched((prev) => ({ ...prev, [field]: true }));
+
+      // Validate on blur
+      let error = "";
+      switch (field) {
+        case "email":
+          error = validateEmail(formData.email);
+          break;
+        case "password":
+          error = validatePassword(formData.password);
+          break;
+        case "fullName":
+          error = validateName(formData.fullName);
+          break;
+        case "confirmPassword":
+          error = validatePasswordConfirm(
+            formData.password,
+            formData.confirmPassword
+          );
+          break;
+      }
+
+      if (error) {
+        setErrors((prev) => ({ ...prev, [field]: error }));
+      }
+    },
+    [
+      formData,
+      setTouched,
+      setErrors,
+      validateEmail,
+      validatePassword,
+      validateName,
+      validatePasswordConfirm,
+    ]
+  );
+
+  const switchMode = () => {
+    setIsLogin(!isLogin);
+    setFormData({ email: "", password: "", confirmPassword: "", fullName: "" });
+    setErrors({});
+    setTouched({});
+    setCaptchaToken(null);
+    recaptchaRef.current?.reset();
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Validate all fields
+    const emailError = validateEmail(formData.email);
+    const passwordError = validatePassword(formData.password);
+    let nameError = "";
+    let confirmError = "";
+
+    if (!isLogin) {
+      nameError = validateName(formData.fullName);
+      confirmError = validatePasswordConfirm(
+        formData.password,
+        formData.confirmPassword
+      );
+    }
+
+    if (emailError || passwordError || nameError || confirmError) {
+      setErrors({
+        email: emailError,
+        password: passwordError,
+        fullName: nameError,
+        confirmPassword: confirmError,
+      });
+      setTouched({
+        email: true,
+        password: true,
+        fullName: !isLogin,
+        confirmPassword: !isLogin,
+      });
       return;
     }
-    setIsLoading(true);
-    const toastId = toast.loading("Processing...");
+
+    if (!captchaToken) {
+      toast.error("Please complete the CAPTCHA verification");
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      if (isSignUp) {
-        const response = await fetch("http://localhost:8000/api/auth/signup", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, captchaToken: captchaValue }),
+      if (isLogin) {
+        // Login
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
         });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || "Sign up failed.");
-        toast.success(
-          "Sign up successful! Please check your email to confirm your account.",
-          { id: toastId }
-        );
-        setEmail("");
-        setPassword("");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+
         if (error) throw error;
-        toast.success("Signed in successfully!", { id: toastId });
+        toast.success("Welcome back! Redirecting to dashboard...");
+      } else {
+        // Sign up
+        const { data, error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              full_name: formData.fullName,
+            },
+          },
+        });
+
+        if (error) throw error;
+
+        if (data?.user?.identities?.length === 0) {
+          toast.error("An account with this email already exists");
+          return;
+        }
+
+        toast.success(
+          "Account created! Please check your email to verify your account.",
+          { duration: 6000 }
+        );
+        setIsLogin(true); // Switch to login view after successful signup
       }
-    } catch (error) {
-      toast.error(error.message, { id: toastId });
+    } catch (err) {
+      console.error("Auth error:", err);
+
+      // Handle specific error cases
+      if (err.message?.includes("Invalid login credentials")) {
+        toast.error("Invalid email or password");
+      } else if (err.message?.includes("Email not confirmed")) {
+        toast.error("Please verify your email before logging in");
+      } else if (err.message?.includes("User already registered")) {
+        toast.error("An account with this email already exists");
+      } else {
+        toast.error(err.message || "An error occurred. Please try again.");
+      }
+
+      // Reset captcha on error
+      recaptchaRef.current?.reset();
+      setCaptchaToken(null);
     } finally {
-      setIsLoading(false);
-      setCaptchaValue(null);
-      if (recaptchaRef.current) recaptchaRef.current.reset();
+      setLoading(false);
     }
-  };
-
-  const handlePasswordReset = async (event) => {
-    event.preventDefault();
-    setIsLoading(true);
-    const toastId = toast.loading("Sending reset link...");
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/update-password`, // This is where the user will be sent after clicking the link
-      });
-      if (error) throw error;
-      toast.success("Password reset link sent! Please check your email.", {
-        id: toastId,
-      });
-      setIsForgotPassword(false); // Go back to the login view
-      setEmail("");
-    } catch (error) {
-      toast.error(error.message, { id: toastId });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const toggleView = (view) => {
-    setIsSignUp(view === "signup");
-    setIsForgotPassword(view === "forgot");
-    setEmail("");
-    setPassword("");
-    if (recaptchaRef.current) recaptchaRef.current.reset();
-  };
-
-  const getTitle = () => {
-    if (isForgotPassword) return "Reset Your Password";
-    if (isSignUp) return "Create an Account";
-    return "Sign in to Campus Trace";
   };
 
   return (
     <div className="bg-neutral-100 dark:bg-zinc-950 min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <LogoIcon />
-          <h2 className="mt-6 text-2xl sm:text-3xl font-bold tracking-tight text-neutral-800 dark:text-zinc-100">
-            {getTitle()}
+      <motion.div
+        className="w-full max-w-md"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        {/* Logo and Header */}
+        <div className="text-center mb-8">
+          <img
+            className="mx-auto h-12 w-12 mb-4 rounded-full"
+            src={logo}
+            alt="CampusTrace"
+          />
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-800 dark:text-zinc-100">
+            {isLogin ? "Welcome back" : "Create your account"}
           </h2>
-          {!isForgotPassword && (
-            <p className="mt-2 text-sm text-neutral-600 dark:text-zinc-400">
-              {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-              <button
-                onClick={() => toggleView(isSignUp ? "login" : "signup")}
-                className="font-medium text-primary-600 hover:text-primary-500"
-              >
-                {isSignUp ? "Sign In" : "Sign Up"}
-              </button>
-            </p>
-          )}
+          <p className="mt-2 text-sm text-neutral-600 dark:text-zinc-400">
+            {isLogin
+              ? "Sign in to access your CampusTrace account"
+              : "Join CampusTrace to help find lost items on campus"}
+          </p>
         </div>
 
-        {isForgotPassword ? (
-          <form className="mt-8 space-y-6" onSubmit={handlePasswordReset}>
-            <div>
-              <label htmlFor="email-address" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="email-address"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
-                className="relative block w-full appearance-none rounded-md border border-neutral-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-3 text-neutral-900 dark:text-zinc-100 placeholder-neutral-500 focus:z-10 focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm disabled:opacity-50"
-                placeholder="Enter your email address"
-              />
-            </div>
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="group relative flex w-full justify-center rounded-md border border-transparent bg-primary-600 py-3 px-4 text-sm font-semibold text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-950 disabled:opacity-50 transition-colors"
+        {/* Toggle Buttons */}
+        <div className="flex bg-white dark:bg-zinc-900 rounded-lg p-1 mb-8 ring-1 ring-inset ring-neutral-300 dark:ring-zinc-700">
+          <button
+            onClick={() => !isLogin && switchMode()}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+              isLogin
+                ? "bg-primary-600 text-white shadow-sm"
+                : "text-neutral-600 dark:text-zinc-400 hover:text-neutral-800 dark:hover:text-zinc-200"
+            }`}
+          >
+            Sign In
+          </button>
+          <button
+            onClick={() => isLogin && switchMode()}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+              !isLogin
+                ? "bg-primary-600 text-white shadow-sm"
+                : "text-neutral-600 dark:text-zinc-400 hover:text-neutral-800 dark:hover:text-zinc-200"
+            }`}
+          >
+            Sign Up
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-2">
+          <AnimatePresence mode="wait">
+            {!isLogin && (
+              <motion.div
+                key="fullName"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
               >
-                {isLoading ? "Sending..." : "Send Reset Link"}
-              </button>
-            </div>
-            <div className="text-center">
-              <button
-                onClick={() => toggleView("login")}
-                className="font-medium text-sm text-primary-600 hover:text-primary-500"
-              >
-                Back to Sign In
-              </button>
-            </div>
-          </form>
-        ) : (
-          <form className="mt-8 space-y-6" onSubmit={handleAuthSubmit}>
-            <div className="rounded-md shadow-sm -space-y-px">
-              <div>
-                <label htmlFor="email-address-auth" className="sr-only">
-                  Email address
-                </label>
-                <input
-                  id="email-address-auth"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
-                  className="relative block w-full appearance-none rounded-t-md border border-neutral-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-3 text-neutral-900 dark:text-zinc-100 placeholder-neutral-500 focus:z-10 focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm disabled:opacity-50"
-                  placeholder="University email address"
+                <FormInput
+                  icon={User}
+                  type="text"
+                  placeholder="Full Name"
+                  value={formData.fullName}
+                  onChange={(e) =>
+                    handleInputChange("fullName", e.target.value)
+                  }
+                  onBlur={() => handleBlur("fullName")}
+                  error={errors.fullName}
+                  touched={touched.fullName}
+                  autoComplete="name"
                 />
-              </div>
-              <div>
-                <label htmlFor="password" className="sr-only">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete={isSignUp ? "new-password" : "current-password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
-                  className="relative block w-full appearance-none rounded-b-md border border-neutral-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-3 text-neutral-900 dark:text-zinc-100 placeholder-neutral-500 focus:z-10 focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm disabled:opacity-50"
-                  placeholder="Password"
-                />
-              </div>
-            </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-            <div className="flex items-center justify-between">
-              <div className="text-sm">
-                <button
-                  type="button"
-                  onClick={() => toggleView("forgot")}
-                  className="font-medium text-primary-600 hover:text-primary-500"
-                >
-                  Forgot your password?
-                </button>
-              </div>
-            </div>
+          <FormInput
+            icon={Mail}
+            type="email"
+            placeholder="Email Address"
+            value={formData.email}
+            onChange={(e) => handleInputChange("email", e.target.value)}
+            onBlur={() => handleBlur("email")}
+            error={errors.email}
+            touched={touched.email}
+            autoComplete="email"
+            required
+          />
 
-            <div className="flex justify-center">
-              <ReCAPTCHA
-                ref={recaptchaRef}
-                sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-                onChange={(value) => setCaptchaValue(value)}
-                theme={theme}
-              />
-            </div>
+          <FormInput
+            icon={Lock}
+            isPassword
+            placeholder="Password"
+            value={formData.password}
+            onChange={(e) => handleInputChange("password", e.target.value)}
+            onBlur={() => handleBlur("password")}
+            error={errors.password}
+            touched={touched.password}
+            showPassword={showPassword}
+            onTogglePassword={() => setShowPassword(!showPassword)}
+            autoComplete={isLogin ? "current-password" : "new-password"}
+            required
+          />
 
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading || !captchaValue}
-                className="group relative flex w-full justify-center rounded-md border border-transparent bg-primary-600 py-3 px-4 text-sm font-semibold text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-950 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          <AnimatePresence mode="wait">
+            {!isLogin && (
+              <motion.div
+                key="confirmPassword"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
               >
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                  <LockIcon className="h-5 w-5 text-primary-200" />
-                </span>
-                {isLoading ? "Processing..." : isSignUp ? "Sign Up" : "Sign In"}
-              </button>
+                <FormInput
+                  icon={Lock}
+                  isPassword
+                  placeholder="Confirm Password"
+                  value={formData.confirmPassword}
+                  onChange={(e) =>
+                    handleInputChange("confirmPassword", e.target.value)
+                  }
+                  onBlur={() => handleBlur("confirmPassword")}
+                  error={errors.confirmPassword}
+                  touched={touched.confirmPassword}
+                  showPassword={showConfirmPassword}
+                  onTogglePassword={() =>
+                    setShowConfirmPassword(!showConfirmPassword)
+                  }
+                  autoComplete="new-password"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {isLogin && (
+            <div className="flex justify-end mb-4">
+              <a
+                href="/update-password"
+                className="text-sm text-primary-600 hover:text-primary-500 transition-colors hover:underline"
+              >
+                Forgot password?
+              </a>
             </div>
-          </form>
-        )}
-      </div>
+          )}
+
+          {/* CAPTCHA */}
+          <div className="flex justify-center my-6">
+            <ReCAPTCHA
+              ref={recaptchaRef}
+              sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+              onChange={setCaptchaToken}
+              theme={
+                window.matchMedia("(prefers-color-scheme: dark)").matches
+                  ? "dark"
+                  : "light"
+              }
+            />
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading || !captchaToken}
+            className="group relative flex w-full justify-center rounded-md border border-transparent bg-primary-600 py-3 px-4 text-sm font-semibold text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-950 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                {isLogin ? "Signing in..." : "Creating account..."}
+              </span>
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                {isLogin ? (
+                  <>
+                    <LogIn className="w-5 h-5" />
+                    Sign In
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-5 h-5" />
+                    Create Account
+                  </>
+                )}
+              </span>
+            )}
+          </button>
+        </form>
+
+        {/* Footer */}
+        <div className="space-y-4 text-center text-sm text-neutral-600 dark:text-zinc-400 mt-6">
+          <p>
+            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            <button
+              onClick={switchMode}
+              className="font-medium text-primary-600 hover:text-primary-500 transition-colors hover:underline"
+            >
+              {isLogin ? "Sign up" : "Sign in"}
+            </button>
+          </p>
+        </div>
+      </motion.div>
     </div>
   );
 }

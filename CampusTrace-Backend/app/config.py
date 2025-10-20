@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     PYTHON_SUPABASE_KEY: str
     GEMINI_API_KEY: Optional[str] = None
     RECAPTCHA_SECRET_KEY: Optional[str] = None 
+    PRELOAD_MODELS: bool = False
     CORS_ORIGINS: List[AnyHttpUrl] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     DEBUG: bool = False
 
