@@ -11,7 +11,7 @@ env/
 .env/
 *.venv/
 
-# --- Node.js dependencies ---
+# --- Node.js dependencies ---  
 CampusTrace-FrontEnd/node_modules/
 CampusTrace-Backend/node_modules/
 
