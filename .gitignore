@@ -1,4 +1,4 @@
-# Python caches and virtual environments
+# --- Python caches and virtual environments ---
 __pycache__/
 *.py[cod]
 *.pyo
@@ -6,8 +6,34 @@ __pycache__/
 
 # Virtual environment folders
 venv/
+.venv/
+env/
 .env/
 *.venv/
 
-# Node modules
+# --- Node.js dependencies ---
 CampusTrace-FrontEnd/node_modules/
+CampusTrace-Backend/node_modules/
+
+# --- Environment files (Frontend + Backend) ---
+.env
+.env.*
+CampusTrace-FrontEnd/.env
+CampusTrace-FrontEnd/.env.*
+CampusTrace-Backend/.env
+CampusTrace-Backend/.env.*
+
+# --- Build outputs ---
+build/
+dist/
+CampusTrace-FrontEnd/build/
+CampusTrace-Backend/dist/
+
+# --- Logs ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+.vscode/
+.idea/
