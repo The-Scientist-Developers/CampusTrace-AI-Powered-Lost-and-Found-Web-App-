@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     PRELOAD_MODELS: bool = False
     CORS_ORIGINS: List[AnyHttpUrl] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     DEBUG: bool = False
+    EMAIL_CONFIRM_REDIRECT: str = "http://localhost:5173/dashboard"
 
     class Config:   
         env_file = ".env"
