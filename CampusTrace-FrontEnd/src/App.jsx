@@ -178,8 +178,8 @@ function AppContent() {
 
   return (
     <SkeletonTheme
-      baseColor={theme === "dark" ? "#2d3748" : "#ebebeb"}
-      highlightColor={theme === "dark" ? "#4a5568" : "#f5f5f5"}
+      baseColor={theme === "dark" ? "#2a2a2a" : "#ebebeb"}
+      highlightColor={theme === "dark" ? "#333333" : "#f5f5f5"}
     >
       <Router>
         <Routes>
