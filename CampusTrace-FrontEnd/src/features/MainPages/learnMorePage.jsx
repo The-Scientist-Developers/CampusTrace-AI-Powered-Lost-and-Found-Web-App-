@@ -10,6 +10,9 @@ import {
   FilePlus,
   Search,
   CheckCircle,
+  Users,
+  BarChart2,
+  Bell,
 } from "lucide-react";
 
 const FeatureSection = ({ icon: Icon, title, children }) => (
@@ -54,14 +57,14 @@ export default function LearnMorePage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <header className="text-center mb-16 animate-fade-in-up">
           <p className="text-primary-600 dark:text-primary-500 font-semibold tracking-widest uppercase mb-2">
-            How Campus Trace Works
+            How CampusTrace Works
           </p>
           <h1 className="text-5xl md:text-6xl font-extrabold text-neutral-900 dark:text-white">
             A Detailed Guide
           </h1>
         </header>
 
-        {/* --- NEW: Section for General Users --- */}
+        {/* --- Section for General Users --- */}
         <div className="mb-24">
           <h2 className="text-3xl font-bold text-center text-neutral-800 dark:text-white mb-12">
             For Students & Staff
@@ -73,34 +76,36 @@ export default function LearnMorePage() {
               step="1"
             >
               To ensure a secure community, you must sign up using your official
-              university email address. This instantly connects you to your
-              campus's private lost and found network.
+              university email address. Our system verifies that your email
+              domain is on your university's approved list, instantly connecting
+              you to your campus's private lost and found network.
             </StepCard>
             <StepCard
               icon={FilePlus}
               title="Post a Lost or Found Item"
               step="2"
             >
-              Use the simple form to post details about your item. If you lost
-              something, our AI will immediately start looking for matches. If
-              you found something, your post will help someone find their
-              missing item.
+              Use the simple form to post details about your item. You can write
+              a basic description and use our **AI Helper** to enhance it with
+              key details. If you lost an item, our system immediately starts
+              looking for matches.
             </StepCard>
             <StepCard icon={Search} title="Find and Claim Your Item" step="3">
               If you lost an item, check your dashboard for AI-powered "Possible
-              Matches." You can also browse all "Found" items. When you see
-              yours, click "Claim This Item." The finder will be notified to
-              review your claim.
+              Matches." You can also browse all "Found" items or use our
+              **Visual Search** by uploading an image. When you see yours, click
+              "Claim This Item" and provide a secret detail to prove ownership.
+              The finder will be notified privately to review your claim.
             </StepCard>
             <StepCard
               icon={CheckCircle}
               title="Approve Claims & Recover"
               step="4"
             >
-              If you found an item, you'll receive notifications when someone
+              If you found an item, you'll receive a notification when someone
               claims it. Review their claim on your "My Posts" page. Once a
-              claim is approved, the system shares contact details so you can
-              coordinate the return.
+              claim is approved, the system securely shares contact details so
+              you can coordinate a safe return on campus.
             </StepCard>
           </div>
           <div className="text-center mt-8 animate-fade-in-up">
@@ -108,7 +113,7 @@ export default function LearnMorePage() {
               to="/login"
               className="px-8 py-3 bg-primary-600 text-white text-lg font-bold rounded-full shadow-lg hover:bg-primary-700 transition-all transform hover:scale-105"
             >
-              Sign Up or Log In
+              Get Started
             </Link>
           </div>
         </div>
@@ -128,7 +133,8 @@ export default function LearnMorePage() {
                 "For Universities"
               </Link>{" "}
               page. Fill out the form with your university's name and your
-              official admin email to create the account.
+              official admin email to create the master account for your
+              institution.
             </StepCard>
             <StepCard icon={LogIn} title="Instant Activation & Login" step="2">
               Upon submission, your university is instantly registered, your
@@ -141,10 +147,17 @@ export default function LearnMorePage() {
               .
             </StepCard>
             <StepCard icon={Settings} title="Configure Your Campus" step="3">
-              Once logged in, you'll be directed to the Admin Dashboard. From
-              the "Settings" page, you can add more allowed email domains (e.g.,
-              for students vs. staff) and manage user roles, post moderation,
-              and other campus-specific settings.
+              From the Admin Dashboard, you can manage user roles, moderate
+              posts, view analytics, and configure campus-specific settings like
+              adding more allowed email domains (e.g., `student.university.edu`
+              vs `staff.university.edu`) or setting up keyword blacklists for
+              content filtering.
+            </StepCard>
+            <StepCard icon={Users} title="Manage Your Community" step="4">
+              The admin dashboard provides a comprehensive user management
+              interface. You can view all registered users, assign roles
+              (Member, Moderator, Admin), and ban users if necessary to maintain
+              a safe and productive environment.
             </StepCard>
           </div>
           <div className="text-center mt-8 animate-fade-in-up">
@@ -158,30 +171,36 @@ export default function LearnMorePage() {
         </div>
 
         {/* Section for Technology */}
-        <FeatureSection title="Our Technology" icon={Server}>
+        <FeatureSection title="Our Technology Stack" icon={Server}>
           <p>
-            Campus Trace is built to scale. Each university operates in its own
-            secure, isolated environment using a **multi-tenant architecture**.
-            An admin from one university can only view and manage data belonging
-            to their own institution.
+            CampusTrace is built on a modern, scalable tech stack. The backend
+            is powered by **FastAPI**, a high-performance Python framework,
+            chosen for its speed and asynchronous capabilities. The frontend is
+            a dynamic **React** single-page application built with Vite,
+            ensuring a fast and responsive user experience.
           </p>
           <p>
-            This is enforced at the database level using Supabase's powerful
-            **Row Level Security (RLS)**, ensuring data is never accidentally
-            exposed across university boundaries.
+            Our entire infrastructure is built on **Supabase**, an open-source
+            Firebase alternative, which provides a robust **PostgreSQL**
+            database, authentication, file storage, and real-time capabilities.
+            This allows for rapid development and a highly reliable and scalable
+            platform.
           </p>
         </FeatureSection>
 
         <FeatureSection title="AI-Powered Intelligence" icon={BrainCircuit}>
           <p>
-            We leverage the **Google Gemini AI API** to make finding items
-            smarter and faster. When a user posts an item, our backend sends the
-            description to Gemini for analysis.
+            We leverage a multi-faceted AI approach. For text analysis,
+            description enhancement, and generating keyword tags, we use the
+            powerful **Google Gemini AI API**. For image-based searching and
+            matching, we utilize the **CLIP (Contrastive Language–Image
+            Pre-training) model** and **SentenceTransformers** to create vector
+            embeddings of images and text.
           </p>
           <p>
-            The AI automatically extracts relevant keywords and tags, which
-            enhances our search algorithm and powers a proactive matching system
-            to suggest possible reunions between lost items and their owners.
+            This dual-AI strategy allows our search algorithm to understand both
+            the textual and visual context of an item, powering a proactive
+            matching system that suggests reunions with high accuracy.
           </p>
         </FeatureSection>
 
@@ -189,8 +208,16 @@ export default function LearnMorePage() {
           <p>
             Trust is essential. We ensure every user is a verified member of
             their campus community by requiring sign-ups with an official
-            university email address that has been approved by the campus
-            administrator.
+            university email address. This is enforced by a domain whitelist
+            controlled by each university's administrator. We also integrate
+            **Google reCAPTCHA** to protect against automated sign-ups.
+          </p>
+          <p>
+            Furthermore, each university operates in its own secure, isolated
+            environment using a **multi-tenant architecture**. This is enforced
+            at the database level using Supabase's powerful **Row Level Security
+            (RLS)**, ensuring data is never accidentally exposed across
+            university boundaries.
           </p>
         </FeatureSection>
       </div>
