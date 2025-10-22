@@ -4,10 +4,10 @@
   width="128"
   height="128"
   role="img"
-  aria-label="Foundli icon"
+  aria-label="CampusTrace icon"
 >
   <defs>
-    <linearGradient id="foundli-gradient" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="CampusTrace-gradient" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#4338CA"/>
       <stop offset="100%" stop-color="#3730A3"/>
     </linearGradient>
@@ -19,7 +19,7 @@
   <!-- Outer pin -->
   <path
     d="M64 12c-18 0-32 14-32 32 0 20 32 56 32 56s32-36 32-56c0-18-14-32-32-32z"
-    fill="url(#foundli-gradient)"
+    fill="url(#CampusTrace-gradient)"
     filter="url(#shadow)"
   />
 

@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../../../api/apiClient";
-import { UploadCloud, Image as ImageIcon, X, Loader2 } from "lucide-react";
+import {
+  UploadCloud,
+  Image as ImageIcon,
+  X,
+  Loader2,
+  Sparkles,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { notifyAdminsNewPost } from "../../../utils/notificationHelpers";
-
-// --- SKELETON IMPORTS ---
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
@@ -82,6 +86,7 @@ export default function PostNewItem() {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -104,6 +109,54 @@ export default function PostNewItem() {
   const removeImage = () => {
     setImageFile(null);
     setImagePreview("");
+  };
+
+  const handleImproveDescription = async () => {
+    if (!description.trim()) {
+      toast.error(
+        "Please write a brief description first for the AI to improve."
+      );
+      return;
+    }
+    setIsGenerating(true);
+    const toastId = toast.loading("Improving description with AI...");
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Authentication required.");
+
+      const response = await fetch(
+        "http://localhost:8000/api/items/generate-description",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            title,
+            category,
+            draft_description: description,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail || "AI helper failed.");
+      }
+
+      const { description: aiDescription } = await response.json();
+      setDescription(aiDescription);
+      toast.success("Description improved!", { id: toastId });
+    } catch (error) {
+      toast.error(error.message, { id: toastId });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -287,18 +340,38 @@ export default function PostNewItem() {
                 value={contactInfo}
                 onChange={(e) => setContactInfo(e.target.value)}
                 className="form-input w-full dark:bg-[#2a2a2a] dark:border-neutral-700 dark:text-white"
-                placeholder="Phone #, Facebook name, etc."
+                placeholder="Messenger: John Doe, Phone: 123-456-7890"
               />
             </div>
           </div>
 
           <div>
-            <label
-              htmlFor="description"
-              className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
-            >
-              Description
-            </label>
+            <div className="flex justify-between items-center mb-2">
+              <label
+                htmlFor="description"
+                className="block text-sm font-medium text-neutral-700 dark:text-neutral-300"
+              >
+                Description
+              </label>
+              <button
+                type="button"
+                onClick={handleImproveDescription}
+                disabled={isGenerating || !description.trim()}
+                className="flex items-center gap-1.5 px-2 py-1 text-xs font-semibold text-primary-600 bg-primary-100/50 dark:bg-primary-500/10 rounded-md hover:bg-primary-100/80 dark:hover:bg-primary-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                title={
+                  !description.trim()
+                    ? "Write a description first"
+                    : "Improve with AI"
+                }
+              >
+                {isGenerating ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4" />
+                )}
+                Improve with AI
+              </button>
+            </div>
             <textarea
               id="description"
               rows="4"
@@ -306,7 +379,7 @@ export default function PostNewItem() {
               onChange={(e) => setDescription(e.target.value)}
               required
               className="form-textarea w-full dark:bg-[#2a2a2a] dark:border-neutral-700 dark:text-white"
-              placeholder="Add specific details like brand, color, or identifying marks..."
+              placeholder="Start by describing your item, then let AI help improve it..."
             ></textarea>
           </div>
 

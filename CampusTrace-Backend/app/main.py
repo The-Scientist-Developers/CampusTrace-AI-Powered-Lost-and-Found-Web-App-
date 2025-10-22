@@ -32,11 +32,11 @@ async def startup_event():
             genai.configure(api_key=settings.GEMINI_API_KEY)
             global model
             model = genai.GenerativeModel('gemini-2.5-flash')
-            print("✅ Gemini AI model configured successfully.")
+            print("Gemini AI model configured successfully.")
         except Exception as e:
-            print(f"❌ ERROR: Could not configure Gemini AI: {e}")
+            print(f"ERROR: Could not configure Gemini AI: {e}")
     else:
-        print("⚠️ WARNING: GEMINI_API_KEY not found. AI features disabled.")
+        print("WARNING: GEMINI_API_KEY not found. AI features disabled.")
     
     # Load other ML models
     clip_util.load_model()
@@ -57,6 +57,11 @@ class UniversityRegistrationRequest(BaseModel):
     full_name: str
     email: EmailStr
     password: str
+
+class DescriptionRequest(BaseModel):
+    title: str
+    category: str
+    draft_description: str
 
 class AuthRequest(BaseModel):
     email: EmailStr
@@ -318,6 +323,37 @@ async def signup_user(payload: SignupRequest, request: Request):
         raise HTTPException(status_code=400, detail=str(exc))
 
 # ============= Item Routes =============
+
+@item_router.post("/generate-description")
+async def generate_description(payload: DescriptionRequest):
+    """
+    Rewrites and enhances a user's draft description using the AI model.
+    """
+    if not model:
+        raise HTTPException(status_code=503, detail="AI features are not available.")
+    try:
+        # This new prompt focuses on improving the user's text
+        prompt = f"""
+        A user has provided a draft description for a lost or found item. Rewrite and enhance it to be more clear, detailed, and effective.
+
+        Original Information:
+        - Item Title: "{payload.title}"
+        - Category: "{payload.category}"
+        - User's Draft Description: "{payload.draft_description}"
+
+        Your task:
+        - Refine the language to be clear and concise.
+        - Organize the details logically.
+        - If key details like brand, color, size, or unique marks are missing, add placeholders like [Specify Color] or [Describe any unique marks] to prompt the user to add them.
+        - Ensure the tone is helpful.
+        - Return only the improved description text, without any introductory phrases like "Here's the improved description:".
+        """
+        response = await model.generate_content_async(prompt)
+        return {"description": response.text.strip()}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to generate AI description: {str(e)}")
+    
 @item_router.post("/create")
 async def create_item(item_data: str = Form(...), image_file: Optional[UploadFile] = File(None), user_id: str = Depends(get_current_user_id)):
     try:

@@ -21,14 +21,11 @@ import {
   Moon,
 } from "lucide-react";
 import logo from "../../Images/Logo.svg";
-import logo2 from "../../Images/Logo2.svg";
 import { useTheme } from "../../contexts/ThemeContext";
-
-// Import skeleton library
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
-// Dashboard Skeleton Loading Component
+// --- Skeleton Loader --- //
 const DashboardSkeleton = ({ isSidebarOpen, mobileMenu }) => (
   <div className="h-screen flex flex-col bg-neutral-50 dark:bg-[#1a1a1a] text-neutral-800 dark:text-neutral-300 overflow-hidden">
     <header className="h-16 px-4 lg:px-6 bg-white/70 dark:bg-[#2a2a2a]/70 backdrop-blur-lg border-b border-neutral-200 dark:border-[#3a3a3a] flex items-center justify-between shadow-sm z-30 flex-shrink-0">
@@ -126,52 +123,50 @@ const bottomItems = [
   { label: "Help", icon: HelpCircle, path: "/dashboard/help" },
 ];
 
-const NavLink = ({ item, isOpen, exact }) => {
-  return (
-    <RouterNavLink
-      to={item.path}
-      end={exact}
-      title={!isOpen ? item.label : ""}
-      className={({ isActive }) => `
-        flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200
-        ${
-          isActive
-            ? "bg-primary-500/10 text-primary-500 font-semibold"
-            : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 hover:text-neutral-900 dark:hover:text-white"
-        }
-        ${!isOpen ? "justify-center" : ""}
-        group relative
-      `}
-    >
-      {({ isActive }) => (
-        <>
-          <item.icon
-            className={`w-5 h-5 flex-shrink-0 transition-colors duration-200 ${
-              isActive
-                ? "text-primary-500"
-                : "text-neutral-500 dark:text-neutral-500 group-hover:text-neutral-800 dark:group-hover:text-white"
-            }`}
-          />
-          {isOpen && (
-            <>
-              <span className="flex-1 text-sm font-medium truncate">
-                {item.label}
+const NavLink = ({ item, isOpen, exact }) => (
+  <RouterNavLink
+    to={item.path}
+    end={exact}
+    title={!isOpen ? item.label : ""}
+    className={({ isActive }) => `
+      flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200
+      ${
+        isActive
+          ? "bg-primary-500/10 text-primary-500 font-semibold"
+          : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 hover:text-neutral-900 dark:hover:text-white"
+      }
+      ${!isOpen ? "justify-center" : ""}
+      group relative
+    `}
+  >
+    {({ isActive }) => (
+      <>
+        <item.icon
+          className={`w-5 h-5 flex-shrink-0 transition-colors duration-200 ${
+            isActive
+              ? "text-primary-500"
+              : "text-neutral-500 dark:text-neutral-500 group-hover:text-neutral-800 dark:group-hover:text-white"
+          }`}
+        />
+        {isOpen && (
+          <>
+            <span className="flex-1 text-sm font-medium truncate">
+              {item.label}
+            </span>
+            {item.badge && (
+              <span className="px-2 py-0.5 text-xs bg-primary-500 text-white rounded-full font-bold min-w-[20px] text-center shadow-md">
+                {item.badge}
               </span>
-              {item.badge && (
-                <span className="px-2 py-0.5 text-xs bg-primary-500 text-white rounded-full font-bold min-w-[20px] text-center shadow-md">
-                  {item.badge}
-                </span>
-              )}
-            </>
-          )}
-          {!isOpen && item.badge && (
-            <span className="absolute top-1 right-1 w-2 h-2 bg-primary-500 rounded-full"></span>
-          )}
-        </>
-      )}
-    </RouterNavLink>
-  );
-};
+            )}
+          </>
+        )}
+        {!isOpen && item.badge && (
+          <span className="absolute top-1 right-1 w-2 h-2 bg-primary-500 rounded-full"></span>
+        )}
+      </>
+    )}
+  </RouterNavLink>
+);
 
 export default function DashboardLayout({ children, user }) {
   const navigate = useNavigate();
@@ -318,13 +313,12 @@ export default function DashboardLayout({ children, user }) {
     )}&background=4f46e5&color=ffffff&bold=true`;
 
   const pageTitle =
-    menuItems.find(
-      (item) =>
-        location.pathname.includes(item.path) &&
-        (item.exact ? item.path === location.pathname : true)
+    menuItems.find((item) =>
+      item.exact
+        ? location.pathname === item.path
+        : location.pathname.startsWith(item.path)
     )?.label || "Dashboard";
 
-  // Show skeleton while loading
   if (isLoading) {
     return (
       <DashboardSkeleton
@@ -421,13 +415,13 @@ export default function DashboardLayout({ children, user }) {
                   {siteName}
                 </span>
                 <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                  Powered by Foundli
+                  Powered by CampusTrace
                 </span>
               </div>
             )}
           </div>
 
-          <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
+          <nav className="flex-1 p-2 space-y-2.5 overflow-y-auto text-m">
             {computedMenuItems.map((item) => (
               <NavLink
                 key={`menu-${item.label}`}
@@ -438,8 +432,8 @@ export default function DashboardLayout({ children, user }) {
             ))}
           </nav>
 
-          <div className="p-3 border-t border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0">
-            <div className="space-y-1.5">
+          <div className="p-3 mt-auto border-t border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0">
+            <div className="space-y-2.5">
               {bottomItems.map((item) => (
                 <NavLink
                   key={`bottom-${item.label}`}
@@ -472,7 +466,7 @@ export default function DashboardLayout({ children, user }) {
             <button
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-neutral-600 dark:text-neutral-400 hover:bg-red-500/10 hover:text-red-500 transition-all duration-200 disabled:opacity-50 mt-2 ${
+              className={`w-full mt-2 flex items-center gap-3 px-3 py-2.5 rounded-lg text-neutral-600 dark:text-neutral-400 hover:bg-red-500/10 hover:text-red-500 transition-all duration-200 disabled:opacity-50 ${
                 !isSidebarOpen && !mobileMenu ? "justify-center" : ""
               }`}
               title={!isSidebarOpen && !mobileMenu ? "Sign Out" : ""}
