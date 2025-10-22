@@ -354,7 +354,7 @@
 //           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-800 dark:text-zinc-100">
 //             {isLogin ? "Welcome back" : "Create your account"}
 //           </h2>
-//           <p className="mt-2 text-sm text-neutral-600 dark:text-zinc-400">
+//           <p className="mt-2 text-sm text-neutral-600 dark:text-gray-400">
 //             {isLogin
 //               ? "Sign in to access your CampusTrace account"
 //               : "Join CampusTrace to help find lost items on campus"}
@@ -368,7 +368,7 @@
 //             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
 //               isLogin
 //                 ? "bg-primary-600 text-white shadow-sm"
-//                 : "text-neutral-600 dark:text-zinc-400 hover:text-neutral-800 dark:hover:text-zinc-200"
+//                 : "text-neutral-600 dark:text-gray-400 hover:text-neutral-800 dark:hover:text-zinc-200"
 //             }`}
 //           >
 //             Sign In
@@ -378,7 +378,7 @@
 //             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
 //               !isLogin
 //                 ? "bg-primary-600 text-white shadow-sm"
-//                 : "text-neutral-600 dark:text-zinc-400 hover:text-neutral-800 dark:hover:text-zinc-200"
+//                 : "text-neutral-600 dark:text-gray-400 hover:text-neutral-800 dark:hover:text-zinc-200"
 //             }`}
 //           >
 //             Sign Up
@@ -526,7 +526,7 @@
 //         </form>
 
 //         {/* Footer */}
-//         <div className="space-y-4 text-center text-sm text-neutral-600 dark:text-zinc-400 mt-6">
+//         <div className="space-y-4 text-center text-sm text-neutral-600 dark:text-gray-400 mt-6">
 //           <p>
 //             {isLogin ? "Don't have an account? " : "Already have an account? "}
 //             <button
@@ -585,7 +585,7 @@ const InputField = ({
       type={isPassword ? (showPassword ? "text" : "password") : props.type}
       className={`block w-full rounded-md py-3 pl-10 ${
         isPassword ? "pr-10" : "pr-4"
-      } bg-white dark:bg-zinc-900 text-neutral-900 dark:text-white ring-1 ring-inset ${
+      } bg-white dark:bg-[#2a2a2a] text-neutral-900 dark:text-white ring-1 ring-inset ${
         error && touched
           ? "ring-red-500 focus:ring-red-500"
           : "ring-neutral-300 dark:ring-zinc-700 focus:ring-primary-600"
@@ -752,9 +752,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="bg-neutral-100 dark:bg-zinc-950 min-h-screen flex items-center justify-center p-4">
+    <div className="bg-neutral-100 dark:bg-[#1a1a1a] min-h-screen flex items-center justify-center p-4">
       <motion.div
-        className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-xl shadow-xl p-8"
+        className="w-full max-w-md bg-white dark:bg-[#2a2a2a] rounded-xl shadow-xl p-8"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -778,7 +778,7 @@ export default function LoginPage() {
           <button
             className={`flex-1 py-2 rounded-md text-sm font-medium ${
               isLogin
-                ? "bg-white dark:bg-zinc-900 text-primary-600 shadow"
+                ? "bg-white dark:bg-[#2a2a2a] text-primary-600 shadow"
                 : "text-neutral-500"
             }`}
             onClick={() => {
@@ -793,7 +793,7 @@ export default function LoginPage() {
           <button
             className={`flex-1 py-2 rounded-md text-sm font-medium ${
               !isLogin
-                ? "bg-white dark:bg-zinc-900 text-primary-600 shadow"
+                ? "bg-white dark:bg-[#2a2a2a] text-primary-600 shadow"
                 : "text-neutral-500"
             }`}
             onClick={() => {

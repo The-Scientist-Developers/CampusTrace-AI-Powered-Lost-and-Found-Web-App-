@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { ArrowRight, EyeOff, Plus, HelpCircle } from "lucide-react";
+import {
+  ArrowRight,
+  EyeOff,
+  Plus,
+  HelpCircle,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase, getAccessToken } from "../../../api/apiClient.js";
-
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
+
+// --- (Existing Components: StatusBadge, Skeletons - no changes needed) ---
 
 const StatusBadge = ({ status }) => {
   let colorClass = "";
@@ -38,7 +46,7 @@ const StatusBadge = ({ status }) => {
       break;
     default:
       colorClass =
-        "bg-neutral-100 text-neutral-800 dark:bg-zinc-500/20 dark:text-zinc-400";
+        "bg-neutral-100 text-neutral-800 dark:bg-zinc-500/20 dark:text-gray-400";
       text = "Unknown";
   }
 
@@ -52,7 +60,7 @@ const StatusBadge = ({ status }) => {
 };
 
 const MatchCardSkeleton = () => (
-  <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
+  <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-lg p-4">
     <Skeleton height={128} className="rounded-md" />
     <Skeleton height={24} width="80%" className="mt-4" />
     <Skeleton height={22} width="30%" className="mt-2" />
@@ -80,7 +88,6 @@ const DashboardSkeleton = () => (
         ))}
       </div>
     </section>
-
     <section>
       <Skeleton height={28} width={250} className="mb-4" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -89,10 +96,9 @@ const DashboardSkeleton = () => (
         ))}
       </div>
     </section>
-
     <section>
       <Skeleton height={28} width={300} className="mb-4" />
-      <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 divide-y divide-neutral-200 dark:divide-neutral-800">
+      <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-lg p-4 divide-y divide-neutral-200 dark:divide-[#3a3a3a]">
         {[...Array(5)].map((_, i) => (
           <ActivityItemSkeleton key={i} />
         ))}
@@ -108,6 +114,10 @@ export default function UserMainPage({ user }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+
+  // --- NEW: Pagination State ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   useEffect(() => {
     if (!user) {
@@ -131,16 +141,15 @@ export default function UserMainPage({ user }) {
             .from("items")
             .select("*")
             .eq("user_id", user.id)
-            .not("moderation_status", "eq", "recovered") // Exclude recovered items
+            .not("moderation_status", "eq", "recovered")
             .order("created_at", { ascending: false })
-            .limit(5),
+            .limit(4), // Show 4 of my recent posts
           supabase
             .from("items")
-            .select("*, profiles(id, full_name, email)")
+            .select("*, profiles(id, full_name, email)", { count: "exact" }) // Fetch total count
             .eq("university_id", userUniversityId)
             .eq("moderation_status", "approved")
-            .order("created_at", { ascending: false })
-            .limit(10),
+            .order("created_at", { ascending: false }),
         ]);
 
         if (myPostsRes.error) throw myPostsRes.error;
@@ -181,6 +190,14 @@ export default function UserMainPage({ user }) {
     fetchDashboardData();
   }, [user]);
 
+  // --- NEW: Pagination Logic ---
+  const totalItems = communityActivity.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const paginatedActivity = communityActivity.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   if (loading) {
     return <DashboardSkeleton />;
   }
@@ -193,6 +210,7 @@ export default function UserMainPage({ user }) {
 
   return (
     <div className="space-y-12">
+      {/* Possible Matches Section */}
       <section>
         <h2 className="text-2xl font-bold text-neutral-800 dark:text-white mb-4">
           Possible Matches For Your Latest Lost Item
@@ -204,19 +222,15 @@ export default function UserMainPage({ user }) {
             ))}
           </div>
         ) : (
-          <div className="text-center bg-white dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg p-12">
-            <HelpCircle className="mx-auto h-12 w-12 text-neutral-400 dark:text-neutral-600" />
-            <h3 className="mt-4 text-lg font-semibold text-neutral-800 dark:text-white">
-              No High-Confidence Matches Found
-            </h3>
-            <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-              Post a 'Lost' item, and our system will search for matches for
-              you.
-            </p>
-          </div>
+          <EmptyState
+            icon={HelpCircle}
+            title="No High-Confidence Matches Found"
+            description="Post a 'Lost' item, and our system will search for matches for you."
+          />
         )}
       </section>
 
+      {/* My Recent Posts Section */}
       <section>
         <h2 className="text-2xl font-bold text-neutral-800 dark:text-white mb-4">
           My Recent Posts
@@ -241,18 +255,63 @@ export default function UserMainPage({ user }) {
           />
         )}
       </section>
+
+      {/* Recent Community Activity Section - UPDATED */}
       <section>
         <h2 className="text-2xl font-bold text-neutral-800 dark:text-white mb-4">
           Recent Community Activity
         </h2>
         {communityActivity.length > 0 ? (
-          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 divide-y divide-neutral-200 dark:divide-neutral-800">
-            {communityActivity.map((item) => (
-              <ActivityItem key={`activity-${item.id}`} item={item} />
-            ))}
+          <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm">
+            <div className="divide-y divide-neutral-200 dark:divide-[#3a3a3a]">
+              {paginatedActivity.map((item) => (
+                <ActivityItem key={`activity-${item.id}`} item={item} />
+              ))}
+            </div>
+            {/* --- NEW: Pagination Controls --- */}
+            <div className="p-4 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-neutral-200 dark:border-[#3a3a3a]">
+              <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+                <span>Rows per page:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1); // Reset to first page
+                  }}
+                  className="form-select text-sm py-1 pl-2 pr-8 border-neutral-300 dark:border-neutral-700 bg-white dark:bg-[#2a2a2a]"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-md disabled:opacity-50 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-md disabled:opacity-50 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
-          <div className="text-center text-neutral-500 p-8 bg-white dark:bg-neutral-900/50 rounded-lg border border-neutral-200 dark:border-neutral-800">
+          <div className="text-center text-neutral-500 p-8 bg-white dark:bg-[#2a2a2a]/50 rounded-lg border border-neutral-200 dark:border-[#3a3a3a]">
             No community activity to show.
           </div>
         )}
@@ -261,6 +320,7 @@ export default function UserMainPage({ user }) {
   );
 }
 
+// --- (Existing Components: timeAgo, MatchCard, ActivityItem, EmptyState - no changes needed) ---
 const timeAgo = (date) => {
   const seconds = Math.floor((new Date() - new Date(date)) / 1000);
   let interval = seconds / 31536000;
@@ -282,14 +342,14 @@ const MatchCard = ({ item, showScore = true }) => {
     <Link
       to="/dashboard/browse-all"
       state={{ itemId: item.id }}
-      className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer group flex flex-col"
+      className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-lg p-4 transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer group flex flex-col"
     >
       {showScore && item.match_score && (
         <div className="absolute top-2 left-2 z-10 bg-primary-600 text-white text-xs font-bold px-2 py-1 rounded-full">
           {item.match_score}% Match
         </div>
       )}
-      <div className="w-full h-32 bg-neutral-100 dark:bg-neutral-800 rounded-md mb-4 flex items-center justify-center relative overflow-hidden">
+      <div className="w-full h-32 bg-neutral-100 dark:bg-[#2a2a2a] rounded-md mb-4 flex items-center justify-center relative overflow-hidden">
         {item.image_url ? (
           <img
             src={item.image_url}
@@ -330,7 +390,7 @@ const ActivityItem = ({ item }) => {
       state={{ itemId: item.id }}
       className="flex items-center gap-4 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 -mx-4 px-4 rounded-lg transition-colors"
     >
-      <div className="w-12 h-12 bg-neutral-100 dark:bg-neutral-800 rounded-md flex-shrink-0 relative overflow-hidden">
+      <div className="w-12 h-12 bg-neutral-100 dark:bg-[#2a2a2a] rounded-md flex-shrink-0 relative overflow-hidden">
         {item.image_url ? (
           <img
             src={item.image_url}
@@ -370,7 +430,7 @@ const EmptyState = ({
   buttonText,
   onButtonClick,
 }) => (
-  <div className="text-center bg-white dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg p-12">
+  <div className="text-center bg-white dark:bg-[#2a2a2a]/50 border border-neutral-200 dark:border-[#3a3a3a] rounded-lg p-12">
     <Icon className="mx-auto h-12 w-12 text-neutral-400 dark:text-neutral-600" />
     <h3 className="mt-4 text-lg font-semibold text-neutral-800 dark:text-white">
       {title}
@@ -378,12 +438,14 @@ const EmptyState = ({
     <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400 max-w-md mx-auto">
       {description}
     </p>
-    <button
-      onClick={onButtonClick}
-      className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white font-semibold text-sm rounded-md hover:bg-primary-700 transition-colors"
-    >
-      <Plus className="w-4 h-4" />
-      {buttonText}
-    </button>
+    {buttonText && onButtonClick && (
+      <button
+        onClick={onButtonClick}
+        className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white font-semibold text-sm rounded-md hover:bg-primary-700 transition-colors"
+      >
+        <Plus className="w-4 h-4" />
+        {buttonText}
+      </button>
+    )}
   </div>
 );

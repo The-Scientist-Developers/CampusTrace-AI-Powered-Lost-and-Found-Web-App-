@@ -55,7 +55,7 @@
 //           <h2 className="mt-6 text-2xl sm:text-3xl font-bold tracking-tight text-neutral-800 dark:text-zinc-100">
 //             Register Your University
 //           </h2>
-//           <p className="mt-2 text-sm text-neutral-600 dark:text-zinc-400">
+//           <p className="mt-2 text-sm text-neutral-600 dark:text-gray-400">
 //             Create an admin account to get started with Campus Trace.
 //           </p>
 //         </div>
@@ -107,7 +107,7 @@
 //           </div>
 //         </form>
 
-//         <div className="space-y-4 text-center text-sm text-neutral-600 dark:text-zinc-400">
+//         <div className="space-y-4 text-center text-sm text-neutral-600 dark:text-gray-400">
 //           <p>
 //             Want to know how it works for admins?{" "}
 //             <Link
@@ -218,8 +218,8 @@ export default function RegisterUniversityPage() {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-zinc-950 flex items-center justify-center p-4">
-        <div className="w-full max-w-md text-center bg-white dark:bg-neutral-900 p-8 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-800">
+      <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1a] flex items-center justify-center p-4">
+        <div className="w-full max-w-md text-center bg-white dark:bg-[#2a2a2a] p-8 rounded-xl shadow-lg border border-neutral-200 dark:border-[#3a3a3a]">
           <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
           <h2 className="text-2xl font-bold text-neutral-800 dark:text-white">
             Registration Successful!
@@ -240,13 +240,13 @@ export default function RegisterUniversityPage() {
   }
 
   return (
-    <div className="bg-neutral-100 dark:bg-zinc-950 min-h-screen flex items-center justify-center p-4">
+    <div className="bg-neutral-100 dark:bg-[#1a1a1a] min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <h2 className="mt-6 text-2xl sm:text-3xl font-bold tracking-tight text-neutral-800 dark:text-zinc-100">
             Register Your University
           </h2>
-          <p className="mt-2 text-sm text-neutral-600 dark:text-zinc-400">
+          <p className="mt-2 text-sm text-neutral-600 dark:text-gray-400">
             Create an admin account to get started with Campus Trace.
           </p>
         </div>
@@ -313,7 +313,7 @@ export default function RegisterUniversityPage() {
             </button>
           </div>
         </form>
-        <div className="space-y-4 text-center text-sm text-neutral-600 dark:text-zinc-400">
+        <div className="space-y-4 text-center text-sm text-neutral-600 dark:text-gray-400">
           <p>
             Already have an account?{" "}
             <Link
@@ -336,7 +336,7 @@ const InputField = ({ icon: Icon, ...props }) => (
     </div>
     <input
       {...props}
-      className="block w-full rounded-md border-0 py-3 pl-10 text-neutral-900 dark:text-white bg-white dark:bg-zinc-900 ring-1 ring-inset ring-neutral-300 dark:ring-zinc-700 placeholder:text-neutral-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
+      className="block w-full rounded-md border-0 py-3 pl-10 text-neutral-900 dark:text-white bg-white dark:bg-[#2a2a2a] ring-1 ring-inset ring-neutral-300 dark:ring-zinc-700 placeholder:text-neutral-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
     />
   </div>
 );

@@ -3,7 +3,7 @@ import { Github, Linkedin } from "lucide-react";
 
 // Reusable component for each team member
 const TeamMemberCard = ({ name, role, imageUrl, githubUrl, linkedinUrl }) => (
-  <div className="flex flex-col items-center bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-6 shadow-sm transition-transform duration-300 hover:scale-105 hover:shadow-lg">
+  <div className="flex flex-col items-center bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl p-6 shadow-sm transition-transform duration-300 hover:scale-105 hover:shadow-lg">
     <div className="w-28 h-28 rounded-full bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden mb-4 border-2 border-primary-500/50">
       {/* Updated avatar to use the new primary color scheme */}
       <img
@@ -29,7 +29,7 @@ const TeamMemberCard = ({ name, role, imageUrl, githubUrl, linkedinUrl }) => (
           href={githubUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-neutral-500 hover:text-primary-600 dark:text-zinc-400 dark:hover:text-white transition-colors duration-200"
+          className="text-neutral-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-white transition-colors duration-200"
           aria-label={`${name}'s GitHub`}
         >
           <Github className="w-6 h-6" />
@@ -40,7 +40,7 @@ const TeamMemberCard = ({ name, role, imageUrl, githubUrl, linkedinUrl }) => (
           href={linkedinUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-neutral-500 hover:text-primary-600 dark:text-zinc-400 dark:hover:text-white transition-colors duration-200"
+          className="text-neutral-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-white transition-colors duration-200"
           aria-label={`${name}'s LinkedIn`}
         >
           <Linkedin className="w-6 h-6" />
@@ -76,12 +76,12 @@ export default function AboutUsPage() {
   ];
 
   return (
-    <div className="bg-white dark:bg-zinc-950 text-neutral-700 dark:text-zinc-300 min-h-screen pt-28 pb-12 flex flex-col justify-center items-center">
+    <div className="bg-white dark:bg-[#1a1a1a] text-neutral-700 dark:text-gray-100 min-h-screen pt-28 pb-12 flex flex-col justify-center items-center">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center animate-fade-in-up">
         <h1 className="text-4xl sm:text-5xl font-extrabold text-neutral-900 dark:text-white mb-6">
           About Our Team
         </h1>
-        <p className="text-lg sm:text-xl text-neutral-600 dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed mb-12">
+        <p className="text-lg sm:text-xl text-neutral-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed mb-12">
           We are a dedicated team of student developers from Isabela State
           University, bringing innovative solutions to campus challenges. Campus
           Trace is our project, born from a passion for technology and

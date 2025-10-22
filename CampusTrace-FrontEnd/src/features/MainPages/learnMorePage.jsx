@@ -22,7 +22,7 @@ const FeatureSection = ({ icon: Icon, title, children }) => (
         {title}
       </h2>
     </div>
-    <div className="text-neutral-600 dark:text-neutral-400 text-lg space-y-4 leading-relaxed border-l-2 border-neutral-200 dark:border-neutral-800 pl-8 ml-5">
+    <div className="text-neutral-600 dark:text-neutral-400 text-lg space-y-4 leading-relaxed border-l-2 border-neutral-200 dark:border-[#3a3a3a] pl-8 ml-5">
       {children}
     </div>
   </section>
@@ -50,7 +50,7 @@ const StepCard = ({ icon: Icon, title, step, children }) => (
 
 export default function LearnMorePage() {
   return (
-    <div className="bg-white dark:bg-black text-neutral-700 dark:text-zinc-300 min-h-screen pt-28 pb-12">
+    <div className="bg-white dark:bg-[#1a1a1a] text-neutral-700 dark:text-gray-100 min-h-screen pt-28 pb-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <header className="text-center mb-16 animate-fade-in-up">
           <p className="text-primary-600 dark:text-primary-500 font-semibold tracking-widest uppercase mb-2">

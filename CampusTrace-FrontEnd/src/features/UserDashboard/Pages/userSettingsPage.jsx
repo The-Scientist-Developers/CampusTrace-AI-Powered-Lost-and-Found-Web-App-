@@ -4,8 +4,8 @@
 // import { AlertTriangle, Loader2 } from "lucide-react";
 
 // const SectionCard = ({ title, description, children }) => (
-//   <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm">
-//     <div className="p-6 border-b border-neutral-200 dark:border-neutral-800">
+//   <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm">
+//     <div className="p-6 border-b border-neutral-200 dark:border-[#3a3a3a]">
 //       <h2 className="text-xl font-bold text-neutral-800 dark:text-white">
 //         {title}
 //       </h2>
@@ -134,7 +134,7 @@
 //           <AlertTriangle />
 //           Danger Zone
 //         </h2>
-//         <div className="bg-white dark:bg-neutral-900 border border-red-200 dark:border-red-500/30 rounded-xl shadow-sm p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+//         <div className="bg-white dark:bg-[#2a2a2a] border border-red-200 dark:border-red-500/30 rounded-xl shadow-sm p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 //           <div>
 //             <h3 className="font-semibold text-neutral-800 dark:text-white">
 //               Delete Your Account
@@ -161,7 +161,6 @@
 //   );
 // }
 
-
 import React, { useState, useEffect } from "react"; // Added useEffect
 import { supabase } from "../../../api/apiClient";
 import { toast } from "react-hot-toast";
@@ -173,8 +172,8 @@ import "react-loading-skeleton/dist/skeleton.css";
 
 // --- (No changes to SectionCard) ---
 const SectionCard = ({ title, description, children }) => (
-  <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm">
-    <div className="p-6 border-b border-neutral-200 dark:border-neutral-800">
+  <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm">
+    <div className="p-6 border-b border-neutral-200 dark:border-[#3a3a3a]">
       <h2 className="text-xl font-bold text-neutral-800 dark:text-white">
         {title}
       </h2>
@@ -230,39 +229,43 @@ const SettingToggleSkeleton = () => (
       <Skeleton height={20} width={150} /> {/* Label */}
       <Skeleton height={16} width={250} className="mt-1" /> {/* Description */}
     </div>
-    <Skeleton width={44} height={24} borderRadius={999} /> {/* Toggle (w-11 h-6) */}
+    <Skeleton width={44} height={24} borderRadius={999} />{" "}
+    {/* Toggle (w-11 h-6) */}
   </div>
 );
 
 const UserSettingsPageSkeleton = () => (
   <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
     <Skeleton height={40} width={200} className="mb-8" /> {/* Page Title */}
-
     {/* Notification Preferences Card */}
-    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm">
-      <div className="p-6 border-b border-neutral-200 dark:border-neutral-800">
+    <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm">
+      <div className="p-6 border-b border-neutral-200 dark:border-[#3a3a3a]">
         <Skeleton height={24} width={250} /> {/* Card Title */}
-        <Skeleton height={20} width={350} className="mt-1" /> {/* Card Description */}
+        <Skeleton height={20} width={350} className="mt-1" />{" "}
+        {/* Card Description */}
       </div>
       <div className="p-6 space-y-4">
         <SettingToggleSkeleton />
         <SettingToggleSkeleton />
         <div className="text-right pt-2">
-          <Skeleton height={38} width={130} borderRadius={8} /> {/* Save Button */}
+          <Skeleton height={38} width={130} borderRadius={8} />{" "}
+          {/* Save Button */}
         </div>
       </div>
     </div>
-
     {/* Danger Zone Card */}
     <div className="mt-12">
-      <Skeleton height={24} width={150} className="mb-2" /> {/* Danger Zone Title */}
-      <div className="bg-white dark:bg-neutral-900 border border-red-200 dark:border-red-500/30 rounded-xl shadow-sm p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <Skeleton height={24} width={150} className="mb-2" />{" "}
+      {/* Danger Zone Title */}
+      <div className="bg-white dark:bg-[#2a2a2a] border border-red-200 dark:border-red-500/30 rounded-xl shadow-sm p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <Skeleton height={20} width={200} /> {/* Delete Title */}
-          <Skeleton height={16} width={350} className="mt-2" /> {/* Delete Description */}
+          <Skeleton height={16} width={350} className="mt-2" />{" "}
+          {/* Delete Description */}
           <Skeleton height={16} width={300} className="mt-1" />
         </div>
-        <Skeleton height={38} width={130} borderRadius={8} /> {/* Delete Button */}
+        <Skeleton height={38} width={130} borderRadius={8} />{" "}
+        {/* Delete Button */}
       </div>
     </div>
   </div>
@@ -373,7 +376,7 @@ export default function UserSettingsPage() {
           <AlertTriangle />
           Danger Zone
         </h2>
-        <div className="bg-white dark:bg-neutral-900 border border-red-200 dark:border-red-500/30 rounded-xl shadow-sm p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="bg-white dark:bg-[#2a2a2a] border border-red-200 dark:border-red-500/30 rounded-xl shadow-sm p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h3 className="font-semibold text-neutral-800 dark:text-white">
               Delete Your Account

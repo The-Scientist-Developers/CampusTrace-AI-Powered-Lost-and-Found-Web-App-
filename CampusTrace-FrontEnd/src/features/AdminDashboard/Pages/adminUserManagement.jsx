@@ -13,7 +13,7 @@
 // }
 
 // const UserCard = ({ user, changeRole, toggleBan }) => (
-//   <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm p-4 space-y-4">
+//   <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-4 space-y-4">
 //     <div className="flex items-center gap-4">
 //       <img
 //         src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -32,7 +32,7 @@
 //       </div>
 //     </div>
 
-//     <div className="grid grid-cols-2 gap-4 text-sm border-y border-neutral-200 dark:border-neutral-800 py-3">
+//     <div className="grid grid-cols-2 gap-4 text-sm border-y border-neutral-200 dark:border-[#3a3a3a] py-3">
 //       <div>
 //         <p className="text-neutral-500 dark:text-neutral-500">Role</p>
 //         <p className="font-semibold text-neutral-800 dark:text-white">
@@ -155,7 +155,7 @@
 
 //   if (loading) {
 //     return (
-//       <div className="flex justify-center items-center h-full p-8 text-neutral-500 dark:text-zinc-400">
+//       <div className="flex justify-center items-center h-full p-8 text-neutral-500 dark:text-gray-400">
 //         <Loader2 className="w-8 h-8 animate-spin mr-3" />
 //         Loading User Management...
 //       </div>
@@ -169,7 +169,7 @@
 //           <h2 className="text-2xl font-bold text-neutral-800 dark:text-white">
 //             User Management
 //           </h2>
-//           <p className="text-neutral-500 dark:text-zinc-400 mt-1">
+//           <p className="text-neutral-500 dark:text-gray-400 mt-1">
 //             Manage users and roles for your university
 //           </p>
 //         </div>
@@ -189,19 +189,19 @@
 //         <table className="w-full">
 //           <thead className="bg-neutral-50 dark:bg-zinc-800/50 border-b border-neutral-200 dark:border-zinc-800">
 //             <tr>
-//               <th className="text-left p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400">
+//               <th className="text-left p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
 //                 User
 //               </th>
-//               <th className="text-left p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400">
+//               <th className="text-left p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
 //                 Role
 //               </th>
-//               <th className="text-left p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400">
+//               <th className="text-left p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
 //                 Status
 //               </th>
-//               <th className="text-center p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400">
+//               <th className="text-center p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
 //                 Items Posted
 //               </th>
-//               <th className="text-left p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400">
+//               <th className="text-left p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
 //                 Actions
 //               </th>
 //             </tr>
@@ -220,14 +220,14 @@
 //               users.map((user) => (
 //                 <tr
 //                   key={user.id}
-//                   className="hover:bg-neutral-50 dark:hover:bg-zinc-800/30"
+//                   className="hover:bg-neutral-50 dark:hover:bg-[#2a2a2a]/30"
 //                 >
 //                   <td className="p-4 align-top">
 //                     <div>
 //                       <div className="text-neutral-800 dark:text-white font-medium">
 //                         {user.full_name || "No name"}
 //                       </div>
-//                       <div className="text-neutral-500 dark:text-zinc-400 text-sm">
+//                       <div className="text-neutral-500 dark:text-gray-400 text-sm">
 //                         {user.email}
 //                       </div>
 //                     </div>
@@ -296,7 +296,6 @@
 //   );
 // }
 
-
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../../api/apiClient";
 import { toast } from "react-hot-toast";
@@ -317,7 +316,7 @@ function useDebounce(value, delay) {
 }
 
 const UserCard = ({ user, changeRole, toggleBan }) => (
-  <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm p-4 space-y-4">
+  <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-4 space-y-4">
     <div className="flex items-center gap-4">
       <img
         src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -336,7 +335,7 @@ const UserCard = ({ user, changeRole, toggleBan }) => (
       </div>
     </div>
 
-    <div className="grid grid-cols-2 gap-4 text-sm border-y border-neutral-200 dark:border-neutral-800 py-3">
+    <div className="grid grid-cols-2 gap-4 text-sm border-y border-neutral-200 dark:border-[#3a3a3a] py-3">
       <div>
         <p className="text-neutral-500 dark:text-neutral-500">Role</p>
         <p className="font-semibold text-neutral-800 dark:text-white">
@@ -384,86 +383,99 @@ const UserCard = ({ user, changeRole, toggleBan }) => (
 // --- 2. SKELETON COMPONENTS ---
 
 const UserCardSkeleton = () => (
-    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm p-4 space-y-4">
-        <div className="flex items-center gap-4">
-            <Skeleton circle width={48} height={48} /> {/* Avatar */}
-            <div className="flex-1">
-                <Skeleton height={20} width="60%" /> {/* Name */}
-                <Skeleton height={16} width="80%" className="mt-1" /> {/* Email */}
-            </div>
-        </div>
-        <div className="grid grid-cols-2 gap-4 text-sm border-y border-neutral-200 dark:border-neutral-800 py-3">
-             <div>
-                <Skeleton height={16} width={40} /> {/* Role Label */}
-                <Skeleton height={20} width={60} className="mt-1" /> {/* Role Value */}
-            </div>
-             <div>
-                <Skeleton height={16} width={50} /> {/* Status Label */}
-                <Skeleton height={22} width={50} className="mt-1" borderRadius={999}/> {/* Status Value */}
-            </div>
-        </div>
-         <div className="flex gap-2">
-            <Skeleton height={42} className="flex-1" borderRadius={8}/> {/* Role Select */}
-            <Skeleton height={42} className="flex-1" borderRadius={8}/> {/* Ban Button */}
-        </div>
+  <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-4 space-y-4">
+    <div className="flex items-center gap-4">
+      <Skeleton circle width={48} height={48} /> {/* Avatar */}
+      <div className="flex-1">
+        <Skeleton height={20} width="60%" /> {/* Name */}
+        <Skeleton height={16} width="80%" className="mt-1" /> {/* Email */}
+      </div>
     </div>
+    <div className="grid grid-cols-2 gap-4 text-sm border-y border-neutral-200 dark:border-[#3a3a3a] py-3">
+      <div>
+        <Skeleton height={16} width={40} /> {/* Role Label */}
+        <Skeleton height={20} width={60} className="mt-1" /> {/* Role Value */}
+      </div>
+      <div>
+        <Skeleton height={16} width={50} /> {/* Status Label */}
+        <Skeleton
+          height={22}
+          width={50}
+          className="mt-1"
+          borderRadius={999}
+        />{" "}
+        {/* Status Value */}
+      </div>
+    </div>
+    <div className="flex gap-2">
+      <Skeleton height={42} className="flex-1" borderRadius={8} />{" "}
+      {/* Role Select */}
+      <Skeleton height={42} className="flex-1" borderRadius={8} />{" "}
+      {/* Ban Button */}
+    </div>
+  </div>
 );
 
 const UserTableRowSkeleton = () => (
-    <tr>
-        <td className="p-4 align-top">
-            <Skeleton height={20} width="70%" /> {/* Name */}
-            <Skeleton height={16} width="90%" className="mt-1" /> {/* Email */}
-        </td>
-        <td className="p-4 align-top">
-            <Skeleton height={42} borderRadius={8} /> {/* Role Select */}
-        </td>
-        <td className="p-4 align-top">
-             <Skeleton height={22} width={50} borderRadius={999}/> {/* Status */}
-        </td>
-         <td className="p-4 text-center align-top">
-             <Skeleton height={20} width={20} /> {/* Item Count */}
-        </td>
-        <td className="p-4 align-top">
-             <Skeleton height={30} width={60} borderRadius={6}/> {/* Ban Button */}
-        </td>
-    </tr>
+  <tr>
+    <td className="p-4 align-top">
+      <Skeleton height={20} width="70%" /> {/* Name */}
+      <Skeleton height={16} width="90%" className="mt-1" /> {/* Email */}
+    </td>
+    <td className="p-4 align-top">
+      <Skeleton height={42} borderRadius={8} /> {/* Role Select */}
+    </td>
+    <td className="p-4 align-top">
+      <Skeleton height={22} width={50} borderRadius={999} /> {/* Status */}
+    </td>
+    <td className="p-4 text-center align-top">
+      <Skeleton height={20} width={20} /> {/* Item Count */}
+    </td>
+    <td className="p-4 align-top">
+      <Skeleton height={30} width={60} borderRadius={6} /> {/* Ban Button */}
+    </td>
+  </tr>
 );
 
 const UserManagementSkeleton = () => (
-    <div className="space-y-6">
-        {/* Header Skeleton */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-             <div>
-                <Skeleton height={28} width={200} /> {/* Title */}
-                <Skeleton height={20} width={300} className="mt-1" /> {/* Description */}
-            </div>
-             <Skeleton height={42} width={256} borderRadius={8} /> {/* Search Input */}
-        </div>
-
-         {/* Desktop Table Skeleton */}
-        <div className="hidden md:block bg-white dark:bg-zinc-900 rounded-lg border border-neutral-200 dark:border-zinc-800 overflow-hidden">
-            <table className="w-full">
-                 <thead className="bg-neutral-50 dark:bg-zinc-800/50 border-b border-neutral-200 dark:border-zinc-800">
-                     <tr>
-                        {[...Array(5)].map((_, i) => (
-                           <th key={i} className="text-left p-4">
-                                <Skeleton height={20} width="60%" />
-                           </th>
-                        ))}
-                     </tr>
-                 </thead>
-                 <tbody className="divide-y divide-neutral-200 dark:divide-zinc-800">
-                    {[...Array(5)].map((_, i) => <UserTableRowSkeleton key={i} />)}
-                 </tbody>
-            </table>
-        </div>
-
-         {/* Mobile Cards Skeleton */}
-        <div className="block md:hidden space-y-4">
-           {[...Array(3)].map((_, i) => <UserCardSkeleton key={i} />)}
-        </div>
+  <div className="space-y-6">
+    {/* Header Skeleton */}
+    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <Skeleton height={28} width={200} /> {/* Title */}
+        <Skeleton height={20} width={300} className="mt-1" />{" "}
+        {/* Description */}
+      </div>
+      <Skeleton height={42} width={256} borderRadius={8} /> {/* Search Input */}
     </div>
+
+    {/* Desktop Table Skeleton */}
+    <div className="hidden md:block bg-white dark:bg-[#2a2a2a] rounded-lg border border-neutral-200 dark:border-zinc-800 overflow-hidden">
+      <table className="w-full">
+        <thead className="bg-neutral-50 dark:bg-zinc-800/50 border-b border-neutral-200 dark:border-zinc-800">
+          <tr>
+            {[...Array(5)].map((_, i) => (
+              <th key={i} className="text-left p-4">
+                <Skeleton height={20} width="60%" />
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-neutral-200 dark:divide-zinc-800">
+          {[...Array(5)].map((_, i) => (
+            <UserTableRowSkeleton key={i} />
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    {/* Mobile Cards Skeleton */}
+    <div className="block md:hidden space-y-4">
+      {[...Array(3)].map((_, i) => (
+        <UserCardSkeleton key={i} />
+      ))}
+    </div>
+  </div>
 );
 
 // --- 3. ADJUSTABLE DELAY (in milliseconds) ---
@@ -498,7 +510,9 @@ export default function UserManagement({ user: sessionUser }) {
         .from("profiles")
         // NOTE: Requesting count like this might be inefficient if you don't use it elsewhere.
         // Consider removing `items:items(count)` if only needed per user later.
-        .select(`id, full_name, email, role, is_banned, created_at, items:items(count)`)
+        .select(
+          `id, full_name, email, role, is_banned, created_at, items:items(count)`
+        )
         .eq("university_id", adminUniversityId)
         .order("created_at", { ascending: false });
 
@@ -539,7 +553,9 @@ export default function UserManagement({ user: sessionUser }) {
 
       // Update the user in the state, preserving the item count if it exists
       setUsers((currentUsers) =>
-        currentUsers.map((u) => (u.id === userId ? {...u, ...data, items: u.items} : u))
+        currentUsers.map((u) =>
+          u.id === userId ? { ...u, ...data, items: u.items } : u
+        )
       );
       toast.success("User updated successfully!");
     } catch (error) {
@@ -566,7 +582,7 @@ export default function UserManagement({ user: sessionUser }) {
           <h2 className="text-2xl font-bold text-neutral-800 dark:text-white">
             User Management
           </h2>
-          <p className="text-neutral-500 dark:text-zinc-400 mt-1">
+          <p className="text-neutral-500 dark:text-gray-400 mt-1">
             Manage users and roles for your university
           </p>
         </div>
@@ -582,23 +598,23 @@ export default function UserManagement({ user: sessionUser }) {
         </div>
       </div>
 
-      <div className="hidden md:block bg-white dark:bg-zinc-900 rounded-lg border border-neutral-200 dark:border-zinc-800 overflow-hidden">
+      <div className="hidden md:block bg-white dark:bg-[#2a2a2a] rounded-lg border border-neutral-200 dark:border-zinc-800 overflow-hidden">
         <table className="w-full">
           <thead className="bg-neutral-50 dark:bg-zinc-800/50 border-b border-neutral-200 dark:border-zinc-800">
             <tr>
-              <th className="text-left p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400">
+              <th className="text-left p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
                 User
               </th>
-              <th className="text-left p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400">
+              <th className="text-left p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
                 Role
               </th>
-              <th className="text-left p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400">
+              <th className="text-left p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
                 Status
               </th>
-              <th className="text-center p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400">
+              <th className="text-center p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
                 Items Posted
               </th>
-              <th className="text-left p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400">
+              <th className="text-left p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
                 Actions
               </th>
             </tr>
@@ -617,14 +633,14 @@ export default function UserManagement({ user: sessionUser }) {
               users.map((user) => (
                 <tr
                   key={user.id}
-                  className="hover:bg-neutral-50 dark:hover:bg-zinc-800/30"
+                  className="hover:bg-neutral-50 dark:hover:bg-[#2a2a2a]/30"
                 >
                   <td className="p-4 align-top">
                     <div>
                       <div className="text-neutral-800 dark:text-white font-medium">
                         {user.full_name || "No name"}
                       </div>
-                      <div className="text-neutral-500 dark:text-zinc-400 text-sm">
+                      <div className="text-neutral-500 dark:text-gray-400 text-sm">
                         {user.email}
                       </div>
                     </div>

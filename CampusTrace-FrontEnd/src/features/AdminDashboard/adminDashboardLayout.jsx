@@ -24,14 +24,14 @@ import "react-loading-skeleton/dist/skeleton.css";
 
 // ---------------- Skeleton Loader ---------------- //
 const AdminDashboardSkeleton = ({ isSidebarOpen, mobileMenu }) => (
-  <div className="h-screen flex flex-col bg-slate-50 dark:bg-black">
-    <header className="h-16 px-6 bg-white/60 dark:bg-neutral-900/60 backdrop-blur-md border-b border-neutral-200/60 dark:border-neutral-800/60 flex items-center justify-between">
+  <div className="h-screen flex flex-col bg-slate-50 dark:bg-[#1a1a1a]">
+    <header className="h-16 px-6 bg-white/60 dark:bg-[#2a2a2a]/60 backdrop-blur-md border-b border-neutral-200/60 dark:border-[#3a3a3a]/60 flex items-center justify-between">
       <Skeleton circle width={32} height={32} />
       <Skeleton width={120} height={24} />
     </header>
     <div className="flex flex-1 overflow-hidden">
       <aside
-        className={`transition-all duration-300 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-xl border-r border-neutral-200/40 dark:border-neutral-800/40 ${
+        className={`transition-all duration-300 bg-white/40 dark:bg-[#2a2a2a]/40 backdrop-blur-xl border-r border-neutral-200/40 dark:border-[#3a3a3a]/40 ${
           isSidebarOpen ? "w-64" : "w-20"
         }`}
       >
@@ -160,7 +160,7 @@ export default function AdminDashboardLayout({
       )}
 
       {/* Header */}
-      <header className="h-16 px-6 lg:px-10 bg-white/60 dark:bg-neutral-900/60 backdrop-blur-lg border-b border-neutral-200/60 dark:border-neutral-800/60 flex items-center justify-between shadow-[0_2px_10px_rgba(0,0,0,0.05)]">
+      <header className="h-16 px-6 lg:px-10 bg-white/60 dark:bg-[#2a2a2a]/60 backdrop-blur-lg border-b border-neutral-200/60 dark:border-[#3a3a3a]/60 flex items-center justify-between shadow-[0_2px_10px_rgba(0,0,0,0.05)]">
         <div className="flex items-center gap-4">
           <button
             onClick={() => setMobileMenu(!mobileMenu)}
@@ -204,7 +204,7 @@ export default function AdminDashboardLayout({
       {/* Sidebar + Main */}
       <div className="flex flex-1 overflow-hidden">
         <aside
-          className={`fixed md:relative inset-y-0 left-0 z-50 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-xl border-r border-neutral-200/40 dark:border-neutral-800/40 transition-all duration-500 ease-in-out top-16 md:top-0 shadow-[inset_0_0_1px_rgba(255,255,255,0.3)] ${
+          className={`fixed md:relative inset-y-0 left-0 z-50 bg-white/40 dark:bg-[#2a2a2a]/40 backdrop-blur-xl border-r border-neutral-200/40 dark:border-[#3a3a3a]/40 transition-all duration-500 ease-in-out top-16 md:top-0 shadow-[inset_0_0_1px_rgba(255,255,255,0.3)] ${
             mobileMenu
               ? "translate-x-0 w-72"
               : "-translate-x-full md:translate-x-0"
@@ -213,7 +213,7 @@ export default function AdminDashboardLayout({
           } h-[calc(100vh-4rem)] md:h-full`}
         >
           {/* Logo */}
-          <div className="p-4 flex items-center gap-3 border-b border-neutral-200/40 dark:border-neutral-800/40">
+          <div className="p-4 flex items-center gap-3 border-b border-neutral-200/40 dark:border-[#3a3a3a]/40">
             <img
               src={logo}
               alt="Campus Trace Logo"
@@ -239,7 +239,7 @@ export default function AdminDashboardLayout({
           </nav>
 
           {/* Profile + Sign out */}
-          <div className="p-3 border-t border-neutral-200/40 dark:border-neutral-800/40">
+          <div className="p-3 border-t border-neutral-200/40 dark:border-[#3a3a3a]/40">
             <div
               className="p-2 flex items-center gap-3 cursor-pointer rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition"
               onClick={() => navigate("/admin/profile")}
@@ -278,7 +278,7 @@ export default function AdminDashboardLayout({
           </div>
         </aside>
 
-        <main className="flex-1 overflow-y-auto bg-slate-50/60 dark:bg-black/60 backdrop-blur-sm animate-fade-in">
+        <main className="flex-1 overflow-y-auto bg-slate-50/60 dark:bg-[#1a1a1a] backdrop-blur-sm animate-fade-in">
           <div className="p-6 sm:p-8 lg:p-10">{children}</div>
         </main>
       </div>

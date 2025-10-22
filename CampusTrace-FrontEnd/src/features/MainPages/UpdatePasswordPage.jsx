@@ -46,13 +46,13 @@ export default function UpdatePasswordPage() {
   };
 
   return (
-    <div className="bg-neutral-100 dark:bg-zinc-950 min-h-screen flex items-center justify-center p-4">
+    <div className="bg-neutral-100 dark:bg-[#1a1a1a] min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <h2 className="mt-6 text-2xl sm:text-3xl font-bold tracking-tight text-neutral-800 dark:text-zinc-100">
             Create a New Password
           </h2>
-          <p className="mt-2 text-sm text-neutral-600 dark:text-zinc-400">
+          <p className="mt-2 text-sm text-neutral-600 dark:text-gray-400">
             Enter your new password below. It must be at least 6 characters.
           </p>
         </div>
@@ -71,7 +71,7 @@ export default function UpdatePasswordPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
-                className="relative block w-full appearance-none rounded-md border border-neutral-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-3 text-neutral-900 dark:text-zinc-100 placeholder-neutral-500 focus:z-10 focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm disabled:opacity-50"
+                className="relative block w-full appearance-none rounded-md border border-neutral-300 dark:border-zinc-700 bg-white dark:bg-[#2a2a2a] px-3 py-3 text-neutral-900 dark:text-zinc-100 placeholder-neutral-500 focus:z-10 focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm disabled:opacity-50"
                 placeholder="Enter new password"
               />
             </div>
@@ -88,7 +88,7 @@ export default function UpdatePasswordPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={isLoading}
-                className="relative block w-full appearance-none rounded-md border border-neutral-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-3 text-neutral-900 dark:text-zinc-100 placeholder-neutral-500 focus:z-10 focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm disabled:opacity-50"
+                className="relative block w-full appearance-none rounded-md border border-neutral-300 dark:border-zinc-700 bg-white dark:bg-[#2a2a2a] px-3 py-3 text-neutral-900 dark:text-zinc-100 placeholder-neutral-500 focus:z-10 focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm disabled:opacity-50"
                 placeholder="Confirm new password"
               />
             </div>

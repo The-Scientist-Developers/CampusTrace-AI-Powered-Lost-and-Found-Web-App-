@@ -87,7 +87,7 @@ const StatusBadge = ({ status }) => {
       break;
     default:
       colorClass =
-        "bg-neutral-100 text-neutral-800 dark:bg-zinc-500/20 dark:text-zinc-400";
+        "bg-neutral-100 text-neutral-800 dark:bg-zinc-500/20 dark:text-gray-400";
       text = "Unknown";
   }
 
@@ -102,7 +102,7 @@ const StatusBadge = ({ status }) => {
 
 // Component to display an incoming claim
 const ClaimCard = ({ claim, onRespond }) => (
-  <div className="p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-lg border border-neutral-200 dark:border-neutral-700/50">
+  <div className="p-4 bg-neutral-50 dark:bg-[#2a2a2a]/50 rounded-lg border border-neutral-200 dark:border-neutral-700/50">
     <div className="flex items-start gap-3">
       <div className="flex-1">
         <p className="text-sm font-semibold text-neutral-800 dark:text-white">
@@ -134,12 +134,12 @@ const ClaimCard = ({ claim, onRespond }) => (
 
 // --- SKELETON COMPONENTS ---
 const PostCardSkeleton = () => (
-  <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm overflow-hidden flex flex-col h-full">
+  <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden flex flex-col h-full">
     <Skeleton height={192} />
     <div className="p-4 flex flex-col flex-grow">
       <Skeleton height={24} width="80%" />
       <Skeleton count={2} className="mt-2" />
-      <div className="mt-auto pt-4 border-t border-neutral-200 dark:border-neutral-800">
+      <div className="mt-auto pt-4 border-t border-neutral-200 dark:border-[#3a3a3a]">
         <Skeleton height={22} width="35%" />
       </div>
     </div>
@@ -147,7 +147,7 @@ const PostCardSkeleton = () => (
 );
 
 const ClaimCardSkeleton = () => (
-  <div className="p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-lg border border-neutral-200 dark:border-neutral-700/50">
+  <div className="p-4 bg-neutral-50 dark:bg-[#2a2a2a]/50 rounded-lg border border-neutral-200 dark:border-neutral-700/50">
     <div className="flex items-start gap-3">
       <div className="flex-1">
         <Skeleton height={20} width="60%" />
@@ -170,7 +170,7 @@ const MyPostsPageSkeleton = ({ activeTab, postStatusFilter }) => (
           className={`px-4 sm:px-6 py-3 text-sm sm:text-base font-medium border-b-2 ${
             activeTab === "myPosts"
               ? "text-primary-600 border-primary-600"
-              : "text-neutral-500 dark:text-zinc-400 border-transparent"
+              : "text-neutral-500 dark:text-gray-400 border-transparent"
           }`}
         >
           My Posts
@@ -179,7 +179,7 @@ const MyPostsPageSkeleton = ({ activeTab, postStatusFilter }) => (
           className={`px-4 sm:px-6 py-3 text-sm sm:text-base font-medium border-b-2 ${
             activeTab === "claims"
               ? "text-primary-600 border-primary-600"
-              : "text-neutral-500 dark:text-zinc-400 border-transparent"
+              : "text-neutral-500 dark:text-gray-400 border-transparent"
           }`}
         >
           Claims on My Found Items
@@ -188,13 +188,13 @@ const MyPostsPageSkeleton = ({ activeTab, postStatusFilter }) => (
     </div>
     {activeTab === "myPosts" ? (
       <>
-        <div className="flex space-x-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 p-1 mb-6 max-w-sm">
+        <div className="flex space-x-1 rounded-lg bg-neutral-100 dark:bg-[#2a2a2a] p-1 mb-6 max-w-sm">
           {["active", "pending", "resolved"].map((tab) => (
             <div
               key={tab}
               className={`w-full rounded-md py-2.5 text-sm font-medium leading-5 ${
                 postStatusFilter === tab
-                  ? "bg-white dark:bg-neutral-900 shadow"
+                  ? "bg-white dark:bg-[#2a2a2a] shadow"
                   : ""
               }`}
             >
@@ -213,7 +213,7 @@ const MyPostsPageSkeleton = ({ activeTab, postStatusFilter }) => (
         {[...Array(2)].map((_, i) => (
           <div
             key={i}
-            className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm p-4 sm:p-6"
+            className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-4 sm:p-6"
           >
             <Skeleton height={24} width="40%" className="mb-3" />
             <div className="space-y-3">
@@ -365,7 +365,7 @@ export default function MyPostsPage({ user }) {
               ${
                 activeTab === "myPosts"
                   ? "text-primary-600 border-primary-600"
-                  : "text-neutral-500 dark:text-zinc-400 hover:text-neutral-800 dark:hover:text-zinc-200 border-transparent"
+                  : "text-neutral-500 dark:text-gray-400 hover:text-neutral-800 dark:hover:text-zinc-200 border-transparent"
               }`}
           >
             My Posts
@@ -376,7 +376,7 @@ export default function MyPostsPage({ user }) {
               ${
                 activeTab === "claims"
                   ? "text-primary-600 border-primary-600"
-                  : "text-neutral-500 dark:text-zinc-400 hover:text-neutral-800 dark:hover:text-zinc-200 border-transparent"
+                  : "text-neutral-500 dark:text-gray-400 hover:text-neutral-800 dark:hover:text-zinc-200 border-transparent"
               }`}
           >
             Claims on My Found Items
@@ -386,7 +386,7 @@ export default function MyPostsPage({ user }) {
 
       {activeTab === "myPosts" ? (
         <>
-          <div className="flex space-x-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 p-1 mb-6 max-w-sm">
+          <div className="flex space-x-1 rounded-lg bg-neutral-100 dark:bg-[#2a2a2a] p-1 mb-6 max-w-sm">
             {["active", "pending", "resolved"].map((tab) => (
               <button
                 key={tab}
@@ -394,7 +394,7 @@ export default function MyPostsPage({ user }) {
                 className={`w-full rounded-md py-2.5 text-sm font-medium leading-5
                   ${
                     postStatusFilter === tab
-                      ? "bg-white dark:bg-neutral-900 shadow text-primary-600"
+                      ? "bg-white dark:bg-[#2a2a2a] shadow text-primary-600"
                       : "text-neutral-600 dark:text-neutral-300 hover:bg-white/50 dark:hover:bg-neutral-700/50"
                   }`}
               >
@@ -403,8 +403,8 @@ export default function MyPostsPage({ user }) {
             ))}
           </div>
           {posts.length === 0 ? (
-            <div className="text-center p-12 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
-              <p className="text-neutral-500 dark:text-zinc-400">
+            <div className="text-center p-12 bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl">
+              <p className="text-neutral-500 dark:text-gray-400">
                 No {postStatusFilter} posts found.
               </p>
             </div>
@@ -413,11 +413,11 @@ export default function MyPostsPage({ user }) {
               {posts.map((post) => (
                 <div
                   key={post.id}
-                  className="group relative bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm overflow-hidden flex flex-col h-full"
+                  className="group relative bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden flex flex-col h-full"
                 >
                   <button
                     onClick={() => handleDeletePost(post.id)}
-                    className="absolute top-3 right-3 z-10 p-1.5 bg-white/50 dark:bg-black/50 text-neutral-600 dark:text-zinc-300 rounded-full
+                    className="absolute top-3 right-3 z-10 p-1.5 bg-white/50 dark:bg-[#1a1a1a] text-neutral-600 dark:text-gray-100 rounded-full
                                opacity-0 group-hover:opacity-100 transition-opacity
                                hover:bg-red-500/80 hover:text-white"
                     title="Delete Post"
@@ -440,10 +440,10 @@ export default function MyPostsPage({ user }) {
                     <h3 className="text-lg font-semibold text-neutral-800 dark:text-white truncate mb-1">
                       {post.title}
                     </h3>
-                    <p className="text-sm text-neutral-500 dark:text-zinc-400 mb-2 line-clamp-2 flex-grow">
+                    <p className="text-sm text-neutral-500 dark:text-gray-400 mb-2 line-clamp-2 flex-grow">
                       {post.description}
                     </p>
-                    <div className="mt-auto pt-4 border-t border-neutral-200 dark:border-neutral-800">
+                    <div className="mt-auto pt-4 border-t border-neutral-200 dark:border-[#3a3a3a]">
                       <StatusBadge status={post.moderation_status} />
                     </div>
                     {(post.moderation_status === "pending_return" ||
@@ -469,7 +469,7 @@ export default function MyPostsPage({ user }) {
             .map((post) => (
               <div
                 key={`claim-item-${post.id}`}
-                className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm p-4 sm:p-6"
+                className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-4 sm:p-6"
               >
                 <h3 className="font-bold text-lg text-neutral-900 dark:text-white mb-3">
                   Claims for:{" "}
@@ -488,7 +488,7 @@ export default function MyPostsPage({ user }) {
             ))}
           {posts.filter((p) => p.status === "Found" && claims[p.id]?.length > 0)
             .length === 0 && (
-            <div className="text-center p-12 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
+            <div className="text-center p-12 bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl">
               <Inbox className="mx-auto h-12 w-12 text-neutral-400 dark:text-neutral-600" />
               <p className="mt-4 text-neutral-500 dark:text-neutral-400">
                 No pending claims on your found items.

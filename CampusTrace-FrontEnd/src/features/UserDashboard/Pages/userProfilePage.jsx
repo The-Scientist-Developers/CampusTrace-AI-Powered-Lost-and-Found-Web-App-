@@ -13,7 +13,7 @@
 // } from "lucide-react";
 
 // const StatCard = ({ label, value, icon: Icon }) => (
-//   <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 rounded-xl shadow-sm flex items-center gap-4">
+//   <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] p-6 rounded-xl shadow-sm flex items-center gap-4">
 //     <Icon className="w-8 h-8 text-primary-600" />
 //     <div>
 //       <p className="text-2xl font-bold text-neutral-800 dark:text-white">
@@ -117,7 +117,7 @@
 
 //   if (loading) {
 //     return (
-//       <div className="p-8 text-center text-neutral-500 dark:text-zinc-400">
+//       <div className="p-8 text-center text-neutral-500 dark:text-gray-400">
 //         Loading profile...
 //       </div>
 //     );
@@ -127,7 +127,7 @@
 //   }
 //   if (!profile) {
 //     return (
-//       <div className="p-8 text-center text-neutral-500 dark:text-zinc-400">
+//       <div className="p-8 text-center text-neutral-500 dark:text-gray-400">
 //         Profile not found.
 //       </div>
 //     );
@@ -135,7 +135,7 @@
 
 //   return (
 //     <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8 animate-fadeIn">
-//       <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm p-6">
+//       <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-6">
 //         <div className="flex flex-col sm:flex-row items-center gap-6">
 //           <div className="relative">
 //             <img
@@ -170,7 +170,7 @@
 //                 type="text"
 //                 value={fullName}
 //                 onChange={(e) => setFullName(e.target.value)}
-//                 className="form-input text-3xl font-bold text-neutral-800 dark:text-white bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-1 mb-2 w-full"
+//                 className="form-input text-3xl font-bold text-neutral-800 dark:text-white bg-neutral-100 dark:bg-[#2a2a2a] border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-1 mb-2 w-full"
 //               />
 //             ) : (
 //               <h1 className="text-3xl font-bold text-neutral-800 dark:text-white">
@@ -203,7 +203,7 @@
 //                   setIsEditing(false);
 //                   setAvatarUrl(profile.avatar_url || "");
 //                 }}
-//                 className="p-2 text-neutral-500 dark:text-zinc-400 hover:bg-neutral-100 dark:hover:bg-zinc-700 rounded-md"
+//                 className="p-2 text-neutral-500 dark:text-gray-400 hover:bg-neutral-100 dark:hover:bg-zinc-700 rounded-md"
 //               >
 //                 <X className="w-5 h-5" />
 //               </button>
@@ -239,10 +239,10 @@
 //           Your Recent Posts
 //         </h2>
 //         {posts.length > 0 ? (
-//           <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm p-4 divide-y divide-neutral-200 dark:divide-neutral-800">
+//           <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-4 divide-y divide-neutral-200 dark:divide-[#3a3a3a]">
 //             {posts.slice(0, 5).map((post) => (
 //               <div key={post.id} className="flex items-center gap-4 py-3">
-//                 <div className="w-12 h-12 bg-neutral-100 dark:bg-neutral-800 rounded-md flex-shrink-0 flex items-center justify-center">
+//                 <div className="w-12 h-12 bg-neutral-100 dark:bg-[#2a2a2a] rounded-md flex-shrink-0 flex items-center justify-center">
 //                   {post.image_url ? (
 //                     <img
 //                       src={post.image_url}
@@ -276,7 +276,7 @@
 //             ))}
 //           </div>
 //         ) : (
-//           <div className="text-center p-12 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
+//           <div className="text-center p-12 bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl">
 //             <p className="text-neutral-500">
 //               You haven't posted any items yet.
 //             </p>
@@ -286,7 +286,6 @@
 //     </div>
 //   );
 // }
-
 
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase, apiClient } from "../../../api/apiClient";
@@ -308,7 +307,7 @@ import "react-loading-skeleton/dist/skeleton.css";
 
 // --- (No changes to StatCard) ---
 const StatCard = ({ label, value, icon: Icon }) => (
-  <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 rounded-xl shadow-sm flex items-center gap-4">
+  <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] p-6 rounded-xl shadow-sm flex items-center gap-4">
     <Icon className="w-8 h-8 text-primary-600" />
     <div>
       <p className="text-2xl font-bold text-neutral-800 dark:text-white">
@@ -321,7 +320,7 @@ const StatCard = ({ label, value, icon: Icon }) => (
 
 // --- 2. SKELETON COMPONENTS ---
 const StatCardSkeleton = () => (
-  <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 rounded-xl shadow-sm flex items-center gap-4">
+  <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] p-6 rounded-xl shadow-sm flex items-center gap-4">
     <Skeleton circle width={32} height={32} /> {/* Icon */}
     <div>
       <Skeleton height={28} width={50} /> {/* Value */}
@@ -344,7 +343,7 @@ const PostItemSkeleton = () => (
 const UserProfilePageSkeleton = () => (
   <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
     {/* Profile Card Skeleton */}
-    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm p-6">
+    <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-6">
       <div className="flex flex-col sm:flex-row items-center gap-6">
         <Skeleton
           circle
@@ -355,9 +354,16 @@ const UserProfilePageSkeleton = () => (
         <div className="flex-1 text-center sm:text-left">
           <Skeleton height={36} width="60%" /> {/* Name */}
           <Skeleton height={20} width="70%" className="mt-2" /> {/* Email */}
-          <Skeleton height={22} width="25%" className="mt-2" borderRadius="999px" /> {/* Role */}
+          <Skeleton
+            height={22}
+            width="25%"
+            className="mt-2"
+            borderRadius="999px"
+          />{" "}
+          {/* Role */}
         </div>
-        <Skeleton height={38} width={120} borderRadius={6} /> {/* Edit button */}
+        <Skeleton height={38} width={120} borderRadius={6} />{" "}
+        {/* Edit button */}
       </div>
     </div>
 
@@ -371,7 +377,7 @@ const UserProfilePageSkeleton = () => (
     {/* Recent Posts Skeleton */}
     <div>
       <Skeleton height={28} width={250} className="mb-4" /> {/* Title */}
-      <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm p-4 divide-y divide-neutral-200 dark:divide-neutral-800">
+      <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-4 divide-y divide-neutral-200 dark:divide-[#3a3a3a]">
         {[...Array(3)].map((_, i) => (
           <PostItemSkeleton key={i} />
         ))}
@@ -484,7 +490,7 @@ export default function UserProfilePage({ user }) {
   }
   if (!profile) {
     return (
-      <div className="p-8 text-center text-neutral-500 dark:text-zinc-400">
+      <div className="p-8 text-center text-neutral-500 dark:text-gray-400">
         Profile not found.
       </div>
     );
@@ -493,7 +499,7 @@ export default function UserProfilePage({ user }) {
   // --- (No changes to final JSX return) ---
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8 animate-fadeIn">
-      <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm p-6">
+      <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-6">
         <div className="flex flex-col sm:flex-row items-center gap-6">
           <div className="relative">
             <img
@@ -528,7 +534,7 @@ export default function UserProfilePage({ user }) {
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="form-input text-3xl font-bold text-neutral-800 dark:text-white bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-1 mb-2 w-full"
+                className="form-input text-3xl font-bold text-neutral-800 dark:text-white bg-neutral-100 dark:bg-[#2a2a2a] border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-1 mb-2 w-full"
               />
             ) : (
               <h1 className="text-3xl font-bold text-neutral-800 dark:text-white">
@@ -561,7 +567,7 @@ export default function UserProfilePage({ user }) {
                   setIsEditing(false);
                   setAvatarUrl(profile.avatar_url || "");
                 }}
-                className="p-2 text-neutral-500 dark:text-zinc-400 hover:bg-neutral-100 dark:hover:bg-zinc-700 rounded-md"
+                className="p-2 text-neutral-500 dark:text-gray-400 hover:bg-neutral-100 dark:hover:bg-zinc-700 rounded-md"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -597,10 +603,10 @@ export default function UserProfilePage({ user }) {
           Your Recent Posts
         </h2>
         {posts.length > 0 ? (
-          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm p-4 divide-y divide-neutral-200 dark:divide-neutral-800">
+          <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-4 divide-y divide-neutral-200 dark:divide-[#3a3a3a]">
             {posts.slice(0, 5).map((post) => (
               <div key={post.id} className="flex items-center gap-4 py-3">
-                <div className="w-12 h-12 bg-neutral-100 dark:bg-neutral-800 rounded-md flex-shrink-0 flex items-center justify-center">
+                <div className="w-12 h-12 bg-neutral-100 dark:bg-[#2a2a2a] rounded-md flex-shrink-0 flex items-center justify-center">
                   {post.image_url ? (
                     <img
                       src={post.image_url}
@@ -634,7 +640,7 @@ export default function UserProfilePage({ user }) {
             ))}
           </div>
         ) : (
-          <div className="text-center p-12 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
+          <div className="text-center p-12 bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl">
             <p className="text-neutral-500">
               You haven't posted any items yet.
             </p>

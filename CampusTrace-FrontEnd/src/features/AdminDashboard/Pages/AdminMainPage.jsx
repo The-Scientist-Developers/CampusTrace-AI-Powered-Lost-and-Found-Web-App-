@@ -21,7 +21,7 @@
 // } from "recharts";
 
 // const StatCard = ({ title, value, icon: Icon, color }) => (
-//   <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 rounded-xl shadow-sm flex items-center gap-4">
+//   <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] p-6 rounded-xl shadow-sm flex items-center gap-4">
 //     <div className={`p-3 rounded-lg bg-${color}-500/10`}>
 //       <Icon className={`w-6 h-6 text-${color}-600 dark:text-${color}-400`} />
 //     </div>
@@ -38,7 +38,7 @@
 //   <li className="flex gap-4 pb-4">
 //     <div className="relative">
 //       <div className="h-full w-px bg-neutral-200 dark:bg-neutral-700"></div>
-//       <div className="absolute left-1/2 top-1 -translate-x-1/2 p-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full">
+//       <div className="absolute left-1/2 top-1 -translate-x-1/2 p-1.5 bg-neutral-100 dark:bg-[#2a2a2a] rounded-full">
 //         <Icon className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
 //       </div>
 //     </div>
@@ -182,7 +182,7 @@
 
 //   if (loading) {
 //     return (
-//       <div className="flex justify-center items-center h-full p-8 text-neutral-500 dark:text-zinc-400">
+//       <div className="flex justify-center items-center h-full p-8 text-neutral-500 dark:text-gray-400">
 //         <Loader2 className="w-8 h-8 animate-spin mr-3" />
 //         Loading Admin Overview...
 //       </div>
@@ -226,7 +226,7 @@
 //       </div>
 
 //       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-//         <div className="lg:col-span-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 rounded-xl shadow-sm">
+//         <div className="lg:col-span-2 bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] p-6 rounded-xl shadow-sm">
 //           <h2 className="text-xl font-bold text-neutral-800 dark:text-white mb-6">
 //             Posts Per Week
 //           </h2>
@@ -268,7 +268,7 @@
 //           </ResponsiveContainer>
 //         </div>
 
-//         <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 rounded-xl shadow-sm">
+//         <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] p-6 rounded-xl shadow-sm">
 //           <h2 className="text-xl font-bold text-neutral-800 dark:text-white mb-6">
 //             Recent Activity
 //           </h2>
@@ -293,7 +293,6 @@
 //     </div>
 //   );
 // }
-
 
 import React, { useState, useEffect } from "react";
 import { supabase } from "../../../api/apiClient";
@@ -323,7 +322,7 @@ import "react-loading-skeleton/dist/skeleton.css";
 
 // --- (No changes to StatCard or ActivityItem) ---
 const StatCard = ({ title, value, icon: Icon, color }) => (
-  <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 rounded-xl shadow-sm flex items-center gap-4">
+  <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] p-6 rounded-xl shadow-sm flex items-center gap-4">
     <div className={`p-3 rounded-lg bg-${color}-500/10`}>
       <Icon className={`w-6 h-6 text-${color}-600 dark:text-${color}-400`} />
     </div>
@@ -340,7 +339,7 @@ const ActivityItem = ({ text, time, icon: Icon }) => (
   <li className="flex gap-4 pb-4">
     <div className="relative">
       <div className="h-full w-px bg-neutral-200 dark:bg-neutral-700"></div>
-      <div className="absolute left-1/2 top-1 -translate-x-1/2 p-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full">
+      <div className="absolute left-1/2 top-1 -translate-x-1/2 p-1.5 bg-neutral-100 dark:bg-[#2a2a2a] rounded-full">
         <Icon className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
       </div>
     </div>
@@ -354,7 +353,7 @@ const ActivityItem = ({ text, time, icon: Icon }) => (
 // --- 2. SKELETON COMPONENTS ---
 
 const StatCardSkeleton = () => (
-  <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 rounded-xl shadow-sm flex items-center gap-4">
+  <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] p-6 rounded-xl shadow-sm flex items-center gap-4">
     <Skeleton circle width={48} height={48} /> {/* Icon background */}
     <div>
       <Skeleton height={32} width={60} /> {/* Value */}
@@ -367,7 +366,13 @@ const ActivityItemSkeleton = () => (
   <li className="flex gap-4 pb-4">
     <div className="relative">
       {/* Line - hard to skeletonize, maybe omit or fake height */}
-      <Skeleton circle width={26} height={26} className="absolute left-1/2 top-1 -translate-x-1/2 " /> {/* Icon */}
+      <Skeleton
+        circle
+        width={26}
+        height={26}
+        className="absolute left-1/2 top-1 -translate-x-1/2 "
+      />{" "}
+      {/* Icon */}
     </div>
     <div className="flex-grow">
       <Skeleton height={20} width="80%" /> {/* Text */}
@@ -379,7 +384,6 @@ const ActivityItemSkeleton = () => (
 const AdminMainPageSkeleton = () => (
   <div className="p-4 sm:p-6 lg:p-8 space-y-8">
     <Skeleton height={40} width={300} /> {/* Page Title */}
-
     {/* Stat Cards Skeleton */}
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
       <StatCardSkeleton />
@@ -387,18 +391,19 @@ const AdminMainPageSkeleton = () => (
       <StatCardSkeleton />
       <StatCardSkeleton />
     </div>
-
     {/* Chart & Activity Skeleton */}
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Chart Skeleton */}
-      <div className="lg:col-span-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 rounded-xl shadow-sm">
-        <Skeleton height={24} width={200} className="mb-6" /> {/* Chart Title */}
+      <div className="lg:col-span-2 bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] p-6 rounded-xl shadow-sm">
+        <Skeleton height={24} width={200} className="mb-6" />{" "}
+        {/* Chart Title */}
         <Skeleton height={300} /> {/* Chart Area */}
       </div>
 
       {/* Activity Skeleton */}
-      <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 rounded-xl shadow-sm">
-        <Skeleton height={24} width={150} className="mb-6" /> {/* Activity Title */}
+      <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] p-6 rounded-xl shadow-sm">
+        <Skeleton height={24} width={150} className="mb-6" />{" "}
+        {/* Activity Title */}
         <ul className="space-y-4">
           <ActivityItemSkeleton />
           <ActivityItemSkeleton />
@@ -408,7 +413,6 @@ const AdminMainPageSkeleton = () => (
     </div>
   </div>
 );
-
 
 export default function AdminMainPage({ user }) {
   const [stats, setStats] = useState({
@@ -588,7 +592,7 @@ export default function AdminMainPage({ user }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 rounded-xl shadow-sm">
+        <div className="lg:col-span-2 bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] p-6 rounded-xl shadow-sm">
           <h2 className="text-xl font-bold text-neutral-800 dark:text-white mb-6">
             Posts Per Week
           </h2>
@@ -632,7 +636,7 @@ export default function AdminMainPage({ user }) {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 rounded-xl shadow-sm">
+        <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] p-6 rounded-xl shadow-sm">
           <h2 className="text-xl font-bold text-neutral-800 dark:text-white mb-6">
             Recent Activity
           </h2>

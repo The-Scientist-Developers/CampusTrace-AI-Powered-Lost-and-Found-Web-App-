@@ -4,7 +4,7 @@
 // import { Settings as SettingsIcon, ShieldCheck, Loader2 } from "lucide-react";
 
 // const SectionCard = ({ title, description, icon: Icon, children }) => (
-//   <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm">
+//   <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm">
 //     <div className="p-6">
 //       <div className="flex items-start gap-4">
 //         {Icon && (
@@ -20,7 +20,7 @@
 //         </div>
 //       </div>
 //     </div>
-//     <div className="space-y-4 p-6 border-t border-neutral-200 dark:border-neutral-800">
+//     <div className="space-y-4 p-6 border-t border-neutral-200 dark:border-[#3a3a3a]">
 //       {children}
 //     </div>
 //   </div>
@@ -215,7 +215,7 @@
 
 //   if (loading) {
 //     return (
-//       <div className="flex justify-center items-center h-full p-8 text-neutral-500 dark:text-zinc-400">
+//       <div className="flex justify-center items-center h-full p-8 text-neutral-500 dark:text-gray-400">
 //         <SettingsIcon className="w-8 h-8 animate-spin mr-3" />
 //         Loading Settings...
 //       </div>
@@ -324,7 +324,6 @@
 //   );
 // }
 
-
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../../api/apiClient";
 import { Toaster, toast } from "react-hot-toast";
@@ -336,7 +335,7 @@ import "react-loading-skeleton/dist/skeleton.css";
 
 // --- (No changes to SectionCard, SettingInput, SettingToggle, SubmitButton) ---
 const SectionCard = ({ title, description, icon: Icon, children }) => (
-  <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm">
+  <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm">
     <div className="p-6">
       <div className="flex items-start gap-4">
         {Icon && (
@@ -352,7 +351,7 @@ const SectionCard = ({ title, description, icon: Icon, children }) => (
         </div>
       </div>
     </div>
-    <div className="space-y-4 p-6 border-t border-neutral-200 dark:border-neutral-800">
+    <div className="space-y-4 p-6 border-t border-neutral-200 dark:border-[#3a3a3a]">
       {children}
     </div>
   </div>
@@ -428,93 +427,91 @@ const SubmitButton = ({
 // --- 2. SKELETON COMPONENTS ---
 
 const SettingInputSkeleton = () => (
-    <div>
-        <Skeleton height={20} width={150} className="mb-2" /> {/* Label */}
-        <Skeleton height={42} borderRadius={8} /> {/* Input */}
-    </div>
+  <div>
+    <Skeleton height={20} width={150} className="mb-2" /> {/* Label */}
+    <Skeleton height={42} borderRadius={8} /> {/* Input */}
+  </div>
 );
 
 const SettingToggleSkeleton = () => (
-    <div className="flex items-center justify-between py-2">
-        <div>
-            <Skeleton height={20} width={150} /> {/* Label */}
-            <Skeleton height={16} width={250} className="mt-1" /> {/* Description */}
-        </div>
-        <Skeleton width={44} height={24} borderRadius={999} /> {/* Toggle (w-11 h-6) */}
+  <div className="flex items-center justify-between py-2">
+    <div>
+      <Skeleton height={20} width={150} /> {/* Label */}
+      <Skeleton height={16} width={250} className="mt-1" /> {/* Description */}
     </div>
+    <Skeleton width={44} height={24} borderRadius={999} />{" "}
+    {/* Toggle (w-11 h-6) */}
+  </div>
 );
 
 const SectionCardSkeleton = () => (
-    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm">
-        <div className="p-6">
-            <div className="flex items-start gap-4">
-                <Skeleton circle width={24} height={24} className="mt-1" /> {/* Icon */}
-                <div>
-                    <Skeleton height={24} width={150} /> {/* Title */}
-                    <Skeleton height={20} width={300} className="mt-1" /> {/* Description */}
-                </div>
-            </div>
+  <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm">
+    <div className="p-6">
+      <div className="flex items-start gap-4">
+        <Skeleton circle width={24} height={24} className="mt-1" /> {/* Icon */}
+        <div>
+          <Skeleton height={24} width={150} /> {/* Title */}
+          <Skeleton height={20} width={300} className="mt-1" />{" "}
+          {/* Description */}
         </div>
-        <div className="space-y-4 p-6 border-t border-neutral-200 dark:border-neutral-800">
-            {/* Content placeholder - Varies per card */}
-            <Skeleton height={60} />
-            <Skeleton height={60} />
-        </div>
+      </div>
     </div>
+    <div className="space-y-4 p-6 border-t border-neutral-200 dark:border-[#3a3a3a]">
+      {/* Content placeholder - Varies per card */}
+      <Skeleton height={60} />
+      <Skeleton height={60} />
+    </div>
+  </div>
 );
 
 const AdminSettingsPageSkeleton = () => (
-    <div className="max-w-4xl mx-auto py-8 space-y-8">
-        <Skeleton height={36} width={250} /> {/* Page Title */}
-
-        {/* General Card Skeleton */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm">
-            <div className="p-6">
-                <div className="flex items-start gap-4">
-                    <Skeleton circle width={24} height={24} className="mt-1" />
-                    <div>
-                        <Skeleton height={24} width={100} /> {/* Title */}
-                        <Skeleton height={20} width={350} className="mt-1" /> {/* Desc */}
-                    </div>
-                </div>
-            </div>
-            <div className="space-y-4 p-6 border-t border-neutral-200 dark:border-neutral-800">
-                <SettingInputSkeleton />
-                <SettingInputSkeleton />
-            </div>
+  <div className="max-w-4xl mx-auto py-8 space-y-8">
+    <Skeleton height={36} width={250} /> {/* Page Title */}
+    {/* General Card Skeleton */}
+    <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm">
+      <div className="p-6">
+        <div className="flex items-start gap-4">
+          <Skeleton circle width={24} height={24} className="mt-1" />
+          <div>
+            <Skeleton height={24} width={100} /> {/* Title */}
+            <Skeleton height={20} width={350} className="mt-1" /> {/* Desc */}
+          </div>
         </div>
-
-        {/* Moderation Card Skeleton */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm">
-            <div className="p-6">
-                <div className="flex items-start gap-4">
-                    <Skeleton circle width={24} height={24} className="mt-1" />
-                    <div>
-                        <Skeleton height={24} width={200} /> {/* Title */}
-                        <Skeleton height={20} width={350} className="mt-1" /> {/* Desc */}
-                    </div>
-                </div>
-            </div>
-            <div className="space-y-4 p-6 border-t border-neutral-200 dark:border-neutral-800">
-                <SettingToggleSkeleton />
-                <div>
-                    <Skeleton height={20} width={150} className="mb-2" /> {/* Label */}
-                    <div className="flex gap-2">
-                        <Skeleton height={42} className="flex-grow" borderRadius={8} />
-                        <Skeleton height={42} width={70} borderRadius={8} />
-                    </div>
-                     <Skeleton height={16} width={300} className="mt-2" /> {/* Hint */}
-                </div>
-            </div>
-        </div>
-
-        {/* Save Button Skeleton */}
-        <div className="mt-8">
-            <Skeleton height={46} borderRadius={8} />
-        </div>
+      </div>
+      <div className="space-y-4 p-6 border-t border-neutral-200 dark:border-[#3a3a3a]">
+        <SettingInputSkeleton />
+        <SettingInputSkeleton />
+      </div>
     </div>
+    {/* Moderation Card Skeleton */}
+    <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm">
+      <div className="p-6">
+        <div className="flex items-start gap-4">
+          <Skeleton circle width={24} height={24} className="mt-1" />
+          <div>
+            <Skeleton height={24} width={200} /> {/* Title */}
+            <Skeleton height={20} width={350} className="mt-1" /> {/* Desc */}
+          </div>
+        </div>
+      </div>
+      <div className="space-y-4 p-6 border-t border-neutral-200 dark:border-[#3a3a3a]">
+        <SettingToggleSkeleton />
+        <div>
+          <Skeleton height={20} width={150} className="mb-2" /> {/* Label */}
+          <div className="flex gap-2">
+            <Skeleton height={42} className="flex-grow" borderRadius={8} />
+            <Skeleton height={42} width={70} borderRadius={8} />
+          </div>
+          <Skeleton height={16} width={300} className="mt-2" /> {/* Hint */}
+        </div>
+      </div>
+    </div>
+    {/* Save Button Skeleton */}
+    <div className="mt-8">
+      <Skeleton height={46} borderRadius={8} />
+    </div>
+  </div>
 );
-
 
 export default function AdminSettingsPage({ user }) {
   const [loading, setLoading] = useState(true);

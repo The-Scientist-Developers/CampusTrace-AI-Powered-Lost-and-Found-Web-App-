@@ -1,11 +1,30 @@
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   darkMode: "class",
   theme: {
     extend: {
       colors: {
-        // Using the 'indigo' palette as the new primary color
+        // Smooth dark mode palette (like Claude/Supabase)
+        dark: {
+          bg: "#1a1a1a", // Main background
+          surface: "#2a2a2a", // Cards, panels
+          border: "#3a3a3a", // Borders, dividers
+          hover: "#333333", // Hover states
+        },
+        neutral: {
+          50: "#fafafa",
+          100: "#f5f5f5",
+          200: "#e5e5e5",
+          300: "#d4d4d4",
+          400: "#a3a3a3",
+          500: "#737373",
+          600: "#525252",
+          700: "#404040",
+          800: "#262626",
+          900: "#171717",
+          950: "#0a0a0a",
+        },
         primary: {
           50: "#eef2ff",
           100: "#e0e7ff",
@@ -19,7 +38,7 @@ export default {
           900: "#312e81",
           950: "#1e1b4b",
         },
-        red: "#ef4444", // Kept for status indicators like 'Lost'
+        red: "#ef4444",
       },
       animation: {
         "fade-in-up": "fadeInUp 0.6s ease-out forwards",
@@ -39,6 +58,5 @@ export default {
       },
     },
   },
-  // --- FIX: Add the official forms plugin ---
-  plugins: [],
+  plugins: [require("@tailwindcss/forms")],
 };

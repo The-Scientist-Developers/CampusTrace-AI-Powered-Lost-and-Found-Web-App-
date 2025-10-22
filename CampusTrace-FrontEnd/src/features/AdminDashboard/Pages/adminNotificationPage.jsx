@@ -52,7 +52,7 @@ const AdminNotificationsPageSkeleton = () => (
       <Skeleton height={38} width={180} borderRadius={6} />
     </div>
     {/* List container */}
-    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm divide-y divide-neutral-200 dark:divide-neutral-800">
+    <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm divide-y divide-neutral-200 dark:divide-[#3a3a3a]">
       {[...Array(6)].map((_, i) => (
         <NotificationItemSkeleton key={i} />
       ))}
@@ -152,7 +152,7 @@ export default function AdminNotificationPage({ user }) {
         {unreadCount > 0 && (
           <button
             onClick={handleMarkAllAsRead}
-            className="flex items-center gap-2 px-4 py-2 bg-neutral-100 dark:bg-zinc-800 text-neutral-700 dark:text-zinc-300 font-semibold text-sm rounded-md hover:bg-neutral-200 dark:hover:bg-zinc-700"
+            className="flex items-center gap-2 px-4 py-2 bg-neutral-100 dark:bg-zinc-800 text-neutral-700 dark:text-gray-100 font-semibold text-sm rounded-md hover:bg-neutral-200 dark:hover:bg-zinc-700"
           >
             <CheckCheck className="w-4 h-4" />
             Mark All as Read ({unreadCount})
@@ -161,7 +161,7 @@ export default function AdminNotificationPage({ user }) {
       </div>
 
       {notifications.length === 0 ? (
-        <div className="text-center p-12 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm">
+        <div className="text-center p-12 bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm">
           <Bell className="mx-auto h-12 w-12 text-neutral-400 dark:text-neutral-600" />
           <h3 className="mt-4 text-lg font-semibold text-neutral-800 dark:text-white">
             All Caught Up!
@@ -171,7 +171,7 @@ export default function AdminNotificationPage({ user }) {
           </p>
         </div>
       ) : (
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm divide-y divide-neutral-200 dark:divide-neutral-800">
+        <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm divide-y divide-neutral-200 dark:divide-[#3a3a3a]">
           {notifications.map((notification) => (
             <div
               key={notification.id}
@@ -201,7 +201,7 @@ export default function AdminNotificationPage({ user }) {
                 {notification.status === "unread" && (
                   <button
                     onClick={() => handleMarkAsRead(notification.id)}
-                    className="p-2 rounded-full text-neutral-500 dark:text-zinc-400 hover:bg-neutral-100 dark:hover:bg-zinc-700 hover:text-neutral-800 dark:hover:text-white"
+                    className="p-2 rounded-full text-neutral-500 dark:text-gray-400 hover:bg-neutral-100 dark:hover:bg-zinc-700 hover:text-neutral-800 dark:hover:text-white"
                     title="Mark as read"
                   >
                     <MailOpen className="w-5 h-5" />

@@ -30,8 +30,8 @@ import "react-loading-skeleton/dist/skeleton.css";
 
 // Dashboard Skeleton Loading Component
 const DashboardSkeleton = ({ isSidebarOpen, mobileMenu }) => (
-  <div className="h-screen flex flex-col bg-neutral-50 dark:bg-black text-neutral-800 dark:text-neutral-300 overflow-hidden">
-    <header className="h-16 px-4 lg:px-6 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-lg border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between shadow-sm z-30 flex-shrink-0">
+  <div className="h-screen flex flex-col bg-neutral-50 dark:bg-[#1a1a1a] text-neutral-800 dark:text-neutral-300 overflow-hidden">
+    <header className="h-16 px-4 lg:px-6 bg-white/70 dark:bg-[#2a2a2a]/70 backdrop-blur-lg border-b border-neutral-200 dark:border-[#3a3a3a] flex items-center justify-between shadow-sm z-30 flex-shrink-0">
       <div className="flex items-center gap-2">
         <Skeleton circle width={32} height={32} className="md:hidden" />
         <Skeleton circle width={32} height={32} className="hidden md:block" />
@@ -58,7 +58,7 @@ const DashboardSkeleton = ({ isSidebarOpen, mobileMenu }) => (
     </header>
     <div className="flex flex-1 overflow-hidden">
       <aside
-        className={`fixed md:relative inset-y-0 left-0 z-50 bg-white/80 dark:bg-neutral-900/80 flex flex-col transition-all duration-300 ease-in-out top-16 md:top-0 border-r border-neutral-200 dark:border-neutral-800 ${
+        className={`fixed md:relative inset-y-0 left-0 z-50 bg-white/80 dark:bg-[#2a2a2a]/80 flex flex-col transition-all duration-300 ease-in-out top-16 md:top-0 border-r border-neutral-200 dark:border-[#3a3a3a] ${
           mobileMenu
             ? "translate-x-0 w-64 shadow-xl"
             : "-translate-x-full md:translate-x-0"
@@ -66,7 +66,7 @@ const DashboardSkeleton = ({ isSidebarOpen, mobileMenu }) => (
           isSidebarOpen ? "md:w-64" : "md:w-20"
         } h-[calc(100vh-4rem)] md:h-full`}
       >
-        <div className="p-4 flex items-center gap-3 border-b border-neutral-200 dark:border-neutral-800 flex-shrink-0 h-16">
+        <div className="p-4 flex items-center gap-3 border-b border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0 h-16">
           <Skeleton circle width={32} height={32} />
           {(isSidebarOpen || mobileMenu) && (
             <div className="flex flex-col overflow-hidden">
@@ -80,13 +80,13 @@ const DashboardSkeleton = ({ isSidebarOpen, mobileMenu }) => (
             <Skeleton key={i} height={42} borderRadius={8} />
           ))}
         </nav>
-        <div className="p-3 border-t border-neutral-200 dark:border-neutral-800 flex-shrink-0">
+        <div className="p-3 border-t border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0">
           <div className="space-y-1.5">
             {[...Array(2)].map((_, i) => (
               <Skeleton key={i} height={42} borderRadius={8} />
             ))}
           </div>
-          <div className="border-t border-neutral-200 dark:border-neutral-800 my-3"></div>
+          <div className="border-t border-neutral-200 dark:border-[#3a3a3a] my-3"></div>
           <div className="p-2 flex items-center gap-3">
             <Skeleton circle width={36} height={36} />
             {(isSidebarOpen || mobileMenu) && (
@@ -99,7 +99,7 @@ const DashboardSkeleton = ({ isSidebarOpen, mobileMenu }) => (
           <Skeleton height={42} borderRadius={8} className="mt-2" />
         </div>
       </aside>
-      <main className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-black">
+      <main className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-[#1a1a1a]">
         <div className="p-4 md:p-6 lg:p-8 min-h-full">
           <Skeleton height={40} width={200} className="mb-6" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -335,14 +335,14 @@ export default function DashboardLayout({ children, user }) {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-neutral-50 dark:bg-black text-neutral-800 dark:text-neutral-300 overflow-hidden">
+    <div className="h-screen flex flex-col bg-neutral-50 dark:bg-[#1a1a1a] text-neutral-800 dark:text-neutral-300 overflow-hidden">
       {mobileMenu && (
         <div
           className="fixed inset-0 bg-black/60 z-40 md:hidden"
           onClick={() => setMobileMenu(false)}
         />
       )}
-      <header className="h-16 px-4 lg:px-6 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-lg border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between shadow-sm z-30 flex-shrink-0">
+      <header className="h-16 px-4 lg:px-6 bg-white/70 dark:bg-[#2a2a2a]/70 backdrop-blur-lg border-b border-neutral-200 dark:border-[#3a3a3a] flex items-center justify-between shadow-sm z-30 flex-shrink-0">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setMobileMenu(!mobileMenu)}
@@ -397,7 +397,7 @@ export default function DashboardLayout({ children, user }) {
       </header>
       <div className="flex flex-1 overflow-hidden">
         <aside
-          className={`fixed md:relative inset-y-0 left-0 z-50 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-lg md:bg-white dark:md:bg-neutral-900 flex flex-col transition-all duration-300 ease-in-out top-16 md:top-0 border-r border-neutral-200 dark:border-neutral-800 ${
+          className={`fixed md:relative inset-y-0 left-0 z-50 bg-white/80 dark:bg-[#2a2a2a]/80 backdrop-blur-lg md:bg-white dark:md:bg-neutral-900 flex flex-col transition-all duration-300 ease-in-out top-16 md:top-0 border-r border-neutral-200 dark:border-[#3a3a3a] ${
             mobileMenu
               ? "translate-x-0 w-64 shadow-xl"
               : "-translate-x-full md:translate-x-0"
@@ -406,7 +406,7 @@ export default function DashboardLayout({ children, user }) {
           } h-[calc(100vh-4rem)] md:h-full`}
         >
           <div
-            className={`p-4 flex items-center gap-3 border-b border-neutral-200 dark:border-neutral-800 flex-shrink-0 h-16 ${
+            className={`p-4 flex items-center gap-3 border-b border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0 h-16 ${
               !isSidebarOpen && !mobileMenu ? "justify-center" : ""
             }`}
           >
@@ -438,7 +438,7 @@ export default function DashboardLayout({ children, user }) {
             ))}
           </nav>
 
-          <div className="p-3 border-t border-neutral-200 dark:border-neutral-800 flex-shrink-0">
+          <div className="p-3 border-t border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0">
             <div className="space-y-1.5">
               {bottomItems.map((item) => (
                 <NavLink
@@ -448,7 +448,7 @@ export default function DashboardLayout({ children, user }) {
                 />
               ))}
             </div>
-            <div className="border-t border-neutral-200 dark:border-neutral-800 my-3"></div>
+            <div className="border-t border-neutral-200 dark:border-[#3a3a3a] my-3"></div>
             <div
               className="p-2 flex items-center gap-3 cursor-pointer rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/60"
               onClick={() => navigate("/dashboard/profile")}
@@ -486,7 +486,7 @@ export default function DashboardLayout({ children, user }) {
             </button>
           </div>
         </aside>
-        <main className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-black">
+        <main className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-[#1a1a1a]">
           <div className="p-4 md:p-6 lg:p-8 min-h-full">{children}</div>
         </main>
       </div>

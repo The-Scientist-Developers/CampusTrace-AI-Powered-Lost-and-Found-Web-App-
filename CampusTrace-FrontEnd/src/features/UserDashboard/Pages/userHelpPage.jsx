@@ -92,7 +92,7 @@ const AccordionItem = ({ question, answer }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="border-b border-neutral-200 dark:border-neutral-800 last:border-b-0">
+    <div className="border-b border-neutral-200 dark:border-[#3a3a3a] last:border-b-0">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex justify-between items-center text-left py-4 px-2"
@@ -101,7 +101,7 @@ const AccordionItem = ({ question, answer }) => {
           {question}
         </span>
         <ChevronDown
-          className={`w-5 h-5 text-neutral-500 dark:text-zinc-400 transition-transform duration-300 ${
+          className={`w-5 h-5 text-neutral-500 dark:text-gray-400 transition-transform duration-300 ${
             isOpen ? "rotate-180" : ""
           }`}
         />
@@ -122,7 +122,7 @@ const AccordionItem = ({ question, answer }) => {
 };
 
 const AccordionItemSkeleton = () => (
-  <div className="border-b border-neutral-200 dark:border-neutral-800">
+  <div className="border-b border-neutral-200 dark:border-[#3a3a3a]">
     <div className="w-full flex justify-between items-center py-4 px-2">
       <Skeleton height={24} width="70%" />
       <Skeleton width={20} height={20} />
@@ -142,7 +142,7 @@ const HelpPageSkeleton = () => (
       {[...Array(3)].map((_, i) => (
         <div
           key={i}
-          className="bg-white dark:bg-neutral-900 p-6 rounded-xl border border-neutral-200 dark:border-neutral-800"
+          className="bg-white dark:bg-[#2a2a2a] p-6 rounded-xl border border-neutral-200 dark:border-[#3a3a3a]"
         >
           <Skeleton circle width={48} height={48} className="mx-auto mb-4" />
           <Skeleton height={24} width="60%" className="mx-auto mb-2" />
@@ -151,7 +151,7 @@ const HelpPageSkeleton = () => (
       ))}
     </div>
 
-    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm p-4 sm:p-6">
+    <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-4 sm:p-6">
       <Skeleton height={30} width={200} className="mb-4" />
       {[...Array(3)].map((_, i) => (
         <AccordionItemSkeleton key={i} />
@@ -208,7 +208,7 @@ export default function HelpPage() {
           How It Works
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-          <div className="bg-white dark:bg-neutral-900 p-6 rounded-xl border border-neutral-200 dark:border-neutral-800">
+          <div className="bg-white dark:bg-[#2a2a2a] p-6 rounded-xl border border-neutral-200 dark:border-[#3a3a3a]">
             <Edit3 className="mx-auto h-10 w-10 text-primary-600 mb-4" />
             <h3 className="text-xl font-semibold mb-2 dark:text-white">
               1. Post an Item
@@ -218,7 +218,7 @@ export default function HelpPage() {
               clear photo and description.
             </p>
           </div>
-          <div className="bg-white dark:bg-neutral-900 p-6 rounded-xl border border-neutral-200 dark:border-neutral-800">
+          <div className="bg-white dark:bg-[#2a2a2a] p-6 rounded-xl border border-neutral-200 dark:border-[#3a3a3a]">
             <Search className="mx-auto h-10 w-10 text-primary-600 mb-4" />
             <h3 className="text-xl font-semibold mb-2 dark:text-white">
               2. Find a Match
@@ -228,7 +228,7 @@ export default function HelpPage() {
               all posts or search by image.
             </p>
           </div>
-          <div className="bg-white dark:bg-neutral-900 p-6 rounded-xl border border-neutral-200 dark:border-neutral-800">
+          <div className="bg-white dark:bg-[#2a2a2a] p-6 rounded-xl border border-neutral-200 dark:border-[#3a3a3a]">
             <CheckCircle className="mx-auto h-10 w-10 text-primary-600 mb-4" />
             <h3 className="text-xl font-semibold mb-2 dark:text-white">
               3. Reclaim Your Item
@@ -250,7 +250,7 @@ export default function HelpPage() {
             <h3 className="text-2xl font-semibold text-neutral-800 dark:text-white mb-4 border-l-4 border-primary-500 pl-4">
               {category.category}
             </h3>
-            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm">
+            <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm">
               {category.items.map((faq, faqIndex) => (
                 <AccordionItem
                   key={faqIndex}
@@ -263,7 +263,7 @@ export default function HelpPage() {
         ))}
       </div>
 
-      <div className="mt-16 text-center bg-neutral-100 dark:bg-neutral-900/50 p-8 rounded-xl border border-neutral-200 dark:border-neutral-800">
+      <div className="mt-16 text-center bg-neutral-100 dark:bg-[#2a2a2a]/50 p-8 rounded-xl border border-neutral-200 dark:border-[#3a3a3a]">
         <h2 className="text-2xl font-bold text-neutral-800 dark:text-white">
           Still have questions?
         </h2>

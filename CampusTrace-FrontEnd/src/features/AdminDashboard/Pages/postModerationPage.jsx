@@ -17,7 +17,7 @@
 //     approved:
 //       "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400 border border-green-500/30",
 //     rejected:
-//       "bg-neutral-200 text-neutral-800 dark:bg-zinc-700/50 dark:text-zinc-400 border border-neutral-300 dark:border-zinc-700/80",
+//       "bg-neutral-200 text-neutral-800 dark:bg-zinc-700/50 dark:text-gray-400 border border-neutral-300 dark:border-zinc-700/80",
 //   };
 //   return (
 //     <span
@@ -39,16 +39,16 @@
 //       onClick={onClose}
 //     >
 //       <div
-//         className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+//         className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
 //         onClick={(e) => e.stopPropagation()}
 //       >
-//         <div className="flex justify-between items-center pb-4 border-b border-neutral-200 dark:border-neutral-800 mb-4">
+//         <div className="flex justify-between items-center pb-4 border-b border-neutral-200 dark:border-[#3a3a3a] mb-4">
 //           <h2 className="text-2xl font-bold text-neutral-800 dark:text-white">
 //             Post Details
 //           </h2>
 //           <button
 //             onClick={onClose}
-//             className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-zinc-800 text-neutral-500 dark:text-zinc-400"
+//             className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-[#2a2a2a] text-neutral-500 dark:text-gray-400"
 //           >
 //             <X className="w-6 h-6" />
 //           </button>
@@ -63,7 +63,7 @@
 //                 className="w-full h-auto object-cover rounded-lg shadow-md border border-neutral-200 dark:border-neutral-700"
 //               />
 //             ) : (
-//               <div className="w-full h-48 bg-neutral-100 dark:bg-neutral-800 rounded-lg flex flex-col items-center justify-center text-neutral-500 text-sm">
+//               <div className="w-full h-48 bg-neutral-100 dark:bg-[#2a2a2a] rounded-lg flex flex-col items-center justify-center text-neutral-500 text-sm">
 //                 <ImageIconPlaceholder className="w-10 h-10 mb-2" />
 //                 No Image Available
 //               </div>
@@ -104,7 +104,7 @@
 //           </div>
 //         </div>
 
-//         <div className="flex gap-3 justify-end pt-4 border-t border-neutral-200 dark:border-neutral-800">
+//         <div className="flex gap-3 justify-end pt-4 border-t border-neutral-200 dark:border-[#3a3a3a]">
 //           <button
 //             onClick={() => {
 //               onUpdateStatus(post.id, "approved");
@@ -209,7 +209,7 @@
 
 //   if (loading) {
 //     return (
-//       <div className="flex justify-center items-center h-full p-8 text-neutral-500 dark:text-zinc-400">
+//       <div className="flex justify-center items-center h-full p-8 text-neutral-500 dark:text-gray-400">
 //         <Loader2 className="w-8 h-8 animate-spin mr-3" />
 //         Loading Posts...
 //       </div>
@@ -227,7 +227,7 @@
 //           Post Moderation
 //         </h1>
 //         <div className="flex items-center gap-2">
-//           <Filter className="w-4 h-4 text-neutral-500 dark:text-zinc-400" />
+//           <Filter className="w-4 h-4 text-neutral-500 dark:text-gray-400" />
 //           <select
 //             value={filter}
 //             onChange={(e) => setFilter(e.target.value)}
@@ -246,16 +246,16 @@
 //           <table className="w-full text-left">
 //             <thead className="bg-neutral-50 dark:bg-zinc-800/50">
 //               <tr>
-//                 <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400">
+//                 <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
 //                   Post
 //                 </th>
-//                 <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400">
+//                 <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
 //                   Author
 //                 </th>
-//                 <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400">
+//                 <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
 //                   Status
 //                 </th>
-//                 <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400 text-right">
+//                 <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400 text-right">
 //                   Actions
 //                 </th>
 //               </tr>
@@ -264,12 +264,12 @@
 //               {posts.map((post) => (
 //                 <tr
 //                   key={post.id}
-//                   className="hover:bg-neutral-50 dark:hover:bg-zinc-800/40 transition-colors group"
+//                   className="hover:bg-neutral-50 dark:hover:bg-[#2a2a2a]/40 transition-colors group"
 //                 >
 //                   <td className="p-4">
 //                     <div className="flex items-center gap-4">
 //                       <div
-//                         className="w-12 h-12 bg-neutral-100 dark:bg-neutral-800 rounded-md flex items-center justify-center cursor-pointer flex-shrink-0"
+//                         className="w-12 h-12 bg-neutral-100 dark:bg-[#2a2a2a] rounded-md flex items-center justify-center cursor-pointer flex-shrink-0"
 //                         onClick={() => setSelectedPost(post)}
 //                       >
 //                         {post.image_url ? (
@@ -332,10 +332,6 @@
 //   );
 // }
 
-
-
-
-
 // import { notifyPostStatusUpdate } from "../../../utils/notificationHelpers";
 // import React, { useState, useEffect } from "react";
 // import { supabase } from "../../../api/apiClient";
@@ -356,7 +352,7 @@
 //     approved:
 //       "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400 border border-green-500/30",
 //     rejected:
-//       "bg-neutral-200 text-neutral-800 dark:bg-zinc-700/50 dark:text-zinc-400 border border-neutral-300 dark:border-zinc-700/80",
+//       "bg-neutral-200 text-neutral-800 dark:bg-zinc-700/50 dark:text-gray-400 border border-neutral-300 dark:border-zinc-700/80",
 //   };
 //   return (
 //     <span
@@ -378,16 +374,16 @@
 //       onClick={onClose}
 //     >
 //       <div
-//         className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+//         className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
 //         onClick={(e) => e.stopPropagation()}
 //       >
-//         <div className="flex justify-between items-center pb-4 border-b border-neutral-200 dark:border-neutral-800 mb-4">
+//         <div className="flex justify-between items-center pb-4 border-b border-neutral-200 dark:border-[#3a3a3a] mb-4">
 //           <h2 className="text-2xl font-bold text-neutral-800 dark:text-white">
 //             Post Details
 //           </h2>
 //           <button
 //             onClick={onClose}
-//             className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-zinc-800 text-neutral-500 dark:text-zinc-400"
+//             className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-[#2a2a2a] text-neutral-500 dark:text-gray-400"
 //           >
 //             <X className="w-6 h-6" />
 //           </button>
@@ -402,7 +398,7 @@
 //                 className="w-full h-auto object-cover rounded-lg shadow-md border border-neutral-200 dark:border-neutral-700"
 //               />
 //             ) : (
-//               <div className="w-full h-48 bg-neutral-100 dark:bg-neutral-800 rounded-lg flex flex-col items-center justify-center text-neutral-500 text-sm">
+//               <div className="w-full h-48 bg-neutral-100 dark:bg-[#2a2a2a] rounded-lg flex flex-col items-center justify-center text-neutral-500 text-sm">
 //                 <ImageIconPlaceholder className="w-10 h-10 mb-2" />
 //                 No Image Available
 //               </div>
@@ -443,7 +439,7 @@
 //           </div>
 //         </div>
 
-//         <div className="flex gap-3 justify-end pt-4 border-t border-neutral-200 dark:border-neutral-800">
+//         <div className="flex gap-3 justify-end pt-4 border-t border-neutral-200 dark:border-[#3a3a3a]">
 //           <button
 //             onClick={() => {
 //               onUpdateStatus(post.id, "approved");
@@ -545,7 +541,7 @@
 //     // Send notification to post author
 //     const authorId = post.user_id || post.profiles?.id;
 //     console.log("🔔 Sending notification to:", authorId); // DEBUG
-    
+
 //     if (authorId) {
 //       const result = await notifyPostStatusUpdate(authorId, post.title, newStatus, postId);
 //       console.log("✅ Notification sent result:", result); // DEBUG
@@ -571,7 +567,7 @@
 
 //   if (loading) {
 //     return (
-//       <div className="flex justify-center items-center h-full p-8 text-neutral-500 dark:text-zinc-400">
+//       <div className="flex justify-center items-center h-full p-8 text-neutral-500 dark:text-gray-400">
 //         <Loader2 className="w-8 h-8 animate-spin mr-3" />
 //         Loading Posts...
 //       </div>
@@ -589,7 +585,7 @@
 //           Post Moderation
 //         </h1>
 //         <div className="flex items-center gap-2">
-//           <Filter className="w-4 h-4 text-neutral-500 dark:text-zinc-400" />
+//           <Filter className="w-4 h-4 text-neutral-500 dark:text-gray-400" />
 //           <select
 //             value={filter}
 //             onChange={(e) => setFilter(e.target.value)}
@@ -608,16 +604,16 @@
 //           <table className="w-full text-left">
 //             <thead className="bg-neutral-50 dark:bg-zinc-800/50">
 //               <tr>
-//                 <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400">
+//                 <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
 //                   Post
 //                 </th>
-//                 <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400">
+//                 <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
 //                   Author
 //                 </th>
-//                 <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400">
+//                 <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
 //                   Status
 //                 </th>
-//                 <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400 text-right">
+//                 <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400 text-right">
 //                   Actions
 //                 </th>
 //               </tr>
@@ -626,12 +622,12 @@
 //               {posts.map((post) => (
 //                 <tr
 //                   key={post.id}
-//                   className="hover:bg-neutral-50 dark:hover:bg-zinc-800/40 transition-colors group"
+//                   className="hover:bg-neutral-50 dark:hover:bg-[#2a2a2a]/40 transition-colors group"
 //                 >
 //                   <td className="p-4">
 //                     <div className="flex items-center gap-4">
 //                       <div
-//                         className="w-12 h-12 bg-neutral-100 dark:bg-neutral-800 rounded-md flex items-center justify-center cursor-pointer flex-shrink-0"
+//                         className="w-12 h-12 bg-neutral-100 dark:bg-[#2a2a2a] rounded-md flex items-center justify-center cursor-pointer flex-shrink-0"
 //                         onClick={() => setSelectedPost(post)}
 //                       >
 //                         {post.image_url ? (
@@ -694,9 +690,6 @@
 //   );
 // }
 
-
-
-
 import { notifyPostStatusUpdate } from "../../../utils/notificationHelpers";
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../../api/apiClient";
@@ -722,7 +715,7 @@ const StatusBadge = ({ status }) => {
     approved:
       "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400 border border-green-500/30",
     rejected:
-      "bg-neutral-200 text-neutral-800 dark:bg-zinc-700/50 dark:text-zinc-400 border border-neutral-300 dark:border-zinc-700/80",
+      "bg-neutral-200 text-neutral-800 dark:bg-zinc-700/50 dark:text-gray-400 border border-neutral-300 dark:border-zinc-700/80",
   };
   return (
     <span
@@ -744,16 +737,16 @@ const PostDetailsModal = ({ post, onClose, onUpdateStatus }) => {
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center pb-4 border-b border-neutral-200 dark:border-neutral-800 mb-4">
+        <div className="flex justify-between items-center pb-4 border-b border-neutral-200 dark:border-[#3a3a3a] mb-4">
           <h2 className="text-2xl font-bold text-neutral-800 dark:text-white">
             Post Details
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-zinc-800 text-neutral-500 dark:text-zinc-400"
+            className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-[#2a2a2a] text-neutral-500 dark:text-gray-400"
           >
             <X className="w-6 h-6" />
           </button>
@@ -768,7 +761,7 @@ const PostDetailsModal = ({ post, onClose, onUpdateStatus }) => {
                 className="w-full h-auto object-cover rounded-lg shadow-md border border-neutral-200 dark:border-neutral-700"
               />
             ) : (
-              <div className="w-full h-48 bg-neutral-100 dark:bg-neutral-800 rounded-lg flex flex-col items-center justify-center text-neutral-500 text-sm">
+              <div className="w-full h-48 bg-neutral-100 dark:bg-[#2a2a2a] rounded-lg flex flex-col items-center justify-center text-neutral-500 text-sm">
                 <ImageIconPlaceholder className="w-10 h-10 mb-2" />
                 No Image Available
               </div>
@@ -809,7 +802,7 @@ const PostDetailsModal = ({ post, onClose, onUpdateStatus }) => {
           </div>
         </div>
 
-        <div className="flex gap-3 justify-end pt-4 border-t border-neutral-200 dark:border-neutral-800">
+        <div className="flex gap-3 justify-end pt-4 border-t border-neutral-200 dark:border-[#3a3a3a]">
           <button
             onClick={() => {
               onUpdateStatus(post.id, "approved");
@@ -837,56 +830,60 @@ const PostDetailsModal = ({ post, onClose, onUpdateStatus }) => {
 // --- 2. SKELETON COMPONENTS ---
 
 const PostTableRowSkeleton = () => (
-    <tr>
-        <td className="p-4">
-            <div className="flex items-center gap-4">
-                <Skeleton width={48} height={48} className="rounded-md flex-shrink-0" /> {/* Image */}
-                <Skeleton height={20} width="80%" /> {/* Title */}
-            </div>
-        </td>
-        <td className="p-4">
-            <Skeleton height={20} width="90%" /> {/* Author */}
-        </td>
-        <td className="p-4">
-             <Skeleton height={22} width={60} borderRadius={999}/> {/* Status */}
-        </td>
-        <td className="p-4 text-right">
-            <div className="flex justify-end gap-2">
-                 <Skeleton height={26} width={70} borderRadius={6}/> {/* Approve */}
-                 <Skeleton height={26} width={60} borderRadius={6}/> {/* Reject */}
-            </div>
-        </td>
-    </tr>
+  <tr>
+    <td className="p-4">
+      <div className="flex items-center gap-4">
+        <Skeleton width={48} height={48} className="rounded-md flex-shrink-0" />{" "}
+        {/* Image */}
+        <Skeleton height={20} width="80%" /> {/* Title */}
+      </div>
+    </td>
+    <td className="p-4">
+      <Skeleton height={20} width="90%" /> {/* Author */}
+    </td>
+    <td className="p-4">
+      <Skeleton height={22} width={60} borderRadius={999} /> {/* Status */}
+    </td>
+    <td className="p-4 text-right">
+      <div className="flex justify-end gap-2">
+        <Skeleton height={26} width={70} borderRadius={6} /> {/* Approve */}
+        <Skeleton height={26} width={60} borderRadius={6} /> {/* Reject */}
+      </div>
+    </td>
+  </tr>
 );
 
 const PostModerationPageSkeleton = () => (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
-        {/* Header Skeleton */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <Skeleton height={40} width={300} /> {/* Title */}
-             <Skeleton height={42} width={150} borderRadius={8} /> {/* Filter Select */}
-        </div>
-
-         {/* Table Skeleton */}
-        <div className="bg-white dark:bg-zinc-900 rounded-lg border border-neutral-200 dark:border-zinc-800 overflow-hidden shadow-sm">
-             <div className="overflow-x-auto">
-                 <table className="w-full text-left">
-                     <thead className="bg-neutral-50 dark:bg-zinc-800/50">
-                         <tr>
-                            {[...Array(4)].map((_, i) => (
-                               <th key={i} className="p-4">
-                                    <Skeleton height={20} width="60%" />
-                               </th>
-                            ))}
-                         </tr>
-                     </thead>
-                     <tbody className="divide-y divide-neutral-200 dark:divide-zinc-800">
-                        {[...Array(5)].map((_, i) => <PostTableRowSkeleton key={i} />)}
-                     </tbody>
-                 </table>
-             </div>
-        </div>
+  <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
+    {/* Header Skeleton */}
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <Skeleton height={40} width={300} /> {/* Title */}
+      <Skeleton height={42} width={150} borderRadius={8} />{" "}
+      {/* Filter Select */}
     </div>
+
+    {/* Table Skeleton */}
+    <div className="bg-white dark:bg-[#2a2a2a] rounded-lg border border-neutral-200 dark:border-zinc-800 overflow-hidden shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left">
+          <thead className="bg-neutral-50 dark:bg-zinc-800/50">
+            <tr>
+              {[...Array(4)].map((_, i) => (
+                <th key={i} className="p-4">
+                  <Skeleton height={20} width="60%" />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-neutral-200 dark:divide-zinc-800">
+            {[...Array(5)].map((_, i) => (
+              <PostTableRowSkeleton key={i} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 );
 
 // --- 3. ADJUSTABLE DELAY (in milliseconds) ---
@@ -976,7 +973,12 @@ export default function PostModerationPage({ user }) {
       console.log("🔔 Sending notification to:", authorId); // DEBUG
 
       if (authorId) {
-        const result = await notifyPostStatusUpdate(authorId, post.title, newStatus, postId);
+        const result = await notifyPostStatusUpdate(
+          authorId,
+          post.title,
+          newStatus,
+          postId
+        );
         console.log("✅ Notification sent result:", result); // DEBUG
       } else {
         console.warn("⚠️ No author ID found for post:", postId); // DEBUG
@@ -1015,7 +1017,7 @@ export default function PostModerationPage({ user }) {
           Post Moderation
         </h1>
         <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-neutral-500 dark:text-zinc-400" />
+          <Filter className="w-4 h-4 text-neutral-500 dark:text-gray-400" />
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
@@ -1029,21 +1031,21 @@ export default function PostModerationPage({ user }) {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-neutral-200 dark:border-zinc-800 overflow-hidden shadow-sm">
+      <div className="bg-white dark:bg-[#2a2a2a] rounded-lg border border-neutral-200 dark:border-zinc-800 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-neutral-50 dark:bg-zinc-800/50">
               <tr>
-                <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400">
+                <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
                   Post
                 </th>
-                <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400">
+                <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
                   Author
                 </th>
-                <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400">
+                <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
                   Status
                 </th>
-                <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-zinc-400 text-right">
+                <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400 text-right">
                   Actions
                 </th>
               </tr>
@@ -1052,12 +1054,12 @@ export default function PostModerationPage({ user }) {
               {posts.map((post) => (
                 <tr
                   key={post.id}
-                  className="hover:bg-neutral-50 dark:hover:bg-zinc-800/40 transition-colors group"
+                  className="hover:bg-neutral-50 dark:hover:bg-[#2a2a2a]/40 transition-colors group"
                 >
                   <td className="p-4">
                     <div className="flex items-center gap-4">
                       <div
-                        className="w-12 h-12 bg-neutral-100 dark:bg-neutral-800 rounded-md flex items-center justify-center cursor-pointer flex-shrink-0"
+                        className="w-12 h-12 bg-neutral-100 dark:bg-[#2a2a2a] rounded-md flex items-center justify-center cursor-pointer flex-shrink-0"
                         onClick={() => setSelectedPost(post)}
                       >
                         {post.image_url ? (
@@ -1105,7 +1107,7 @@ export default function PostModerationPage({ user }) {
       </div>
 
       {posts.length === 0 && !loading && (
-        <div className="bg-white dark:bg-zinc-900 border border-neutral-200 dark:border-zinc-800 rounded-xl shadow-sm p-8 text-center text-neutral-500 flex flex-col items-center gap-4">
+        <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-zinc-800 rounded-xl shadow-sm p-8 text-center text-neutral-500 flex flex-col items-center gap-4">
           <Clock className="w-8 h-8" />
           <p>No posts with status "{filter}" found.</p>
         </div>
