@@ -1,5 +1,8 @@
 import React from "react";
 import { Github, Linkedin } from "lucide-react";
+import JohnImage from "../../assets/frank.jpg";
+import WilliamImage from "../../assets/william.jpg";
+import JeromeImage from "../../assets/jerome.jpg";
 
 // Reusable component for each team member
 const TeamMemberCard = ({ name, role, imageUrl, githubUrl, linkedinUrl }) => (
@@ -55,23 +58,23 @@ export default function AboutUsPage() {
     {
       name: "John Franklin C. Bugauisan",
       role: "Project Lead / Full Stack AI-augmented Developer",
-      imageUrl: "",
+      imageUrl: JohnImage,
       githubUrl: "https://github.com/ImFrankB",
-      linkedinUrl: "https://linkedin.com/in/your-bugauisan-profile",
+      linkedinUrl: "https://www.linkedin.com/in/john-franklin-bugauisan-86aa16309/",
     },
     {
       name: "William Ray M. Respicio",
       role: "Frontend AI-augmented Developer / UI Designer",
-      imageUrl: "",
-      githubUrl: "https://github.com/your-respicio-profile",
-      linkedinUrl: "https://linkedin.com/in/your-respicio-profile",
+      imageUrl: WilliamImage,
+      githubUrl: "https://github.com/williamUser-ops",
+      linkedinUrl: "https://www.linkedin.com/in/respicio-william-ray-m-0b5969384/",
     },
     {
-      name: "Jerome Ian Cacho",
+      name: "Jerome Ian N. Cacho",
       role: "Frontend AI-augmented Developer / UI Designer",
-      imageUrl: "",
-      githubUrl: "https://github.com/your-cacho-profile",
-      linkedinUrl: "https://linkedin.com/in/your-cacho-profile",
+      imageUrl: JeromeImage,
+      githubUrl: "https://github.com/iiiiaannnnnnn",
+      linkedinUrl: "https://www.linkedin.com/in/jerome-ian-cacho-19a46233a/",
     },
   ];
 

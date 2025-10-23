@@ -1021,7 +1021,7 @@ export default function PostModerationPage({ user }) {
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="form-select w-full sm:w-auto"
+            className="bg-white dark:bg-[#2a2a2a] border border-neutral-200"
           >
             <option value="pending">Pending</option>
             <option value="approved">Approved</option>

@@ -375,7 +375,7 @@ const SettingInput = ({
       onChange={onChange}
       placeholder={placeholder}
       disabled={disabled}
-      className="form-input w-full"
+      className="form-input w-full flex-grow bg-white dark:bg-[#1e1e1e] border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
     />
   </div>
 );
@@ -695,7 +695,7 @@ export default function AdminSettingsPage({ user }) {
               value={keywordInput}
               onChange={(e) => setKeywordInput(e.target.value)}
               placeholder="Add a forbidden word..."
-              className="form-input flex-grow"
+              className="form-input w-full flex-grow bg-white dark:bg-[#1e1e1e] border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();

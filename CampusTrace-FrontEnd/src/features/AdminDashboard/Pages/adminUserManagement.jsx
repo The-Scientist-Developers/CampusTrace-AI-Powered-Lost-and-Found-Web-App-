@@ -593,8 +593,7 @@ export default function UserManagement({ user: sessionUser }) {
             placeholder="Search by name or email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="form-input w-full pl-10"
-          />
+            className="w-full bg-white dark:bg-[#1e1e1e] border border-neutral-200 dark:border-neutral-700 rounded-md pl-10 pr-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"          />
         </div>
       </div>
 
@@ -649,7 +648,7 @@ export default function UserManagement({ user: sessionUser }) {
                     <select
                       value={user.role || "member"}
                       onChange={(e) => changeRole(user.id, e.target.value)}
-                      className="form-select"
+                      className="form-select w-full bg-white dark:bg-[#1e1e1e] border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                     >
                       <option value="member">Member</option>
                       <option value="moderator">Moderator</option>
