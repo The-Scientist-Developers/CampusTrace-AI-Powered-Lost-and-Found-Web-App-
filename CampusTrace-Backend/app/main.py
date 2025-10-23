@@ -107,6 +107,7 @@ profile_router = APIRouter(prefix="/api/profile", tags=["Profile"])
 onboarding_router = APIRouter(prefix="/api/onboarding", tags=["Onboarding"])
 notification_router = APIRouter(prefix="/api/notifications", tags=["Notifications"])
 claims_router = APIRouter(prefix="/api/claims", tags=["Claims"])
+conversations_router = APIRouter(prefix="/api/conversations", tags=["Conversations"])
 
 
 # ============= Onboarding Route =============
@@ -324,6 +325,30 @@ async def signup_user(payload: SignupRequest, request: Request):
 
 # ============= Item Routes =============
 
+@item_router.get("/leaderboard")
+async def get_leaderboard(user_id: str = Depends(get_current_user_id)):
+    try:
+        profile_res = supabase.table("profiles").select("university_id").eq("id", user_id).single().execute()
+        if not profile_res.data:
+            raise HTTPException(status_code=404, detail="User profile not found.")
+        
+        university_id = profile_res.data['university_id']
+
+        # Call the database function
+        leaderboard_res = supabase.rpc('get_leaderboard_for_university', {
+            'p_university_id': university_id,
+            'p_limit': 10
+        }).execute()
+        
+        # The 'if leaderboard_res.error:' check is removed. 
+        # The try/except block will catch any errors from the RPC call.
+
+        return leaderboard_res.data
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+
 @item_router.post("/generate-description")
 async def generate_description(payload: DescriptionRequest):
     """
@@ -505,7 +530,109 @@ async def mark_as_recovered(item_id: int, user_id: str = Depends(get_current_use
         raise HTTPException(status_code=500, detail=str(e))
 
 
+#======conversations router=======
+
+@conversations_router.post("/")
+async def get_or_create_conversation(item_id: int = Form(...), user_id: str = Depends(get_current_user_id)):
+    try:
+        item_res = supabase.table("items").select("user_id, status").eq("id", item_id).single().execute()
+        if not item_res.data:
+            raise HTTPException(status_code=404, detail="Item not found.")
+        
+        poster_id = item_res.data['user_id']
+        message_sender_id = user_id
+
+        if poster_id == message_sender_id:
+            raise HTTPException(status_code=400, detail="You cannot start a conversation on your own item.")
+
+        item_status = item_res.data['status']
+        finder_id = poster_id if item_status == 'Found' else message_sender_id
+        claimant_id = message_sender_id if item_status == 'Found' else poster_id
+        
+        existing_convo_res = supabase.table("conversations") \
+            .select("id") \
+            .eq("item_id", item_id) \
+            .eq("finder_id", finder_id) \
+            .eq("claimant_id", claimant_id) \
+            .execute()
+
+        if existing_convo_res.data:
+            return {"conversation_id": existing_convo_res.data[0]['id']}
+
+        # --- THIS IS THE CORRECTED CODE ---
+        new_convo_res = supabase.table("conversations").insert({
+            "item_id": item_id,
+            "finder_id": finder_id,
+            "claimant_id": claimant_id
+        }).execute()
+        # --- END OF CORRECTION ---
+
+        if not new_convo_res.data:
+            raise Exception("Failed to create conversation and get ID back.")
+
+        return {"conversation_id": new_convo_res.data[0]['id']}
+
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ============= Claims Routes =============
+
+@claims_router.put("/{claim_id}/respond")
+async def respond_to_claim(claim_id: int, payload: ClaimRespond, finder_id: str = Depends(get_current_user_id)):
+    try:
+        claim_res = supabase.table("claims").select("*, item:items(id, title, user_id, university_id)").eq("id", claim_id).single().execute()
+        if not claim_res.data or claim_res.data['finder_id'] != finder_id:
+            raise HTTPException(status_code=403, detail="You are not authorized to respond to this claim.")
+        
+        claim = claim_res.data
+        item_id = claim['item']['id']
+        item_title = claim['item']['title']
+        claimant_id = claim['claimant_id']
+        item_university_id = claim['item']['university_id']
+
+        new_status = 'approved' if payload.approved else 'rejected'
+        
+        supabase.table("claims").update({"status": new_status}).eq("id", claim_id).execute()
+        
+        if payload.approved:
+            supabase.table("items").update({"moderation_status": "pending_return"}).eq("id", claim['item_id']).execute()
+            
+            # --- NEW LOGIC: CREATE CONVERSATION ---
+            conversation_res = supabase.table("conversations").insert({
+                "item_id": item_id,
+                "finder_id": finder_id,
+                "claimant_id": claimant_id
+            }).execute()
+            conversation_id = conversation_res.data[0]['id']
+            # --- END OF NEW LOGIC ---
+
+            finder_profile_res = supabase.table("profiles").select("email").eq("id", finder_id).single().execute()
+            claimant_profile_res = supabase.table("profiles").select("email").eq("id", claimant_id).single().execute()
+            finder_email = finder_profile_res.data['email']
+            claimant_email = claimant_profile_res.data['email']
+
+            # Update notifications to link to the new chat
+            finder_message = f"You approved the claim for '{item_title}'. You can now chat with the claimant to arrange the return."
+            claimant_message = f"Great news! Your claim for '{item_title}' has been approved. You can now chat with the finder to arrange the return."
+            
+            # --- MODIFIED NOTIFICATIONS ---
+            chat_link = f"/dashboard/messages/{conversation_id}"
+            create_notification(recipient_id=finder_id, university_id=item_university_id, message=finder_message, link_to=chat_link, type='claim_response')
+            create_notification(recipient_id=claimant_id, university_id=item_university_id, message=claimant_message, link_to=chat_link, type='claim_response')
+            # --- END OF MODIFICATION ---
+
+            supabase.table("claims").update({"status": "rejected"}).eq("item_id", claim['item_id']).eq("status", "pending").execute()
+
+        else:
+            message = f"Unfortunately, your claim for '{item_title}' was not approved by the finder."
+            create_notification(recipient_id=claimant_id, university_id=item_university_id, message=message, type='claim_response')
+            
+        return {"message": f"Claim has been {new_status}."}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    
 @claims_router.post("/create")
 async def submit_claim(payload: ClaimCreate, claimant_id: str = Depends(get_current_user_id)):
     try:
@@ -662,7 +789,7 @@ app.include_router(profile_router)
 app.include_router(notification_router)
 app.include_router(onboarding_router)
 app.include_router(claims_router) 
-
+app.include_router(conversations_router)
 # ============= Root Route =============
 @app.get("/")
 def read_root():

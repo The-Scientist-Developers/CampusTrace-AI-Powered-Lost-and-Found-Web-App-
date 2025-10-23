@@ -34,7 +34,10 @@ import UserSettingsPage from "./features/UserDashboard/Pages/userSettingsPage.js
 import RegisterUniversityPage from "./features/MainPages/RegisterUniversityPage.jsx";
 import UpdatePasswordPage from "./features/MainPages/UpdatePasswordPage.jsx";
 import AdminNotificationPage from "./features/AdminDashboard/Pages/adminNotificationPage.jsx";
-
+import FeaturesPage from "./features/MainPages/featuresPage.jsx";
+import LeaderboardPage from "./features/UserDashboard/Pages/leaderBoardPage.jsx";
+import AdminProfilePage from "./features/AdminDashboard/Pages/adminProfile.jsx";
+import MessagesPage from "./features/UserDashboard/Pages/userMessageApp.jsx";
 // --- Router Guards ---
 function PrivateRouter({ children, isLoading, session }) {
   if (isLoading) return <LoadingScreen />;
@@ -218,6 +221,7 @@ function AppContent() {
           <Route path="/update-password" element={<UpdatePasswordPage />} />
           <Route path="/about" element={<AboutUsPage />} />
           <Route path="/learn-more" element={<LearnMorePage />} />
+          <Route path="/features" element={<FeaturesPage />} />
 
           {/* User Dashboard Routes */}
           <Route
@@ -239,6 +243,7 @@ function AppContent() {
               path="post-new"
               element={<PostNewItem user={session?.user} />}
             />
+            <Route path="leaderboard" element={<LeaderboardPage />} />
             <Route
               path="my-posts"
               element={<MyPostsPage user={session?.user} />}
@@ -250,6 +255,14 @@ function AppContent() {
             <Route
               path="browse-all"
               element={<BrowseAllPage user={session?.user} />}
+            />
+            <Route
+              path="messages"
+              element={<MessagesPage user={session?.user} />}
+            />
+            <Route
+              path="messages/:conversationId"
+              element={<MessagesPage user={session?.user} />}
             />
             <Route
               path="settings"
@@ -289,6 +302,10 @@ function AppContent() {
             <Route
               path="settings"
               element={<AdminSettingsPage user={session?.user} />}
+            />
+            <Route
+              path="profile"
+              element={<AdminProfilePage user={session?.user} />}
             />
           </Route>
         </Routes>

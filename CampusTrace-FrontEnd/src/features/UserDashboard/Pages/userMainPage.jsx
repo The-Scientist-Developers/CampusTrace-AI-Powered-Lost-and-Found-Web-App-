@@ -6,22 +6,21 @@ import {
   HelpCircle,
   ChevronLeft,
   ChevronRight,
-  TrendingUp,
   Package,
   CheckCircle,
   AlertCircle,
   BarChart3,
-  PieChart,
+  PieChart as PieChartIcon,
   Activity,
   Calendar,
+  MapPin,
+  Camera,
 } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase, getAccessToken } from "../../../api/apiClient.js";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import {
-  LineChart,
-  Line,
   BarChart,
   Bar,
   PieChart as RePieChart,
@@ -37,11 +36,10 @@ import {
   AreaChart,
 } from "recharts";
 
-// --- StatusBadge Component (Enhanced Layout) ---
+// --- StatusBadge Component ---
 const StatusBadge = ({ status }) => {
   let colorClass = "";
   let text = "";
-
   switch (status?.toLowerCase()) {
     case "approved":
       colorClass =
@@ -73,7 +71,6 @@ const StatusBadge = ({ status }) => {
         "bg-neutral-100 text-neutral-800 dark:bg-zinc-500/20 dark:text-gray-400";
       text = "Unknown";
   }
-
   return (
     <span
       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide ${colorClass}`}
@@ -84,7 +81,7 @@ const StatusBadge = ({ status }) => {
 };
 
 // --- Statistics Card Component ---
-const StatCard = ({ icon: Icon, title, value, change, color = "primary" }) => {
+const StatCard = ({ icon: Icon, title, value, color = "primary" }) => {
   const colorClasses = {
     primary:
       "bg-primary-100 text-primary-600 dark:bg-primary-500/20 dark:text-primary-400",
@@ -93,25 +90,12 @@ const StatCard = ({ icon: Icon, title, value, change, color = "primary" }) => {
     red: "bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400",
     blue: "bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400",
   };
-
   return (
     <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl p-6">
       <div className="flex items-center justify-between mb-4">
         <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
           <Icon className="w-6 h-6" />
         </div>
-        {change && (
-          <span
-            className={`text-sm font-medium flex items-center gap-1 ${
-              change > 0
-                ? "text-green-600 dark:text-green-400"
-                : "text-red-600 dark:text-red-400"
-            }`}
-          >
-            <TrendingUp className="w-4 h-4" />
-            {Math.abs(change)}%
-          </span>
-        )}
       </div>
       <div className="space-y-1">
         <p className="text-2xl font-bold text-neutral-800 dark:text-white">
@@ -125,7 +109,7 @@ const StatCard = ({ icon: Icon, title, value, change, color = "primary" }) => {
   );
 };
 
-// --- Enhanced Skeleton Components ---
+// --- Skeleton Components ---
 const MatchCardSkeleton = () => (
   <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl p-5 shadow-sm">
     <Skeleton height={180} className="rounded-lg" />
@@ -149,7 +133,6 @@ const ActivityItemSkeleton = () => (
 
 const DashboardSkeleton = () => (
   <div className="space-y-16">
-    {/* Stats Skeleton */}
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
       {[...Array(4)].map((_, i) => (
         <div
@@ -160,7 +143,6 @@ const DashboardSkeleton = () => (
         </div>
       ))}
     </div>
-    {/* Charts Skeleton */}
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Skeleton height={300} className="rounded-xl" />
       <Skeleton height={300} className="rounded-xl" />
@@ -187,7 +169,6 @@ export default function UserMainPage({ user }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
 
-  // New state for visualization data
   const [stats, setStats] = useState({
     totalItems: 0,
     lostItems: 0,
@@ -217,62 +198,62 @@ export default function UserMainPage({ user }) {
           throw new Error("Could not find user profile.");
         const userUniversityId = profile.university_id;
 
-        const [myPostsRes, communityActivityRes] = await Promise.all([
-          supabase
+        // --- CORRECTED DATA FETCHING ---
+        const { data: allMyItems, error: allMyItemsError } = await supabase
+          .from("items")
+          .select("*")
+          .eq("user_id", user.id);
+        if (allMyItemsError) throw allMyItemsError;
+
+        // --- THIS IS THE FIXED QUERY ---
+        const { data: myActivePosts, error: myActivePostsError } =
+          await supabase
             .from("items")
             .select("*")
             .eq("user_id", user.id)
-            .not("moderation_status", "eq", "recovered")
+            .not("moderation_status", "in", "(recovered,rejected)") // Correct syntax
             .order("created_at", { ascending: false })
-            .limit(4),
-          supabase
+            .limit(4);
+        if (myActivePostsError) throw myActivePostsError;
+
+        const { data: communityActivityData, error: communityError } =
+          await supabase
             .from("items")
-            .select("*, profiles(id, full_name, email)", { count: "exact" })
+            .select("*, profiles(id, full_name, email)")
             .eq("university_id", userUniversityId)
             .eq("moderation_status", "approved")
-            .order("created_at", { ascending: false }),
-        ]);
+            .order("created_at", { ascending: false });
+        if (communityError) throw communityError;
 
-        if (myPostsRes.error) throw myPostsRes.error;
-        if (communityActivityRes.error) throw communityActivityRes.error;
+        setMyRecentPosts(myActivePosts || []);
+        setCommunityActivity(communityActivityData || []);
 
-        setMyRecentPosts(myPostsRes.data || []);
-        setCommunityActivity(communityActivityRes.data || []);
-
-        // Calculate statistics
-        const myItems = myPostsRes.data || [];
-        const allItems = communityActivityRes.data || [];
-
+        // --- ACCURATE CALCULATIONS ---
         setStats({
-          totalItems: myItems.length,
-          lostItems: myItems.filter((item) => item.status === "Lost").length,
-          foundItems: myItems.filter((item) => item.status === "Found").length,
-          recoveredItems: myItems.filter(
+          totalItems: allMyItems.length,
+          lostItems: allMyItems.filter((item) => item.status === "Lost").length,
+          foundItems: allMyItems.filter((item) => item.status === "Found")
+            .length,
+          recoveredItems: allMyItems.filter(
             (item) => item.moderation_status === "recovered"
           ).length,
         });
 
-        // Process data for charts
-        processChartData(allItems);
+        processChartData(allMyItems);
 
-        const latestLostItem = (myPostsRes.data || []).find(
-          (item) => item.status === "Lost"
-        );
+        const latestLostItem = allMyItems
+          .filter((item) => item.status === "Lost")
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+
         if (latestLostItem) {
           const token = await getAccessToken();
           if (!token) throw new Error("Not authenticated to find matches.");
-
           const response = await fetch(
             `http://localhost:8000/api/items/find-matches/${latestLostItem.id}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
+            { headers: { Authorization: `Bearer ${token}` } }
           );
-          if (!response.ok) {
+          if (!response.ok)
             throw new Error("Failed to fetch matches from backend.");
-          }
           const matches = await response.json();
           setPossibleMatches(matches);
         }
@@ -287,19 +268,17 @@ export default function UserMainPage({ user }) {
     fetchDashboardData();
   }, [user]);
 
-  // Process data for visualizations
   const processChartData = (items) => {
-    // Weekly activity data
     const weeklyData = [];
     const today = new Date();
     for (let i = 6; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       const dayName = date.toLocaleDateString("en", { weekday: "short" });
-      const dayItems = items.filter((item) => {
-        const itemDate = new Date(item.created_at);
-        return itemDate.toDateString() === date.toDateString();
-      });
+      const dayItems = items.filter(
+        (item) =>
+          new Date(item.created_at).toDateString() === date.toDateString()
+      );
       weeklyData.push({
         day: dayName,
         lost: dayItems.filter((item) => item.status === "Lost").length,
@@ -307,17 +286,15 @@ export default function UserMainPage({ user }) {
       });
     }
 
-    // Category distribution
-    const categoryCount = {};
-    items.forEach((item) => {
-      categoryCount[item.category] = (categoryCount[item.category] || 0) + 1;
-    });
+    const categoryCount = items.reduce((acc, item) => {
+      acc[item.category] = (acc[item.category] || 0) + 1;
+      return acc;
+    }, {});
     const categories = Object.entries(categoryCount)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 5);
 
-    // Status distribution
     const statusDistribution = [
       {
         name: "Lost",
@@ -331,11 +308,7 @@ export default function UserMainPage({ user }) {
       },
     ];
 
-    setChartData({
-      weekly: weeklyData,
-      categories,
-      statusDistribution,
-    });
+    setChartData({ weekly: weeklyData, categories, statusDistribution });
   };
 
   const totalItems = communityActivity.length;
@@ -345,83 +318,76 @@ export default function UserMainPage({ user }) {
     currentPage * itemsPerPage
   );
 
-  if (loading) {
-    return <DashboardSkeleton />;
-  }
+  if (loading) return <DashboardSkeleton />;
   if (error)
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center space-y-2">
-          <p className="text-red-500 font-medium">
-            Failed to load dashboard data
-          </p>
-          <p className="text-neutral-500 text-sm">{error}</p>
-        </div>
+      <div className="text-center p-8">
+        <p className="text-red-500">{error}</p>
       </div>
     );
 
   return (
     <div className="space-y-16">
-      {/* Statistics Overview */}
       <section>
         <div className="mb-6">
           <h2 className="text-3xl font-bold text-neutral-800 dark:text-white mb-2">
-            Dashboard Overview
+            My Dashboard
           </h2>
           <p className="text-neutral-600 dark:text-neutral-400">
-            Your activity summary and statistics
+            Your personal activity summary and statistics.
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
             icon={Package}
-            title="Total Items"
+            title="Your Total Posts"
             value={stats.totalItems}
             color="primary"
           />
           <StatCard
             icon={AlertCircle}
-            title="Lost Items"
+            title="Your Lost Items"
             value={stats.lostItems}
             color="red"
           />
           <StatCard
             icon={CheckCircle}
-            title="Found Items"
+            title="Your Found Items"
             value={stats.foundItems}
             color="green"
           />
           <StatCard
             icon={Activity}
-            title="Recovered"
+            title="Your Recovered Items"
             value={stats.recoveredItems}
             color="blue"
           />
         </div>
       </section>
 
-      {/* Charts Section */}
       <section>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Weekly Activity Chart */}
           <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-neutral-800 dark:text-white">
-                Weekly Activity
-              </h3>
-              <BarChart3 className="w-5 h-5 text-neutral-400" />
-            </div>
+            <h3 className="text-lg font-semibold text-neutral-800 dark:text-white mb-6">
+              Your Weekly Activity
+            </h3>
             <ResponsiveContainer width="100%" height={250}>
               <AreaChart data={chartData.weekly}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  strokeDashoffset="5"
+                  className="stroke-neutral-200 dark:stroke-neutral-700"
+                />
                 <XAxis
                   dataKey="day"
                   tick={{ fill: "#6b7280", fontSize: 12 }}
-                  axisLine={{ stroke: "#e5e7eb" }}
+                  axisLine={false}
+                  tickLine={false}
                 />
                 <YAxis
                   tick={{ fill: "#6b7280", fontSize: 12 }}
-                  axisLine={{ stroke: "#e5e7eb" }}
+                  axisLine={false}
+                  tickLine={false}
                 />
                 <Tooltip
                   contentStyle={{
@@ -437,7 +403,7 @@ export default function UserMainPage({ user }) {
                   stackId="1"
                   stroke="#ef4444"
                   fill="#fca5a5"
-                  name="Lost Items"
+                  name="Lost"
                 />
                 <Area
                   type="monotone"
@@ -445,33 +411,35 @@ export default function UserMainPage({ user }) {
                   stackId="1"
                   stroke="#10b981"
                   fill="#86efac"
-                  name="Found Items"
+                  name="Found"
                 />
               </AreaChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Category Distribution */}
           <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-neutral-800 dark:text-white">
-                Top Categories
-              </h3>
-              <PieChart className="w-5 h-5 text-neutral-400" />
-            </div>
+            <h3 className="text-lg font-semibold text-neutral-800 dark:text-white mb-6">
+              Your Top Categories
+            </h3>
             <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={chartData.categories} layout="horizontal">
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <BarChart data={chartData.categories} layout="vertical">
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  strokeDashoffset="5"
+                  className="stroke-neutral-200 dark:stroke-neutral-700"
+                />
                 <XAxis
                   type="number"
                   tick={{ fill: "#6b7280", fontSize: 12 }}
-                  axisLine={{ stroke: "#e5e7eb" }}
+                  axisLine={false}
+                  tickLine={false}
                 />
                 <YAxis
                   dataKey="name"
                   type="category"
                   tick={{ fill: "#6b7280", fontSize: 12 }}
-                  axisLine={{ stroke: "#e5e7eb" }}
+                  axisLine={false}
+                  tickLine={false}
                   width={80}
                 />
                 <Tooltip
@@ -481,63 +449,18 @@ export default function UserMainPage({ user }) {
                     borderRadius: "8px",
                   }}
                 />
-                <Bar dataKey="value" fill="#6366f1" radius={[0, 4, 4, 0]} />
+                <Bar
+                  dataKey="value"
+                  fill="#6366f1"
+                  radius={[0, 4, 4, 0]}
+                  barSize={20}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
       </section>
 
-      {/* Status Distribution Mini Chart */}
-      <section>
-        <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <h3 className="text-lg font-semibold text-neutral-800 dark:text-white mb-4">
-                Lost vs Found Distribution
-              </h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <RePieChart>
-                  <Pie
-                    data={chartData.statusDistribution}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {chartData.statusDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </RePieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex flex-col justify-center space-y-4">
-              {chartData.statusDistribution.map((item, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-4 h-4 rounded"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                      {item.name}
-                    </span>
-                  </div>
-                  <span className="text-lg font-bold text-neutral-800 dark:text-white">
-                    {item.value}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Possible Matches Section */}
       <section>
         <div className="mb-6">
           <h2 className="text-3xl font-bold text-neutral-800 dark:text-white mb-2">
@@ -562,15 +485,14 @@ export default function UserMainPage({ user }) {
         )}
       </section>
 
-      {/* My Recent Posts Section */}
       <section>
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-3xl font-bold text-neutral-800 dark:text-white mb-2">
-              My Recent Posts
+              My Recent Active Posts
             </h2>
             <p className="text-neutral-600 dark:text-neutral-400">
-              Track your lost and found items
+              Track your currently lost and found items.
             </p>
           </div>
           {myRecentPosts.length > 0 && (
@@ -596,7 +518,7 @@ export default function UserMainPage({ user }) {
         ) : (
           <EmptyState
             icon={EyeOff}
-            title="You Haven't Posted Any Items Yet"
+            title="You Have No Active Posts"
             description="Post a lost or found item to see it here."
             buttonText="Post a New Item"
             onButtonClick={() => navigate("/dashboard/post-new")}
@@ -604,7 +526,6 @@ export default function UserMainPage({ user }) {
         )}
       </section>
 
-      {/* Recent Community Activity Section */}
       <section>
         <div className="mb-6">
           <h2 className="text-3xl font-bold text-neutral-800 dark:text-white mb-2">
@@ -621,7 +542,6 @@ export default function UserMainPage({ user }) {
                 <ActivityItem key={`activity-${item.id}`} item={item} />
               ))}
             </div>
-            {/* Enhanced Pagination Controls */}
             <div className="px-6 py-4 bg-neutral-50 dark:bg-[#1a1a1a] border-t border-neutral-200 dark:border-[#3a3a3a]">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="flex items-center gap-3">
@@ -691,25 +611,22 @@ export default function UserMainPage({ user }) {
   );
 }
 
-// --- Helper Functions ---
 const timeAgo = (date) => {
   const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-  let interval = seconds / 31536000;
-  if (interval > 1) return `${Math.floor(interval)} years ago`;
-  interval = seconds / 86400;
-  if (interval > 1) return `${Math.floor(interval)} days ago`;
-  interval = seconds / 3600;
-  if (interval > 1) return `${Math.floor(interval)} hours ago`;
-  return `${Math.floor(seconds / 60)} minutes ago`;
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 };
 
-// --- MatchCard Component ---
 const MatchCard = ({ item, showScore = true }) => {
   const isLost = item.status === "Lost";
   const statusBadgeClass = isLost
     ? "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400"
     : "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400";
-
   return (
     <Link
       to="/dashboard/browse-all"
@@ -730,7 +647,7 @@ const MatchCard = ({ item, showScore = true }) => {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <p className="text-neutral-400 text-sm font-medium">No Image</p>
+            <Camera className="w-12 h-12 text-neutral-300 dark:text-neutral-600" />
           </div>
         )}
       </div>
@@ -753,13 +670,11 @@ const MatchCard = ({ item, showScore = true }) => {
   );
 };
 
-// --- ActivityItem Component ---
 const ActivityItem = ({ item }) => {
   const statusBadgeClass =
     item.status === "Lost"
       ? "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400"
       : "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400";
-
   return (
     <Link
       to="/dashboard/browse-all"
@@ -805,7 +720,6 @@ const ActivityItem = ({ item }) => {
   );
 };
 
-// --- EmptyState Component ---
 const EmptyState = ({
   icon: Icon,
   title,

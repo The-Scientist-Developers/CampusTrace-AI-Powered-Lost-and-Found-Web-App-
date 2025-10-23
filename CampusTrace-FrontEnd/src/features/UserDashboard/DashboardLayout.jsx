@@ -19,6 +19,8 @@ import {
   LayoutGrid,
   Sun,
   Moon,
+  Award,
+  MessageSquare,
 } from "lucide-react";
 import logo from "../../Images/Logo.svg";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -111,9 +113,11 @@ const DashboardSkeleton = ({ isSidebarOpen, mobileMenu }) => (
 );
 
 const menuItems = [
+  { label: "Leaderboard", icon: Award, path: "/dashboard/leaderboard" },
   { label: "Dashboard", icon: LayoutGrid, path: "/dashboard", exact: true },
   { label: "My Posts", icon: FileText, path: "/dashboard/my-posts" },
   { label: "Browse All", icon: Search, path: "/dashboard/browse-all" },
+  { label: "Messages", icon: MessageSquare, path: "/dashboard/messages" },
   { label: "Notifications", icon: Bell, path: "/dashboard/notifications" },
   { label: "Profile", icon: User, path: "/dashboard/profile" },
 ];

@@ -57,17 +57,19 @@ export default function AboutUsPage() {
   const teamMembers = [
     {
       name: "John Franklin C. Bugauisan",
-      role: "Project Lead / Full Stack AI-augmented Developer",
+      role: "Project Lead / Full Stack AI-augmented Developer/ UI Designer",
       imageUrl: JohnImage,
       githubUrl: "https://github.com/ImFrankB",
-      linkedinUrl: "https://www.linkedin.com/in/john-franklin-bugauisan-86aa16309/",
+      linkedinUrl:
+        "https://www.linkedin.com/in/john-franklin-bugauisan-86aa16309/",
     },
     {
       name: "William Ray M. Respicio",
       role: "Frontend AI-augmented Developer / UI Designer",
       imageUrl: WilliamImage,
       githubUrl: "https://github.com/williamUser-ops",
-      linkedinUrl: "https://www.linkedin.com/in/respicio-william-ray-m-0b5969384/",
+      linkedinUrl:
+        "https://www.linkedin.com/in/respicio-william-ray-m-0b5969384/",
     },
     {
       name: "Jerome Ian N. Cacho",

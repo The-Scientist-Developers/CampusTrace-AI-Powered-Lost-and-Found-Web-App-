@@ -16,6 +16,7 @@ import {
   Bell,
   Sun,
   Moon,
+  User,
 } from "lucide-react";
 import logo from "../../Images/Logo.svg";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -60,6 +61,7 @@ const menuItems = [
   { href: "/admin/user-management", label: "User Management", icon: Users },
   { href: "/admin/notifications", label: "Notifications", icon: Bell },
   { href: "/admin/settings", label: "Settings", icon: Settings },
+  { href: "/admin/profile", label: "Profile", icon: User },
 ];
 
 // ---------------- NavLink ---------------- //

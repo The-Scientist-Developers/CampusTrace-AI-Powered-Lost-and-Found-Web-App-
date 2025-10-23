@@ -7,154 +7,120 @@ import {
   Sparkles,
   Bell,
   ChevronDown,
+  MessageCircle,
   Users,
   Menu,
   X,
-  CheckCircle2,
-  Package,
   ArrowRight,
-  Star,
-  Zap,
-  Shield,
   Clock,
-  MessageCircle,
-  Heart,
-  TrendingUp,
+  KeyRound,
+  UserCheck,
   Award,
+  Map, // New Icon
+  MessageSquare, // New Icon for messaging
 } from "lucide-react";
-import { useTheme } from "../../contexts/ThemeContext";
 import logo from "../../Images/Logo.svg";
 
-// Animated counter component with enhanced animation
-const AnimatedCounter = ({
-  end,
-  duration = 2000,
-  suffix = "",
-  prefix = "",
-}) => {
-  const [count, setCount] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
-  const countRef = useRef(null);
-
+// --- Custom Hook for Intersection Observer ---
+const useInView = (ref, options) => {
+  const [isInView, setIsInView] = useState(false);
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    const currentRef = countRef.current;
-    if (currentRef) {
-      observer.observe(currentRef);
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setIsInView(true);
+        observer.unobserve(entry.target);
+      }
+    }, options);
+    if (ref.current) {
+      observer.observe(ref.current);
     }
-
     return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
+      if (ref.current && observer) {
+        observer.unobserve(ref.current);
       }
     };
-  }, []);
-
-  useEffect(() => {
-    if (!isVisible) return;
-
-    let startTime;
-    const animate = (timestamp) => {
-      if (!startTime) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / duration, 1);
-
-      // Easing function for smooth animation
-      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-      setCount(Math.floor(easeOutQuart * end));
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      }
-    };
-
-    requestAnimationFrame(animate);
-  }, [isVisible, end, duration]);
-
-  return (
-    <span ref={countRef} className="tabular-nums">
-      {prefix}
-      {count.toLocaleString()}
-      {suffix}
-    </span>
-  );
+  }, [ref, options]);
+  return isInView;
 };
 
-// Enhanced FAQ Item Component with better animations
-const FAQItem = ({ question, answer, isOpen, onToggle, index }) => {
+// --- Feature Slider Component ---
+const FeatureSlider = ({ features }) => {
   return (
-    <div
-      className="border-b border-neutral-200 dark:border-neutral-800 last:border-0 transform transition-all duration-300 hover:scale-[1.01]"
-      style={{ animationDelay: `${index * 100}ms` }}
-    >
-      <button
-        onClick={onToggle}
-        className="w-full py-6 px-4 flex justify-between items-center text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/50 rounded-lg transition-all duration-300 group"
-      >
-        <h3 className="text-base lg:text-lg font-semibold text-neutral-900 dark:text-white pr-8 group-hover:text-primary-600 dark:group-hover:text-primary-500 transition-colors">
-          {question}
-        </h3>
-        <div
-          className={`p-2 rounded-full bg-primary-100 dark:bg-primary-900/20 group-hover:bg-primary-200 dark:group-hover:bg-primary-900/30 transition-all duration-300 ${
-            isOpen ? "rotate-180" : ""
-          }`}
-        >
-          <ChevronDown className="w-5 h-5 text-primary-600 dark:text-primary-500" />
-        </div>
-      </button>
-      <div
-        className={`overflow-hidden transition-all duration-500 ease-out ${
-          isOpen ? "max-h-48 opacity-100 pb-6" : "max-h-0 opacity-0"
-        }`}
-      >
-        <p className="text-neutral-600 dark:text-zinc-400 px-4 leading-relaxed">
-          {answer}
+    <div className="py-16">
+      <div className="max-w-7xl mx-auto text-center">
+        <p className="text-sm font-semibold text-neutral-500 dark:text-neutral-400 tracking-wider mb-8">
+          KEY FEATURES OF CAMPUSTRACE
         </p>
+        <div className="relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_10%,white_90%,transparent)]">
+          <div className="animate-slide flex w-max">
+            {[...features, ...features].map((feature, index) => {
+              const Icon = feature.icon;
+              return (
+                <div
+                  key={index}
+                  className="w-80 flex-shrink-0 flex items-center justify-center gap-4 px-8"
+                >
+                  <Icon className="w-6 h-6 text-primary-500 dark:text-primary-400 flex-shrink-0" />
+                  <span className="font-semibold text-lg text-neutral-600 dark:text-neutral-300 truncate">
+                    {feature.title}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
-// Floating animation component
-const FloatingElement = ({ children, delay = 0 }) => {
+// --- FAQ Item Component ---
+const FAQItem = ({ question, answer, isOpen, onToggle }) => {
   return (
-    <div
-      className="animate-float"
-      style={{
-        animationDelay: `${delay}s`,
-        animation: `float 6s ease-in-out ${delay}s infinite`,
-      }}
-    >
-      {children}
+    <div className="border-b border-neutral-200 dark:border-neutral-800 last:border-0">
+      <button
+        onClick={onToggle}
+        className="w-full py-6 px-4 flex justify-between items-center text-left hover:bg-neutral-100 dark:hover:bg-neutral-800/50 rounded-lg group"
+      >
+        <h3 className="text-base lg:text-lg font-semibold text-neutral-900 dark:text-white pr-8 group-hover:text-primary-600 dark:group-hover:text-primary-400">
+          {question}
+        </h3>
+        <div
+          className={`p-2 rounded-full bg-primary-100 dark:bg-primary-500/10 transition-transform duration-300 ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        >
+          <ChevronDown className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+        </div>
+      </button>
+      <div
+        className={`grid transition-all duration-300 ease-in-out ${
+          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <p className="text-neutral-600 dark:text-neutral-400 pb-6 px-4 leading-relaxed">
+            {answer}
+          </p>
+        </div>
+      </div>
     </div>
   );
 };
 
-// Feature card component
-const FeatureCard = ({ icon: Icon, title, description, delay = 0 }) => {
+// --- Feature Card Component with Glowing Border ---
+const FeatureCard = ({ icon: Icon, title, description }) => {
   return (
-    <div
-      className="group relative p-8 bg-white dark:bg-neutral-800 rounded-2xl shadow-lg hover:shadow-2xl transform transition-all duration-500 hover:-translate-y-2 hover:scale-105 overflow-hidden"
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      {/* Gradient overlay on hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-600/0 to-primary-600/0 group-hover:from-primary-600/5 group-hover:to-primary-500/5 transition-all duration-500" />
-
-      <div className="relative z-10">
-        <div className="flex items-center justify-center h-16 w-16 bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-          <Icon className="w-8 h-8 text-primary-600 dark:text-primary-500" />
+    <div className="group relative p-1 bg-gradient-to-br from-white/50 to-white/50 dark:from-neutral-800/50 dark:to-neutral-800/50 rounded-2xl transition-all duration-300 h-full">
+      <div className="absolute -inset-px bg-gradient-to-br from-primary-500/50 via-purple-500/50 to-pink-500/50 rounded-2xl opacity-0 group-hover:opacity-100 blur-md transition-all duration-300"></div>
+      <div className="relative p-8 bg-white dark:bg-[#2a2a2a] rounded-xl h-full">
+        <div className="flex items-center justify-center h-12 w-12 bg-primary-100 dark:bg-primary-500/10 rounded-lg mb-4">
+          <Icon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
         </div>
-        <h3 className="text-xl font-bold text-neutral-900 dark:text-white mb-3 text-center">
+        <h3 className="text-lg font-bold text-neutral-900 dark:text-white mb-2">
           {title}
         </h3>
-        <p className="text-neutral-600 dark:text-zinc-400 text-center leading-relaxed">
+        <p className="text-neutral-600 dark:text-neutral-400 text-sm">
           {description}
         </p>
       </div>
@@ -162,129 +128,50 @@ const FeatureCard = ({ icon: Icon, title, description, delay = 0 }) => {
   );
 };
 
-// Testimonial Card
-const TestimonialCard = ({ name, role, content, rating }) => {
-  return (
-    <div className="group bg-white dark:bg-neutral-800 p-6 rounded-2xl shadow-lg hover:shadow-xl transform transition-all duration-300 hover:-translate-y-1">
-      <div className="flex mb-4">
-        {[...Array(5)].map((_, i) => (
-          <Star
-            key={i}
-            className={`w-5 h-5 ${
-              i < rating
-                ? "fill-yellow-400 text-yellow-400"
-                : "text-neutral-300 dark:text-neutral-600"
-            }`}
-          />
-        ))}
-      </div>
-      <p className="text-neutral-600 dark:text-zinc-400 mb-4 italic">
-        "{content}"
-      </p>
-      <div className="flex items-center">
-        <div className="w-12 h-12 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full mr-3" />
-        <div>
-          <p className="font-semibold text-neutral-900 dark:text-white">
-            {name}
-          </p>
-          <p className="text-sm text-neutral-500 dark:text-zinc-500">{role}</p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 export default function LandingPage() {
-  const { theme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [openFAQ, setOpenFAQ] = useState(0);
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [openFAQ, setOpenFAQ] = useState(0); // Default to first FAQ open
 
-  // Track mouse position for gradient effect
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
-
-  // Scroll progress indicator
-  useEffect(() => {
-    const handleScroll = () => {
-      const totalScroll =
-        document.documentElement.scrollHeight - window.innerHeight;
-      const currentProgress = (window.scrollY / totalScroll) * 100;
-      setScrollProgress(currentProgress);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  // Enhanced features data
+  // --- UPDATED features array to reflect new functionality ---
   const features = [
     {
       icon: Sparkles,
       title: "AI-Powered Matching",
       description:
-        "Smart algorithms analyze text and images to find your items instantly",
+        "Smart text & image analysis suggests potential matches for lost items.",
     },
     {
-      icon: Shield,
-      title: "Secure & Private",
+      icon: Search,
+      title: "Visual Search",
       description:
-        "Your information is protected and only shared when you approve",
-    },
-    {
-      icon: Clock,
-      title: "Real-Time Updates",
-      description: "Instant notifications when potential matches are found",
-    },
-    {
-      icon: Users,
-      title: "Campus Community",
-      description: "Connect with verified members from your university",
+        "Can't describe it? Upload a photo to find visually similar found items.",
     },
     {
       icon: MessageCircle,
-      title: "Easy Communication",
-      description: "Built-in messaging to coordinate item returns safely",
+      title: "In-App Messaging",
+      description:
+        "Communicate safely with other users directly on the platform to arrange returns.",
     },
     {
-      icon: TrendingUp,
-      title: "95% Success Rate",
-      description: "Proven track record of reuniting items with their owners",
+      icon: Award,
+      title: "Gamification & Leaderboard",
+      description:
+        "Earn badges and climb the leaderboard by helping return items to their owners.",
+    },
+    {
+      icon: KeyRound,
+      title: "Secure Claim Process",
+      description:
+        "Verify ownership privately before any contact details are shared.",
+    },
+    {
+      icon: Users,
+      title: "Verified Community",
+      description:
+        "Join via university email or manual ID verification for a trusted environment.",
     },
   ];
 
-  // Testimonials data
-  const testimonials = [
-    {
-      name: "Sarah Chen",
-      role: "Computer Science Student",
-      content:
-        "Found my laptop within 2 hours! The AI matching feature is incredible.",
-      rating: 5,
-    },
-    {
-      name: "Mike Johnson",
-      role: "Engineering Student",
-      content:
-        "So much better than the old bulletin board system. Love the notifications!",
-      rating: 5,
-    },
-    {
-      name: "Emily Rodriguez",
-      role: "Medical Student",
-      content:
-        "Recovered my expensive textbooks thanks to CampusTrace. Lifesaver!",
-      rating: 5,
-    },
-  ];
-
-  // FAQ data
   const faqs = [
     {
       question: "How does the AI-powered 'Possible Matches' feature work?",
@@ -292,145 +179,99 @@ export default function LandingPage() {
         "When you report a 'Lost' item, our AI automatically scans all 'Found' items, analyzing text and images for similarities. High-probability matches appear on your main dashboard to help you get your item back faster.",
     },
     {
-      question: "How do I claim an item that I think is mine?",
+      question: "How do I communicate with someone about an item?",
       answer:
-        "On the 'Browse All' page, click a 'Found' item and then 'Claim This Item.' You must provide a unique detail that only the owner would know. This message is sent privately to the finder to verify your ownership.",
+        "You can use the 'Message Poster' button on any item page to start a private, in-app conversation. After a claim is approved, a chat is automatically created for you and the other person to coordinate the return safely.",
     },
     {
-      question: "Is my contact information shared publicly?",
+      question: "What if I don't have a university email?",
       answer:
-        "No. Your primary email address is only shared between two users after a claim on a 'Found' item has been officially approved by the finder. Any optional contact information you add to a post will be visible.",
+        "No problem! You can still sign up with a personal email (like Gmail). You will be prompted to select your university and upload a photo of your university ID for manual verification by an administrator.",
     },
     {
-      question: "Why must I use my university email to sign up?",
+      question: "Why must I be verified to use the platform?",
       answer:
-        "This policy ensures that only verified students, faculty, and staff from your university can access the platform, creating a trusted and secure community environment.",
+        "Verification ensures that only members of the campus community can participate. This creates a trusted and secure environment for everyone, which is our top priority.",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white dark:from-neutral-950 dark:to-neutral-900 text-neutral-800 dark:text-zinc-300 flex flex-col overflow-x-hidden">
-      {/* Scroll Progress Bar */}
-      <div className="fixed top-0 left-0 right-0 z-[60] h-1 bg-neutral-200 dark:bg-neutral-800">
-        <div
-          className="h-full bg-gradient-to-r from-primary-500 to-primary-600 transition-all duration-150"
-          style={{ width: `${scrollProgress}%` }}
-        />
-      </div>
-
-      {/* Animated background gradient that follows mouse */}
-      <div
-        className="fixed inset-0 opacity-30 dark:opacity-20 pointer-events-none z-0"
-        style={{
-          background: `radial-gradient(circle 800px at ${mousePosition.x}px ${mousePosition.y}px, rgba(99, 102, 241, 0.15), transparent 40%)`,
-        }}
-      />
-
-      {/* Header with enhanced animations */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-lg shadow-sm border-b border-neutral-200/50 dark:border-neutral-800/50">
+    <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1a] text-neutral-800 dark:text-neutral-300 flex flex-col overflow-x-hidden">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur-lg border-b border-neutral-200/50 dark:border-neutral-800/50">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
-            <div className="flex-shrink-0">
-              <Link
-                to="/"
-                className="flex items-center gap-3 text-3xl font-extrabold text-primary-600 dark:text-primary-500 tracking-tight group"
-              >
-                <img
-                  src={logo}
-                  alt="Campus Trace Logo"
-                  className="h-10 w-auto rounded-full group-hover:scale-110 transition-transform duration-300"
-                />
-                <span className="hidden sm:inline bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent">
-                  CampusTrace
-                </span>
-              </Link>
-            </div>
+            <Link to="/" className="flex items-center gap-3 group">
+              <img
+                src={logo}
+                alt="Campus Trace Logo"
+                className="h-10 w-auto rounded-full group-hover:scale-110 transition-transform duration-300"
+              />
+              <span className="hidden sm:inline text-xl font-bold text-neutral-800 dark:text-white">
+                CampusTrace
+              </span>
+            </Link>
 
-            {/* Desktop Navigation with hover effects */}
             <div className="hidden md:flex items-center gap-6">
               {[
+                { to: "/features", label: "Features" },
                 { to: "/learn-more", label: "How It Works" },
                 { to: "/about", label: "About Us" },
                 { to: "/register-university", label: "For Universities" },
-              ].map((link, index) => (
+              ].map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className="relative text-base font-medium text-neutral-600 dark:text-zinc-400 hover:text-primary-600 dark:hover:text-primary-500 transition-colors duration-200 group"
-                  style={{ animationDelay: `${index * 100}ms` }}
+                  className="relative text-sm font-semibold text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200 group"
                 >
                   {link.label}
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary-600 dark:bg-primary-500 group-hover:w-full transition-all duration-300" />
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary-600 dark:bg-primary-400 group-hover:w-full transition-all duration-300" />
                 </Link>
               ))}
               <Link
                 to="/login"
-                className="relative px-6 py-2.5 bg-gradient-to-r from-primary-600 to-primary-500 text-white text-base font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden group"
+                className="px-5 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300"
               >
-                <span className="relative z-10">Log In</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-primary-700 to-primary-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                Log In
               </Link>
             </div>
 
-            {/* Mobile menu button with animation */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg text-neutral-600 dark:text-zinc-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all duration-300"
+              className="md:hidden p-2 rounded-lg text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
             >
-              <div className="relative w-6 h-6">
-                <Menu
-                  className={`absolute inset-0 w-6 h-6 transition-all duration-300 ${
-                    mobileMenuOpen
-                      ? "opacity-0 rotate-180"
-                      : "opacity-100 rotate-0"
-                  }`}
-                />
-                <X
-                  className={`absolute inset-0 w-6 h-6 transition-all duration-300 ${
-                    mobileMenuOpen
-                      ? "opacity-100 rotate-0"
-                      : "opacity-0 -rotate-180"
-                  }`}
-                />
-              </div>
+              {mobileMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
             </button>
           </div>
 
-          {/* Enhanced Mobile Navigation */}
           <div
-            className={`md:hidden overflow-hidden transition-all duration-500 ${
+            className={`md:hidden overflow-hidden transition-all duration-300 ${
               mobileMenuOpen ? "max-h-96 py-4" : "max-h-0"
             }`}
           >
             <div className="space-y-1 border-t border-neutral-200 dark:border-neutral-800 pt-4">
               {[
+                { to: "/features", label: "Features" },
                 { to: "/learn-more", label: "How It Works" },
                 { to: "/about", label: "About Us" },
                 { to: "/register-university", label: "For Universities" },
-              ].map((link, index) => (
+              ].map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className="block px-4 py-3 text-base font-medium text-neutral-600 dark:text-zinc-400 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-neutral-50 dark:hover:bg-neutral-800 rounded-lg transition-all duration-200"
-                  style={{
-                    animationDelay: `${index * 50}ms`,
-                    animation: mobileMenuOpen
-                      ? "slideInLeft 0.3s ease-out forwards"
-                      : "",
-                  }}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-4 py-3 text-base font-medium text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg"
                 >
                   {link.label}
                 </Link>
               ))}
               <Link
                 to="/login"
-                className="block mx-4 mt-4 py-3 text-center bg-gradient-to-r from-primary-600 to-primary-500 text-white text-base font-semibold rounded-xl shadow-lg"
-                style={{
-                  animationDelay: "150ms",
-                  animation: mobileMenuOpen
-                    ? "slideInLeft 0.3s ease-out forwards"
-                    : "",
-                }}
+                onClick={() => setMobileMenuOpen(false)}
+                className="block mx-4 mt-4 py-3 text-center bg-primary-600 text-white text-base font-semibold rounded-lg shadow-md"
               >
                 Log In
               </Link>
@@ -440,160 +281,99 @@ export default function LandingPage() {
       </header>
 
       <main className="flex-grow pt-20 relative z-10">
-        {/* Enhanced Hero Section */}
-        <section className="min-h-[calc(100vh-80px)] flex items-center justify-center text-center relative overflow-hidden">
-          {/* Animated background elements */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-200 dark:bg-primary-900/20 rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-30 animate-blob" />
-            <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary-300 dark:bg-primary-800/20 rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-primary-400 dark:bg-primary-700/20 rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-20 animate-blob animation-delay-4000" />
+        <section className="min-h-[calc(80vh-80px)] flex items-center justify-center text-center relative overflow-hidden">
+          <div className="absolute inset-0 opacity-20 dark:opacity-5 [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_100%)]">
+            <svg
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full text-neutral-300 dark:text-neutral-800"
+            >
+              <defs>
+                <pattern
+                  id="grid-pattern"
+                  width="80"
+                  height="80"
+                  patternUnits="userSpaceOnUse"
+                  x="50%"
+                  y="100%"
+                  patternTransform="translate(0 -1)"
+                >
+                  <path
+                    d="M0 80V.5H80"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1"
+                  ></path>
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#grid-pattern)"></rect>
+            </svg>
           </div>
-
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative">
             <div className="animate-fade-in-up">
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-neutral-900 dark:text-white leading-tight">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-neutral-900 dark:text-white leading-tight">
                 Reconnect with Your Lost Items,{" "}
-                <span className="bg-gradient-to-r from-primary-600 via-primary-500 to-primary-600 bg-clip-text text-transparent animate-gradient bg-300">
+                <span className="bg-gradient-to-r from-primary-600 to-primary-500 dark:from-primary-400 dark:to-primary-500 bg-clip-text text-transparent">
                   Effortlessly
                 </span>
               </h1>
             </div>
 
-            <p className="mt-6 md:mt-8 max-w-2xl mx-auto text-lg sm:text-xl text-neutral-600 dark:text-zinc-400 animate-fade-in-up animation-delay-200">
-              Our AI-powered platform simplifies the search for lost and found
-              items on campus, connecting you with your belongings faster and
-              more accurately than ever before.
+            <p
+              className="mt-6 max-w-2xl mx-auto text-lg text-neutral-600 dark:text-neutral-400 animate-fade-in-up"
+              style={{ animationDelay: "200ms" }}
+            >
+              Our AI-powered platform simplifies the search for lost items on
+              campus, connecting you with your belongings faster and more
+              accurately than ever before.
             </p>
 
-            <div className="mt-8 md:mt-12 flex flex-col sm:flex-row justify-center gap-4 animate-fade-in-up animation-delay-400">
+            <div
+              className="mt-10 flex flex-col sm:flex-row justify-center gap-4 animate-fade-in-up"
+              style={{ animationDelay: "400ms" }}
+            >
               <Link
                 to="/login"
-                className="group relative px-8 py-4 bg-gradient-to-r from-primary-600 to-primary-500 text-white text-lg font-bold rounded-xl shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+                className="group px-8 py-3 bg-primary-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2"
               >
-                <span className="relative z-10 flex items-center justify-center gap-2">
-                  Get Started
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-primary-700 to-primary-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                Get Started
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link
-                to="/learn-more"
-                className="px-8 py-4 bg-white dark:bg-neutral-900 border-2 border-neutral-300 dark:border-zinc-700 text-neutral-700 dark:text-zinc-300 text-lg font-bold rounded-xl hover:border-primary-600 dark:hover:border-primary-500 hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300"
-              >
-                Learn More
-              </Link>
-            </div>
-
-            {/* Trust badges */}
-            <div className="mt-12 flex flex-wrap justify-center gap-6 animate-fade-in animation-delay-600">
-              <div className="flex items-center gap-2 text-neutral-600 dark:text-zinc-400">
-                <ShieldCheck className="w-5 h-5 text-green-500" />
-                <span className="text-sm">Verified Users Only</span>
-              </div>
-              <div className="flex items-center gap-2 text-neutral-600 dark:text-zinc-400">
-                <Zap className="w-5 h-5 text-yellow-500" />
-                <span className="text-sm">Instant Matching</span>
-              </div>
-              <div className="flex items-center gap-2 text-neutral-600 dark:text-zinc-400">
-                <Heart className="w-5 h-5 text-red-500" />
-                <span className="text-sm">Community Driven</span>
-              </div>
             </div>
           </div>
         </section>
 
-        {/* Enhanced Features Section */}
-        <section className="py-20 relative">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16 animate-fade-in-up">
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-neutral-900 dark:text-white mb-4">
-                Why Choose{" "}
-                <span className="bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent">
-                  CampusTrace?
-                </span>
-              </h2>
-              <p className="text-lg text-neutral-600 dark:text-zinc-400 max-w-2xl mx-auto">
-                Experience the future of campus lost and found with our
-                innovative features
-              </p>
-            </div>
+        <FeatureSlider features={features} />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {features.map((feature, index) => (
-                <div
-                  key={feature.title}
-                  className="animate-fade-in-up"
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  <FeatureCard {...feature} delay={index * 100} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Testimonials Section
-        <section className="py-20 bg-gradient-to-br from-neutral-50 to-white dark:from-neutral-900 dark:to-neutral-950">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12 animate-fade-in-up">
-              <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4">
-                What Students Are Saying
-              </h2>
-              <p className="text-lg text-neutral-600 dark:text-zinc-400">
-                Join thousands of satisfied users on campus
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {testimonials.map((testimonial, index) => (
-                <div
-                  key={testimonial.name}
-                  className="animate-fade-in-up"
-                  style={{ animationDelay: `${index * 150}ms` }}
-                >
-                  <TestimonialCard {...testimonial} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section> */}
-
-        {/* Enhanced How It Works Section */}
-        <section className="py-20 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary-50/5 to-transparent dark:via-primary-900/5" />
-
+        <section className="py-20 bg-white dark:bg-[#2a2a2a]">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-            <div className="text-center mb-16 animate-fade-in-up">
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-neutral-900 dark:text-white mb-4">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4">
                 How It Works
               </h2>
-              <p className="text-lg text-neutral-600 dark:text-zinc-400">
-                Three simple steps to recover your lost items
+              <p className="text-lg text-neutral-600 dark:text-neutral-400">
+                Three simple steps to recover your lost items.
               </p>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-              {/* Connection lines for desktop */}
-              <div className="hidden md:block absolute top-1/4 left-1/4 right-1/4 h-0.5 bg-gradient-to-r from-primary-200 via-primary-300 to-primary-200 dark:from-primary-800 dark:via-primary-700 dark:to-primary-800" />
-
+              <div className="hidden md:block absolute top-10 left-1/3 right-1/3 h-0.5 border-t-2 border-dashed border-neutral-300 dark:border-neutral-700 -translate-y-1/2"></div>
               {[
                 {
                   icon: FilePlus,
-                  title: "Report Your Item",
+                  title: "1. Report Your Item",
                   description:
-                    "Quickly post details about a lost or found item using our simple form with photo upload.",
+                    "Quickly post details and a photo of a lost or found item using our simple form.",
                 },
                 {
                   icon: Sparkles,
-                  title: "AI Does the Work",
+                  title: "2. AI Does the Work",
                   description:
-                    "Our smart system analyzes and instantly searches for potential matches across campus.",
+                    "Our smart system analyzes your post and searches for potential matches across campus.",
                 },
                 {
                   icon: Bell,
-                  title: "Get Connected",
+                  title: "3. Get Connected",
                   description:
-                    "Receive instant notifications and connect securely through the app.",
+                    "Receive instant notifications for matches and claims, then securely arrange the return.",
                 },
               ].map((step, index) => (
                 <div
@@ -602,19 +382,15 @@ export default function LandingPage() {
                   style={{ animationDelay: `${index * 200}ms` }}
                 >
                   <div className="text-center group">
-                    <div className="relative inline-block">
-                      <div className="absolute inset-0 bg-primary-600 rounded-full blur-2xl opacity-20 group-hover:opacity-30 transition-opacity" />
-                      <div className="relative flex items-center justify-center h-20 w-20 bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/30 dark:to-primary-800/30 rounded-full mx-auto mb-6 group-hover:scale-110 transform transition-all duration-300 shadow-lg">
-                        <step.icon className="w-10 h-10 text-primary-600 dark:text-primary-500" />
-                      </div>
-                      <div className="absolute -top-2 -right-2 bg-primary-600 text-white text-sm font-bold w-8 h-8 rounded-full flex items-center justify-center">
-                        {index + 1}
+                    <div className="relative inline-block mb-6">
+                      <div className="flex items-center justify-center h-16 w-16 bg-primary-100 dark:bg-primary-500/10 rounded-full mx-auto ring-4 ring-white dark:ring-[#2a2a2a]">
+                        <step.icon className="w-8 h-8 text-primary-600 dark:text-primary-400" />
                       </div>
                     </div>
                     <h3 className="text-xl font-bold text-neutral-900 dark:text-white mb-3">
                       {step.title}
                     </h3>
-                    <p className="text-neutral-600 dark:text-zinc-400 leading-relaxed">
+                    <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed text-sm">
                       {step.description}
                     </p>
                   </div>
@@ -624,18 +400,38 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Enhanced FAQ Section */}
-        <section className="py-20 bg-gradient-to-br from-neutral-50 to-white dark:from-neutral-900 dark:to-neutral-950">
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12 animate-fade-in-up">
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-neutral-900 dark:text-white mb-4">
-                Frequently Asked Questions
+        <section className="py-20">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4">
+                Key Features
               </h2>
-              <p className="text-lg text-neutral-600 dark:text-zinc-400">
-                Everything you need to know about CampusTrace
+              <p className="text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto">
+                Built with students and administrators in mind.
               </p>
             </div>
-            <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-xl animate-fade-in-up animation-delay-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {features.map((feature, index) => (
+                <div
+                  key={feature.title}
+                  className="animate-fade-in-up"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <FeatureCard {...feature} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-20 bg-white dark:bg-[#2a2a2a]">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4">
+                Frequently Asked Questions
+              </h2>
+            </div>
+            <div className="bg-white dark:bg-[#2a2a2a] rounded-2xl p-6 shadow-lg border border-neutral-200 dark:border-neutral-700">
               {faqs.map((faq, index) => (
                 <FAQItem
                   key={index}
@@ -643,71 +439,39 @@ export default function LandingPage() {
                   answer={faq.answer}
                   isOpen={openFAQ === index}
                   onToggle={() => setOpenFAQ(openFAQ === index ? null : index)}
-                  index={index}
                 />
               ))}
             </div>
           </div>
         </section>
 
-        {/* Enhanced CTA Section */}
-        <section className="py-24 bg-gradient-to-r from-primary-600 via-primary-500 to-primary-600 text-white text-center relative overflow-hidden animate-gradient bg-300">
-          <div className="absolute inset-0">
-            <div className="absolute inset-0 bg-black opacity-10" />
-            <div className="absolute -top-24 -left-24 w-96 h-96 bg-white rounded-full mix-blend-overlay opacity-10 animate-blob" />
-            <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-white rounded-full mix-blend-overlay opacity-10 animate-blob animation-delay-2000" />
-          </div>
-
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-            <div className="animate-fade-in-up">
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
-                Ready to Join Your Campus Community?
-              </h2>
-              <p className="text-lg md:text-xl mb-10 text-white/90 max-w-2xl mx-auto">
-                Register with your university email to start finding and
-                reporting items today.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  to="/login"
-                  className="group relative px-10 py-4 bg-white text-primary-600 text-lg font-bold rounded-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 overflow-hidden"
-                >
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    Get Started Now
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </span>
-                </Link>
-              </div>
-
-              {/* Trust indicators */}
-              <div className="mt-10 flex flex-wrap justify-center gap-8 text-white/80">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5" />
-                  <span>No credit card required</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5" />
-                  <span>Free for students</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5" />
-                  <span>Setup in 30 seconds</span>
-                </div>
-              </div>
-            </div>
+        <section className="py-24 bg-primary-600 text-white text-center">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 animate-fade-in-up">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+              Ready to Join Your Campus Community?
+            </h2>
+            <p className="text-lg md:text-xl mb-10 text-white/90 max-w-2xl mx-auto">
+              Register with your university email to start finding and reporting
+              items today.
+            </p>
+            <Link
+              to="/login"
+              className="group px-10 py-4 bg-white text-primary-600 text-lg font-bold rounded-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 inline-flex items-center justify-center gap-2"
+            >
+              Get Started Now
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </Link>
           </div>
         </section>
       </main>
 
-      {/* Enhanced Footer */}
-      <footer className="bg-white dark:bg-neutral-950 py-16 border-t border-neutral-200 dark:border-neutral-800">
+      <footer className="bg-white dark:bg-[#1a1a1a] py-16 border-t border-neutral-200 dark:border-neutral-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-            {/* Brand column */}
             <div className="col-span-1 md:col-span-2">
               <Link
                 to="/"
-                className="flex items-center gap-3 text-2xl font-extrabold text-primary-600 dark:text-primary-500 mb-4"
+                className="flex items-center gap-3 text-2xl font-bold text-primary-600 dark:text-primary-400 mb-4"
               >
                 <img
                   src={logo}
@@ -716,14 +480,11 @@ export default function LandingPage() {
                 />
                 <span>CampusTrace</span>
               </Link>
-              <p className="text-neutral-600 dark:text-zinc-400 mb-6 max-w-md">
+              <p className="text-neutral-600 dark:text-neutral-400 mb-6 max-w-md">
                 The smart way to recover lost items on campus. Powered by AI,
                 driven by community.
               </p>
-              <div className="flex gap-4">{/* Social links can go here */}</div>
             </div>
-
-            {/* Quick Links */}
             <div>
               <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">
                 Quick Links
@@ -732,7 +493,7 @@ export default function LandingPage() {
                 <li>
                   <Link
                     to="/learn-more"
-                    className="text-neutral-600 dark:text-zinc-400 hover:text-primary-600 dark:hover:text-primary-500 transition-colors"
+                    className="text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400"
                   >
                     How It Works
                   </Link>
@@ -740,7 +501,7 @@ export default function LandingPage() {
                 <li>
                   <Link
                     to="/about"
-                    className="text-neutral-600 dark:text-zinc-400 hover:text-primary-600 dark:hover:text-primary-500 transition-colors"
+                    className="text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400"
                   >
                     About Us
                   </Link>
@@ -748,15 +509,13 @@ export default function LandingPage() {
                 <li>
                   <Link
                     to="/register-university"
-                    className="text-neutral-600 dark:text-zinc-400 hover:text-primary-600 dark:hover:text-primary-500 transition-colors"
+                    className="text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400"
                   >
                     For Universities
                   </Link>
                 </li>
               </ul>
             </div>
-
-            {/* Contact */}
             <div>
               <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">
                 Contact
@@ -765,137 +524,24 @@ export default function LandingPage() {
                 <li>
                   <a
                     href="mailto:contact@campustrace.com"
-                    className="text-neutral-600 dark:text-zinc-400 hover:text-primary-600 dark:hover:text-primary-500 transition-colors"
+                    className="text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400"
                   >
                     contact@campustrace.com
                   </a>
                 </li>
-                <li className="text-neutral-600 dark:text-zinc-400">
-                  Available 24/7
-                </li>
               </ul>
             </div>
           </div>
-
-          <div className="pt-8 border-t border-neutral-200 dark:border-neutral-800">
-            <div className="text-center sm:flex sm:justify-between sm:items-center">
-              <p className="text-neutral-500 dark:text-zinc-500 mb-4 sm:mb-0">
-                © {new Date().getFullYear()} CampusTrace. All rights reserved.
-              </p>
-              <div className="text-neutral-500 dark:text-zinc-500 text-sm">
-                <p>A project by: Bugauisan, Respicio, & Cacho</p>
-              </div>
-            </div>
+          <div className="pt-8 border-t border-neutral-200 dark:border-neutral-800 text-center sm:flex sm:justify-between">
+            <p className="text-neutral-500 dark:text-neutral-400 mb-4 sm:mb-0">
+              © {new Date().getFullYear()} CampusTrace. All rights reserved.
+            </p>
+            <p className="text-neutral-500 dark:text-neutral-400 text-sm">
+              A project by: Bugauisan, Respicio, & Cacho
+            </p>
           </div>
         </div>
       </footer>
-
-      {/* Add required CSS animations */}
-      <style jsx>{`
-        @keyframes blob {
-          0% {
-            transform: translate(0px, 0px) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-          100% {
-            transform: translate(0px, 0px) scale(1);
-          }
-        }
-
-        @keyframes float {
-          0%,
-          100% {
-            transform: translateY(0px);
-          }
-          50% {
-            transform: translateY(-20px);
-          }
-        }
-
-        @keyframes gradient {
-          0%,
-          100% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-        }
-
-        @keyframes slideInLeft {
-          from {
-            opacity: 0;
-            transform: translateX(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-
-        @keyframes fade-in-up {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-
-        .animate-float {
-          animation: float 6s ease-in-out infinite;
-        }
-
-        .animate-gradient {
-          background-size: 200% 200%;
-          animation: gradient 15s ease infinite;
-        }
-
-        .animate-fade-in-up {
-          animation: fade-in-up 0.6s ease-out forwards;
-          opacity: 0;
-        }
-
-        .animate-fade-in {
-          animation: fade-in-up 0.8s ease-out forwards;
-          opacity: 0;
-        }
-
-        .animation-delay-200 {
-          animation-delay: 200ms;
-        }
-
-        .animation-delay-400 {
-          animation-delay: 400ms;
-        }
-
-        .animation-delay-600 {
-          animation-delay: 600ms;
-        }
-
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-
-        .bg-300 {
-          background-size: 300% 300%;
-        }
-      `}</style>
     </div>
   );
 }
