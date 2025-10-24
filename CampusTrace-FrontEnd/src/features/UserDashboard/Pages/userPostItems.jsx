@@ -6,6 +6,10 @@ import {
   X,
   Loader2,
   Sparkles,
+  MapPin,
+  Tag,
+  Phone,
+  FileText,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -15,62 +19,33 @@ import "react-loading-skeleton/dist/skeleton.css";
 
 // --- SKELETON COMPONENT ---
 const PostNewItemSkeleton = () => (
-  <div className="max-w-4xl mx-auto">
+  <div className="max-w-3xl mx-auto px-4">
     {/* Header */}
-    <div className="mb-8">
-      <Skeleton height={36} width={250} />
-      <Skeleton height={20} width={400} className="mt-2" />
+    <div className="text-center mb-8">
+      <Skeleton circle height={64} width={64} className="mx-auto mb-4" />
+      <Skeleton height={36} width={250} className="mx-auto" />
+      <Skeleton height={20} width={350} className="mx-auto mt-2" />
     </div>
 
-    {/* Form Box */}
-    <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm">
-      <div className="p-6 sm:p-8 space-y-6">
-        {/* Title */}
-        <div>
-          <Skeleton height={20} width={100} className="mb-2" />
-          <Skeleton height={42} borderRadius={8} />
-        </div>
+    {/* Status Pills */}
+    <div className="flex justify-center gap-4 mb-8">
+      <Skeleton height={44} width={140} borderRadius={999} />
+      <Skeleton height={44} width={140} borderRadius={999} />
+    </div>
 
-        {/* Grid */}
+    {/* Form Card */}
+    <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-sm">
+      <div className="p-6 space-y-6">
+        <Skeleton height={70} borderRadius={12} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Status */}
-          <div>
-            <Skeleton height={20} width={100} className="mb-2" />
-            <Skeleton height={42} borderRadius={8} />
-          </div>
-          {/* Category */}
-          <div>
-            <Skeleton height={20} width={100} className="mb-2" />
-            <Skeleton height={42} borderRadius={8} />
-          </div>
-          {/* Location */}
-          <div>
-            <Skeleton height={20} width={100} className="mb-2" />
-            <Skeleton height={42} borderRadius={8} />
-          </div>
-          {/* Contact */}
-          <div>
-            <Skeleton height={20} width={100} className="mb-2" />
-            <Skeleton height={42} borderRadius={8} />
-          </div>
+          <Skeleton height={70} borderRadius={12} />
+          <Skeleton height={70} borderRadius={12} />
         </div>
-
-        {/* Description */}
-        <div>
-          <Skeleton height={20} width={100} className="mb-2" />
-          <Skeleton height={106} borderRadius={8} /> {/* rows="4" */}
-        </div>
-
-        {/* Image Upload */}
-        <div>
-          <Skeleton height={20} width={100} className="mb-2" />
-          <Skeleton height={150} borderRadius={8} /> {/* Dashed box */}
-        </div>
+        <Skeleton height={120} borderRadius={12} />
+        <Skeleton height={180} borderRadius={12} />
       </div>
-
-      {/* Footer */}
-      <div className="p-6 bg-neutral-50 dark:bg-[#2a2a2a]/50 border-t border-neutral-200 dark:border-[#3a3a3a] rounded-b-xl flex justify-end">
-        <Skeleton height={46} width={120} borderRadius={8} />
+      <div className="p-6 border-t">
+        <Skeleton height={48} borderRadius={12} />
       </div>
     </div>
   </div>
@@ -239,27 +214,59 @@ export default function PostNewItem() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-8">
+    <div className="max-w-3xl mx-auto px-4">
+      {/* Improved Header */}
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full mb-4 shadow-lg">
+          <UploadCloud className="w-8 h-8 text-white" />
+        </div>
         <h1 className="text-3xl font-bold mb-2 text-neutral-800 dark:text-white">
           Post New Item
         </h1>
         <p className="text-neutral-500 dark:text-gray-400">
-          Fill in the details below to report a lost or found item.
+          Help reunite lost items with their owners
         </p>
+      </div>
+
+      {/* Status Toggle Pills */}
+      <div className="flex justify-center gap-4 mb-8">
+        <button
+          type="button"
+          onClick={() => setStatus("Lost")}
+          className={`px-6 py-2.5 rounded-full font-medium transition-all ${
+            status === "Lost"
+              ? "bg-green-500 text-white shadow-lg transform scale-105"
+              : "bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-2 border-neutral-200 dark:border-neutral-700"
+          }`}
+        >
+          I Lost Something
+        </button>
+        <button
+          type="button"
+          onClick={() => setStatus("Found")}
+          className={`px-6 py-2.5 rounded-full font-medium transition-all ${
+            status === "Found"
+              ? "bg-green-500 text-white shadow-lg transform scale-105"
+              : "bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-2 border-neutral-200 dark:border-neutral-700"
+          }`}
+        >
+          I Found Something
+        </button>
       </div>
 
       <form
         onSubmit={handleSubmit}
-        className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm"
+        className="bg-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-neutral-200 dark:border-neutral-700 overflow-hidden"
       >
         <div className="p-6 sm:p-8 space-y-6">
+          {/* Title with Icon */}
           <div>
             <label
               htmlFor="title"
-              className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
+              className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
             >
-              Title
+              <Tag className="w-4 h-4 text-primary-500" />
+              What did you {status.toLowerCase()}? *
             </label>
             <input
               type="text"
@@ -267,55 +274,41 @@ export default function PostNewItem() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              className="form-input w-full dark:bg-[#2a2a2a] dark:border-neutral-700 dark:text-white"
+              className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors"
               placeholder="e.g., Black Backpack, iPhone 13"
             />
           </div>
 
+          {/* Grid with better spacing */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label
-                htmlFor="status"
-                className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
-              >
-                Status
-              </label>
-              <select
-                id="status"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="form-select w-full dark:bg-[#2a2a2a] dark:border-neutral-700 dark:text-white"
-              >
-                <option value="Lost">I Lost Something</option>
-                <option value="Found">I Found Something</option>
-              </select>
-            </div>
-            <div>
-              <label
                 htmlFor="category"
-                className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
+                className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
               >
+                <FileText className="w-4 h-4 text-primary-500" />
                 Category
               </label>
               <select
                 id="category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="form-select w-full dark:bg-[#2a2a2a] dark:border-neutral-700 dark:text-white"
+                className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors"
               >
-                <option value="Electronics">Electronics</option>
+                <option value="Electronics"> Electronics</option>
                 <option value="Documents">Documents</option>
-                <option value="Clothing">Clothing</option>
-                <option value="Accessories">Accessories</option>
-                <option value="Other">Other</option>
+                <option value="Clothing"> Clothing</option>
+                <option value="Accessories"> Accessories</option>
+                <option value="Other"> Other</option>
               </select>
             </div>
             <div>
               <label
                 htmlFor="location"
-                className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
+                className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
               >
-                Location
+                <MapPin className="w-4 h-4 text-primary-500" />
+                Location *
               </label>
               <input
                 type="text"
@@ -323,41 +316,50 @@ export default function PostNewItem() {
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 required
-                className="form-input w-full dark:bg-[#2a2a2a] dark:border-neutral-700 dark:text-white"
+                className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors"
                 placeholder="e.g., CCSICT building, 2nd floor"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="contactInfo"
-                className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
-              >
-                Contact Info (Optional)
-              </label>
-              <input
-                type="text"
-                id="contactInfo"
-                value={contactInfo}
-                onChange={(e) => setContactInfo(e.target.value)}
-                className="form-input w-full dark:bg-[#2a2a2a] dark:border-neutral-700 dark:text-white"
-                placeholder="Messenger: John Doe, Phone: 123-456-7890"
               />
             </div>
           </div>
 
+          {/* Contact Info - Full Width */}
+          <div>
+            <label
+              htmlFor="contactInfo"
+              className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
+            >
+              <Phone className="w-4 h-4 text-primary-500" />
+              Contact Info (Optional)
+            </label>
+            <input
+              type="text"
+              id="contactInfo"
+              value={contactInfo}
+              onChange={(e) => setContactInfo(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors"
+              placeholder="How can someone reach you? (Phone, Email, Messenger)"
+            />
+          </div>
+
+          {/* Description with improved AI button */}
           <div>
             <div className="flex justify-between items-center mb-2">
               <label
                 htmlFor="description"
-                className="block text-sm font-medium text-neutral-700 dark:text-neutral-300"
+                className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300"
               >
-                Description
+                <FileText className="w-4 h-4 text-primary-500" />
+                Description *
               </label>
               <button
                 type="button"
                 onClick={handleImproveDescription}
                 disabled={isGenerating || !description.trim()}
-                className="flex items-center gap-1.5 px-2 py-1 text-xs font-semibold text-primary-600 bg-primary-100/50 dark:bg-primary-500/10 rounded-md hover:bg-primary-100/80 dark:hover:bg-primary-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-full transition-all ${
+                  description.trim()
+                    ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-md"
+                    : "bg-neutral-100 dark:bg-neutral-700 text-neutral-400 cursor-not-allowed"
+                }`}
                 title={
                   !description.trim()
                     ? "Write a description first"
@@ -365,11 +367,11 @@ export default function PostNewItem() {
                 }
               >
                 {isGenerating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkles className="w-3.5 h-3.5" />
                 )}
-                Improve with AI
+                Enhance with AI
               </button>
             </div>
             <textarea
@@ -378,74 +380,88 @@ export default function PostNewItem() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               required
-              className="form-textarea w-full dark:bg-[#2a2a2a] dark:border-neutral-700 dark:text-white"
-              placeholder="Start by describing your item, then let AI help improve it..."
+              className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors resize-none"
+              placeholder="Describe the item in detail... (color, brand, distinguishing features, etc.)"
             ></textarea>
           </div>
 
+          {/* Image Upload - Improved Design */}
           <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              Upload Image
+            <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              <ImageIcon className="w-4 h-4 text-primary-500" />
+              Upload Photo (Optional)
             </label>
-            <div className="mt-2 flex justify-center p-6 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-lg">
+            <div className="mt-2">
               {imagePreview ? (
-                <div className="relative inline-block">
+                <div className="relative rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-900">
                   <img
                     src={imagePreview}
                     alt="Item Preview"
-                    className="max-h-48 mx-auto rounded-lg"
+                    className="w-full h-64 object-cover"
                   />
                   <button
                     type="button"
                     onClick={removeImage}
-                    className="absolute -top-2 -right-2 p-1 bg-white dark:bg-neutral-700 rounded-full text-neutral-600 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-600 shadow"
+                    className="absolute top-3 right-3 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
-                </div>
-              ) : (
-                <div className="text-center">
-                  <ImageIcon className="mx-auto w-12 h-12 text-neutral-400 dark:text-neutral-500" />
-                  <div className="mt-4 flex text-sm leading-6 text-neutral-600">
-                    <label
-                      htmlFor="image-upload"
-                      className="relative cursor-pointer rounded-md bg-white dark:bg-[#2a2a2a] font-semibold text-primary-600 hover:text-primary-500"
-                    >
-                      <span>Upload a file</span>
-                      <input
-                        type="file"
-                        id="image-upload"
-                        onChange={handleImageChange}
-                        accept="image/*"
-                        className="sr-only"
-                      />
-                    </label>
-                    <p className="pl-1 dark:text-neutral-400">
-                      or drag and drop
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-4">
+                    <p className="text-white text-sm font-medium">
+                      Photo uploaded successfully
                     </p>
                   </div>
-                  <p className="text-xs leading-5 text-neutral-500 dark:text-neutral-400">
-                    PNG, JPG, GIF up to 10MB
-                  </p>
                 </div>
+              ) : (
+                <label
+                  htmlFor="image-upload"
+                  className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-xl cursor-pointer hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-all"
+                >
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <UploadCloud className="w-10 h-10 mb-3 text-neutral-400" />
+                    <p className="mb-2 text-sm text-neutral-700 dark:text-neutral-300">
+                      <span className="font-semibold">Click to upload</span> or
+                      drag and drop
+                    </p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                      PNG, JPG, GIF up to 10MB
+                    </p>
+                  </div>
+                  <input
+                    type="file"
+                    id="image-upload"
+                    onChange={handleImageChange}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                </label>
               )}
             </div>
           </div>
         </div>
 
-        <div className="p-6 bg-neutral-50 dark:bg-[#2a2a2a]/50 border-t border-neutral-200 dark:border-[#3a3a3a] rounded-b-xl flex justify-end">
+        {/* Footer with Submit Button */}
+        <div className="p-6 bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-neutral-900 dark:to-neutral-800 border-t border-neutral-200 dark:border-neutral-700">
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex items-center gap-2 px-6 py-3 bg-primary-600 text-white font-semibold text-sm rounded-md hover:bg-primary-700 disabled:opacity-50 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-xl hover:from-primary-700 hover:to-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
           >
             {isSubmitting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Submitting...
+              </>
             ) : (
-              <UploadCloud className="w-4 h-4" />
+              <>
+                <UploadCloud className="w-5 h-5" />
+                Post Item
+              </>
             )}
-            {isSubmitting ? "Submitting..." : "Post Item"}
           </button>
+          <p className="text-center text-xs text-neutral-500 dark:text-neutral-400 mt-3">
+            Your post will be reviewed before appearing publicly
+          </p>
         </div>
       </form>
     </div>

@@ -17,6 +17,7 @@ import {
   Sun,
   Moon,
   User,
+  UserCheck,
 } from "lucide-react";
 import logo from "../../Images/Logo.svg";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -59,6 +60,11 @@ const menuItems = [
     icon: ShieldCheck,
   },
   { href: "/admin/user-management", label: "User Management", icon: Users },
+  {
+    href: "/admin/manual-verifications",
+    label: "Manual Verifications",
+    icon: UserCheck,
+  },
   { href: "/admin/notifications", label: "Notifications", icon: Bell },
   { href: "/admin/settings", label: "Settings", icon: Settings },
   { href: "/admin/profile", label: "Profile", icon: User },

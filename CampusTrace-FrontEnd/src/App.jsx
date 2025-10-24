@@ -34,10 +34,11 @@ import UserSettingsPage from "./features/UserDashboard/Pages/userSettingsPage.js
 import RegisterUniversityPage from "./features/MainPages/RegisterUniversityPage.jsx";
 import UpdatePasswordPage from "./features/MainPages/UpdatePasswordPage.jsx";
 import AdminNotificationPage from "./features/AdminDashboard/Pages/adminNotificationPage.jsx";
-import FeaturesPage from "./features/MainPages/featuresPage.jsx";
 import LeaderboardPage from "./features/UserDashboard/Pages/leaderBoardPage.jsx";
 import AdminProfilePage from "./features/AdminDashboard/Pages/adminProfile.jsx";
 import MessagesPage from "./features/UserDashboard/Pages/userMessageApp.jsx";
+import ManualVerificationPage from "./features/MainPages/manualVerificationPage.jsx";
+import ManualVerificationAdminPage from "./features/AdminDashboard/Pages/adminVerificationPage.jsx";
 // --- Router Guards ---
 function PrivateRouter({ children, isLoading, session }) {
   if (isLoading) return <LoadingScreen />;
@@ -218,10 +219,13 @@ function AppContent() {
             path="/register-university"
             element={<RegisterUniversityPage />}
           />
+          <Route
+            path="/manual-verification"
+            element={<ManualVerificationPage />}
+          />
           <Route path="/update-password" element={<UpdatePasswordPage />} />
           <Route path="/about" element={<AboutUsPage />} />
           <Route path="/learn-more" element={<LearnMorePage />} />
-          <Route path="/features" element={<FeaturesPage />} />
 
           {/* User Dashboard Routes */}
           <Route
@@ -306,6 +310,10 @@ function AppContent() {
             <Route
               path="profile"
               element={<AdminProfilePage user={session?.user} />}
+            />
+            <Route
+              path="manual-verifications"
+              element={<ManualVerificationAdminPage />}
             />
           </Route>
         </Routes>
