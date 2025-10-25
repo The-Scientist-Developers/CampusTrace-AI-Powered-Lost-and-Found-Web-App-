@@ -1140,7 +1140,7 @@ export default function LoginPage() {
                       Don't have a university email?
                     </p>
                     <Link
-                      to="/manual-register"
+                      to="/manual-verification"
                       className="w-full inline-flex justify-center py-2.5 px-4 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-semibold text-sm rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                     >
                       Register with your University ID instead

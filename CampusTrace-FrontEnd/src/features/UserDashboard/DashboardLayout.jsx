@@ -30,7 +30,7 @@ import "react-loading-skeleton/dist/skeleton.css";
 // --- Skeleton Loader --- //
 const DashboardSkeleton = ({ isSidebarOpen, mobileMenu }) => (
   <div className="h-screen flex flex-col bg-neutral-50 dark:bg-[#1a1a1a] text-neutral-800 dark:text-neutral-300 overflow-hidden">
-    <header className="h-16 px-4 lg:px-6 bg-white/70 dark:bg-[#2a2a2a]/70 backdrop-blur-lg border-b border-neutral-200 dark:border-[#3a3a3a] flex items-center justify-between shadow-sm z-30 flex-shrink-0">
+    <header className="h-14 sm:h-16 px-3 sm:px-4 lg:px-6 bg-white/70 dark:bg-[#2a2a2a]/70 backdrop-blur-lg border-b border-neutral-200 dark:border-[#3a3a3a] flex items-center justify-between shadow-sm z-30 flex-shrink-0">
       <div className="flex items-center gap-2">
         <Skeleton circle width={32} height={32} className="md:hidden" />
         <Skeleton circle width={32} height={32} className="hidden md:block" />
@@ -57,45 +57,47 @@ const DashboardSkeleton = ({ isSidebarOpen, mobileMenu }) => (
     </header>
     <div className="flex flex-1 overflow-hidden">
       <aside
-        className={`fixed md:relative inset-y-0 left-0 z-50 bg-white/80 dark:bg-[#2a2a2a]/80 flex flex-col transition-all duration-300 ease-in-out top-16 md:top-0 border-r border-neutral-200 dark:border-[#3a3a3a] ${
+        className={`fixed md:relative inset-y-0 left-0 z-50 bg-white/95 dark:bg-[#2a2a2a]/95 backdrop-blur-md flex flex-col transition-all duration-300 ease-in-out ${
           mobileMenu
-            ? "translate-x-0 w-64 shadow-xl"
+            ? "translate-x-0 w-[280px] shadow-2xl"
             : "-translate-x-full md:translate-x-0"
-        } ${
-          isSidebarOpen ? "md:w-64" : "md:w-20"
-        } h-[calc(100vh-4rem)] md:h-full`}
+        } ${isSidebarOpen ? "md:w-64" : "md:w-20"} h-full`}
       >
-        <div className="p-4 flex items-center gap-3 border-b border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0 h-16">
-          <Skeleton circle width={32} height={32} />
-          {(isSidebarOpen || mobileMenu) && (
-            <div className="flex flex-col overflow-hidden">
-              <Skeleton width={100} height={16} />
-              <Skeleton width={120} height={12} />
-            </div>
-          )}
-        </div>
-        <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
-          {[...Array(5)].map((_, i) => (
-            <Skeleton key={i} height={42} borderRadius={8} />
-          ))}
-        </nav>
-        <div className="p-3 border-t border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0">
-          <div className="space-y-1.5">
-            {[...Array(2)].map((_, i) => (
-              <Skeleton key={i} height={42} borderRadius={8} />
-            ))}
-          </div>
-          <div className="border-t border-neutral-200 dark:border-[#3a3a3a] my-3"></div>
-          <div className="p-2 flex items-center gap-3">
-            <Skeleton circle width={36} height={36} />
+        <div className="flex flex-col h-full overflow-hidden">
+          <div className="p-4 flex items-center gap-3 border-b border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0">
+            <Skeleton circle width={32} height={32} />
             {(isSidebarOpen || mobileMenu) && (
-              <div className="flex-1 min-w-0">
+              <div className="flex flex-col overflow-hidden">
                 <Skeleton width={100} height={16} />
-                <Skeleton width={140} height={12} />
+                <Skeleton width={120} height={12} />
               </div>
             )}
           </div>
-          <Skeleton height={42} borderRadius={8} className="mt-2" />
+          <div className="flex-1 overflow-y-auto">
+            <nav className="p-3 space-y-1.5">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} height={42} borderRadius={8} />
+              ))}
+            </nav>
+          </div>
+          <div className="p-3 border-t border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0">
+            <div className="space-y-1.5">
+              {[...Array(2)].map((_, i) => (
+                <Skeleton key={i} height={42} borderRadius={8} />
+              ))}
+            </div>
+            <div className="border-t border-neutral-200 dark:border-[#3a3a3a] my-3"></div>
+            <div className="p-2 flex items-center gap-3">
+              <Skeleton circle width={36} height={36} />
+              {(isSidebarOpen || mobileMenu) && (
+                <div className="flex-1 min-w-0">
+                  <Skeleton width={100} height={16} />
+                  <Skeleton width={140} height={12} />
+                </div>
+              )}
+            </div>
+            <Skeleton height={42} borderRadius={8} className="mt-2" />
+          </div>
         </div>
       </aside>
       <main className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-[#1a1a1a]">
@@ -133,7 +135,7 @@ const NavLink = ({ item, isOpen, exact }) => (
     end={exact}
     title={!isOpen ? item.label : ""}
     className={({ isActive }) => `
-      flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200
+      flex items-center gap-3 px-3 py-2.5 sm:py-2.5 rounded-lg transition-all duration-200 min-h-[44px]
       ${
         isActive
           ? "bg-primary-500/10 text-primary-500 font-semibold"
@@ -302,10 +304,45 @@ export default function DashboardLayout({ children, user }) {
     setMobileMenu(false);
   }, [location]);
 
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenu) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenu]);
+
   const handleLogout = async () => {
     setIsLoggingOut(true);
-    await supabase.auth.signOut();
-    navigate("/login");
+
+    try {
+      // Optional: Check for an active session before attempting logout
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        console.log("No active session found. Skipping server logout.");
+        // Proceed to local cleanup and navigation
+      } else {
+        // Attempt server-side logout
+        await supabase.auth.signOut();
+        console.log("Logout successful.");
+      }
+    } catch (error) {
+      console.error("Logout failed:", error.message);
+      // Fallback: Force local logout to clear the session client-side
+      // This avoids the 403 by skipping the server call
+      await supabase.auth.signOut({ scope: "local" });
+      console.log("Fallback: Local logout completed.");
+    } finally {
+      // Always reset loading state and navigate
+      setIsLoggingOut(false);
+      navigate("/login");
+    }
   };
 
   const displayName =
@@ -334,17 +371,20 @@ export default function DashboardLayout({ children, user }) {
 
   return (
     <div className="h-screen flex flex-col bg-neutral-50 dark:bg-[#1a1a1a] text-neutral-800 dark:text-neutral-300 overflow-hidden">
+      {/* Mobile menu overlay */}
       {mobileMenu && (
         <div
           className="fixed inset-0 bg-black/60 z-40 md:hidden"
           onClick={() => setMobileMenu(false)}
         />
       )}
-      <header className="h-16 px-4 lg:px-6 bg-white/70 dark:bg-[#2a2a2a]/70 backdrop-blur-lg border-b border-neutral-200 dark:border-[#3a3a3a] flex items-center justify-between shadow-sm z-30 flex-shrink-0">
+
+      {/* Header */}
+      <header className="h-14 sm:h-16 px-3 sm:px-4 lg:px-6 bg-white/70 dark:bg-[#2a2a2a]/70 backdrop-blur-lg border-b border-neutral-200 dark:border-[#3a3a3a] flex items-center justify-between shadow-sm z-30 flex-shrink-0">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setMobileMenu(!mobileMenu)}
-            className="md:hidden p-2 text-neutral-500 rounded-lg"
+            className="md:hidden p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
           >
             {mobileMenu ? (
               <X className="w-6 h-6" />
@@ -354,18 +394,21 @@ export default function DashboardLayout({ children, user }) {
           </button>
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="hidden md:block p-2 text-neutral-500 rounded-lg"
+            className="hidden md:block p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>
-          <h1 className="text-xl font-semibold text-neutral-800 dark:text-white hidden sm:block">
-            {pageTitle}
+          <h1 className="text-lg sm:text-xl font-semibold text-neutral-800 dark:text-white truncate">
+            <span className="hidden sm:inline">{pageTitle}</span>
+            <span className="sm:hidden">
+              {pageTitle === "Dashboard" ? siteName : pageTitle}
+            </span>
           </h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <button
             onClick={toggleTheme}
-            className="p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg"
+            className="p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
           >
             {theme === "light" ? (
               <Moon className="w-5 h-5" />
@@ -375,7 +418,7 @@ export default function DashboardLayout({ children, user }) {
           </button>
           <button
             onClick={() => navigate("/dashboard/notifications")}
-            className="p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg relative"
+            className="p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg relative transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
           >
             <Bell className="w-5 h-5" />
             {notificationCount > 0 && (
@@ -386,104 +429,126 @@ export default function DashboardLayout({ children, user }) {
           </button>
           <button
             onClick={() => navigate("/dashboard/post-new")}
-            className="px-4 py-2 bg-primary-600 text-white font-semibold text-sm rounded-lg hover:bg-primary-700 flex items-center gap-2 transition-colors"
+            className="px-3 sm:px-4 py-2 bg-primary-600 text-white font-semibold text-sm rounded-lg hover:bg-primary-700 flex items-center gap-1 sm:gap-2 transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Post New Item</span>
+            <span className="sm:hidden">Post</span>
           </button>
         </div>
       </header>
+
+      {/* Main content area */}
       <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
         <aside
-          className={`fixed md:relative inset-y-0 left-0 z-50 bg-white/80 dark:bg-[#2a2a2a]/80 backdrop-blur-lg md:bg-white dark:md:bg-neutral-900 flex flex-col transition-all duration-300 ease-in-out top-16 md:top-0 border-r border-neutral-200 dark:border-[#3a3a3a] ${
+          className={`fixed md:relative inset-y-0 left-0 z-50 bg-white/95 dark:bg-[#2a2a2a]/95 backdrop-blur-md md:bg-white dark:md:bg-neutral-900 flex flex-col transition-all duration-300 ease-in-out ${
             mobileMenu
-              ? "translate-x-0 w-64 shadow-xl"
+              ? "translate-x-0 w-[280px] shadow-2xl"
               : "-translate-x-full md:translate-x-0"
-          } ${
-            isSidebarOpen ? "md:w-64" : "md:w-20"
-          } h-[calc(100vh-4rem)] md:h-full`}
+          } ${isSidebarOpen ? "md:w-64" : "md:w-20"} h-full md:h-auto`}
         >
-          <div
-            className={`p-4 flex items-center gap-3 border-b border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0 h-16 ${
-              !isSidebarOpen && !mobileMenu ? "justify-center" : ""
-            }`}
-          >
-            <img
-              src={logo}
-              alt="Campus Trace Logo"
-              className="w-8 h-8 rounded-md flex-shrink-0"
-            />
-            {(isSidebarOpen || mobileMenu) && (
-              <div className="flex flex-col overflow-hidden">
-                <span className="font-bold text-sm text-neutral-800 dark:text-white leading-tight truncate">
-                  {siteName}
-                </span>
-                <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                  Powered by CampusTrace
-                </span>
-              </div>
-            )}
-          </div>
-
-          <nav className="flex-1 p-2 space-y-2.5 overflow-y-auto text-m">
-            {computedMenuItems.map((item) => (
-              <NavLink
-                key={`menu-${item.label}`}
-                item={item}
-                isOpen={isSidebarOpen || mobileMenu}
-                exact={item.exact}
-              />
-            ))}
-          </nav>
-
-          <div className="p-3 mt-auto border-t border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0">
-            <div className="space-y-2.5">
-              {bottomItems.map((item) => (
-                <NavLink
-                  key={`bottom-${item.label}`}
-                  item={item}
-                  isOpen={isSidebarOpen || mobileMenu}
-                />
-              ))}
-            </div>
-            <div className="border-t border-neutral-200 dark:border-[#3a3a3a] my-3"></div>
+          {/* Sidebar content wrapper - this ensures proper scrolling */}
+          <div className="flex flex-col h-full overflow-hidden">
+            {/* Logo section */}
             <div
-              className="p-2 flex items-center gap-3 cursor-pointer rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/60"
-              onClick={() => navigate("/dashboard/profile")}
+              className={`p-4 flex items-center gap-3 border-b border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0 ${
+                !isSidebarOpen && !mobileMenu ? "justify-center" : ""
+              }`}
             >
               <img
-                src={avatarUrl}
-                alt="User Avatar"
-                className="w-9 h-9 rounded-full"
+                src={logo}
+                alt="Campus Trace Logo"
+                className="w-8 h-8 rounded-md flex-shrink-0"
               />
               {(isSidebarOpen || mobileMenu) && (
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate text-neutral-800 dark:text-white">
-                    {displayName}
-                  </p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-                    {user.email}
-                  </p>
+                <div className="flex flex-col overflow-hidden">
+                  <span className="font-bold text-sm text-neutral-800 dark:text-white leading-tight truncate">
+                    {siteName}
+                  </span>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                    Powered by CampusTrace
+                  </span>
                 </div>
               )}
             </div>
-            <button
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className={`w-full mt-2 flex items-center gap-3 px-3 py-2.5 rounded-lg text-neutral-600 dark:text-neutral-400 hover:bg-red-500/10 hover:text-red-500 transition-all duration-200 disabled:opacity-50 ${
-                !isSidebarOpen && !mobileMenu ? "justify-center" : ""
-              }`}
-              title={!isSidebarOpen && !mobileMenu ? "Sign Out" : ""}
-            >
-              <LogOut className="w-5 h-5 flex-shrink-0" />
-              {(isSidebarOpen || mobileMenu) && (
-                <span className="text-sm font-medium">
-                  {isLoggingOut ? "Signing out..." : "Sign Out"}
-                </span>
-              )}
-            </button>
+
+            {/* Scrollable navigation area */}
+            <div className="flex-1 overflow-y-auto overflow-x-hidden">
+              <nav className="p-3 space-y-1">
+                {computedMenuItems.map((item) => (
+                  <NavLink
+                    key={`menu-${item.label}`}
+                    item={item}
+                    isOpen={isSidebarOpen || mobileMenu}
+                    exact={item.exact}
+                  />
+                ))}
+              </nav>
+            </div>
+
+            {/* Bottom section - fixed at bottom */}
+            <div className="border-t border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0">
+              <div className="p-3">
+                <div className="space-y-1">
+                  {bottomItems.map((item) => (
+                    <NavLink
+                      key={`bottom-${item.label}`}
+                      item={item}
+                      isOpen={isSidebarOpen || mobileMenu}
+                    />
+                  ))}
+                </div>
+
+                {/* Divider */}
+                <div className="border-t border-neutral-200 dark:border-[#3a3a3a] my-3"></div>
+
+                {/* User profile section */}
+                <div
+                  className={`p-2 flex items-center gap-3 cursor-pointer rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors ${
+                    !isSidebarOpen && !mobileMenu ? "justify-center" : ""
+                  }`}
+                  onClick={() => navigate("/dashboard/profile")}
+                >
+                  <img
+                    src={avatarUrl}
+                    alt="User Avatar"
+                    className="w-9 h-9 rounded-full flex-shrink-0"
+                  />
+                  {(isSidebarOpen || mobileMenu) && (
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate text-neutral-800 dark:text-white">
+                        {displayName}
+                      </p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sign out button */}
+                <button
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className={`w-full mt-2 flex items-center gap-3 px-3 py-2.5 rounded-lg text-neutral-600 dark:text-neutral-400 hover:bg-red-500/10 hover:text-red-500 transition-all duration-200 disabled:opacity-50 min-h-[44px] ${
+                    !isSidebarOpen && !mobileMenu ? "justify-center" : ""
+                  }`}
+                  title={!isSidebarOpen && !mobileMenu ? "Sign Out" : ""}
+                >
+                  <LogOut className="w-5 h-5 flex-shrink-0" />
+                  {(isSidebarOpen || mobileMenu) && (
+                    <span className="text-sm font-medium">
+                      {isLoggingOut ? "Signing out..." : "Sign Out"}
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </aside>
+
+        {/* Main content */}
         <main className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-[#1a1a1a]">
           <div className="p-4 md:p-6 lg:p-8 min-h-full">{children}</div>
         </main>

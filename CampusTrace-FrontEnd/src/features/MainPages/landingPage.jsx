@@ -104,10 +104,10 @@ const FeatureSlider = ({ features }) => {
   const { ref, hasAnimated } = useInView();
 
   return (
-    <div ref={ref} className="py-16 overflow-hidden">
+    <div ref={ref} className="py-12 sm:py-16 overflow-hidden">
       <div className="max-w-7xl mx-auto text-center">
         <p
-          className={`text-sm font-semibold text-neutral-500 dark:text-neutral-400 tracking-wider mb-8 transition-all duration-1000 ${
+          className={`text-xs sm:text-sm font-semibold text-neutral-500 dark:text-neutral-400 tracking-wider mb-6 sm:mb-8 transition-all duration-1000 px-4 ${
             hasAnimated
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-10"
@@ -122,10 +122,10 @@ const FeatureSlider = ({ features }) => {
               return (
                 <div
                   key={index}
-                  className="w-80 flex-shrink-0 flex items-center justify-center gap-4 px-8 hover:scale-105 transition-transform duration-300"
+                  className="w-64 sm:w-80 flex-shrink-0 flex items-center justify-center gap-3 sm:gap-4 px-6 sm:px-8 hover:scale-105 transition-transform duration-300"
                 >
-                  <Icon className="w-6 h-6 text-primary-500 dark:text-primary-400 flex-shrink-0" />
-                  <span className="font-semibold text-lg text-neutral-600 dark:text-neutral-300 truncate">
+                  <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary-500 dark:text-primary-400 flex-shrink-0" />
+                  <span className="font-semibold text-sm sm:text-lg text-neutral-600 dark:text-neutral-300 truncate">
                     {feature.title}
                   </span>
                 </div>
@@ -152,17 +152,17 @@ const FAQItem = ({ question, answer, isOpen, onToggle, index }) => {
     >
       <button
         onClick={onToggle}
-        className="w-full py-6 px-4 flex justify-between items-center text-left hover:bg-neutral-100 dark:hover:bg-neutral-800/50 rounded-lg group transition-all duration-300"
+        className="w-full py-5 sm:py-6 px-4 flex justify-between items-center text-left hover:bg-neutral-100 dark:hover:bg-neutral-800/50 rounded-lg group transition-all duration-300"
       >
-        <h3 className="text-base lg:text-lg font-semibold text-neutral-900 dark:text-white pr-8 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
+        <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-neutral-900 dark:text-white pr-4 sm:pr-8 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
           {question}
         </h3>
         <div
-          className={`p-2 rounded-full bg-primary-100 dark:bg-primary-500/10 transition-all duration-500 ${
+          className={`p-1.5 sm:p-2 rounded-full bg-primary-100 dark:bg-primary-500/10 transition-all duration-500 flex-shrink-0 ${
             isOpen ? "rotate-180 scale-110" : "rotate-0 scale-100"
           }`}
         >
-          <ChevronDown className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+          <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600 dark:text-primary-400" />
         </div>
       </button>
       <div
@@ -171,7 +171,7 @@ const FAQItem = ({ question, answer, isOpen, onToggle, index }) => {
         }`}
       >
         <div className="overflow-hidden">
-          <p className="text-neutral-600 dark:text-neutral-400 pb-6 px-4 leading-relaxed">
+          <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 pb-5 sm:pb-6 px-4 leading-relaxed">
             {answer}
           </p>
         </div>
@@ -222,7 +222,7 @@ const FeatureCard = ({ icon: Icon, title, description, index }) => {
     >
       <div
         ref={cardRef}
-        className={`relative rounded-2xl bg-white dark:bg-[#2a2a2a] p-8 shadow-md hover:shadow-2xl transition-all duration-500 h-full group ${
+        className={`relative rounded-2xl bg-white dark:bg-[#2a2a2a] p-6 sm:p-8 shadow-md hover:shadow-2xl transition-all duration-500 h-full group ${
           isHovered ? "scale-105" : "scale-100"
         }`}
       >
@@ -231,32 +231,32 @@ const FeatureCard = ({ icon: Icon, title, description, index }) => {
           <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary-400/20 to-purple-400/20 blur-xl -z-10 animate-pulse" />
         )}
 
-        <div className="relative mb-6">
+        <div className="relative mb-4 sm:mb-6">
           <div
-            className={`flex items-center justify-center h-12 w-12 bg-primary-100 dark:bg-primary-500/10 rounded-lg transition-all duration-500 ${
+            className={`flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 bg-primary-100 dark:bg-primary-500/10 rounded-lg transition-all duration-500 ${
               isHovered ? "scale-110 rotate-6" : ""
             }`}
           >
-            <Icon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+            <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600 dark:text-primary-400" />
           </div>
           {isHovered && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-12 h-12 bg-primary-500/20 rounded-lg blur-md animate-ping" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-500/20 rounded-lg blur-md animate-ping" />
             </div>
           )}
         </div>
 
-        <h3 className="text-lg font-bold text-neutral-900 dark:text-white mb-3 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
+        <h3 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white mb-2 sm:mb-3 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
           {title}
         </h3>
 
-        <p className="text-neutral-600 dark:text-neutral-400 text-sm leading-relaxed">
+        <p className="text-neutral-600 dark:text-neutral-400 text-xs sm:text-sm leading-relaxed">
           {description}
         </p>
 
-        <div className="absolute top-0 right-0 w-20 h-20 overflow-hidden rounded-2xl">
+        <div className="absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 overflow-hidden rounded-2xl">
           <div
-            className={`absolute -top-10 -right-10 w-20 h-20 bg-gradient-to-br from-primary-500/10 to-transparent transform rotate-45 transition-all duration-500 ${
+            className={`absolute -top-8 -right-8 sm:-top-10 sm:-right-10 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-primary-500/10 to-transparent transform rotate-45 transition-all duration-500 ${
               isHovered ? "scale-150" : "scale-100"
             }`}
           />
@@ -272,33 +272,33 @@ const FeatureSection = ({ title, subtitle, features, startIndex = 0 }) => {
   const titleParallax = useParallax(0.1);
 
   return (
-    <section ref={ref} className="py-20 relative">
+    <section ref={ref} className="py-16 sm:py-20 relative">
       <div
         className="absolute inset-0 opacity-5 dark:opacity-[0.02]"
         style={{ transform: `translateY(${titleParallax}px)` }}
       >
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-gradient-to-r from-primary-400 to-purple-400 rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 sm:w-96 sm:h-96 bg-gradient-to-r from-primary-400 to-purple-400 rounded-full blur-3xl" />
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div
-          className={`text-center mb-12 relative transition-all duration-1000 ${
+          className={`text-center mb-10 sm:mb-12 relative transition-all duration-1000 ${
             hasAnimated
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-10"
           }`}
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4 relative inline-block">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-3 sm:mb-4 relative inline-block">
             {title}
             <span
-              className={`absolute -bottom-2 left-0 h-1 bg-gradient-to-r from-primary-400 to-primary-600 rounded-full transition-all duration-1000 ${
+              className={`absolute -bottom-2 left-0 h-0.5 sm:h-1 bg-gradient-to-r from-primary-400 to-primary-600 rounded-full transition-all duration-1000 ${
                 hasAnimated ? "w-full" : "w-0"
               }`}
               style={{ transitionDelay: "500ms" }}
             />
           </h2>
           <p
-            className={`text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto mt-6 transition-all duration-1000 ${
+            className={`text-sm sm:text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto mt-4 sm:mt-6 transition-all duration-1000 px-4 ${
               hasAnimated ? "opacity-100" : "opacity-0"
             }`}
             style={{ transitionDelay: "200ms" }}
@@ -307,7 +307,7 @@ const FeatureSection = ({ title, subtitle, features, startIndex = 0 }) => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {features.map((feature, index) => (
             <FeatureCard
               key={feature.title}
@@ -456,14 +456,14 @@ export default function LandingPage() {
 
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur-lg border-b border-neutral-200/50 dark:border-neutral-800/50">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            <Link to="/" className="flex items-center gap-3 group">
+          <div className="flex items-center justify-between h-16 sm:h-20">
+            <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
               <img
                 src={logo}
                 alt="Campus Trace Logo"
-                className="h-10 w-auto rounded-full group-hover:scale-110 group-hover:rotate-12 transition-all duration-500"
+                className="h-8 w-8 sm:h-10 sm:w-auto rounded-full group-hover:scale-110 group-hover:rotate-12 transition-all duration-500"
               />
-              <span className="hidden sm:inline text-xl font-bold text-neutral-800 dark:text-white">
+              <span className="text-lg sm:text-xl font-bold text-neutral-800 dark:text-white">
                 CampusTrace
               </span>
             </Link>
@@ -523,6 +523,7 @@ export default function LandingPage() {
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 rounded-lg text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all duration-300"
+              aria-label="Toggle menu"
             >
               {mobileMenuOpen ? (
                 <X className="w-6 h-6" />
@@ -586,9 +587,9 @@ export default function LandingPage() {
         </nav>
       </header>
 
-      <main className="flex-grow pt-20 relative z-10">
+      <main className="flex-grow pt-16 sm:pt-20 relative z-10">
         {/* Hero Section with Parallax */}
-        <section className="min-h-[calc(80vh-80px)] flex items-center justify-center text-center relative overflow-hidden">
+        <section className="min-h-[calc(70vh-64px)] sm:min-h-[calc(80vh-80px)] flex items-center justify-center text-center relative overflow-hidden px-4">
           {/* Animated Background Grid */}
           <div
             className="absolute inset-0 opacity-20 dark:opacity-5 [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_100%)]"
@@ -622,25 +623,25 @@ export default function LandingPage() {
 
           {/* Floating orbs */}
           <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-20 left-20 w-64 h-64 bg-primary-400/20 rounded-full blur-3xl animate-float" />
-            <div className="absolute bottom-20 right-20 w-96 h-96 bg-primary-600/10 rounded-full blur-3xl animate-float-delayed" />
+            <div className="absolute top-20 left-10 sm:left-20 w-32 h-32 sm:w-64 sm:h-64 bg-primary-400/20 rounded-full blur-3xl animate-float" />
+            <div className="absolute bottom-10 right-10 sm:bottom-20 sm:right-20 w-48 h-48 sm:w-96 sm:h-96 bg-primary-600/10 rounded-full blur-3xl animate-float-delayed" />
           </div>
 
           <div
-            className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative"
+            className="max-w-4xl mx-auto py-12 sm:py-16 relative"
             style={{ transform: `translateY(${heroParallax}px)` }}
           >
             <div className="animate-fade-in-up">
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-neutral-900 dark:text-white leading-tight">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-neutral-900 dark:text-white leading-tight">
                 Reconnect with Your Lost Items,{" "}
-                <span className="bg-gradient-to-r from-primary-600 via-primary-500 to-primary-600 dark:from-primary-400 dark:via-primary-500 dark:to-primary-400 bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
+                <span className="bg-gradient-to-r from-primary-600 via-primary-500 to-primary-600 dark:from-primary-400 dark:via-primary-500 dark:to-primary-400 bg-clip-text text-transparent animate-gradient bg-[length:200%_auto] block sm:inline mt-2 sm:mt-0">
                   Effortlessly
                 </span>
               </h1>
             </div>
 
             <p
-              className="mt-6 max-w-2xl mx-auto text-lg text-neutral-600 dark:text-neutral-400 animate-fade-in-up"
+              className="mt-4 sm:mt-6 max-w-2xl mx-auto text-base sm:text-lg text-neutral-600 dark:text-neutral-400 animate-fade-in-up"
               style={{ animationDelay: "200ms" }}
             >
               Our AI-powered platform simplifies the search for lost items on
@@ -649,12 +650,12 @@ export default function LandingPage() {
             </p>
 
             <div
-              className="mt-10 flex flex-col sm:flex-row justify-center gap-4 animate-fade-in-up"
+              className="mt-8 sm:mt-10 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 animate-fade-in-up"
               style={{ animationDelay: "400ms" }}
             >
               <Link
                 to="/login"
-                className="group px-8 py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white font-semibold rounded-lg shadow-lg hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden"
+                className="group px-6 sm:px-8 py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white font-semibold rounded-lg shadow-lg hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden"
               >
                 <span className="relative z-10">Get Started</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform relative z-10" />
@@ -668,20 +669,23 @@ export default function LandingPage() {
         <FeatureSlider features={quickFeatures} />
 
         {/* How It Works Section */}
-        <section id="how-it-works" className="py-20 bg-white dark:bg-[#2a2a2a]">
+        <section
+          id="how-it-works"
+          className="py-16 sm:py-20 bg-white dark:bg-[#2a2a2a]"
+        >
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative">
             <div
               ref={howItWorksRef.ref}
-              className={`text-center mb-16 transition-all duration-1000 ${
+              className={`text-center mb-12 sm:mb-16 transition-all duration-1000 ${
                 howItWorksRef.hasAnimated
                   ? "opacity-100 translate-y-0"
                   : "opacity-0 translate-y-10"
               }`}
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-3 sm:mb-4">
                 How It Works
               </h2>
-              <p className="text-lg text-neutral-600 dark:text-neutral-400">
+              <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400">
                 Three simple steps to recover your lost items.
               </p>
             </div>
@@ -720,15 +724,15 @@ export default function LandingPage() {
                     style={{ transitionDelay: `${index * 200}ms` }}
                   >
                     <div className="text-center group">
-                      <div className="relative inline-block mb-6">
-                        <div className="flex items-center justify-center h-16 w-16 bg-primary-100 dark:bg-primary-500/10 rounded-full mx-auto ring-4 ring-white dark:ring-[#2a2a2a] group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
-                          <step.icon className="w-8 h-8 text-primary-600 dark:text-primary-400" />
+                      <div className="relative inline-block mb-4 sm:mb-6">
+                        <div className="flex items-center justify-center h-14 w-14 sm:h-16 sm:w-16 bg-primary-100 dark:bg-primary-500/10 rounded-full mx-auto ring-4 ring-white dark:ring-[#2a2a2a] group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
+                          <step.icon className="w-6 h-6 sm:w-8 sm:h-8 text-primary-600 dark:text-primary-400" />
                         </div>
                       </div>
-                      <h3 className="text-xl font-bold text-neutral-900 dark:text-white mb-3">
+                      <h3 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white mb-2 sm:mb-3">
                         {step.title}
                       </h3>
-                      <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed text-sm">
+                      <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed text-xs sm:text-sm">
                         {step.description}
                       </p>
                     </div>
@@ -760,14 +764,14 @@ export default function LandingPage() {
         </div>
 
         {/* FAQ Section */}
-        <section className="py-20">
+        <section className="py-16 sm:py-20">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4">
+            <div className="text-center mb-10 sm:mb-12">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-3 sm:mb-4">
                 Frequently Asked Questions
               </h2>
             </div>
-            <div className="bg-white dark:bg-[#2a2a2a] rounded-2xl p-6 shadow-lg border border-neutral-200 dark:border-neutral-700">
+            <div className="bg-white dark:bg-[#2a2a2a] rounded-2xl p-4 sm:p-6 shadow-lg border border-neutral-200 dark:border-neutral-700">
               {faqs.map((faq, index) => (
                 <FAQItem
                   key={index}
@@ -785,14 +789,14 @@ export default function LandingPage() {
         {/* CTA Section */}
         <section
           ref={ctaRef.ref}
-          className={`py-24 bg-gradient-to-br from-primary-600 via-primary-500 to-primary-600 text-white text-center relative overflow-hidden transition-all duration-1000 ${
+          className={`py-16 sm:py-24 bg-gradient-to-br from-primary-600 via-primary-500 to-primary-600 text-white text-center relative overflow-hidden transition-all duration-1000 ${
             ctaRef.hasAnimated ? "opacity-100" : "opacity-50"
           }`}
         >
           {/* Animated background shapes */}
           <div className="absolute inset-0">
-            <div className="absolute top-0 left-0 w-72 h-72 bg-white/10 rounded-full blur-3xl animate-pulse" />
-            <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse-delayed" />
+            <div className="absolute top-0 left-0 w-48 h-48 sm:w-72 sm:h-72 bg-white/10 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-0 right-0 w-64 h-64 sm:w-96 sm:h-96 bg-white/5 rounded-full blur-3xl animate-pulse-delayed" />
           </div>
 
           <div
@@ -802,17 +806,17 @@ export default function LandingPage() {
                 : "opacity-0 translate-y-10"
             }`}
           >
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">
               Ready to Join Your Campus Community?
             </h2>
-            <p className="text-lg md:text-xl mb-10 text-white/90 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl mb-8 sm:mb-10 text-white/90 max-w-2xl mx-auto">
               Register with your university email to start finding and reporting
               items today.
             </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
               <Link
                 to="/login"
-                className="group px-10 py-4 bg-white text-primary-600 text-lg font-bold rounded-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-2 hover:scale-105 transition-all duration-300 inline-flex items-center justify-center gap-2 relative overflow-hidden"
+                className="group px-8 sm:px-10 py-3 sm:py-4 bg-white text-primary-600 text-base sm:text-lg font-bold rounded-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-2 hover:scale-105 transition-all duration-300 inline-flex items-center justify-center gap-2 relative overflow-hidden"
               >
                 <span className="relative z-10">Get Started Now</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform relative z-10" />
@@ -820,7 +824,7 @@ export default function LandingPage() {
               </Link>
               <Link
                 to="/register-university"
-                className="group px-10 py-4 bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white text-lg font-bold rounded-lg hover:bg-white/20 transform hover:-translate-y-2 hover:scale-105 transition-all duration-300"
+                className="group px-8 sm:px-10 py-3 sm:py-4 bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white text-base sm:text-lg font-bold rounded-lg hover:bg-white/20 transform hover:-translate-y-2 hover:scale-105 transition-all duration-300"
               >
                 For Universities
               </Link>
@@ -829,22 +833,22 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer className="bg-white dark:bg-[#1a1a1a] py-16 border-t border-neutral-200 dark:border-neutral-800">
+      <footer className="bg-white dark:bg-[#1a1a1a] py-12 sm:py-16 border-t border-neutral-200 dark:border-neutral-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8 sm:mb-12">
             <div className="col-span-1 md:col-span-2">
               <Link
                 to="/"
-                className="flex items-center gap-3 text-2xl font-bold text-primary-600 dark:text-primary-400 mb-4 group"
+                className="flex items-center gap-2 sm:gap-3 text-xl sm:text-2xl font-bold text-primary-600 dark:text-primary-400 mb-4 group"
               >
                 <img
                   src={logo}
                   alt="Campus Trace Logo"
-                  className="h-10 w-auto rounded-full group-hover:rotate-12 transition-transform duration-500"
+                  className="h-8 w-8 sm:h-10 sm:w-auto rounded-full group-hover:rotate-12 transition-transform duration-500"
                 />
                 <span>CampusTrace</span>
               </Link>
-              <p className="text-neutral-600 dark:text-neutral-400 mb-6 max-w-md">
+              <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 mb-6 max-w-md">
                 The smart way to recover lost items on campus. Powered by AI,
                 driven by community.
               </p>
@@ -853,11 +857,11 @@ export default function LandingPage() {
               <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">
                 Quick Links
               </h3>
-              <ul className="space-y-3">
+              <ul className="space-y-2 sm:space-y-3">
                 <li>
                   <a
                     href="#how-it-works"
-                    className="text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-300 hover:translate-x-1 inline-block"
+                    className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-300 hover:translate-x-1 inline-block"
                   >
                     How It Works
                   </a>
@@ -865,7 +869,7 @@ export default function LandingPage() {
                 <li>
                   <a
                     href="#features"
-                    className="text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-300 hover:translate-x-1 inline-block"
+                    className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-300 hover:translate-x-1 inline-block"
                   >
                     Features
                   </a>
@@ -873,7 +877,7 @@ export default function LandingPage() {
                 <li>
                   <Link
                     to="/about"
-                    className="text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-300 hover:translate-x-1 inline-block"
+                    className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-300 hover:translate-x-1 inline-block"
                   >
                     About Us
                   </Link>
@@ -881,7 +885,7 @@ export default function LandingPage() {
                 <li>
                   <Link
                     to="/register-university"
-                    className="text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-300 hover:translate-x-1 inline-block"
+                    className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-300 hover:translate-x-1 inline-block"
                   >
                     For Universities
                   </Link>
@@ -892,11 +896,11 @@ export default function LandingPage() {
               <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">
                 Contact
               </h3>
-              <ul className="space-y-3">
+              <ul className="space-y-2 sm:space-y-3">
                 <li>
                   <a
                     href="mailto:contactCampustrace@gmail.com"
-                    className="text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-300"
+                    className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-300 break-words"
                   >
                     contactCampustrace@gmail.com
                   </a>
@@ -905,10 +909,10 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="pt-8 border-t border-neutral-200 dark:border-neutral-800 text-center sm:flex sm:justify-between">
-            <p className="text-neutral-500 dark:text-neutral-400 mb-4 sm:mb-0">
+            <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mb-4 sm:mb-0">
               © {new Date().getFullYear()} CampusTrace. All rights reserved.
             </p>
-            <p className="text-neutral-500 dark:text-neutral-400 text-sm">
+            <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
               A project by: Bugauisan, Respicio, & Cacho
             </p>
           </div>

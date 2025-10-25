@@ -37,7 +37,7 @@ import AdminNotificationPage from "./features/AdminDashboard/Pages/adminNotifica
 import LeaderboardPage from "./features/UserDashboard/Pages/leaderBoardPage.jsx";
 import AdminProfilePage from "./features/AdminDashboard/Pages/adminProfile.jsx";
 import MessagesPage from "./features/UserDashboard/Pages/userMessageApp.jsx";
-import ManualVerificationPage from "./features/MainPages/manualVerificationPage.jsx";
+import ManualRegisterPage from "./features/MainPages/manualRegisterPage.jsx";
 import ManualVerificationAdminPage from "./features/AdminDashboard/Pages/adminVerificationPage.jsx";
 // --- Router Guards ---
 function PrivateRouter({ children, isLoading, session }) {
@@ -164,9 +164,15 @@ function AppContent() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log(
+        "Auth event:",
+        event,
+        "Session:",
+        session ? "exists" : "null"
+      );
       setSession(session);
-      if (_event === "SIGNED_OUT") {
+      if (event === "SIGNED_OUT") {
         setProfile(null);
       }
     });
@@ -219,10 +225,7 @@ function AppContent() {
             path="/register-university"
             element={<RegisterUniversityPage />}
           />
-          <Route
-            path="/manual-verification"
-            element={<ManualVerificationPage />}
-          />
+          <Route path="/manual-verification" element={<ManualRegisterPage />} />
           <Route path="/update-password" element={<UpdatePasswordPage />} />
           <Route path="/about" element={<AboutUsPage />} />
           <Route path="/learn-more" element={<LearnMorePage />} />

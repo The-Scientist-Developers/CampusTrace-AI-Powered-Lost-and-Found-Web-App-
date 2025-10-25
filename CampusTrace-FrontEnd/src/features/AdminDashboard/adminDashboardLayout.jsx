@@ -141,11 +141,32 @@ export default function AdminDashboardLayout({
   }, [location]);
 
   const handleLogout = async () => {
-    if (isLoggingOut) return;
     setIsLoggingOut(true);
-    await supabase.auth.signOut();
-    navigate("/login");
-    setIsLoggingOut(false);
+
+    try {
+      // Optional: Check for an active session before attempting logout
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        console.log("No active session found. Skipping server logout.");
+        // Proceed to local cleanup and navigation
+      } else {
+        // Attempt server-side logout
+        await supabase.auth.signOut();
+        console.log("Logout successful.");
+      }
+    } catch (error) {
+      console.error("Logout failed:", error.message);
+      // Fallback: Force local logout to clear the session client-side
+      // This avoids the 403 by skipping the server call
+      await supabase.auth.signOut({ scope: "local" });
+      console.log("Fallback: Local logout completed.");
+    } finally {
+      // Always reset loading state and navigate
+      setIsLoggingOut(false);
+      navigate("/login");
+    }
   };
 
   const getInitial = () => user?.email?.[0].toUpperCase() || "A";
