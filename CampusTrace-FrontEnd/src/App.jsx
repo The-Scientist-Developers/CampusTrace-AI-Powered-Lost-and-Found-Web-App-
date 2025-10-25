@@ -39,6 +39,7 @@ import AdminProfilePage from "./features/AdminDashboard/Pages/adminProfile.jsx";
 import MessagesPage from "./features/UserDashboard/Pages/userMessageApp.jsx";
 import ManualRegisterPage from "./features/MainPages/manualRegisterPage.jsx";
 import ManualVerificationAdminPage from "./features/AdminDashboard/Pages/adminVerificationPage.jsx";
+import PendingApprovalPage from "./features/MainPages/pendingApprovalPage.jsx";
 // --- Router Guards ---
 function PrivateRouter({ children, isLoading, session }) {
   if (isLoading) return <LoadingScreen />;
@@ -229,6 +230,7 @@ function AppContent() {
           <Route path="/update-password" element={<UpdatePasswordPage />} />
           <Route path="/about" element={<AboutUsPage />} />
           <Route path="/learn-more" element={<LearnMorePage />} />
+          <Route path="/pending-approval" element={<PendingApprovalPage />} />
 
           {/* User Dashboard Routes */}
           <Route

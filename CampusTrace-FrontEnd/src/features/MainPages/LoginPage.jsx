@@ -553,7 +553,7 @@
 //                       Don't have a university email?
 //                     </p>
 //                     <Link
-//                       to="/manual-register"
+//                       to="/manual-verification"
 //                       className="w-full inline-flex justify-center py-2.5 px-4 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-semibold text-sm rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
 //                     >
 //                       Register with your University ID instead
@@ -586,7 +586,7 @@
 // }
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { supabase } from "../../api/apiClient.js";
+import { supabase } from "../../api/apiClient.js"; // Import supabase directly
 import { toast } from "react-hot-toast";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import {
@@ -724,31 +724,43 @@ export default function LoginPage() {
   const location = useLocation();
 
   useEffect(() => {
+    // This toast remains useful for edge cases where navigation state might be used
     if (location.state?.unverified) {
       toast.error(
         "Your account has not been approved by an administrator yet. Please try again later."
       );
+      // Clear the state to prevent repeated toasts on refresh
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location, navigate]);
 
   useEffect(() => {
+    // Initial check for existing session (handled by App.jsx redirect mostly)
     const init = async () => {
       const { data } = await supabase.auth.getSession();
-      if (data.session) navigate("/dashboard");
+      // App.jsx will handle the redirect based on profile status if session exists
+      // No direct navigate('/dashboard') needed here anymore.
     };
     init();
+
+    // Listener for auth state changes (handled by App.jsx redirect mostly)
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        if (session) navigate("/dashboard");
+        // App.jsx's useEffect will pick up the session change and redirect appropriately
+        // No direct navigate('/dashboard') needed here anymore.
+        if (!session) {
+          // Optional: If user signs out on this page, clear form or navigate to home
+          // navigate('/'); // Example
+        }
       }
     );
     return () => listener.subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate]); // navigate dependency might be removable if App.jsx handles all redirects
 
   const handleInput = useCallback((field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    setErrors((prev) => ({ ...prev, [field]: "" }));
+    setErrors((prev) => ({ ...prev, [field]: "" })); // Clear error on input
+    setTouched((prev) => ({ ...prev, [field]: true })); // Mark as touched
   }, []);
 
   const validate = () => {
@@ -756,9 +768,15 @@ export default function LoginPage() {
     if (!formData.email) newErrors.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
       newErrors.email = "Please enter a valid email";
+
     if (!formData.password) newErrors.password = "Password is required";
-    else if (formData.password.length < 6)
+    else if (formData.password.length < 6 && isLogin)
+      // Keep length check for login UX
       newErrors.password = "Password must be at least 6 characters";
+    else if (formData.password.length < 6 && !isLogin)
+      // Stricter validation potentially on signup side
+      newErrors.password = "Password must be at least 6 characters";
+
     if (!isLogin) {
       if (!formData.fullName) newErrors.fullName = "Full name is required";
       if (!confirmPassword)
@@ -767,6 +785,13 @@ export default function LoginPage() {
         newErrors.confirmPassword = "Passwords do not match";
     }
     setErrors(newErrors);
+    // Mark all fields as touched on submit attempt
+    setTouched({
+      email: true,
+      password: true,
+      fullName: !isLogin,
+      confirmPassword: !isLogin,
+    });
     return Object.keys(newErrors).length === 0;
   };
 
@@ -777,31 +802,79 @@ export default function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    setTouched({ email: true, password: true }); // Mark fields as touched on submit
+    if (!validate()) return; // Re-validate, considering touched status
     if (!captchaToken) {
       toast.error("Please complete the CAPTCHA verification");
       return;
     }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
-      if (error) {
-        const msg = error.message || "";
+      // --- Step 1: Authenticate User ---
+      const { data: authData, error: authError } =
+        await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+
+      if (authError) {
+        // Handle standard auth errors (invalid credentials, email not confirmed)
+        const msg = authError.message || "";
         if (msg.includes("Email not confirmed")) {
           throw new Error("Please confirm your email address first");
         }
         if (msg.includes("Invalid login credentials")) {
           throw new Error("Invalid email or password");
         }
-        throw error;
+        throw authError; // Rethrow other auth errors
       }
-      toast.success("Welcome back!");
+
+      // --- Step 2: Check Verification Status IF Auth Succeeded ---
+      if (authData.user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("is_verified, is_banned") // Select is_verified and is_banned
+          .eq("id", authData.user.id)
+          .single();
+
+        if (profileError) {
+          // Profile might not exist yet if signup was interrupted, or DB error
+          console.error("Login: Error fetching profile:", profileError.message);
+          // Decide how to handle: maybe let them proceed cautiously,
+          // or sign them out and show a generic error. Signing out is safer.
+          await supabase.auth.signOut();
+          throw new Error(
+            "Could not verify account status. Please try again later."
+          );
+        }
+
+        // --- Step 3: Handle Banned or Unverified Users ---
+        if (profileData?.is_banned) {
+          await supabase.auth.signOut(); // Log out banned user immediately
+          throw new Error("Your account has been suspended.");
+        }
+
+        if (profileData && profileData.is_verified === false) {
+          // User authenticated BUT not yet approved by admin
+          await supabase.auth.signOut(); // Log them out immediately
+          throw new Error( // Use a specific error message
+            "Your account is awaiting administrator approval. Please check back later."
+          );
+        }
+
+        // --- Step 4: If Verified and Not Banned ---
+        // User is authenticated AND verified (or profile check succeeded)
+        // Let the onAuthStateChange listener in App.jsx handle the redirect
+        toast.success("Welcome back!");
+        // No navigate('/dashboard') needed here, App.jsx handles it.
+      } else {
+        // Should not happen if authError is null, but as a safeguard
+        throw new Error("Authentication failed unexpectedly.");
+      }
     } catch (err) {
+      // Catch errors from auth OR the verification check
       toast.error(err.message || "Sign in failed");
-      resetCaptcha();
+      resetCaptcha(); // Reset captcha on any error during login attempt
     } finally {
       setLoading(false);
     }
@@ -816,14 +889,25 @@ export default function LoginPage() {
       return "An account with this email already exists";
     }
     if (lower.includes("confirm")) {
+      // This might still be relevant if backend doesn't handle redirects correctly
       return "Please check your email for a confirmation link";
+    }
+    if (lower.includes("password")) {
+      // Catch weak password errors from backend more explicitly
+      return "Password is too weak. Please include uppercase, lowercase, numbers, and symbols.";
     }
     return detail || "Sign up failed";
   };
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    setTouched({
+      email: true,
+      password: true,
+      fullName: true,
+      confirmPassword: true,
+    }); // Mark fields as touched
+    if (!validate()) return; // Re-validate
     if (!captchaToken) {
       toast.error("Please complete the CAPTCHA verification");
       return;
@@ -848,10 +932,16 @@ export default function LoginPage() {
       }
 
       toast.success("Account created! Check your email to confirm");
-      setIsLogin(true);
+      setIsLogin(true); // Switch to login view after successful signup request
+      // Clear form for potential login attempt after confirmation
+      setFormData({ fullName: "", email: "", password: "" });
+      setConfirmPassword("");
+      setErrors({});
+      setTouched({});
+      resetCaptcha(); // Reset captcha after successful signup request
     } catch (err) {
       toast.error(err.message || "Sign up failed");
-      resetCaptcha();
+      resetCaptcha(); // Reset captcha on signup failure
     } finally {
       setLoading(false);
     }
@@ -859,6 +949,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white dark:from-neutral-950 dark:to-neutral-900 flex">
+      {/* Left Panel (Desktop Only) */}
       <div className="hidden lg:flex lg:w-1/2 xl:w-2/5 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-neutral-900 dark:to-neutral-950 p-12 flex-col justify-between">
         <div>
           <div className="flex items-center gap-3 mb-12">
@@ -901,10 +992,12 @@ export default function LoginPage() {
         </div>
         <div className="mt-12">
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            © 2024 CampusTrace. All rights reserved.
+            © {new Date().getFullYear()} CampusTrace. All rights reserved.
           </p>
         </div>
       </div>
+
+      {/* Right Panel (Login/Signup Form) */}
       <div className="flex-1 flex items-center justify-center p-6">
         <motion.div
           className="w-full max-w-sm lg:max-w-md"
@@ -912,6 +1005,7 @@ export default function LoginPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
+          {/* Mobile Header */}
           <div className="lg:hidden text-center mb-8">
             <img
               src={logo}
@@ -922,6 +1016,8 @@ export default function LoginPage() {
               CampusTrace
             </h1>
           </div>
+
+          {/* Form Card */}
           <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-neutral-200 dark:border-neutral-800 p-8">
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">
@@ -930,9 +1026,11 @@ export default function LoginPage() {
               <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
                 {isLogin
                   ? "Enter your credentials to access your account"
-                  : "Sign up with your university email"}
+                  : "Sign up with your university email or ID"}
               </p>
             </div>
+
+            {/* Sign In / Sign Up Toggle */}
             <div className="flex bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1 mb-8">
               <button
                 className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all ${
@@ -942,7 +1040,7 @@ export default function LoginPage() {
                 }`}
                 onClick={() => {
                   setIsLogin(true);
-                  setTouched({});
+                  setTouched({}); // Clear touched on tab switch
                   setErrors({});
                   resetCaptcha();
                 }}
@@ -957,7 +1055,7 @@ export default function LoginPage() {
                 }`}
                 onClick={() => {
                   setIsLogin(false);
-                  setTouched({});
+                  setTouched({}); // Clear touched on tab switch
                   setErrors({});
                   resetCaptcha();
                 }}
@@ -965,10 +1063,14 @@ export default function LoginPage() {
                 Sign Up
               </button>
             </div>
+
+            {/* Form */}
             <form
               onSubmit={isLogin ? handleLogin : handleSignup}
               className="space-y-5"
+              noValidate // Prevent browser default validation, rely on custom
             >
+              {/* Full Name Field (Sign Up Only) */}
               <AnimatePresence mode="wait">
                 {!isLogin && (
                   <motion.div
@@ -985,27 +1087,35 @@ export default function LoginPage() {
                       placeholder="John Doe"
                       value={formData.fullName}
                       onChange={(e) => handleInput("fullName", e.target.value)}
-                      onBlur={() =>
-                        setTouched((prev) => ({ ...prev, fullName: true }))
-                      }
+                      // onBlur event is removed, touched state is set on submit/input
                       error={errors.fullName}
                       touched={touched.fullName}
+                      aria-required="true"
+                      aria-invalid={!!errors.fullName && touched.fullName}
                     />
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* Email Field */}
               <InputField
                 icon={Mail}
                 label="Email Address"
                 type="email"
-                placeholder="you@university.edu"
+                placeholder={
+                  isLogin ? "Enter your email" : "you@university.edu"
+                }
                 value={formData.email}
                 onChange={(e) => handleInput("email", e.target.value)}
-                onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
+                // onBlur event is removed
                 error={errors.email}
                 touched={touched.email}
                 autoComplete="email"
+                aria-required="true"
+                aria-invalid={!!errors.email && touched.email}
               />
+
+              {/* Password Field */}
               <InputField
                 icon={Lock}
                 label="Password"
@@ -1013,15 +1123,17 @@ export default function LoginPage() {
                 placeholder="Enter your password"
                 value={formData.password}
                 onChange={(e) => handleInput("password", e.target.value)}
-                onBlur={() =>
-                  setTouched((prev) => ({ ...prev, password: true }))
-                }
+                // onBlur event is removed
                 error={errors.password}
                 touched={touched.password}
                 showPassword={showPassword}
                 togglePassword={() => setShowPassword((prev) => !prev)}
                 autoComplete={isLogin ? "current-password" : "new-password"}
+                aria-required="true"
+                aria-invalid={!!errors.password && touched.password}
               />
+
+              {/* Confirm Password Field (Sign Up Only) */}
               <AnimatePresence mode="wait">
                 {!isLogin && (
                   <motion.div
@@ -1038,24 +1150,25 @@ export default function LoginPage() {
                       placeholder="Confirm your password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      onBlur={() =>
-                        setTouched((prev) => ({
-                          ...prev,
-                          confirmPassword: true,
-                        }))
-                      }
+                      // onBlur event is removed
                       error={errors.confirmPassword}
                       touched={touched.confirmPassword}
                       showPassword={showConfirm}
                       togglePassword={() => setShowConfirm((prev) => !prev)}
                       autoComplete="new-password"
+                      aria-required="true"
+                      aria-invalid={
+                        !!errors.confirmPassword && touched.confirmPassword
+                      }
                     />
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* Remember Me / Forgot Password (Login Only) */}
               {isLogin && (
                 <div className="flex justify-between items-center">
-                  <label className="flex items-center">
+                  <label className="flex items-center cursor-pointer">
                     <input
                       type="checkbox"
                       className="w-4 h-4 text-primary-600 bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 rounded focus:ring-primary-500"
@@ -1064,14 +1177,17 @@ export default function LoginPage() {
                       Remember me
                     </span>
                   </label>
-                  <a
-                    href="/update-password"
+                  {/* TODO: Implement forgot password flow */}
+                  <Link
+                    to="/update-password" // Link to your password reset initiation page
                     className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
                   >
                     Forgot password?
-                  </a>
+                  </Link>
                 </div>
               )}
+
+              {/* reCAPTCHA */}
               <div className="flex justify-center py-4">
                 <ReCAPTCHA
                   ref={recaptchaRef}
@@ -1084,12 +1200,14 @@ export default function LoginPage() {
                   }
                 />
               </div>
+
+              {/* Submit Button */}
               <button
                 type="submit"
-                disabled={loading || !captchaToken}
-                className="w-full rounded-lg bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 
-                                 text-white py-3 font-semibold flex items-center justify-center gap-2 
-                                 disabled:cursor-not-allowed transition-all duration-200 
+                disabled={loading || !captchaToken} // Also disable if captcha not done
+                className="w-full rounded-lg bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400
+                                 text-white py-3 font-semibold flex items-center justify-center gap-2
+                                 disabled:cursor-not-allowed transition-all duration-200
                                  shadow-lg shadow-primary-600/25 hover:shadow-xl hover:shadow-primary-600/30
                                  transform hover:-translate-y-0.5"
               >
@@ -1117,6 +1235,8 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
+
+            {/* "or" Separator */}
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-neutral-200 dark:border-neutral-800"></div>
@@ -1127,20 +1247,22 @@ export default function LoginPage() {
                 </span>
               </div>
             </div>
+
+            {/* Manual Registration Link (Sign Up Only) */}
             <AnimatePresence>
               {!isLogin && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ delay: 0.2 }}
+                  transition={{ delay: 0.1 }} // Slightly delayed appearance
                 >
                   <div className="text-center">
                     <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
                       Don't have a university email?
                     </p>
                     <Link
-                      to="/manual-verification"
+                      to="/manual-verification" // Correct link to manual registration page
                       className="w-full inline-flex justify-center py-2.5 px-4 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-semibold text-sm rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                     >
                       Register with your University ID instead
@@ -1149,19 +1271,28 @@ export default function LoginPage() {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* Toggle between Sign In / Sign Up */}
             <div className="text-center mt-6">
               <button
-                className="text-primary-600 dark:text-primary-400 hover:text-primary-700 
+                className="text-primary-600 dark:text-primary-400 hover:text-primary-700
                                  dark:hover:text-primary-300 font-medium text-sm inline-flex items-center gap-1
                                  group"
                 onClick={() => {
                   setIsLogin((prev) => !prev);
                   setErrors({});
-                  setTouched({});
+                  setTouched({}); // Clear touched state when switching forms
                   resetCaptcha();
+                  // Optionally clear form data too
+                  // setFormData({ fullName: "", email: "", password: "" });
+                  // setConfirmPassword("");
                 }}
               >
-                <span>{isLogin ? "Create an account" : "Sign in instead"}</span>
+                <span>
+                  {isLogin
+                    ? "Create an account"
+                    : "Already have an account? Sign in"}
+                </span>
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </button>
             </div>
