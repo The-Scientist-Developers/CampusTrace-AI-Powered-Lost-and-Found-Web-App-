@@ -7,7 +7,7 @@ export default function LoadingScreen() {
       initial={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5, ease: "easeInOut" }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-white dark:bg-[#1a1a1a]-"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-white dark:bg-[#1a1a1a]"
     >
       <div className="relative">
         <motion.div
@@ -19,13 +19,13 @@ export default function LoadingScreen() {
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="w-12 h-12 border-4 border-neutral-200 dark:border-[#3a3a3a] border-t-primary-600 rounded-full mb-4"
+            className="w-12 h-12 border-4 border-neutral-200 dark:border-[#3a3a3a] border-t-primary-600 dark:border-t-primary-500 rounded-full mb-4"
           />
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-neutral-500 dark:text-neutral-400 text-sm tracking-[0.2em] uppercase"
+            className="text-neutral-600 dark:text-neutral-300 text-sm tracking-[0.2em] uppercase font-medium"
           >
             Loading
           </motion.p>
