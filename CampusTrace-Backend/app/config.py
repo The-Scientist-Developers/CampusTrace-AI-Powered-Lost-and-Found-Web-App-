@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     RESEND_SENDER_EMAIL: str = "CampusTrace <noreply@yourdomain.com>"
     RECAPTCHA_SECRET_KEY: Optional[str] = None
     PRELOAD_MODELS: bool = False
-    CORS_ORIGINS: List[AnyHttpUrl] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    CORS_ORIGINS: List[AnyHttpUrl] = ["http://localhost:5173", "http://127.0.0.1:5173", "https://campustrace.site"]
     DEBUG: bool = False
     EMAIL_CONFIRM_REDIRECT: str = "http://localhost:5173/dashboard"
     PENDING_APPROVAL_REDIRECT: str = "http://localhost:5173/pending-approval"
