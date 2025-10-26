@@ -690,6 +690,444 @@
 //   );
 // }
 
+
+
+
+
+// import { notifyPostStatusUpdate } from "../../../utils/notificationHelpers";
+// import React, { useState, useEffect, useCallback } from "react";
+// import { supabase } from "../../../api/apiClient";
+// import { toast } from "react-hot-toast";
+// import {
+//   Loader2,
+//   Check,
+//   X,
+//   Clock,
+//   Filter,
+//   Image as ImageIconPlaceholder,
+// } from "lucide-react";
+
+// // --- 1. SKELETON IMPORTS ---
+// import Skeleton from "react-loading-skeleton";
+// import "react-loading-skeleton/dist/skeleton.css";
+
+// // --- (No changes to StatusBadge or PostDetailsModal) ---
+// const StatusBadge = ({ status }) => {
+//   const styles = {
+//     pending:
+//       "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-400 border border-amber-500/30",
+//     approved:
+//       "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400 border border-green-500/30",
+//     rejected:
+//       "bg-neutral-200 text-neutral-800 dark:bg-zinc-700/50 dark:text-gray-400 border border-neutral-300 dark:border-zinc-700/80",
+//   };
+//   return (
+//     <span
+//       className={`px-2.5 py-1 text-xs font-medium rounded-full inline-block ${
+//         styles[status.toLowerCase()] || styles["rejected"]
+//       }`}
+//     >
+//       {status}
+//     </span>
+//   );
+// };
+
+// const PostDetailsModal = ({ post, onClose, onUpdateStatus }) => {
+//   if (!post) return null;
+
+//   return (
+//     <div
+//       className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4 animate-fadeIn"
+//       onClick={onClose}
+//     >
+//       <div
+//         className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+//         onClick={(e) => e.stopPropagation()}
+//       >
+//         <div className="flex justify-between items-center pb-4 border-b border-neutral-200 dark:border-[#3a3a3a] mb-4">
+//           <h2 className="text-2xl font-bold text-neutral-800 dark:text-white">
+//             Post Details
+//           </h2>
+//           <button
+//             onClick={onClose}
+//             className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-[#2a2a2a] text-neutral-500 dark:text-gray-400"
+//           >
+//             <X className="w-6 h-6" />
+//           </button>
+//         </div>
+
+//         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+//           <div>
+//             {post.image_url ? (
+//               <img
+//                 src={post.image_url}
+//                 alt={post.title}
+//                 className="w-full h-auto object-cover rounded-lg shadow-md border border-neutral-200 dark:border-neutral-700"
+//               />
+//             ) : (
+//               <div className="w-full h-48 bg-neutral-100 dark:bg-[#2a2a2a] rounded-lg flex flex-col items-center justify-center text-neutral-500 text-sm">
+//                 <ImageIconPlaceholder className="w-10 h-10 mb-2" />
+//                 No Image Available
+//               </div>
+//             )}
+//           </div>
+
+//           <div className="space-y-4">
+//             <div>
+//               <p className="text-neutral-500 text-xs uppercase tracking-wider">
+//                 Title
+//               </p>
+//               <p className="text-neutral-900 dark:text-white text-lg font-semibold">
+//                 {post.title}
+//               </p>
+//             </div>
+//             <div>
+//               <p className="text-neutral-500 text-xs uppercase tracking-wider">
+//                 Description
+//               </p>
+//               <p className="text-neutral-700 dark:text-neutral-300 text-sm whitespace-pre-wrap">
+//                 {post.description || "N/A"}
+//               </p>
+//             </div>
+//             <div>
+//               <p className="text-neutral-500 text-xs uppercase tracking-wider">
+//                 Author
+//               </p>
+//               <p className="text-neutral-700 dark:text-neutral-300 text-sm">
+//                 {post.profiles?.full_name || post.profiles?.email || "N/A"}
+//               </p>
+//             </div>
+//             <div>
+//               <p className="text-neutral-500 text-xs uppercase tracking-wider">
+//                 Status
+//               </p>
+//               <StatusBadge status={post.moderation_status} />
+//             </div>
+//           </div>
+//         </div>
+
+//         <div className="flex gap-3 justify-end pt-4 border-t border-neutral-200 dark:border-[#3a3a3a]">
+//           <button
+//             onClick={() => {
+//               onUpdateStatus(post.id, "approved");
+//               onClose();
+//             }}
+//             className="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-md hover:bg-green-700 transition flex items-center gap-2"
+//           >
+//             <Check className="w-4 h-4" /> Approve
+//           </button>
+//           <button
+//             onClick={() => {
+//               onUpdateStatus(post.id, "rejected");
+//               onClose();
+//             }}
+//             className="px-4 py-2 bg-neutral-600 dark:bg-zinc-700 text-white text-sm font-semibold rounded-md hover:bg-neutral-700 dark:hover:bg-zinc-600 transition flex items-center gap-2"
+//           >
+//             <X className="w-4 h-4" /> Reject
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// // --- 2. SKELETON COMPONENTS ---
+
+// const PostTableRowSkeleton = () => (
+//   <tr>
+//     <td className="p-4">
+//       <div className="flex items-center gap-4">
+//         <Skeleton width={48} height={48} className="rounded-md flex-shrink-0" />{" "}
+//         {/* Image */}
+//         <Skeleton height={20} width="80%" /> {/* Title */}
+//       </div>
+//     </td>
+//     <td className="p-4">
+//       <Skeleton height={20} width="90%" /> {/* Author */}
+//     </td>
+//     <td className="p-4">
+//       <Skeleton height={22} width={60} borderRadius={999} /> {/* Status */}
+//     </td>
+//     <td className="p-4 text-right">
+//       <div className="flex justify-end gap-2">
+//         <Skeleton height={26} width={70} borderRadius={6} /> {/* Approve */}
+//         <Skeleton height={26} width={60} borderRadius={6} /> {/* Reject */}
+//       </div>
+//     </td>
+//   </tr>
+// );
+
+// const PostModerationPageSkeleton = () => (
+//   <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
+//     {/* Header Skeleton */}
+//     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+//       <Skeleton height={40} width={300} /> {/* Title */}
+//       <Skeleton height={42} width={150} borderRadius={8} />{" "}
+//       {/* Filter Select */}
+//     </div>
+
+//     {/* Table Skeleton */}
+//     <div className="bg-white dark:bg-[#2a2a2a] rounded-lg border border-neutral-200 dark:border-zinc-800 overflow-hidden shadow-sm">
+//       <div className="overflow-x-auto">
+//         <table className="w-full text-left">
+//           <thead className="bg-neutral-50 dark:bg-zinc-800/50">
+//             <tr>
+//               {[...Array(4)].map((_, i) => (
+//                 <th key={i} className="p-4">
+//                   <Skeleton height={20} width="60%" />
+//                 </th>
+//               ))}
+//             </tr>
+//           </thead>
+//           <tbody className="divide-y divide-neutral-200 dark:divide-zinc-800">
+//             {[...Array(5)].map((_, i) => (
+//               <PostTableRowSkeleton key={i} />
+//             ))}
+//           </tbody>
+//         </table>
+//       </div>
+//     </div>
+//   </div>
+// );
+
+// // --- 3. ADJUSTABLE DELAY (in milliseconds) ---
+// const loadingDelay = 1000; // 1 second
+
+// export default function PostModerationPage({ user }) {
+//   const [posts, setPosts] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState(null);
+//   const [filter, setFilter] = useState("pending");
+//   const [selectedPost, setSelectedPost] = useState(null);
+
+//   useEffect(() => {
+//     // --- (No changes to fetch logic) ---
+//     if (!user?.id) {
+//       setLoading(false);
+//       return;
+//     }
+
+//     const fetchPostsForModeration = async () => {
+//       setLoading(true); // Keep setLoading true
+//       try {
+//         const { data: profile, error: profileError } = await supabase
+//           .from("profiles")
+//           .select("university_id")
+//           .eq("id", user.id)
+//           .single();
+
+//         if (profileError) throw profileError;
+//         const adminUniversityId = profile?.university_id;
+//         if (!adminUniversityId) throw new Error("Admin university not found.");
+
+//         let query = supabase
+//           .from("items")
+//           .select(
+//             "id,title,description,category,location,image_url,ai_tags,moderation_status,user_id,profiles(id,full_name,email)"
+//           )
+//           .eq("university_id", adminUniversityId)
+//           .order("created_at", { ascending: false });
+
+//         if (filter !== "All") {
+//           query = query.eq("moderation_status", filter);
+//         }
+
+//         const { data, error } = await query;
+//         if (error) throw error;
+//         setPosts(data || []);
+//       } catch (err) {
+//         console.error("Error fetching posts for moderation:", err);
+//         setError("Failed to load post data. " + (err?.message || err));
+//       } finally {
+//         // --- 4. ADD DELAY ---
+//         setTimeout(() => {
+//           setLoading(false);
+//         }, loadingDelay);
+//       }
+//     };
+
+//     fetchPostsForModeration();
+//   }, [filter, user?.id]);
+
+//   // --- (No changes to handleUpdateStatus) ---
+//   const handleUpdateStatus = async (postId, newStatus) => {
+//     try {
+//       // Find the post to get author info
+//       const post = posts.find((p) => p.id === postId);
+//       if (!post) {
+//         toast.error("Post not found");
+//         return;
+//       }
+
+//       console.log("📝 Post data:", post); // DEBUG
+//       console.log("👤 Author ID:", post.user_id || post.profiles?.id); // DEBUG
+
+//       // Update post status
+//       const { data, error } = await supabase
+//         .from("items")
+//         .update({ moderation_status: newStatus })
+//         .eq("id", postId)
+//         .select()
+//         .single();
+
+//       if (error) throw error;
+
+//       // Send notification to post author
+//       const authorId = post.user_id || post.profiles?.id;
+//       console.log("🔔 Sending notification to:", authorId); // DEBUG
+
+//       if (authorId) {
+//         const result = await notifyPostStatusUpdate(
+//           authorId,
+//           post.title,
+//           newStatus,
+//           postId
+//         );
+//         console.log("✅ Notification sent result:", result); // DEBUG
+//       } else {
+//         console.warn("⚠️ No author ID found for post:", postId); // DEBUG
+//       }
+
+//       toast.success(`Post has been ${newStatus}.`);
+
+//       // Remove from current view
+//       setPosts((currentPosts) =>
+//         currentPosts.filter((post) => post.id !== postId)
+//       );
+
+//       if (selectedPost && selectedPost.id === postId) {
+//         setSelectedPost(null);
+//       }
+//     } catch (err) {
+//       console.error("Error updating post status:", err);
+//       toast.error(`Failed to update status: ${err.message}`);
+//     }
+//   };
+
+//   // --- 5. UPDATED LOADING CHECK ---
+//   if (loading) {
+//     return <PostModerationPageSkeleton />;
+//   }
+
+//   if (error) {
+//     return <div className="p-8 text-center text-red-500">{error}</div>;
+//   }
+
+//   // --- (No changes to final JSX return) ---
+//   return (
+//     <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 animate-fadeIn">
+//       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+//         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-800 dark:text-white">
+//           Post Moderation
+//         </h1>
+//         <div className="flex items-center gap-2">
+//           <Filter className="w-4 h-4 text-neutral-500 dark:text-gray-400" />
+//           <select
+//             value={filter}
+//             onChange={(e) => setFilter(e.target.value)}
+//             className="bg-white dark:bg-[#2a2a2a] border border-neutral-200"
+//           >
+//             <option value="pending">Pending</option>
+//             <option value="approved">Approved</option>
+//             <option value="rejected">Rejected</option>
+//             <option value="All">All Statuses</option>
+//           </select>
+//         </div>
+//       </div>
+
+//       <div className="bg-white dark:bg-[#2a2a2a] rounded-lg border border-neutral-200 dark:border-zinc-800 overflow-hidden shadow-sm">
+//         <div className="overflow-x-auto">
+//           <table className="w-full text-left">
+//             <thead className="bg-neutral-50 dark:bg-zinc-800/50">
+//               <tr>
+//                 <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
+//                   Post
+//                 </th>
+//                 <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
+//                   Author
+//                 </th>
+//                 <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400">
+//                   Status
+//                 </th>
+//                 <th className="p-4 text-sm font-semibold text-neutral-600 dark:text-gray-400 text-right">
+//                   Actions
+//                 </th>
+//               </tr>
+//             </thead>
+//             <tbody className="divide-y divide-neutral-200 dark:divide-zinc-800">
+//               {posts.map((post) => (
+//                 <tr
+//                   key={post.id}
+//                   className="hover:bg-neutral-50 dark:hover:bg-[#2a2a2a]/40 transition-colors group"
+//                 >
+//                   <td className="p-4">
+//                     <div className="flex items-center gap-4">
+//                       <div
+//                         className="w-12 h-12 bg-neutral-100 dark:bg-[#2a2a2a] rounded-md flex items-center justify-center cursor-pointer flex-shrink-0"
+//                         onClick={() => setSelectedPost(post)}
+//                       >
+//                         {post.image_url ? (
+//                           <img
+//                             src={post.image_url}
+//                             alt={post.title}
+//                             className="w-full h-full object-cover rounded-md"
+//                           />
+//                         ) : (
+//                           <ImageIconPlaceholder className="w-6 h-6 text-neutral-400 dark:text-neutral-600" />
+//                         )}
+//                       </div>
+//                       <div className="font-medium text-neutral-800 dark:text-white">
+//                         {post.title}
+//                       </div>
+//                     </div>
+//                   </td>
+//                   <td className="p-4 text-neutral-600 dark:text-neutral-400">
+//                     {post.profiles?.email || "N/A"}
+//                   </td>
+//                   <td className="p-4">
+//                     <StatusBadge status={post.moderation_status} />
+//                   </td>
+//                   <td className="p-4 text-right">
+//                     <div className="flex justify-end gap-2">
+//                       <button
+//                         onClick={() => handleUpdateStatus(post.id, "approved")}
+//                         className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-md hover:bg-green-200 dark:bg-green-500/20 dark:text-green-300 dark:hover:bg-green-500/30 transition"
+//                       >
+//                         Approve
+//                       </button>
+//                       <button
+//                         onClick={() => handleUpdateStatus(post.id, "rejected")}
+//                         className="px-3 py-1 bg-neutral-100 text-neutral-700 text-xs font-semibold rounded-md hover:bg-neutral-200 dark:bg-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-600 transition"
+//                       >
+//                         Reject
+//                       </button>
+//                     </div>
+//                   </td>
+//                 </tr>
+//               ))}
+//             </tbody>
+//           </table>
+//         </div>
+//       </div>
+
+//       {posts.length === 0 && !loading && (
+//         <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-zinc-800 rounded-xl shadow-sm p-8 text-center text-neutral-500 flex flex-col items-center gap-4">
+//           <Clock className="w-8 h-8" />
+//           <p>No posts with status "{filter}" found.</p>
+//         </div>
+//       )}
+
+//       <PostDetailsModal
+//         post={selectedPost}
+//         onClose={() => setSelectedPost(null)}
+//         onUpdateStatus={handleUpdateStatus}
+//       />
+//     </div>
+//   );
+// }
+
+
+
 import { notifyPostStatusUpdate } from "../../../utils/notificationHelpers";
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../../api/apiClient";
@@ -701,13 +1139,13 @@ import {
   Clock,
   Filter,
   Image as ImageIconPlaceholder,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
-// --- 1. SKELETON IMPORTS ---
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
-// --- (No changes to StatusBadge or PostDetailsModal) ---
 const StatusBadge = ({ status }) => {
   const styles = {
     pending:
@@ -827,27 +1265,24 @@ const PostDetailsModal = ({ post, onClose, onUpdateStatus }) => {
   );
 };
 
-// --- 2. SKELETON COMPONENTS ---
-
 const PostTableRowSkeleton = () => (
   <tr>
     <td className="p-4">
       <div className="flex items-center gap-4">
-        <Skeleton width={48} height={48} className="rounded-md flex-shrink-0" />{" "}
-        {/* Image */}
-        <Skeleton height={20} width="80%" /> {/* Title */}
+        <Skeleton width={48} height={48} className="rounded-md flex-shrink-0" />
+        <Skeleton height={20} width="80%" />
       </div>
     </td>
     <td className="p-4">
-      <Skeleton height={20} width="90%" /> {/* Author */}
+      <Skeleton height={20} width="90%" />
     </td>
     <td className="p-4">
-      <Skeleton height={22} width={60} borderRadius={999} /> {/* Status */}
+      <Skeleton height={22} width={60} borderRadius={999} />
     </td>
     <td className="p-4 text-right">
       <div className="flex justify-end gap-2">
-        <Skeleton height={26} width={70} borderRadius={6} /> {/* Approve */}
-        <Skeleton height={26} width={60} borderRadius={6} /> {/* Reject */}
+        <Skeleton height={26} width={70} borderRadius={6} />
+        <Skeleton height={26} width={60} borderRadius={6} />
       </div>
     </td>
   </tr>
@@ -855,14 +1290,11 @@ const PostTableRowSkeleton = () => (
 
 const PostModerationPageSkeleton = () => (
   <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
-    {/* Header Skeleton */}
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <Skeleton height={40} width={300} /> {/* Title */}
-      <Skeleton height={42} width={150} borderRadius={8} />{" "}
-      {/* Filter Select */}
+      <Skeleton height={40} width={300} />
+      <Skeleton height={42} width={150} borderRadius={8} />
     </div>
 
-    {/* Table Skeleton */}
     <div className="bg-white dark:bg-[#2a2a2a] rounded-lg border border-neutral-200 dark:border-zinc-800 overflow-hidden shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full text-left">
@@ -886,8 +1318,7 @@ const PostModerationPageSkeleton = () => (
   </div>
 );
 
-// --- 3. ADJUSTABLE DELAY (in milliseconds) ---
-const loadingDelay = 1000; // 1 second
+const loadingDelay = 1000;
 
 export default function PostModerationPage({ user }) {
   const [posts, setPosts] = useState([]);
@@ -895,16 +1326,20 @@ export default function PostModerationPage({ user }) {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("pending");
   const [selectedPost, setSelectedPost] = useState(null);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
-    // --- (No changes to fetch logic) ---
     if (!user?.id) {
       setLoading(false);
       return;
     }
 
     const fetchPostsForModeration = async () => {
-      setLoading(true); // Keep setLoading true
+      setLoading(true);
       try {
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
@@ -916,13 +1351,32 @@ export default function PostModerationPage({ user }) {
         const adminUniversityId = profile?.university_id;
         if (!adminUniversityId) throw new Error("Admin university not found.");
 
+        // Get total count first
+        let countQuery = supabase
+          .from("items")
+          .select("*", { count: "exact", head: true })
+          .eq("university_id", adminUniversityId);
+
+        if (filter !== "All") {
+          countQuery = countQuery.eq("moderation_status", filter);
+        }
+
+        const { count, error: countError } = await countQuery;
+        if (countError) throw countError;
+        setTotalCount(count || 0);
+
+        // Fetch paginated data
+        const from = (currentPage - 1) * rowsPerPage;
+        const to = from + rowsPerPage - 1;
+
         let query = supabase
           .from("items")
           .select(
             "id,title,description,category,location,image_url,ai_tags,moderation_status,user_id,profiles(id,full_name,email)"
           )
           .eq("university_id", adminUniversityId)
-          .order("created_at", { ascending: false });
+          .order("created_at", { ascending: false })
+          .range(from, to);
 
         if (filter !== "All") {
           query = query.eq("moderation_status", filter);
@@ -935,7 +1389,6 @@ export default function PostModerationPage({ user }) {
         console.error("Error fetching posts for moderation:", err);
         setError("Failed to load post data. " + (err?.message || err));
       } finally {
-        // --- 4. ADD DELAY ---
         setTimeout(() => {
           setLoading(false);
         }, loadingDelay);
@@ -943,22 +1396,19 @@ export default function PostModerationPage({ user }) {
     };
 
     fetchPostsForModeration();
-  }, [filter, user?.id]);
+  }, [filter, user?.id, currentPage, rowsPerPage]);
 
-  // --- (No changes to handleUpdateStatus) ---
   const handleUpdateStatus = async (postId, newStatus) => {
     try {
-      // Find the post to get author info
       const post = posts.find((p) => p.id === postId);
       if (!post) {
         toast.error("Post not found");
         return;
       }
 
-      console.log("📝 Post data:", post); // DEBUG
-      console.log("👤 Author ID:", post.user_id || post.profiles?.id); // DEBUG
+      console.log("📝 Post data:", post);
+      console.log("👤 Author ID:", post.user_id || post.profiles?.id);
 
-      // Update post status
       const { data, error } = await supabase
         .from("items")
         .update({ moderation_status: newStatus })
@@ -968,9 +1418,8 @@ export default function PostModerationPage({ user }) {
 
       if (error) throw error;
 
-      // Send notification to post author
       const authorId = post.user_id || post.profiles?.id;
-      console.log("🔔 Sending notification to:", authorId); // DEBUG
+      console.log("🔔 Sending notification to:", authorId);
 
       if (authorId) {
         const result = await notifyPostStatusUpdate(
@@ -979,17 +1428,17 @@ export default function PostModerationPage({ user }) {
           newStatus,
           postId
         );
-        console.log("✅ Notification sent result:", result); // DEBUG
+        console.log("✅ Notification sent result:", result);
       } else {
-        console.warn("⚠️ No author ID found for post:", postId); // DEBUG
+        console.warn("⚠️ No author ID found for post:", postId);
       }
 
       toast.success(`Post has been ${newStatus}.`);
 
-      // Remove from current view
       setPosts((currentPosts) =>
         currentPosts.filter((post) => post.id !== postId)
       );
+      setTotalCount((prev) => prev - 1);
 
       if (selectedPost && selectedPost.id === postId) {
         setSelectedPost(null);
@@ -1000,7 +1449,22 @@ export default function PostModerationPage({ user }) {
     }
   };
 
-  // --- 5. UPDATED LOADING CHECK ---
+  // Pagination calculations
+  const totalPages = Math.ceil(totalCount / rowsPerPage);
+  const startEntry = totalCount === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
+  const endEntry = Math.min(currentPage * rowsPerPage, totalCount);
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  const handleRowsPerPageChange = (e) => {
+    setRowsPerPage(Number(e.target.value));
+    setCurrentPage(1); // Reset to first page when changing rows per page
+  };
+
   if (loading) {
     return <PostModerationPageSkeleton />;
   }
@@ -1009,7 +1473,6 @@ export default function PostModerationPage({ user }) {
     return <div className="p-8 text-center text-red-500">{error}</div>;
   }
 
-  // --- (No changes to final JSX return) ---
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 animate-fadeIn">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -1020,8 +1483,11 @@ export default function PostModerationPage({ user }) {
           <Filter className="w-4 h-4 text-neutral-500 dark:text-gray-400" />
           <select
             value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="bg-white dark:bg-[#2a2a2a] border border-neutral-200"
+            onChange={(e) => {
+              setFilter(e.target.value);
+              setCurrentPage(1); // Reset to first page on filter change
+            }}
+            className="px-3 py-2 bg-white dark:bg-[#1a1a1a] border border-neutral-300 dark:border-neutral-600 rounded-lg text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="pending">Pending</option>
             <option value="approved">Approved</option>
@@ -1031,7 +1497,7 @@ export default function PostModerationPage({ user }) {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-[#2a2a2a] rounded-lg border border-neutral-200 dark:border-zinc-800 overflow-hidden shadow-sm">
+      <div className="bg-white dark:bg-[#2a2a2a] rounded-lg border border-neutral-200 dark:border-zinc-800 shadow-sm relative">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-neutral-50 dark:bg-zinc-800/50">
@@ -1104,10 +1570,93 @@ export default function PostModerationPage({ user }) {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border-t border-neutral-200 dark:border-zinc-800 relative z-10">
+          {/* Rows per page selector */}
+          <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400 relative z-20">
+            <span>Rows per page:</span>
+            <select
+              value={rowsPerPage}
+              onChange={handleRowsPerPageChange}
+              className="px-2 py-1 bg-white dark:bg-[#1a1a1a] border border-neutral-300 dark:border-neutral-600 rounded text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 relative z-20 cursor-pointer"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
+
+          {/* Page info */}
+          <div className="text-sm text-neutral-600 dark:text-neutral-400">
+            Showing {startEntry} to {endEntry} of {totalCount} entries
+          </div>
+
+          {/* Page navigation */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="p-2 rounded-md border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-[#2a2a2a] disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-1">
+              {/* Show page numbers */}
+              {[...Array(totalPages)].map((_, index) => {
+                const pageNum = index + 1;
+                // Show first page, last page, current page, and pages around current
+                if (
+                  pageNum === 1 ||
+                  pageNum === totalPages ||
+                  (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                ) {
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`px-3 py-1 rounded-md text-sm font-medium transition ${
+                        currentPage === pageNum
+                          ? "bg-primary-600 text-white"
+                          : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-[#2a2a2a]"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                } else if (
+                  pageNum === currentPage - 2 ||
+                  pageNum === currentPage + 2
+                ) {
+                  return (
+                    <span
+                      key={pageNum}
+                      className="px-2 text-neutral-500 dark:text-neutral-400"
+                    >
+                      ...
+                    </span>
+                  );
+                }
+                return null;
+              })}
+            </div>
+
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="p-2 rounded-md border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-[#2a2a2a] disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
       </div>
 
       {posts.length === 0 && !loading && (
-        <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-zinc-800 rounded-xl shadow-sm p-8 text-center text-neutral-500 flex flex-col items-center gap-4">
+        <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-zinc-800 rounded-xl shadow-sm p-8 text-center text-neutral-500 dark:text-neutral-400 flex flex-col items-center gap-4">
           <Clock className="w-8 h-8" />
           <p>No posts with status "{filter}" found.</p>
         </div>
