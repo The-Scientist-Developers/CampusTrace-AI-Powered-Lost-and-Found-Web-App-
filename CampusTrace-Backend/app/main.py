@@ -395,7 +395,9 @@ async def signup_user(payload: SignupRequest, request: Request):
     domain_res = supabase.table("allowed_domains").select("university_id").eq("domain_name", domain).single().execute()
     if not domain_res.data:
         raise HTTPException(status_code=400, detail="This email domain is not registered on CampusTrace.")
+    
     try:
+        # Attempt to sign up the user
         result = supabase.auth.sign_up({
             "email": payload.email,
             "password": payload.password,
@@ -404,23 +406,74 @@ async def signup_user(payload: SignupRequest, request: Request):
                 "email_redirect_to": settings.EMAIL_CONFIRM_REDIRECT
             }
         })
-        if result.user is None:
-            raise HTTPException(status_code=400, detail="Signup failed. The user might already exist.")
         
-        # Update profile after user is created in auth
-        supabase.table("profiles").update({
-            "full_name": payload.full_name,
-            "university_id": domain_res.data["university_id"],
-            "role": "member" # Set default role to member
-        }).eq("id", result.user.id).execute()
-
-        return {"message": "Check your inbox to confirm your email before signing in."}
+        # Log the full result for debugging
+        print(f"Signup result: {result}")
+        
+        # Check various response scenarios
+        if result.user:
+            # Check if email is already confirmed (existing user)
+            if hasattr(result.user, 'confirmed_at') and result.user.confirmed_at:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="An account with this email already exists. Please sign in instead."
+                )
+            
+            # Check if the user has an identities array (another way to check for existing users)
+            if hasattr(result.user, 'identities') and not result.user.identities:
+                raise HTTPException(
+                    status_code=400,
+                    detail="An account with this email already exists. Please check your email to confirm your account."
+                )
+            
+            # New user created successfully but needs email confirmation
+            # Update profile after user is created in auth
+            supabase.table("profiles").update({
+                "full_name": payload.full_name,
+                "university_id": domain_res.data["university_id"],
+                "role": "member"  # Set default role to member
+            }).eq("id", result.user.id).execute()
+            
+            return {"message": "Check your inbox to confirm your email before signing in."}
+        else:
+            # If no user object returned, likely means user exists
+            raise HTTPException(
+                status_code=400, 
+                detail="Unable to create account. An account with this email may already exist."
+            )
+            
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as exc:
-        print(f"✗ Signup failure: {repr(exc)}")
-        # Check for specific Supabase error for existing user
-        if "User already registered" in str(exc):
-             raise HTTPException(status_code=400, detail="An account with this email already exists.")
-        raise HTTPException(status_code=400, detail=str(exc))
+        # Log the full exception details
+        print(f"✗ Signup failure - Full exception: {exc}")
+        print(f"✗ Exception type: {type(exc).__name__}")
+        print(f"✗ Exception args: {exc.args if hasattr(exc, 'args') else 'No args'}")
+        
+        error_message = str(exc).lower()
+        
+        # Check for specific error messages
+        if "user already registered" in error_message:
+            raise HTTPException(
+                status_code=400, 
+                detail="An account with this email already exists. Please sign in instead."
+            )
+        elif "duplicate" in error_message or "already exists" in error_message:
+            raise HTTPException(
+                status_code=400, 
+                detail="An account with this email already exists. Please sign in instead."
+            )
+        elif "invalid email" in error_message:
+            raise HTTPException(status_code=400, detail="Invalid email address.")
+        elif "weak password" in error_message:
+            raise HTTPException(status_code=400, detail="Password is too weak. Please use a stronger password.")
+        else:
+            # Include more detail in the error for debugging
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Signup failed: {str(exc)}"  # Temporarily show the actual error
+            )
 
 # ============= Item Routes =============
 

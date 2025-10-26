@@ -1,1317 +1,3 @@
-// import React, { useState, useEffect, useCallback, useRef } from "react";
-// import { supabase } from "../../api/apiClient.js";
-// import { toast } from "react-hot-toast";
-// import { useNavigate, Link, useLocation } from "react-router-dom";
-// import {
-//   Mail,
-//   Lock,
-//   LogIn,
-//   Loader2,
-//   Eye,
-//   EyeOff,
-//   User,
-//   AlertCircle,
-//   UserPlus,
-//   ChevronRight,
-//   ShieldCheck,
-//   Sparkles,
-//   CheckCircle,
-// } from "lucide-react";
-// import logo from "../../Images/Logo.svg";
-// import ReCAPTCHA from "react-google-recaptcha";
-// import { motion, AnimatePresence } from "framer-motion";
-
-// const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-
-// const InputField = ({
-//   icon: Icon,
-//   error,
-//   touched,
-//   isPassword,
-//   showPassword,
-//   togglePassword,
-//   label,
-//   ...props
-// }) => (
-//   <div className="space-y-2">
-//     {" "}
-//     {label && (
-//       <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-//         {" "}
-//         {label}{" "}
-//       </label>
-//     )}{" "}
-//     <div className="relative">
-//       {" "}
-//       <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-//         {" "}
-//         <Icon
-//           className={`h-4 w-4 transition-colors ${
-//             error && touched
-//               ? "text-red-500"
-//               : "text-neutral-400 dark:text-neutral-500"
-//           }`}
-//         />{" "}
-//       </div>{" "}
-//       <input
-//         {...props}
-//         type={isPassword ? (showPassword ? "text" : "password") : props.type}
-//         className={`block w-full rounded-lg py-2.5 pl-10 ${
-//           isPassword ? "pr-10" : "pr-3"
-//         } bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white border ${
-//           error && touched
-//             ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-//             : "border-neutral-200 dark:border-neutral-800 focus:border-primary-500 dark:focus:border-primary-500"
-//         } placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-4 focus:ring-primary-500/10 dark:focus:ring-primary-500/20 transition-all duration-200`}
-//       />{" "}
-//       {isPassword && (
-//         <button
-//           type="button"
-//           onClick={togglePassword}
-//           className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors"
-//         >
-//           {" "}
-//           {showPassword ? (
-//             <EyeOff className="w-4 h-4" />
-//           ) : (
-//             <Eye className="w-4 h-4" />
-//           )}{" "}
-//         </button>
-//       )}{" "}
-//     </div>{" "}
-//     <AnimatePresence>
-//       {" "}
-//       {error && touched && (
-//         <motion.p
-//           initial={{ opacity: 0, y: -10 }}
-//           animate={{ opacity: 1, y: 0 }}
-//           exit={{ opacity: 0, y: -10 }}
-//           className="text-sm text-red-500 flex items-center gap-1.5"
-//         >
-//           {" "}
-//           <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" /> {error}{" "}
-//         </motion.p>
-//       )}{" "}
-//     </AnimatePresence>{" "}
-//   </div>
-// );
-// const FeatureItem = ({ icon: Icon, title, description }) => (
-//   <div className="flex gap-3">
-//     {" "}
-//     <div className="flex-shrink-0">
-//       {" "}
-//       <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-500/10 flex items-center justify-center">
-//         {" "}
-//         <Icon className="w-5 h-5 text-primary-600 dark:text-primary-400" />{" "}
-//       </div>{" "}
-//     </div>{" "}
-//     <div>
-//       {" "}
-//       <h3 className="font-medium text-neutral-900 dark:text-white">
-//         {title}
-//       </h3>{" "}
-//       <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-//         {" "}
-//         {description}{" "}
-//       </p>{" "}
-//     </div>{" "}
-//   </div>
-// );
-
-// export default function LoginPage() {
-//   const [isLogin, setIsLogin] = useState(true);
-//   const [formData, setFormData] = useState({
-//     fullName: "",
-//     email: "",
-//     password: "",
-//   });
-//   const [confirmPassword, setConfirmPassword] = useState("");
-//   const [errors, setErrors] = useState({});
-//   const [touched, setTouched] = useState({});
-//   const [showPassword, setShowPassword] = useState(false);
-//   const [showConfirm, setShowConfirm] = useState(false);
-//   const [loading, setLoading] = useState(false);
-//   const [captchaToken, setCaptchaToken] = useState(null);
-//   const recaptchaRef = useRef(null);
-//   const navigate = useNavigate();
-//   const location = useLocation();
-
-//   useEffect(() => {
-//     if (location.state?.unverified) {
-//       toast.error(
-//         "Your account has not been approved by an administrator yet. Please try again later."
-//       );
-//       navigate(location.pathname, { replace: true, state: {} });
-//     }
-//   }, [location, navigate]);
-
-//   useEffect(() => {
-//     const init = async () => {
-//       const { data } = await supabase.auth.getSession();
-//       if (data.session) navigate("/dashboard");
-//     };
-//     init();
-//     const { data: listener } = supabase.auth.onAuthStateChange(
-//       (_event, session) => {
-//         if (session) navigate("/dashboard");
-//       }
-//     );
-//     return () => listener.subscription.unsubscribe();
-//   }, [navigate]);
-
-//   const handleInput = useCallback((field, value) => {
-//     setFormData((prev) => ({ ...prev, [field]: value }));
-//     setErrors((prev) => ({ ...prev, [field]: "" }));
-//   }, []);
-
-//   const validate = () => {
-//     const newErrors = {};
-//     if (!formData.email) newErrors.email = "Email is required";
-//     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-//       newErrors.email = "Please enter a valid email";
-//     if (!formData.password) newErrors.password = "Password is required";
-//     else if (formData.password.length < 6)
-//       newErrors.password = "Password must be at least 6 characters";
-//     if (!isLogin) {
-//       if (!formData.fullName) newErrors.fullName = "Full name is required";
-//       if (!confirmPassword)
-//         newErrors.confirmPassword = "Please confirm your password";
-//       else if (confirmPassword !== formData.password)
-//         newErrors.confirmPassword = "Passwords do not match";
-//     }
-//     setErrors(newErrors);
-//     return Object.keys(newErrors).length === 0;
-//   };
-
-//   const resetCaptcha = () => {
-//     recaptchaRef.current?.reset();
-//     setCaptchaToken(null);
-//   };
-
-//   const handleLogin = async (e) => {
-//     e.preventDefault();
-//     if (!validate()) return;
-//     if (!captchaToken) {
-//       toast.error("Please complete the CAPTCHA verification");
-//       return;
-//     }
-//     setLoading(true);
-//     try {
-//       const { error } = await supabase.auth.signInWithPassword({
-//         email: formData.email,
-//         password: formData.password,
-//       });
-//       if (error) {
-//         const msg = error.message || "";
-//         if (msg.includes("Email not confirmed")) {
-//           throw new Error("Please confirm your email address first");
-//         }
-//         if (msg.includes("Invalid login credentials")) {
-//           throw new Error("Invalid email or password");
-//         }
-//         throw error;
-//       }
-//       toast.success("Welcome back!");
-//     } catch (err) {
-//       toast.error(err.message || "Sign in failed");
-//       resetCaptcha();
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const parseSignupError = (detail = "") => {
-//     const lower = detail.toLowerCase();
-//     if (lower.includes("domain") && lower.includes("not")) {
-//       return "This email domain is not registered with CampusTrace";
-//     }
-//     if (lower.includes("already")) {
-//       return "An account with this email already exists";
-//     }
-//     if (lower.includes("confirm")) {
-//       return "Please check your email for a confirmation link";
-//     }
-//     return detail || "Sign up failed";
-//   };
-
-//   const handleSignup = async (e) => {
-//     e.preventDefault();
-//     if (!validate()) return;
-//     if (!captchaToken) {
-//       toast.error("Please complete the CAPTCHA verification");
-//       return;
-//     }
-//     setLoading(true);
-//     try {
-//       const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//           full_name: formData.fullName,
-//           email: formData.email,
-//           password: formData.password,
-//           captchaToken,
-//         }),
-//       });
-//       const data = await response.json();
-
-//       if (!response.ok) {
-//         const errorMessage = parseSignupError(data.detail || data.message);
-//         throw new Error(errorMessage);
-//       }
-
-//       toast.success("Account created! Check your email to confirm");
-//       setIsLogin(true);
-//     } catch (err) {
-//       toast.error(err.message || "Sign up failed");
-//       resetCaptcha();
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white dark:from-neutral-950 dark:to-neutral-900 flex">
-//       <div className="hidden lg:flex lg:w-1/2 xl:w-2/5 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-neutral-900 dark:to-neutral-950 p-12 flex-col justify-between">
-//         <div>
-//           <div className="flex items-center gap-3 mb-12">
-//             <img src={logo} alt="CampusTrace" className="h-8 w-8 rounded-lg" />
-//             <span className="text-xl font-bold text-neutral-900 dark:text-white">
-//               CampusTrace
-//             </span>
-//           </div>
-//           <div className="space-y-8">
-//             <div>
-//               <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-4">
-//                 Find what's lost,
-//                 <span className="text-primary-600 dark:text-primary-400">
-//                   {" "}
-//                   return what's found
-//                 </span>
-//               </h1>
-//               <p className="text-neutral-600 dark:text-neutral-400">
-//                 Join your university's lost and found community
-//               </p>
-//             </div>
-//             <div className="space-y-6">
-//               <FeatureItem
-//                 icon={ShieldCheck}
-//                 title="University Verified"
-//                 description="Secure access limited to verified university email addresses"
-//               />
-//               <FeatureItem
-//                 icon={Sparkles}
-//                 title="AI-Powered Matching"
-//                 description="Smart image recognition helps match lost and found items"
-//               />
-//               <FeatureItem
-//                 icon={CheckCircle}
-//                 title="Trusted Community"
-//                 description="Connect with fellow students and staff on your campus"
-//               />
-//             </div>
-//           </div>
-//         </div>
-//         <div className="mt-12">
-//           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-//             © 2024 CampusTrace. All rights reserved.
-//           </p>
-//         </div>
-//       </div>
-//       <div className="flex-1 flex items-center justify-center p-6">
-//         <motion.div
-//           className="w-full max-w-sm lg:max-w-md"
-//           initial={{ opacity: 0, y: 20 }}
-//           animate={{ opacity: 1, y: 0 }}
-//           transition={{ duration: 0.4 }}
-//         >
-//           <div className="lg:hidden text-center mb-8">
-//             <img
-//               src={logo}
-//               alt="CampusTrace"
-//               className="mx-auto h-12 w-12 rounded-lg mb-4"
-//             />
-//             <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
-//               CampusTrace
-//             </h1>
-//           </div>
-//           <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-neutral-200 dark:border-neutral-800 p-8">
-//             <div className="text-center mb-8">
-//               <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">
-//                 {isLogin ? "Welcome back" : "Create your account"}
-//               </h2>
-//               <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
-//                 {isLogin
-//                   ? "Enter your credentials to access your account"
-//                   : "Sign up with your university email"}
-//               </p>
-//             </div>
-//             <div className="flex bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1 mb-8">
-//               <button
-//                 className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all ${
-//                   isLogin
-//                     ? "bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-sm"
-//                     : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
-//                 }`}
-//                 onClick={() => {
-//                   setIsLogin(true);
-//                   setTouched({});
-//                   setErrors({});
-//                   resetCaptcha();
-//                 }}
-//               >
-//                 Sign In
-//               </button>
-//               <button
-//                 className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all ${
-//                   !isLogin
-//                     ? "bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-sm"
-//                     : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
-//                 }`}
-//                 onClick={() => {
-//                   setIsLogin(false);
-//                   setTouched({});
-//                   setErrors({});
-//                   resetCaptcha();
-//                 }}
-//               >
-//                 Sign Up
-//               </button>
-//             </div>
-//             <form
-//               onSubmit={isLogin ? handleLogin : handleSignup}
-//               className="space-y-5"
-//             >
-//               <AnimatePresence mode="wait">
-//                 {!isLogin && (
-//                   <motion.div
-//                     key="fullname"
-//                     initial={{ opacity: 0, height: 0 }}
-//                     animate={{ opacity: 1, height: "auto" }}
-//                     exit={{ opacity: 0, height: 0 }}
-//                     transition={{ duration: 0.2 }}
-//                   >
-//                     <InputField
-//                       icon={User}
-//                       label="Full Name"
-//                       type="text"
-//                       placeholder="John Doe"
-//                       value={formData.fullName}
-//                       onChange={(e) => handleInput("fullName", e.target.value)}
-//                       onBlur={() =>
-//                         setTouched((prev) => ({ ...prev, fullName: true }))
-//                       }
-//                       error={errors.fullName}
-//                       touched={touched.fullName}
-//                     />
-//                   </motion.div>
-//                 )}
-//               </AnimatePresence>
-//               <InputField
-//                 icon={Mail}
-//                 label="Email Address"
-//                 type="email"
-//                 placeholder="you@university.edu"
-//                 value={formData.email}
-//                 onChange={(e) => handleInput("email", e.target.value)}
-//                 onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
-//                 error={errors.email}
-//                 touched={touched.email}
-//                 autoComplete="email"
-//               />
-//               <InputField
-//                 icon={Lock}
-//                 label="Password"
-//                 isPassword
-//                 placeholder="Enter your password"
-//                 value={formData.password}
-//                 onChange={(e) => handleInput("password", e.target.value)}
-//                 onBlur={() =>
-//                   setTouched((prev) => ({ ...prev, password: true }))
-//                 }
-//                 error={errors.password}
-//                 touched={touched.password}
-//                 showPassword={showPassword}
-//                 togglePassword={() => setShowPassword((prev) => !prev)}
-//                 autoComplete={isLogin ? "current-password" : "new-password"}
-//               />
-//               <AnimatePresence mode="wait">
-//                 {!isLogin && (
-//                   <motion.div
-//                     key="confirm"
-//                     initial={{ opacity: 0, height: 0 }}
-//                     animate={{ opacity: 1, height: "auto" }}
-//                     exit={{ opacity: 0, height: 0 }}
-//                     transition={{ duration: 0.2 }}
-//                   >
-//                     <InputField
-//                       icon={Lock}
-//                       label="Confirm Password"
-//                       isPassword
-//                       placeholder="Confirm your password"
-//                       value={confirmPassword}
-//                       onChange={(e) => setConfirmPassword(e.target.value)}
-//                       onBlur={() =>
-//                         setTouched((prev) => ({
-//                           ...prev,
-//                           confirmPassword: true,
-//                         }))
-//                       }
-//                       error={errors.confirmPassword}
-//                       touched={touched.confirmPassword}
-//                       showPassword={showConfirm}
-//                       togglePassword={() => setShowConfirm((prev) => !prev)}
-//                       autoComplete="new-password"
-//                     />
-//                   </motion.div>
-//                 )}
-//               </AnimatePresence>
-//               {isLogin && (
-//                 <div className="flex justify-between items-center">
-//                   <label className="flex items-center">
-//                     <input
-//                       type="checkbox"
-//                       className="w-4 h-4 text-primary-600 bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 rounded focus:ring-primary-500"
-//                     />
-//                     <span className="ml-2 text-sm text-neutral-600 dark:text-neutral-400">
-//                       Remember me
-//                     </span>
-//                   </label>
-//                   <a
-//                     href="/update-password"
-//                     className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
-//                   >
-//                     Forgot password?
-//                   </a>
-//                 </div>
-//               )}
-//               <div className="flex justify-center py-4">
-//                 <ReCAPTCHA
-//                   ref={recaptchaRef}
-//                   sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-//                   onChange={setCaptchaToken}
-//                   theme={
-//                     window.matchMedia("(prefers-color-scheme: dark)").matches
-//                       ? "dark"
-//                       : "light"
-//                   }
-//                 />
-//               </div>
-//               <button
-//                 type="submit"
-//                 disabled={loading || !captchaToken}
-//                 className="w-full rounded-lg bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400
-//                                  text-white py-3 font-semibold flex items-center justify-center gap-2
-//                                  disabled:cursor-not-allowed transition-all duration-200
-//                                  shadow-lg shadow-primary-600/25 hover:shadow-xl hover:shadow-primary-600/30
-//                                  transform hover:-translate-y-0.5"
-//               >
-//                 {loading ? (
-//                   <>
-//                     <Loader2 className="w-5 h-5 animate-spin" />
-//                     <span>
-//                       {isLogin ? "Signing in..." : "Creating account..."}
-//                     </span>
-//                   </>
-//                 ) : (
-//                   <>
-//                     {isLogin ? (
-//                       <>
-//                         <span>Sign In</span>
-//                         <ChevronRight className="w-5 h-5" />
-//                       </>
-//                     ) : (
-//                       <>
-//                         <UserPlus className="w-5 h-5" />
-//                         <span>Create Account</span>
-//                       </>
-//                     )}
-//                   </>
-//                 )}
-//               </button>
-//             </form>
-//             <div className="relative my-6">
-//               <div className="absolute inset-0 flex items-center">
-//                 <div className="w-full border-t border-neutral-200 dark:border-neutral-800"></div>
-//               </div>
-//               <div className="relative flex justify-center text-sm">
-//                 <span className="px-2 bg-white dark:bg-neutral-900 text-neutral-500">
-//                   or
-//                 </span>
-//               </div>
-//             </div>
-//             <AnimatePresence>
-//               {!isLogin && (
-//                 <motion.div
-//                   initial={{ opacity: 0 }}
-//                   animate={{ opacity: 1 }}
-//                   exit={{ opacity: 0 }}
-//                   transition={{ delay: 0.2 }}
-//                 >
-//                   <div className="text-center">
-//                     <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
-//                       Don't have a university email?
-//                     </p>
-//                     <Link
-//                       to="/manual-verification"
-//                       className="w-full inline-flex justify-center py-2.5 px-4 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-semibold text-sm rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-//                     >
-//                       Register with your University ID instead
-//                     </Link>
-//                   </div>
-//                 </motion.div>
-//               )}
-//             </AnimatePresence>
-//             <div className="text-center mt-6">
-//               <button
-//                 className="text-primary-600 dark:text-primary-400 hover:text-primary-700
-//                                  dark:hover:text-primary-300 font-medium text-sm inline-flex items-center gap-1
-//                                  group"
-//                 onClick={() => {
-//                   setIsLogin((prev) => !prev);
-//                   setErrors({});
-//                   setTouched({});
-//                   resetCaptcha();
-//                 }}
-//               >
-//                 <span>{isLogin ? "Create an account" : "Sign in instead"}</span>
-//                 <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-//               </button>
-//             </div>
-//           </div>
-//         </motion.div>
-//       </div>
-//     </div>
-//   );
-// }
-
-
-
-
-// import React, { useState, useEffect, useCallback, useRef } from "react";
-// import { supabase } from "../../api/apiClient.js"; // Import supabase directly
-// import { toast } from "react-hot-toast";
-// import { useNavigate, Link, useLocation } from "react-router-dom";
-// import {
-//   Mail,
-//   Lock,
-//   LogIn,
-//   Loader2,
-//   Eye,
-//   EyeOff,
-//   User,
-//   AlertCircle,
-//   UserPlus,
-//   ChevronRight,
-//   ShieldCheck,
-//   Sparkles,
-//   CheckCircle,
-// } from "lucide-react";
-// import logo from "../../Images/Logo.svg";
-// import ReCAPTCHA from "react-google-recaptcha";
-// import { motion, AnimatePresence } from "framer-motion";
-
-// const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-
-// const InputField = ({
-//   icon: Icon,
-//   error,
-//   touched,
-//   isPassword,
-//   showPassword,
-//   togglePassword,
-//   label,
-//   ...props
-// }) => (
-//   <div className="space-y-2">
-//     {" "}
-//     {label && (
-//       <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-//         {" "}
-//         {label}{" "}
-//       </label>
-//     )}{" "}
-//     <div className="relative">
-//       {" "}
-//       <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-//         {" "}
-//         <Icon
-//           className={`h-4 w-4 transition-colors ${
-//             error && touched
-//               ? "text-red-500"
-//               : "text-neutral-400 dark:text-neutral-500"
-//           }`}
-//         />{" "}
-//       </div>{" "}
-//       <input
-//         {...props}
-//         type={isPassword ? (showPassword ? "text" : "password") : props.type}
-//         className={`block w-full rounded-lg py-2.5 pl-10 ${
-//           isPassword ? "pr-10" : "pr-3"
-//         } bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white border ${
-//           error && touched
-//             ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-//             : "border-neutral-200 dark:border-neutral-800 focus:border-primary-500 dark:focus:border-primary-500"
-//         } placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-4 focus:ring-primary-500/10 dark:focus:ring-primary-500/20 transition-all duration-200`}
-//       />{" "}
-//       {isPassword && (
-//         <button
-//           type="button"
-//           onClick={togglePassword}
-//           className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors"
-//         >
-//           {" "}
-//           {showPassword ? (
-//             <EyeOff className="w-4 h-4" />
-//           ) : (
-//             <Eye className="w-4 h-4" />
-//           )}{" "}
-//         </button>
-//       )}{" "}
-//     </div>{" "}
-//     <AnimatePresence>
-//       {" "}
-//       {error && touched && (
-//         <motion.p
-//           initial={{ opacity: 0, y: -10 }}
-//           animate={{ opacity: 1, y: 0 }}
-//           exit={{ opacity: 0, y: -10 }}
-//           className="text-sm text-red-500 flex items-center gap-1.5"
-//         >
-//           {" "}
-//           <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" /> {error}{" "}
-//         </motion.p>
-//       )}{" "}
-//     </AnimatePresence>{" "}
-//   </div>
-// );
-// const FeatureItem = ({ icon: Icon, title, description }) => (
-//   <div className="flex gap-3">
-//     {" "}
-//     <div className="flex-shrink-0">
-//       {" "}
-//       <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-500/10 flex items-center justify-center">
-//         {" "}
-//         <Icon className="w-5 h-5 text-primary-600 dark:text-primary-400" />{" "}
-//       </div>{" "}
-//     </div>{" "}
-//     <div>
-//       {" "}
-//       <h3 className="font-medium text-neutral-900 dark:text-white">
-//         {title}
-//       </h3>{" "}
-//       <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-//         {" "}
-//         {description}{" "}
-//       </p>{" "}
-//     </div>{" "}
-//   </div>
-// );
-
-// export default function LoginPage() {
-//   const [isLogin, setIsLogin] = useState(true);
-//   const [formData, setFormData] = useState({
-//     fullName: "",
-//     email: "",
-//     password: "",
-//   });
-//   const [confirmPassword, setConfirmPassword] = useState("");
-//   const [errors, setErrors] = useState({});
-//   const [touched, setTouched] = useState({});
-//   const [showPassword, setShowPassword] = useState(false);
-//   const [showConfirm, setShowConfirm] = useState(false);
-//   const [loading, setLoading] = useState(false);
-//   const [captchaToken, setCaptchaToken] = useState(null);
-//   const recaptchaRef = useRef(null);
-//   const navigate = useNavigate();
-//   const location = useLocation();
-
-//   useEffect(() => {
-//     // This toast remains useful for edge cases where navigation state might be used
-//     if (location.state?.unverified) {
-//       toast.error(
-//         "Your account has not been approved by an administrator yet. Please try again later."
-//       );
-//       // Clear the state to prevent repeated toasts on refresh
-//       navigate(location.pathname, { replace: true, state: {} });
-//     }
-//   }, [location, navigate]);
-
-//   useEffect(() => {
-//     // Initial check for existing session (handled by App.jsx redirect mostly)
-//     const init = async () => {
-//       const { data } = await supabase.auth.getSession();
-//       // App.jsx will handle the redirect based on profile status if session exists
-//       // No direct navigate('/dashboard') needed here anymore.
-//     };
-//     init();
-
-//     // Listener for auth state changes (handled by App.jsx redirect mostly)
-//     const { data: listener } = supabase.auth.onAuthStateChange(
-//       (_event, session) => {
-//         // App.jsx's useEffect will pick up the session change and redirect appropriately
-//         // No direct navigate('/dashboard') needed here anymore.
-//         if (!session) {
-//           // Optional: If user signs out on this page, clear form or navigate to home
-//           // navigate('/'); // Example
-//         }
-//       }
-//     );
-//     return () => listener.subscription.unsubscribe();
-//   }, [navigate]); // navigate dependency might be removable if App.jsx handles all redirects
-
-//   const handleInput = useCallback((field, value) => {
-//     setFormData((prev) => ({ ...prev, [field]: value }));
-//     setErrors((prev) => ({ ...prev, [field]: "" })); // Clear error on input
-//     setTouched((prev) => ({ ...prev, [field]: true })); // Mark as touched
-//   }, []);
-
-//   const validate = () => {
-//     const newErrors = {};
-//     if (!formData.email) newErrors.email = "Email is required";
-//     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-//       newErrors.email = "Please enter a valid email";
-
-//     if (!formData.password) newErrors.password = "Password is required";
-//     else if (formData.password.length < 6 && isLogin)
-//       // Keep length check for login UX
-//       newErrors.password = "Password must be at least 6 characters";
-//     else if (formData.password.length < 6 && !isLogin)
-//       // Stricter validation potentially on signup side
-//       newErrors.password = "Password must be at least 6 characters";
-
-//     if (!isLogin) {
-//       if (!formData.fullName) newErrors.fullName = "Full name is required";
-//       if (!confirmPassword)
-//         newErrors.confirmPassword = "Please confirm your password";
-//       else if (confirmPassword !== formData.password)
-//         newErrors.confirmPassword = "Passwords do not match";
-//     }
-//     setErrors(newErrors);
-//     // Mark all fields as touched on submit attempt
-//     setTouched({
-//       email: true,
-//       password: true,
-//       fullName: !isLogin,
-//       confirmPassword: !isLogin,
-//     });
-//     return Object.keys(newErrors).length === 0;
-//   };
-
-//   const resetCaptcha = () => {
-//     recaptchaRef.current?.reset();
-//     setCaptchaToken(null);
-//   };
-
-//   const handleLogin = async (e) => {
-//     e.preventDefault();
-//     setTouched({ email: true, password: true }); // Mark fields as touched on submit
-//     if (!validate()) return; // Re-validate, considering touched status
-//     if (!captchaToken) {
-//       toast.error("Please complete the CAPTCHA verification");
-//       return;
-//     }
-//     setLoading(true);
-//     try {
-//       // --- Step 1: Authenticate User ---
-//       const { data: authData, error: authError } =
-//         await supabase.auth.signInWithPassword({
-//           email: formData.email,
-//           password: formData.password,
-//         });
-
-//       if (authError) {
-//         // Handle standard auth errors (invalid credentials, email not confirmed)
-//         const msg = authError.message || "";
-//         if (msg.includes("Email not confirmed")) {
-//           throw new Error("Please confirm your email address first");
-//         }
-//         if (msg.includes("Invalid login credentials")) {
-//           throw new Error("Invalid email or password");
-//         }
-//         throw authError; // Rethrow other auth errors
-//       }
-
-//       // --- Step 2: Check Verification Status IF Auth Succeeded ---
-//       if (authData.user) {
-//         const { data: profileData, error: profileError } = await supabase
-//           .from("profiles")
-//           .select("is_verified, is_banned") // Select is_verified and is_banned
-//           .eq("id", authData.user.id)
-//           .single();
-
-//         if (profileError) {
-//           // Profile might not exist yet if signup was interrupted, or DB error
-//           console.error("Login: Error fetching profile:", profileError.message);
-//           // Decide how to handle: maybe let them proceed cautiously,
-//           // or sign them out and show a generic error. Signing out is safer.
-//           await supabase.auth.signOut();
-//           throw new Error(
-//             "Could not verify account status. Please try again later."
-//           );
-//         }
-
-//         // --- Step 3: Handle Banned or Unverified Users ---
-//         if (profileData?.is_banned) {
-//           await supabase.auth.signOut(); // Log out banned user immediately
-//           throw new Error("Your account has been suspended.");
-//         }
-
-//         if (profileData && profileData.is_verified === false) {
-//           // User authenticated BUT not yet approved by admin
-//           await supabase.auth.signOut(); // Log them out immediately
-//           throw new Error( // Use a specific error message
-//             "Your account is awaiting administrator approval. Please check back later."
-//           );
-//         }
-
-//         // --- Step 4: If Verified and Not Banned ---
-//         // User is authenticated AND verified (or profile check succeeded)
-//         // Let the onAuthStateChange listener in App.jsx handle the redirect
-//         toast.success("Welcome back!");
-//         // No navigate('/dashboard') needed here, App.jsx handles it.
-//       } else {
-//         // Should not happen if authError is null, but as a safeguard
-//         throw new Error("Authentication failed unexpectedly.");
-//       }
-//     } catch (err) {
-//       // Catch errors from auth OR the verification check
-//       toast.error(err.message || "Sign in failed");
-//       resetCaptcha(); // Reset captcha on any error during login attempt
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const parseSignupError = (detail = "") => {
-//     const lower = detail.toLowerCase();
-//     if (lower.includes("domain") && lower.includes("not")) {
-//       return "This email domain is not registered with CampusTrace";
-//     }
-//     if (lower.includes("already")) {
-//       return "An account with this email already exists";
-//     }
-//     if (lower.includes("confirm")) {
-//       // This might still be relevant if backend doesn't handle redirects correctly
-//       return "Please check your email for a confirmation link";
-//     }
-//     if (lower.includes("password")) {
-//       // Catch weak password errors from backend more explicitly
-//       return "Password is too weak. Please include uppercase, lowercase, numbers, and symbols.";
-//     }
-//     return detail || "Sign up failed";
-//   };
-
-//   const handleSignup = async (e) => {
-//     e.preventDefault();
-//     setTouched({
-//       email: true,
-//       password: true,
-//       fullName: true,
-//       confirmPassword: true,
-//     }); // Mark fields as touched
-//     if (!validate()) return; // Re-validate
-//     if (!captchaToken) {
-//       toast.error("Please complete the CAPTCHA verification");
-//       return;
-//     }
-//     setLoading(true);
-//     try {
-//       const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//           full_name: formData.fullName,
-//           email: formData.email,
-//           password: formData.password,
-//           captchaToken,
-//         }),
-//       });
-//       const data = await response.json();
-
-//       if (!response.ok) {
-//         const errorMessage = parseSignupError(data.detail || data.message);
-//         throw new Error(errorMessage);
-//       }
-
-//       toast.success("Account created! Check your email to confirm");
-//       setIsLogin(true); // Switch to login view after successful signup request
-//       // Clear form for potential login attempt after confirmation
-//       setFormData({ fullName: "", email: "", password: "" });
-//       setConfirmPassword("");
-//       setErrors({});
-//       setTouched({});
-//       resetCaptcha(); // Reset captcha after successful signup request
-//     } catch (err) {
-//       toast.error(err.message || "Sign up failed");
-//       resetCaptcha(); // Reset captcha on signup failure
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white dark:from-neutral-950 dark:to-neutral-900 flex">
-//       {/* Left Panel (Desktop Only) */}
-//       <div className="hidden lg:flex lg:w-1/2 xl:w-2/5 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-neutral-900 dark:to-neutral-950 p-12 flex-col justify-between">
-//         <div>
-//           <div className="flex items-center gap-3 mb-12">
-//             <img src={logo} alt="CampusTrace" className="h-8 w-8 rounded-lg" />
-//             <span className="text-xl font-bold text-neutral-900 dark:text-white">
-//               CampusTrace
-//             </span>
-//           </div>
-//           <div className="space-y-8">
-//             <div>
-//               <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-4">
-//                 Find what's lost,
-//                 <span className="text-primary-600 dark:text-primary-400">
-//                   {" "}
-//                   return what's found
-//                 </span>
-//               </h1>
-//               <p className="text-neutral-600 dark:text-neutral-400">
-//                 Join your university's lost and found community
-//               </p>
-//             </div>
-//             <div className="space-y-6">
-//               <FeatureItem
-//                 icon={ShieldCheck}
-//                 title="University Verified"
-//                 description="Secure access limited to verified university email addresses"
-//               />
-//               <FeatureItem
-//                 icon={Sparkles}
-//                 title="AI-Powered Matching"
-//                 description="Smart image recognition helps match lost and found items"
-//               />
-//               <FeatureItem
-//                 icon={CheckCircle}
-//                 title="Trusted Community"
-//                 description="Connect with fellow students and staff on your campus"
-//               />
-//             </div>
-//           </div>
-//         </div>
-//         <div className="mt-12">
-//           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-//             © {new Date().getFullYear()} CampusTrace. All rights reserved.
-//           </p>
-//         </div>
-//       </div>
-
-//       {/* Right Panel (Login/Signup Form) */}
-//       <div className="flex-1 flex items-center justify-center p-6">
-//         <motion.div
-//           className="w-full max-w-sm lg:max-w-md"
-//           initial={{ opacity: 0, y: 20 }}
-//           animate={{ opacity: 1, y: 0 }}
-//           transition={{ duration: 0.4 }}
-//         >
-//           {/* Mobile Header */}
-//           <div className="lg:hidden text-center mb-8">
-//             <img
-//               src={logo}
-//               alt="CampusTrace"
-//               className="mx-auto h-12 w-12 rounded-lg mb-4"
-//             />
-//             <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
-//               CampusTrace
-//             </h1>
-//           </div>
-
-//           {/* Form Card */}
-//           <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-neutral-200 dark:border-neutral-800 p-8">
-//             <div className="text-center mb-8">
-//               <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">
-//                 {isLogin ? "Welcome back" : "Create your account"}
-//               </h2>
-//               <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
-//                 {isLogin
-//                   ? "Enter your credentials to access your account"
-//                   : "Sign up with your university email or ID"}
-//               </p>
-//             </div>
-
-//             {/* Sign In / Sign Up Toggle */}
-//             <div className="flex bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1 mb-8">
-//               <button
-//                 className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all ${
-//                   isLogin
-//                     ? "bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-sm"
-//                     : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
-//                 }`}
-//                 onClick={() => {
-//                   setIsLogin(true);
-//                   setTouched({}); // Clear touched on tab switch
-//                   setErrors({});
-//                   resetCaptcha();
-//                 }}
-//               >
-//                 Sign In
-//               </button>
-//               <button
-//                 className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all ${
-//                   !isLogin
-//                     ? "bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-sm"
-//                     : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
-//                 }`}
-//                 onClick={() => {
-//                   setIsLogin(false);
-//                   setTouched({}); // Clear touched on tab switch
-//                   setErrors({});
-//                   resetCaptcha();
-//                 }}
-//               >
-//                 Sign Up
-//               </button>
-//             </div>
-
-//             {/* Form */}
-//             <form
-//               onSubmit={isLogin ? handleLogin : handleSignup}
-//               className="space-y-5"
-//               noValidate // Prevent browser default validation, rely on custom
-//             >
-//               {/* Full Name Field (Sign Up Only) */}
-//               <AnimatePresence mode="wait">
-//                 {!isLogin && (
-//                   <motion.div
-//                     key="fullname"
-//                     initial={{ opacity: 0, height: 0 }}
-//                     animate={{ opacity: 1, height: "auto" }}
-//                     exit={{ opacity: 0, height: 0 }}
-//                     transition={{ duration: 0.2 }}
-//                   >
-//                     <InputField
-//                       icon={User}
-//                       label="Full Name"
-//                       type="text"
-//                       placeholder="John Doe"
-//                       value={formData.fullName}
-//                       onChange={(e) => handleInput("fullName", e.target.value)}
-//                       // onBlur event is removed, touched state is set on submit/input
-//                       error={errors.fullName}
-//                       touched={touched.fullName}
-//                       aria-required="true"
-//                       aria-invalid={!!errors.fullName && touched.fullName}
-//                     />
-//                   </motion.div>
-//                 )}
-//               </AnimatePresence>
-
-//               {/* Email Field */}
-//               <InputField
-//                 icon={Mail}
-//                 label="Email Address"
-//                 type="email"
-//                 placeholder={
-//                   isLogin ? "Enter your email" : "you@university.edu"
-//                 }
-//                 value={formData.email}
-//                 onChange={(e) => handleInput("email", e.target.value)}
-//                 // onBlur event is removed
-//                 error={errors.email}
-//                 touched={touched.email}
-//                 autoComplete="email"
-//                 aria-required="true"
-//                 aria-invalid={!!errors.email && touched.email}
-//               />
-
-//               {/* Password Field */}
-//               <InputField
-//                 icon={Lock}
-//                 label="Password"
-//                 isPassword
-//                 placeholder="Enter your password"
-//                 value={formData.password}
-//                 onChange={(e) => handleInput("password", e.target.value)}
-//                 // onBlur event is removed
-//                 error={errors.password}
-//                 touched={touched.password}
-//                 showPassword={showPassword}
-//                 togglePassword={() => setShowPassword((prev) => !prev)}
-//                 autoComplete={isLogin ? "current-password" : "new-password"}
-//                 aria-required="true"
-//                 aria-invalid={!!errors.password && touched.password}
-//               />
-
-//               {/* Confirm Password Field (Sign Up Only) */}
-//               <AnimatePresence mode="wait">
-//                 {!isLogin && (
-//                   <motion.div
-//                     key="confirm"
-//                     initial={{ opacity: 0, height: 0 }}
-//                     animate={{ opacity: 1, height: "auto" }}
-//                     exit={{ opacity: 0, height: 0 }}
-//                     transition={{ duration: 0.2 }}
-//                   >
-//                     <InputField
-//                       icon={Lock}
-//                       label="Confirm Password"
-//                       isPassword
-//                       placeholder="Confirm your password"
-//                       value={confirmPassword}
-//                       onChange={(e) => setConfirmPassword(e.target.value)}
-//                       // onBlur event is removed
-//                       error={errors.confirmPassword}
-//                       touched={touched.confirmPassword}
-//                       showPassword={showConfirm}
-//                       togglePassword={() => setShowConfirm((prev) => !prev)}
-//                       autoComplete="new-password"
-//                       aria-required="true"
-//                       aria-invalid={
-//                         !!errors.confirmPassword && touched.confirmPassword
-//                       }
-//                     />
-//                   </motion.div>
-//                 )}
-//               </AnimatePresence>
-
-//               {/* Remember Me / Forgot Password (Login Only) */}
-//               {isLogin && (
-//                 <div className="flex justify-between items-center">
-//                   <label className="flex items-center cursor-pointer">
-//                     <input
-//                       type="checkbox"
-//                       className="w-4 h-4 text-primary-600 bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 rounded focus:ring-primary-500"
-//                     />
-//                     <span className="ml-2 text-sm text-neutral-600 dark:text-neutral-400">
-//                       Remember me
-//                     </span>
-//                   </label>
-//                   {/* TODO: Implement forgot password flow */}
-//                   <Link
-//                     to="/update-password" // Link to your password reset initiation page
-//                     className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
-//                   >
-//                     Forgot password?
-//                   </Link>
-//                 </div>
-//               )}
-
-//               {/* reCAPTCHA */}
-//               <div className="flex justify-center py-4">
-//                 <ReCAPTCHA
-//                   ref={recaptchaRef}
-//                   sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-//                   onChange={setCaptchaToken}
-//                   theme={
-//                     window.matchMedia("(prefers-color-scheme: dark)").matches
-//                       ? "dark"
-//                       : "light"
-//                   }
-//                 />
-//               </div>
-
-//               {/* Submit Button */}
-//               <button
-//                 type="submit"
-//                 disabled={loading || !captchaToken} // Also disable if captcha not done
-//                 className="w-full rounded-lg bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400
-//                                  text-white py-3 font-semibold flex items-center justify-center gap-2
-//                                  disabled:cursor-not-allowed transition-all duration-200
-//                                  shadow-lg shadow-primary-600/25 hover:shadow-xl hover:shadow-primary-600/30
-//                                  transform hover:-translate-y-0.5"
-//               >
-//                 {loading ? (
-//                   <>
-//                     <Loader2 className="w-5 h-5 animate-spin" />
-//                     <span>
-//                       {isLogin ? "Signing in..." : "Creating account..."}
-//                     </span>
-//                   </>
-//                 ) : (
-//                   <>
-//                     {isLogin ? (
-//                       <>
-//                         <span>Sign In</span>
-//                         <ChevronRight className="w-5 h-5" />
-//                       </>
-//                     ) : (
-//                       <>
-//                         <UserPlus className="w-5 h-5" />
-//                         <span>Create Account</span>
-//                       </>
-//                     )}
-//                   </>
-//                 )}
-//               </button>
-//             </form>
-
-//             {/* "or" Separator */}
-//             <div className="relative my-6">
-//               <div className="absolute inset-0 flex items-center">
-//                 <div className="w-full border-t border-neutral-200 dark:border-neutral-800"></div>
-//               </div>
-//               <div className="relative flex justify-center text-sm">
-//                 <span className="px-2 bg-white dark:bg-neutral-900 text-neutral-500">
-//                   or
-//                 </span>
-//               </div>
-//             </div>
-
-//             {/* Manual Registration Link (Sign Up Only) */}
-//             <AnimatePresence>
-//               {!isLogin && (
-//                 <motion.div
-//                   initial={{ opacity: 0 }}
-//                   animate={{ opacity: 1 }}
-//                   exit={{ opacity: 0 }}
-//                   transition={{ delay: 0.1 }} // Slightly delayed appearance
-//                 >
-//                   <div className="text-center">
-//                     <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
-//                       Don't have a university email?
-//                     </p>
-//                     <Link
-//                       to="/manual-verification" // Correct link to manual registration page
-//                       className="w-full inline-flex justify-center py-2.5 px-4 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-semibold text-sm rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-//                     >
-//                       Register with your University ID instead
-//                     </Link>
-//                   </div>
-//                 </motion.div>
-//               )}
-//             </AnimatePresence>
-
-//             {/* Toggle between Sign In / Sign Up */}
-//             <div className="text-center mt-6">
-//               <button
-//                 className="text-primary-600 dark:text-primary-400 hover:text-primary-700
-//                                  dark:hover:text-primary-300 font-medium text-sm inline-flex items-center gap-1
-//                                  group"
-//                 onClick={() => {
-//                   setIsLogin((prev) => !prev);
-//                   setErrors({});
-//                   setTouched({}); // Clear touched state when switching forms
-//                   resetCaptcha();
-//                   // Optionally clear form data too
-//                   // setFormData({ fullName: "", email: "", password: "" });
-//                   // setConfirmPassword("");
-//                 }}
-//               >
-//                 <span>
-//                   {isLogin
-//                     ? "Create an account"
-//                     : "Already have an account? Sign in"}
-//                 </span>
-//                 <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-//               </button>
-//             </div>
-//           </div>
-//         </motion.div>
-//       </div>
-//     </div>
-//   );
-// }
-
-
-
-
-
-
-
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../../api/apiClient.js";
 import { toast, Toaster } from "react-hot-toast";
@@ -1330,12 +16,34 @@ import {
   ShieldCheck,
   Sparkles,
   CheckCircle,
+  XCircle,
+  Clock,
 } from "lucide-react";
 import logo from "../../Images/Logo.svg";
 import ReCAPTCHA from "react-google-recaptcha";
 import { motion, AnimatePresence } from "framer-motion";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+// Password requirement component
+const PasswordRequirement = ({ met, text }) => (
+  <div className="flex items-center text-xs">
+    {met ? (
+      <CheckCircle className="h-3 w-3 text-green-500 mr-1.5 flex-shrink-0" />
+    ) : (
+      <XCircle className="h-3 w-3 text-neutral-400 dark:text-zinc-600 mr-1.5 flex-shrink-0" />
+    )}
+    <span
+      className={
+        met
+          ? "text-green-600 dark:text-green-400"
+          : "text-neutral-500 dark:text-zinc-500"
+      }
+    >
+      {text}
+    </span>
+  </div>
+);
 
 const InputField = ({
   icon: Icon,
@@ -1411,9 +119,7 @@ const FeatureItem = ({ icon: Icon, title, description }) => (
       </div>
     </div>
     <div>
-      <h3 className="font-medium text-neutral-900 dark:text-white">
-        {title}
-      </h3>
+      <h3 className="font-medium text-neutral-900 dark:text-white">{title}</h3>
       <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
         {description}
       </p>
@@ -1438,6 +144,69 @@ export default function LoginPage() {
   const recaptchaRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Rate limiting states
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [cooldownTime, setCooldownTime] = useState(0);
+  const [lastAttemptTime, setLastAttemptTime] = useState(null);
+
+  // Password strength states
+  const [passwordStrength, setPasswordStrength] = useState({
+    hasMinLength: false,
+    hasUpperCase: false,
+    hasLowerCase: false,
+    hasNumber: false,
+    hasSpecialChar: false,
+  });
+
+  // Rate limiting cooldown timer
+  useEffect(() => {
+    if (cooldownTime > 0) {
+      console.log(
+        `🔒 [RATE LIMIT] Cooldown active: ${cooldownTime} seconds remaining`
+      );
+      const timer = setTimeout(() => setCooldownTime(cooldownTime - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (cooldownTime === 0 && loginAttempts >= 5) {
+      // Reset attempts after cooldown expires
+      console.log("✅ [RATE LIMIT] Cooldown expired, resetting attempts");
+      setLoginAttempts(0);
+      setLastAttemptTime(null);
+    }
+  }, [cooldownTime, loginAttempts]);
+
+  // Log rate limit state changes
+  useEffect(() => {
+    console.log("📊 [RATE LIMIT STATE]", {
+      loginAttempts,
+      cooldownTime,
+      lastAttemptTime: lastAttemptTime
+        ? new Date(lastAttemptTime).toLocaleTimeString()
+        : null,
+      isBlocked: cooldownTime > 0 || loginAttempts >= 5,
+    });
+  }, [loginAttempts, cooldownTime, lastAttemptTime]);
+
+  // Password strength checker
+  useEffect(() => {
+    if (!isLogin) {
+      const strength = {
+        hasMinLength: formData.password.length >= 6,
+        hasUpperCase: /[A-Z]/.test(formData.password),
+        hasLowerCase: /[a-z]/.test(formData.password),
+        hasNumber: /\d/.test(formData.password),
+        hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(formData.password),
+      };
+      setPasswordStrength(strength);
+
+      const score = Object.values(strength).filter(Boolean).length;
+      console.log("🔐 [PASSWORD STRENGTH]", {
+        score: `${score}/5`,
+        requirements: strength,
+        strength: score <= 2 ? "Weak" : score <= 3 ? "Medium" : "Strong",
+      });
+    }
+  }, [formData.password, isLogin]);
 
   useEffect(() => {
     if (location.state?.unverified) {
@@ -1474,6 +243,20 @@ export default function LoginPage() {
     setTouched((prev) => ({ ...prev, [field]: true }));
   }, []);
 
+  const getPasswordStrengthColor = () => {
+    const score = Object.values(passwordStrength).filter(Boolean).length;
+    if (score <= 2) return "text-red-500";
+    if (score <= 3) return "text-yellow-500";
+    return "text-green-500";
+  };
+
+  const getPasswordStrengthText = () => {
+    const score = Object.values(passwordStrength).filter(Boolean).length;
+    if (score <= 2) return "Weak";
+    if (score <= 3) return "Medium";
+    return "Strong";
+  };
+
   const validate = () => {
     const newErrors = {};
     if (!formData.email) {
@@ -1497,8 +280,18 @@ export default function LoginPage() {
       } else if (confirmPassword !== formData.password) {
         newErrors.confirmPassword = "Passwords do not match";
       }
+
+      // Additional password strength validation for signup
+      const score = Object.values(passwordStrength).filter(Boolean).length;
+      if (score < 3) {
+        newErrors.password = "Please create a stronger password";
+        console.log(
+          "❌ [PASSWORD VALIDATION] Password too weak, score:",
+          score
+        );
+      }
     }
-    
+
     setErrors(newErrors);
     setTouched({
       email: true,
@@ -1514,28 +307,125 @@ export default function LoginPage() {
     setCaptchaToken(null);
   };
 
+  // Check rate limiting
+  const checkRateLimit = () => {
+    const now = Date.now();
+    console.log("🔍 [RATE LIMIT CHECK] Starting check...");
+
+    // Reset attempts if more than 15 minutes have passed since last attempt
+    if (lastAttemptTime && now - lastAttemptTime > 15 * 60 * 1000) {
+      const minutesPassed = Math.floor((now - lastAttemptTime) / 60000);
+      console.log(
+        `⏰ [RATE LIMIT] ${minutesPassed} minutes passed since last attempt. Resetting counters.`
+      );
+      setLoginAttempts(0);
+      setLastAttemptTime(null);
+      return true;
+    }
+
+    // Check if user is in cooldown
+    if (cooldownTime > 0) {
+      console.log(
+        `🚫 [RATE LIMIT] BLOCKED - In cooldown for ${cooldownTime} more seconds`
+      );
+      toast.error(`Too many attempts. Please wait ${cooldownTime} seconds.`, {
+        duration: 3000,
+        position: "top-center",
+        icon: <Clock className="w-5 h-5" />,
+      });
+      return false;
+    }
+
+    // Check if too many attempts (block BEFORE allowing 5th attempt)
+    if (loginAttempts >= 5) {
+      console.log(
+        "⛔ [RATE LIMIT] BLOCKED - Max attempts (5) reached. Starting 60s cooldown."
+      );
+      setCooldownTime(60); // 60 second cooldown after 5 attempts
+      toast.error("Too many login attempts. Please wait 60 seconds.", {
+        duration: 5000,
+        position: "top-center",
+        icon: <Clock className="w-5 h-5" />,
+      });
+      return false;
+    }
+
+    console.log(
+      `✅ [RATE LIMIT] Check passed. Current attempts: ${loginAttempts}/5`
+    );
+    return true;
+  };
+
+  // Simplified error parser with clear mappings
+  const parseSignupError = (detail = "") => {
+    const lower = detail.toLowerCase();
+
+    // Map specific backend errors to user-friendly messages
+    const errorMappings = [
+      {
+        check: (s) =>
+          s.includes("already") &&
+          (s.includes("exists") || s.includes("registered")),
+        message:
+          "An account with this email already exists. Please sign in instead.",
+      },
+      {
+        check: (s) => s.includes("domain") && s.includes("not"),
+        message: "This email domain is not registered with CampusTrace",
+      },
+      {
+        check: (s) => s.includes("weak") && s.includes("password"),
+        message: "Password is too weak. Please use at least 6 characters.",
+      },
+      {
+        check: (s) => s.includes("invalid") && s.includes("email"),
+        message: "Please enter a valid email address.",
+      },
+      {
+        check: (s) => s.includes("check") && s.includes("inbox"),
+        message: "Please check your email for a confirmation link",
+      },
+    ];
+
+    const mapping = errorMappings.find((m) => m.check(lower));
+    return mapping
+      ? mapping.message
+      : detail || "Sign up failed. Please try again.";
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
+    console.log("🔐 [LOGIN] Starting login attempt...");
     setTouched({ email: true, password: true });
-    
+
     if (!validate()) {
-      toast.error("Please fix the errors in the form", {
-        duration: 4000,
-        position: "top-center",
-      });
+      console.log("❌ [LOGIN] Validation failed");
       return;
     }
-    
+
+    // Check rate limiting
+    if (!checkRateLimit()) {
+      console.log("🚫 [LOGIN] Rate limit check failed - blocking attempt");
+      return;
+    }
+
     if (!captchaToken) {
+      console.log("❌ [LOGIN] No CAPTCHA token");
       toast.error("Please complete the CAPTCHA verification", {
         duration: 4000,
         position: "top-center",
       });
       return;
     }
-    
+
     setLoading(true);
-    
+    const currentAttempt = loginAttempts + 1;
+    setLoginAttempts(currentAttempt);
+    setLastAttemptTime(Date.now());
+    console.log(
+      `📝 [LOGIN] Attempt #${currentAttempt} at ${new Date().toLocaleTimeString()}`
+    );
+
     try {
       // Step 1: Authenticate User
       const { data: authData, error: authError } =
@@ -1545,33 +435,35 @@ export default function LoginPage() {
         });
 
       if (authError) {
+        console.log("❌ [LOGIN] Authentication failed:", authError.message);
         const msg = authError.message || "";
-        
+
         if (msg.includes("Email not confirmed")) {
-          toast.error("Please confirm your email address first", {
-            duration: 5000,
-            position: "top-center",
-          });
           throw new Error("Please confirm your email address first");
         }
-        
+
         if (msg.includes("Invalid login credentials")) {
-          toast.error("Invalid email or password", {
-            duration: 4000,
-            position: "top-center",
-          });
+          console.log(
+            `⚠️ [LOGIN] Invalid credentials - Attempt ${currentAttempt}/5`
+          );
+
+          // Trigger cooldown on 5th failed attempt
+          if (currentAttempt >= 5) {
+            console.log("🔒 [LOGIN] Max attempts reached. Starting cooldown.");
+            setCooldownTime(60);
+          }
+
           throw new Error("Invalid email or password");
         }
-        
-        toast.error(authError.message || "Sign in failed", {
-          duration: 4000,
-          position: "top-center",
-        });
+
         throw authError;
       }
 
       // Step 2: Check Verification Status IF Auth Succeeded
       if (authData.user) {
+        console.log(
+          "✅ [LOGIN] Authentication successful, checking profile..."
+        );
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
           .select("is_verified, is_banned")
@@ -1579,168 +471,110 @@ export default function LoginPage() {
           .single();
 
         if (profileError) {
-          console.error("Login: Error fetching profile:", profileError.message);
+          console.error(
+            "❌ [LOGIN] Error fetching profile:",
+            profileError.message
+          );
           await supabase.auth.signOut();
-          toast.error("Could not verify account status. Please try again later.", {
-            duration: 5000,
-            position: "top-center",
-          });
-          throw new Error("Could not verify account status. Please try again later.");
+          throw new Error(
+            "Could not verify account status. Please try again later."
+          );
         }
 
         // Step 3: Handle Banned or Unverified Users
         if (profileData?.is_banned) {
+          console.log("🚫 [LOGIN] User is banned");
           await supabase.auth.signOut();
-          toast.error("Your account has been suspended.", {
-            duration: 5000,
-            position: "top-center",
-          });
           throw new Error("Your account has been suspended.");
         }
 
         if (profileData && profileData.is_verified === false) {
+          console.log("⏳ [LOGIN] User not verified");
           await supabase.auth.signOut();
-          toast.error("Your account is awaiting administrator approval. Please check back later.", {
-            duration: 6000,
-            position: "top-center",
-          });
-          throw new Error("Your account is awaiting administrator approval. Please check back later.");
+          throw new Error(
+            "Your account is awaiting administrator approval. Please check back later."
+          );
         }
 
-        // Step 4: If Verified and Not Banned
+        // Step 4: If Verified and Not Banned - Reset rate limiting
+        console.log("🎉 [LOGIN] Login successful! Resetting rate limits.");
+        setLoginAttempts(0);
+        setLastAttemptTime(null);
+        setCooldownTime(0);
+
         toast.success("Welcome back!", {
           duration: 3000,
           position: "top-center",
         });
       } else {
-        toast.error("Authentication failed unexpectedly.", {
-          duration: 4000,
-          position: "top-center",
-        });
         throw new Error("Authentication failed unexpectedly.");
       }
     } catch (err) {
-      // Error already displayed via toast above
+      console.log("❌ [LOGIN] Login failed:", err.message);
+
+      // Trigger cooldown on 5th failed attempt (catch-all for any error)
+      if (currentAttempt >= 5) {
+        console.log(
+          "🔒 [LOGIN] Max attempts (5) reached after this failure. Starting cooldown."
+        );
+        setCooldownTime(60);
+      }
+
+      toast.error(err.message || "Sign in failed", {
+        duration: 5000,
+        position: "top-center",
+      });
       resetCaptcha();
     } finally {
       setLoading(false);
     }
   };
 
-  const parseSignupError = (detail = "") => {
-    console.log("🔍 parseSignupError called with:", detail);
-    console.log("🔍 Detail type:", typeof detail);
-    
-    const lower = detail.toLowerCase();
-    console.log("🔍 Lowercase detail:", lower);
-    
-    // Check for confirmation email already sent
-    if (lower.includes("confirmation") && lower.includes("already")) {
-      console.log("✅ Matched: confirmation already sent");
-      return "A confirmation email has already been sent. Please check your inbox and click the confirmation link before creating a new account.";
-    }
-    
-    if (lower.includes("domain") && lower.includes("not")) {
-      console.log("✅ Matched: domain not registered");
-      return "This email domain is not registered with CampusTrace";
-    }
-    
-    if (lower.includes("already") || lower.includes("exists")) {
-      console.log("✅ Matched: email already exists");
-      return "An account with this email already exists. Please sign in instead or use a different email.";
-    }
-    
-    if (lower.includes("confirm") && !lower.includes("already")) {
-      console.log("✅ Matched: check email for confirmation");
-      return "Please check your email for a confirmation link";
-    }
-    
-    if (lower.includes("password") && lower.includes("weak")) {
-      console.log("✅ Matched: weak password");
-      return "Password is too weak. Please include uppercase, lowercase, numbers, and symbols.";
-    }
-    
-    console.log("❌ No match found, returning default");
-    return detail || "Sign up failed";
-  };
-
   const handleSignup = async (e) => {
     e.preventDefault();
-    console.log("🚀 Starting signup process...");
-    
+    console.log("📝 [SIGNUP] Starting signup process...");
+
     setTouched({
       email: true,
       password: true,
       fullName: true,
       confirmPassword: true,
     });
-    
+
     if (!validate()) {
-      console.log("❌ Validation failed");
-      toast.error("Please fix the errors in the form", {
-        duration: 4000,
-        position: "top-center",
-      });
+      console.log("❌ [SIGNUP] Validation failed");
       return;
     }
-    
+
+    // Check password strength for signup
+    const score = Object.values(passwordStrength).filter(Boolean).length;
+    console.log(`🔐 [SIGNUP] Password strength score: ${score}/5`);
+    if (score < 3) {
+      console.log("❌ [SIGNUP] Password too weak");
+      toast.error(
+        "Please create a stronger password that meets at least 3 requirements",
+        {
+          duration: 5000,
+          position: "top-center",
+        }
+      );
+      return;
+    }
+
     if (!captchaToken) {
-      console.log("❌ CAPTCHA not completed");
+      console.log("❌ [SIGNUP] No CAPTCHA token");
       toast.error("Please complete the CAPTCHA verification", {
         duration: 4000,
         position: "top-center",
       });
       return;
     }
-    
+
     setLoading(true);
-    
+    console.log("🚀 [SIGNUP] Sending signup request to backend...");
+
     try {
-      // Check if email already exists in profiles table
-      console.log("🔍 Checking if email already exists:", formData.email);
-      const { data: existingProfiles, error: checkError } = await supabase
-        .from("profiles")
-        .select("email, is_verified")
-        .eq("email", formData.email)
-        .maybeSingle();
-      
-      console.log("🔍 Check result:", { existingProfiles, checkError });
-      
-      if (existingProfiles) {
-        console.log("⚠️ Email already registered!");
-        if (existingProfiles.is_verified === false) {
-          toast.error("A confirmation email has already been sent to this address. Please check your inbox and click the confirmation link.", {
-            duration: 7000,
-            position: "top-center",
-            style: {
-              background: '#f59e0b',
-              color: '#fff',
-              fontWeight: '600',
-            },
-          });
-        } else {
-          toast.error("An account with this email already exists. Please sign in instead or use a different email.", {
-            duration: 6000,
-            position: "top-center",
-            style: {
-              background: '#ef4444',
-              color: '#fff',
-              fontWeight: '600',
-            },
-          });
-        }
-        resetCaptcha();
-        setLoading(false);
-        return;
-      }
-      
-      console.log("✅ Email available, proceeding with signup...");
-      console.log("📤 Sending signup request:", { 
-        email: formData.email, 
-        fullName: formData.fullName,
-        apiUrl: `${API_BASE_URL}/api/auth/signup`
-      });
-      
+      // Let the backend handle ALL validation including existing users
       const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1751,38 +585,34 @@ export default function LoginPage() {
           captchaToken,
         }),
       });
-      
-      console.log("📥 Response status:", response.status);
-      console.log("📥 Response ok:", response.ok);
-      
+
       const data = await response.json();
-      console.log("📥 Response data:", data);
-      console.log("📥 data.detail:", data.detail);
-      console.log("📥 data.message:", data.message);
 
       if (!response.ok) {
-        console.log("❌ Response not OK, parsing error...");
+        console.log("❌ [SIGNUP] Backend error:", data.detail || data.message);
+        // Parse the error from backend and show it to user
         const errorMessage = parseSignupError(data.detail || data.message);
-        console.log("🔴 Final error message:", errorMessage);
-        
+
+        // Show toast with appropriate styling
         toast.error(errorMessage, {
           duration: 6000,
           position: "top-center",
-          style: {
-            background: '#ef4444',
-            color: '#fff',
-            fontWeight: '600',
-          },
         });
+
         throw new Error(errorMessage);
       }
 
-      console.log("✅ Signup successful!");
-      toast.success("Account created! Check your email to confirm", {
-        duration: 5000,
-        position: "top-center",
-      });
-      
+      // Success - backend handled everything correctly
+      console.log("✅ [SIGNUP] Account created successfully!");
+      toast.success(
+        data.message || "Account created! Check your email to confirm",
+        {
+          duration: 5000,
+          position: "top-center",
+        }
+      );
+
+      // Reset form and switch to login
       setIsLogin(true);
       setFormData({ fullName: "", email: "", password: "" });
       setConfirmPassword("");
@@ -1790,20 +620,10 @@ export default function LoginPage() {
       setTouched({});
       resetCaptcha();
     } catch (err) {
-      console.error("💥 Signup error caught:", err);
-      console.error("💥 Error message:", err.message);
-      console.error("💥 Error stack:", err.stack);
-      
-      // If error wasn't already shown (network error, etc.)
-      if (!err.message.includes("already") && !err.message.includes("domain") && !err.message.includes("confirmation")) {
-        toast.error(err.message || "Sign up failed. Please try again.", {
-          duration: 5000,
-          position: "top-center",
-        });
-      }
+      // Error already shown via toast, just reset captcha
+      console.error("❌ [SIGNUP] Signup error:", err);
       resetCaptcha();
     } finally {
-      console.log("🏁 Signup process finished");
       setLoading(false);
     }
   };
@@ -1816,34 +636,38 @@ export default function LoginPage() {
         toastOptions={{
           duration: 4000,
           style: {
-            background: '#363636',
-            color: '#fff',
-            padding: '16px',
-            borderRadius: '8px',
+            background: "#363636",
+            color: "#fff",
+            padding: "16px",
+            borderRadius: "8px",
           },
           success: {
             duration: 3000,
             iconTheme: {
-              primary: '#10b981',
-              secondary: '#fff',
+              primary: "#10b981",
+              secondary: "#fff",
             },
           },
           error: {
             duration: 5000,
             iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
+              primary: "#ef4444",
+              secondary: "#fff",
             },
           },
         }}
       />
-      
+
       <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white dark:from-neutral-950 dark:to-neutral-900 flex">
         {/* Left Panel (Desktop Only) */}
         <div className="hidden lg:flex lg:w-1/2 xl:w-2/5 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-neutral-900 dark:to-neutral-950 p-12 flex-col justify-between">
           <div>
             <div className="flex items-center gap-3 mb-12">
-              <img src={logo} alt="CampusTrace" className="h-8 w-8 rounded-lg" />
+              <img
+                src={logo}
+                alt="CampusTrace"
+                className="h-8 w-8 rounded-lg"
+              />
               <span className="text-xl font-bold text-neutral-900 dark:text-white">
                 CampusTrace
               </span>
@@ -1920,6 +744,19 @@ export default function LoginPage() {
                 </p>
               </div>
 
+              {/* Rate limit warning */}
+              {cooldownTime > 0 && (
+                <div className="mb-6 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <div className="flex items-center text-sm text-amber-800 dark:text-amber-200">
+                    <Clock className="w-4 h-4 mr-2 flex-shrink-0" />
+                    <span>
+                      Too many attempts. Please wait {cooldownTime} seconds
+                      before trying again.
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Sign In / Sign Up Toggle */}
               <div className="flex bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1 mb-8">
                 <button
@@ -1929,6 +766,7 @@ export default function LoginPage() {
                       : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
                   }`}
                   onClick={() => {
+                    console.log("🔄 [UI] Switching to Sign In mode");
                     setIsLogin(true);
                     setTouched({});
                     setErrors({});
@@ -1944,6 +782,7 @@ export default function LoginPage() {
                       : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
                   }`}
                   onClick={() => {
+                    console.log("🔄 [UI] Switching to Sign Up mode");
                     setIsLogin(false);
                     setTouched({});
                     setErrors({});
@@ -1976,7 +815,9 @@ export default function LoginPage() {
                         type="text"
                         placeholder="John Doe"
                         value={formData.fullName}
-                        onChange={(e) => handleInput("fullName", e.target.value)}
+                        onChange={(e) =>
+                          handleInput("fullName", e.target.value)
+                        }
                         error={errors.fullName}
                         touched={touched.fullName}
                         aria-required="true"
@@ -2004,21 +845,68 @@ export default function LoginPage() {
                 />
 
                 {/* Password Field */}
-                <InputField
-                  icon={Lock}
-                  label="Password"
-                  isPassword
-                  placeholder="Enter your password"
-                  value={formData.password}
-                  onChange={(e) => handleInput("password", e.target.value)}
-                  error={errors.password}
-                  touched={touched.password}
-                  showPassword={showPassword}
-                  togglePassword={() => setShowPassword((prev) => !prev)}
-                  autoComplete={isLogin ? "current-password" : "new-password"}
-                  aria-required="true"
-                  aria-invalid={!!errors.password && touched.password}
-                />
+                <div>
+                  <InputField
+                    icon={Lock}
+                    label="Password"
+                    isPassword
+                    placeholder="Enter your password"
+                    value={formData.password}
+                    onChange={(e) => handleInput("password", e.target.value)}
+                    error={errors.password}
+                    touched={touched.password}
+                    showPassword={showPassword}
+                    togglePassword={() => setShowPassword((prev) => !prev)}
+                    autoComplete={isLogin ? "current-password" : "new-password"}
+                    aria-required="true"
+                    aria-invalid={!!errors.password && touched.password}
+                  />
+
+                  {/* Password Strength Indicator (Sign Up Only) */}
+                  {!isLogin && formData.password && (
+                    <div className="mt-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-neutral-600 dark:text-zinc-400">
+                          Password strength:
+                        </span>
+                        <span
+                          className={`text-xs font-medium ${getPasswordStrengthColor()}`}
+                        >
+                          {getPasswordStrengthText()}
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        <PasswordRequirement
+                          met={passwordStrength.hasMinLength}
+                          text="At least 6 characters"
+                        />
+                        <PasswordRequirement
+                          met={passwordStrength.hasUpperCase}
+                          text="One uppercase letter"
+                        />
+                        <PasswordRequirement
+                          met={passwordStrength.hasLowerCase}
+                          text="One lowercase letter"
+                        />
+                        <PasswordRequirement
+                          met={passwordStrength.hasNumber}
+                          text="One number"
+                        />
+                        <PasswordRequirement
+                          met={passwordStrength.hasSpecialChar}
+                          text="One special character"
+                        />
+                      </div>
+                      {Object.values(passwordStrength).filter(Boolean).length <
+                        3 && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                          Please meet at least 3 requirements for a secure
+                          password
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {/* Confirm Password Field (Sign Up Only) */}
                 <AnimatePresence mode="wait">
@@ -2030,23 +918,45 @@ export default function LoginPage() {
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <InputField
-                        icon={Lock}
-                        label="Confirm Password"
-                        isPassword
-                        placeholder="Confirm your password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        error={errors.confirmPassword}
-                        touched={touched.confirmPassword}
-                        showPassword={showConfirm}
-                        togglePassword={() => setShowConfirm((prev) => !prev)}
-                        autoComplete="new-password"
-                        aria-required="true"
-                        aria-invalid={
-                          !!errors.confirmPassword && touched.confirmPassword
-                        }
-                      />
+                      <div>
+                        <InputField
+                          icon={Lock}
+                          label="Confirm Password"
+                          isPassword
+                          placeholder="Confirm your password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          error={errors.confirmPassword}
+                          touched={touched.confirmPassword}
+                          showPassword={showConfirm}
+                          togglePassword={() => setShowConfirm((prev) => !prev)}
+                          autoComplete="new-password"
+                          aria-required="true"
+                          aria-invalid={
+                            !!errors.confirmPassword && touched.confirmPassword
+                          }
+                        />
+                        {/* Password Match Indicator */}
+                        {confirmPassword && !errors.confirmPassword && (
+                          <div className="mt-2 flex items-center">
+                            {formData.password === confirmPassword ? (
+                              <>
+                                <CheckCircle className="h-4 w-4 text-green-500 mr-1.5" />
+                                <span className="text-xs text-green-600 dark:text-green-400">
+                                  Passwords match
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="h-4 w-4 text-red-500 mr-1.5" />
+                                <span className="text-xs text-red-600 dark:text-red-400">
+                                  Passwords do not match
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -2064,7 +974,7 @@ export default function LoginPage() {
                       </span>
                     </label>
                     <Link
-                      to="/update-password"
+                      to="/forgot-password"
                       className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
                     >
                       Forgot password?
@@ -2089,7 +999,7 @@ export default function LoginPage() {
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  disabled={loading || !captchaToken}
+                  disabled={loading || !captchaToken || cooldownTime > 0}
                   className="w-full rounded-lg bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400
                                    text-white py-3 font-semibold flex items-center justify-center gap-2
                                    disabled:cursor-not-allowed transition-all duration-200
@@ -2102,6 +1012,11 @@ export default function LoginPage() {
                       <span>
                         {isLogin ? "Signing in..." : "Creating account..."}
                       </span>
+                    </>
+                  ) : cooldownTime > 0 ? (
+                    <>
+                      <Clock className="w-5 h-5" />
+                      <span>Wait {cooldownTime}s</span>
                     </>
                   ) : (
                     <>
@@ -2164,7 +1079,13 @@ export default function LoginPage() {
                                    dark:hover:text-primary-300 font-medium text-sm inline-flex items-center gap-1
                                    group"
                   onClick={() => {
-                    setIsLogin((prev) => !prev);
+                    const newMode = !isLogin;
+                    console.log(
+                      `🔄 [UI] Toggling to ${
+                        newMode ? "Sign Up" : "Sign In"
+                      } mode`
+                    );
+                    setIsLogin(newMode);
                     setErrors({});
                     setTouched({});
                     resetCaptcha();
