@@ -71,6 +71,13 @@ class ManualSignupRequest(BaseModel):
     university_id: int
     captchaToken: str
 
+class UserPreferences(BaseModel):
+    match_notifications: bool
+    claim_notifications: bool
+    message_notifications: bool
+    moderation_notifications: bool
+    email_notifications_enabled: bool
+
 class VerificationAction(BaseModel):
     approve: bool
     user_id: str
@@ -1137,6 +1144,59 @@ async def update_profile(full_name: Optional[str] = Form(None), avatar: Optional
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@profile_router.get("/preferences")
+async def get_user_preferences(current_user_id: str = Depends(get_current_user_id)):
+    """Get user notification preferences."""
+    try:
+        profile_result = supabase.table("profiles").select(
+            "match_notifications, claim_notifications, message_notifications, "
+            "moderation_notifications, email_notifications_enabled"
+        ).eq("id", current_user_id).single().execute()
+        
+        if not profile_result.data:
+            # Return defaults if not found
+            return {
+                "preferences": {
+                    "match_notifications": True,
+                    "claim_notifications": True,
+                    "message_notifications": True,
+                    "moderation_notifications": True,
+                    "email_notifications_enabled": True
+                }
+            }
+        return {"preferences": profile_result.data}
+    except Exception as e:
+        traceback.print_exc()
+        # Return defaults on error
+        return {
+            "preferences": {
+                "match_notifications": True,
+                "claim_notifications": True,
+                "message_notifications": True,
+                "moderation_notifications": True,
+                "email_notifications_enabled": True
+            }
+        }
+    
+@profile_router.put("/preferences")
+async def update_user_preferences(preferences: UserPreferences, current_user_id: str = Depends(get_current_user_id)):
+    """Update user notification preferences."""
+    try:
+        updates = {
+            "match_notifications": preferences.match_notifications,
+            "claim_notifications": preferences.claim_notifications,
+            "message_notifications": preferences.message_notifications,
+            "moderation_notifications": preferences.moderation_notifications,
+            "email_notifications_enabled": preferences.email_notifications_enabled
+        }
+        
+        supabase.table("profiles").update(updates).eq("id", current_user_id).execute()
+        
+        return {"message": "Preferences updated successfully", "preferences": updates}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to update preferences: {str(e)}")
 # ============= Include Routers =============
 app.include_router(auth_router)
 app.include_router(item_router)
