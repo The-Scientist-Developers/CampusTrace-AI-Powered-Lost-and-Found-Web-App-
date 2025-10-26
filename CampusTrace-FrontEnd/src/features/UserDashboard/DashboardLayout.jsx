@@ -236,18 +236,19 @@ export default function DashboardLayout({ children, user }) {
 
       if (!notifError) setNotificationCount(notifCount || 0);
 
-      // Fetch unread messages count
+      // Fetch unread messages count (via conversations)
+      // Note: Messages are linked to conversations, not directly to users
+      // For now, we'll count total conversations as a proxy for message activity
       const { count: msgCount, error: msgError } = await supabase
-        .from("messages")
+        .from("conversations")
         .select("*", { head: true, count: "exact" })
-        .eq("recipient_id", user.id)
-        .eq("is_read", false);
+        .or(`finder_id.eq.${user.id},claimant_id.eq.${user.id}`);
 
       if (!msgError) setMessageCount(msgCount || 0);
 
       // Fetch active posts count
       const { count: postsCount, error: postsError } = await supabase
-        .from("posts")
+        .from("items")
         .select("*", { head: true, count: "exact" })
         .eq("user_id", user.id)
         .in("status", ["active", "pending", "claimed"]);
@@ -302,7 +303,7 @@ export default function DashboardLayout({ children, user }) {
       )
       .subscribe();
 
-    // Messages subscription
+    // Messages subscription (track via conversations)
     const messageSubscription = supabase
       .channel(`user:messages:${user.id}`)
       .on(
@@ -310,16 +311,14 @@ export default function DashboardLayout({ children, user }) {
         {
           event: "*",
           schema: "public",
-          table: "messages",
-          filter: `recipient_id=eq.${user.id}`,
+          table: "conversations",
         },
         async () => {
-          // Refetch message count
+          // Refetch conversation count when conversations change
           const { count } = await supabase
-            .from("messages")
+            .from("conversations")
             .select("*", { head: true, count: "exact" })
-            .eq("recipient_id", user.id)
-            .eq("is_read", false);
+            .or(`finder_id.eq.${user.id},claimant_id.eq.${user.id}`);
           setMessageCount(count || 0);
         }
       )
@@ -333,13 +332,13 @@ export default function DashboardLayout({ children, user }) {
         {
           event: "*",
           schema: "public",
-          table: "posts",
+          table: "items",
           filter: `user_id=eq.${user.id}`,
         },
         async () => {
           // Refetch posts count
           const { count } = await supabase
-            .from("posts")
+            .from("items")
             .select("*", { head: true, count: "exact" })
             .eq("user_id", user.id)
             .in("status", ["active", "pending", "claimed"]);
@@ -361,7 +360,7 @@ export default function DashboardLayout({ children, user }) {
         async (payload) => {
           // Check if comment is on user's post
           const { data: post } = await supabase
-            .from("posts")
+            .from("items")
             .select("user_id")
             .eq("id", payload.new.post_id)
             .single();
@@ -382,6 +381,26 @@ export default function DashboardLayout({ children, user }) {
       supabase.removeChannel(commentsSubscription);
     };
   }, [user?.id, fetchAllData]);
+
+  // Refetch notification count when leaving notification page
+  useEffect(() => {
+    const refetchNotificationCount = async () => {
+      if (!user?.id) return;
+
+      const { count } = await supabase
+        .from("notifications")
+        .select("*", { head: true, count: "exact" })
+        .eq("recipient_id", user.id)
+        .eq("status", "unread");
+
+      setNotificationCount(count || 0);
+    };
+
+    // Refetch when navigating away from notifications page
+    if (!location.pathname.includes("/notifications")) {
+      refetchNotificationCount();
+    }
+  }, [location.pathname, user?.id]);
 
   // Compute menu items with badges
   const computedMenuItems = useMemo(() => {

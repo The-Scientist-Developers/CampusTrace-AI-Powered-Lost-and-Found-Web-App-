@@ -558,7 +558,10 @@ export default function LoginPage() {
         {/* Left Panel (Desktop Only) */}
         <div className="hidden lg:flex lg:w-1/2 xl:w-2/5 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-neutral-900 dark:to-neutral-950 p-12 flex-col justify-between">
           <div>
-            <div className="flex items-center gap-3 mb-12">
+            <Link
+              to="/"
+              className="flex items-center gap-3 mb-12 w-fit hover:opacity-80 transition-opacity"
+            >
               <img
                 src={logo}
                 alt="CampusTrace"
@@ -567,7 +570,7 @@ export default function LoginPage() {
               <span className="text-xl font-bold text-neutral-900 dark:text-white">
                 CampusTrace
               </span>
-            </div>
+            </Link>
             <div className="space-y-8">
               <div>
                 <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-4">
@@ -617,14 +620,19 @@ export default function LoginPage() {
           >
             {/* Mobile Header */}
             <div className="lg:hidden text-center mb-8">
-              <img
-                src={logo}
-                alt="CampusTrace"
-                className="mx-auto h-12 w-12 rounded-lg mb-4"
-              />
-              <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
-                CampusTrace
-              </h1>
+              <Link
+                to="/"
+                className="inline-flex flex-col items-center hover:opacity-80 transition-opacity"
+              >
+                <img
+                  src={logo}
+                  alt="CampusTrace"
+                  className="mx-auto h-12 w-12 rounded-lg mb-4"
+                />
+                <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+                  CampusTrace
+                </h1>
+              </Link>
             </div>
 
             {/* Form Card */}

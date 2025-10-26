@@ -14,9 +14,11 @@ import {
   Camera,
   Sparkles,
   TrendingUp,
+  Tag,
+  Clock,
 } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
-import { supabase, getAccessToken } from "../../../api/apiClient.js";
+import { supabase, getAccessToken } from "../../../api/apiClient.js"; //
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import {
@@ -29,7 +31,9 @@ import {
   ResponsiveContainer,
   Area,
   AreaChart,
+  Cell, // Import Cell for BarChart colors
 } from "recharts";
+import { useTheme } from "../../../contexts/ThemeContext"; // Import useTheme
 
 // Fix for mobile access - use your computer's IP when in development
 const API_BASE_URL =
@@ -85,14 +89,14 @@ const StatusBadge = ({ status }) => {
 // --- Statistics Card Component ---
 const StatCard = ({ icon: Icon, title, value, trend, color = "primary" }) => {
   const colors = {
-    primary: "from-neutral-500 to-neutral-600",
+    primary: "from-primary-500 to-primary-600", // Adjusted to use primary theme color
     green: "from-green-500 to-green-600",
     red: "from-red-500 to-rose-600",
     blue: "from-blue-500 to-cyan-600",
   };
 
   const iconColors = {
-    primary: "text-neutral-600 dark:text-neutral-400",
+    primary: "text-primary-600 dark:text-primary-400", // Adjusted icon color
     green: "text-green-600 dark:text-green-400",
     red: "text-red-600 dark:text-red-400",
     blue: "text-blue-600 dark:text-blue-400",
@@ -153,6 +157,125 @@ const DashboardSkeleton = () => (
   </div>
 );
 
+// --- Custom Tooltip ---
+const CustomTooltip = ({ active, payload, label }) => {
+  const { theme } = useTheme(); // Get current theme
+
+  if (active && payload && payload.length) {
+    return (
+      <div
+        className={`p-3 rounded-lg shadow-lg border ${
+          theme === "light"
+            ? "bg-white border-neutral-200" // Use light theme colors
+            : "bg-[#2a2a2a] border-[#3a3a3a]" // Use dark theme colors
+        }`}
+      >
+        <p className="text-sm font-semibold text-neutral-800 dark:text-white mb-1">
+          {label}
+        </p>
+        {payload.map((entry, index) => (
+          <p
+            key={`item-${index}`}
+            className="text-sm"
+            style={{ color: entry.color }}
+          >
+            {`${entry.name}: ${entry.value}`}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
+// --- Chart Card Component ---
+const ChartCard = ({ title, data, type = "area" }) => {
+  const { theme } = useTheme(); // Get current theme
+
+  // Define colors based on theme
+  const primaryColor = "#674CC4"; //
+  const lostColor = "#ef4444"; // Red
+  const foundColor = "#22c55e"; // Tailwind green-500
+  const axisColor = theme === "light" ? "#555555" : "#a3a3a3"; // light.subtle or neutral-400
+  const gridColor = theme === "light" ? "#E3E3E3" : "#3a3a3a"; // light.border or dark.border
+
+  return (
+    <div className="bg-white dark:bg-[#2a2a2a] rounded-2xl p-6 shadow-sm border border-neutral-200 dark:border-[#3a3a3a]">
+      <h3 className="text-lg font-semibold text-neutral-800 dark:text-white mb-6">
+        {title}
+      </h3>
+      <ResponsiveContainer width="100%" height={250}>
+        {type === "area" ? (
+          <AreaChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+            <XAxis
+              dataKey="day"
+              tick={{ fill: axisColor, fontSize: 12 }}
+              stroke={axisColor}
+            />
+            <YAxis
+              tick={{ fill: axisColor, fontSize: 12 }}
+              stroke={axisColor}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <defs>
+              <linearGradient id="colorLost" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={lostColor} stopOpacity={0.8} />
+                <stop offset="95%" stopColor={lostColor} stopOpacity={0.1} />
+              </linearGradient>
+              <linearGradient id="colorFound" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={foundColor} stopOpacity={0.8} />
+                <stop offset="95%" stopColor={foundColor} stopOpacity={0.1} />
+              </linearGradient>
+            </defs>
+            <Area
+              type="monotone"
+              dataKey="lost"
+              stackId="1"
+              stroke={lostColor}
+              fillOpacity={1}
+              fill="url(#colorLost)"
+              name="Lost"
+            />
+            <Area
+              type="monotone"
+              dataKey="found"
+              stackId="1"
+              stroke={foundColor}
+              fillOpacity={1}
+              fill="url(#colorFound)"
+              name="Found"
+            />
+          </AreaChart>
+        ) : (
+          <BarChart data={data} layout="vertical">
+            <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+            <XAxis
+              type="number"
+              tick={{ fill: axisColor, fontSize: 12 }}
+              stroke={axisColor}
+            />
+            <YAxis
+              dataKey="name"
+              type="category"
+              tick={{ fill: axisColor, fontSize: 12 }}
+              stroke={axisColor}
+              width={80}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Bar
+              dataKey="value"
+              fill={primaryColor}
+              radius={[0, 4, 4, 0]}
+              name="Count"
+            />
+          </BarChart>
+        )}
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
 // --- Main Dashboard Component ---
 export default function UserMainPage({ user }) {
   const [myRecentPosts, setMyRecentPosts] = useState([]);
@@ -187,6 +310,8 @@ export default function UserMainPage({ user }) {
   }, [user]);
 
   const fetchDashboardData = async () => {
+    setLoading(true); // Ensure loading starts
+    setError(null); // Clear previous errors
     try {
       // Get user profile
       const { data: profile, error: profileError } = await supabase
@@ -196,6 +321,7 @@ export default function UserMainPage({ user }) {
         .single();
 
       if (profileError) throw profileError;
+      if (!profile) throw new Error("User profile not found."); // Add check
 
       // Fetch all user's items
       const { data: allMyItems = [], error: itemsError } = await supabase
@@ -205,25 +331,33 @@ export default function UserMainPage({ user }) {
 
       if (itemsError) throw itemsError;
 
-      // Fetch active posts
+      // Fetch active posts (Ensure statuses are correct)
       const { data: activePosts = [] } = await supabase
         .from("items")
         .select("*")
         .eq("user_id", user.id)
-        .not("moderation_status", "in", "(recovered,rejected)")
+        .in("moderation_status", ["approved", "pending", "pending_return"]) // Include relevant statuses
         .order("created_at", { ascending: false })
         .limit(4);
 
-      // Fetch community activity
-      const { data: communityData = [] } = await supabase
-        .from("items")
-        .select("*, profiles(id, full_name, email)")
-        .eq("university_id", profile.university_id)
-        .eq("moderation_status", "approved")
-        .order("created_at", { ascending: false });
+      // Fetch community activity (Ensure university_id exists)
+      if (profile.university_id) {
+        const { data: communityData = [] } = await supabase
+          .from("items")
+          .select("*, profiles(id, full_name, email)")
+          .eq("university_id", profile.university_id)
+          .eq("moderation_status", "approved") // Only show approved items in community feed
+          .order("created_at", { ascending: false })
+          .limit(50); // Limit community fetch for performance
+        setCommunityActivity(communityData);
+      } else {
+        setCommunityActivity([]); // Set empty if no university_id
+        console.warn(
+          "User profile does not have a university_id, community activity cannot be fetched."
+        );
+      }
 
       setMyRecentPosts(activePosts);
-      setCommunityActivity(communityData);
 
       // Calculate stats
       const lostCount = allMyItems.filter(
@@ -245,21 +379,26 @@ export default function UserMainPage({ user }) {
 
       processChartData(allMyItems);
 
-      // Get latest lost item and matches
+      // Get latest lost item and matches (ensure correct statuses)
       const latestLostItem = allMyItems
         .filter(
           (item) =>
-            item.status === "Lost" && item.moderation_status !== "recovered"
+            item.status === "Lost" &&
+            item.moderation_status !== "recovered" &&
+            item.moderation_status !== "rejected" // Don't show matches for rejected items
         )
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
 
       if (latestLostItem) {
         setMyLostItem(latestLostItem);
         await fetchMatches(latestLostItem.id);
+      } else {
+        setMyLostItem(null); // Clear if no lost item found
+        setPossibleMatches([]); // Clear matches as well
       }
     } catch (err) {
       console.error("Dashboard error:", err);
-      setError(err.message);
+      setError(err.message || "Failed to load dashboard data."); // Set more specific error
     } finally {
       setLoading(false);
     }
@@ -267,20 +406,35 @@ export default function UserMainPage({ user }) {
 
   const fetchMatches = async (itemId) => {
     try {
-      const token = await getAccessToken();
-      if (!token) return;
+      const token = await getAccessToken(); // Ensure getAccessToken is correctly imported/defined
+      if (!token) {
+        console.warn("No access token found, cannot fetch matches.");
+        return; // Don't proceed without token
+      }
 
       const response = await fetch(
         `${API_BASE_URL}/api/items/find-matches/${itemId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (response.ok) {
-        const matches = await response.json();
-        setPossibleMatches(matches.slice(0, 4)); // Limit to 4 matches
+      if (!response.ok) {
+        // Check response status
+        const errorData = await response.json().catch(() => ({
+          detail: "Failed to fetch matches, invalid server response.",
+        }));
+        throw new Error(
+          errorData.detail || `HTTP error! status: ${response.status}`
+        );
       }
+
+      const matches = await response.json();
+      // Ensure matches is an array before slicing
+      setPossibleMatches(Array.isArray(matches) ? matches.slice(0, 4) : []);
     } catch (err) {
       console.error("Error fetching matches:", err);
+      // Optionally show a non-blocking toast
+      // toast.error("Could not fetch item matches.");
+      setPossibleMatches([]); // Set empty on error
     }
   };
 
@@ -288,14 +442,17 @@ export default function UserMainPage({ user }) {
     // Weekly data
     const weeklyData = [];
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize today to start of day
+
     for (let i = 6; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       const dayName = date.toLocaleDateString("en", { weekday: "short" });
-      const dayItems = items.filter(
-        (item) =>
-          new Date(item.created_at).toDateString() === date.toDateString()
-      );
+      const dayItems = items.filter((item) => {
+        const itemDate = new Date(item.created_at);
+        itemDate.setHours(0, 0, 0, 0); // Normalize item date
+        return itemDate.getTime() === date.getTime();
+      });
       weeklyData.push({
         day: dayName,
         lost: dayItems.filter((item) => item.status === "Lost").length,
@@ -306,13 +463,16 @@ export default function UserMainPage({ user }) {
     // Categories
     const categoryCount = {};
     items.forEach((item) => {
-      categoryCount[item.category] = (categoryCount[item.category] || 0) + 1;
+      // Ensure category exists and is a string before counting
+      if (item.category && typeof item.category === "string") {
+        categoryCount[item.category] = (categoryCount[item.category] || 0) + 1;
+      }
     });
 
     const categories = Object.entries(categoryCount)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
-      .slice(0, 5);
+      .slice(0, 5); // Limit to top 5
 
     setChartData({ weekly: weeklyData, categories });
   };
@@ -326,14 +486,27 @@ export default function UserMainPage({ user }) {
   if (loading) return <DashboardSkeleton />;
   if (error)
     return (
-      <div className="text-center p-12 bg-red-50 dark:bg-red-900/20 rounded-2xl">
+      <div className="text-center p-12 bg-red-50 dark:bg-red-900/20 rounded-2xl border border-red-200 dark:border-red-500/30">
         <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-        <p className="text-red-600 dark:text-red-400">{error}</p>
+        <p className="text-red-600 dark:text-red-400 font-medium">
+          Could not load dashboard data.
+        </p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
+          Error: {error}
+        </p>
+        <button
+          onClick={fetchDashboardData} // Add a retry button
+          className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700"
+        >
+          Try Again
+        </button>
       </div>
     );
 
   return (
-    <div className="max-w-7xl mx-auto space-y-12">
+    <div className="max-w-7xl mx-auto space-y-12 px-4 sm:px-6 lg:px-8 py-8">
+      {" "}
+      {/* Added padding */}
       {/* Stats Section */}
       <section>
         <div className="mb-8">
@@ -371,22 +544,25 @@ export default function UserMainPage({ user }) {
           />
         </div>
       </section>
-
       {/* Charts Section */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ChartCard title="Weekly Activity" data={chartData.weekly} />
+        <ChartCard
+          title="Weekly Activity"
+          data={chartData.weekly}
+          type="area"
+        />
         <ChartCard
           title="Top Categories"
           data={chartData.categories}
           type="bar"
         />
       </section>
-
       {/* Possible Matches Section - IMPROVED */}
       <section>
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-neutral-800 dark:text-white flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-neutral-500" />
+            <Sparkles className="w-6 h-6 text-primary-500" />{" "}
+            {/* Use theme color */}
             AI-Powered Matches
           </h2>
           <p className="text-neutral-600 dark:text-neutral-400 mt-1">
@@ -397,12 +573,12 @@ export default function UserMainPage({ user }) {
         {myLostItem ? (
           <div className="space-y-6">
             {/* Display the lost item */}
-            <div className="bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-neutral-900/20 dark:to-neutral-800/20 rounded-2xl p-6 border border-neutral-200 dark:border-neutral-700">
-              <h3 className="text-sm font-semibold text-neutral-600 dark:text-neutral-400 mb-4">
-                YOUR LOST ITEM
+            <div className="bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-neutral-900/30 dark:to-neutral-800/30 rounded-2xl p-6 border border-neutral-200 dark:border-neutral-700">
+              <h3 className="text-sm font-semibold text-neutral-600 dark:text-neutral-400 mb-4 uppercase tracking-wider">
+                Your Latest Lost Item
               </h3>
               <div className="flex flex-col sm:flex-row gap-6">
-                <div className="w-full sm:w-32 h-32 rounded-xl overflow-hidden bg-white dark:bg-[#2a2a2a] flex-shrink-0">
+                <div className="w-full sm:w-32 h-32 rounded-xl overflow-hidden bg-white dark:bg-[#2a2a2a] flex-shrink-0 border border-neutral-200 dark:border-neutral-700">
                   {myLostItem.image_url ? (
                     <img
                       src={myLostItem.image_url}
@@ -410,23 +586,27 @@ export default function UserMainPage({ user }) {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Camera className="w-8 h-8 text-neutral-300" />
+                    <div className="w-full h-full flex items-center justify-center bg-neutral-100 dark:bg-neutral-800">
+                      <Camera className="w-8 h-8 text-neutral-300 dark:text-neutral-600" />
                     </div>
                   )}
                 </div>
-                <div className="flex-1">
-                  <h4 className="text-xl font-bold text-neutral-800 dark:text-white mb-2">
+                <div className="flex-1 min-w-0">
+                  {" "}
+                  {/* Ensure text wraps */}
+                  <h4 className="text-xl font-bold text-neutral-800 dark:text-white mb-2 truncate">
                     {myLostItem.title}
                   </h4>
-                  <p className="text-neutral-600 dark:text-neutral-400 mb-3">
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3 line-clamp-2">
                     {myLostItem.description}
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-white dark:bg-[#2a2a2a] rounded-full text-sm font-medium">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-[#2a2a2a] rounded-full text-xs font-medium border border-neutral-200 dark:border-neutral-700">
+                      <Tag className="w-3 h-3 text-neutral-500" />
                       {myLostItem.category}
                     </span>
-                    <span className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full text-sm font-medium">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full text-xs font-medium">
+                      <AlertCircle className="w-3 h-3" />
                       Lost
                     </span>
                   </div>
@@ -437,8 +617,8 @@ export default function UserMainPage({ user }) {
             {/* Display matches */}
             {possibleMatches.length > 0 ? (
               <div>
-                <h3 className="text-sm font-semibold text-neutral-500 dark:text-neutral-400 mb-4">
-                  POSSIBLE MATCHES ({possibleMatches.length})
+                <h3 className="text-sm font-semibold text-neutral-500 dark:text-neutral-400 mb-4 uppercase tracking-wider">
+                  Possible Matches Found ({possibleMatches.length})
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {possibleMatches.map((item) => (
@@ -450,27 +630,26 @@ export default function UserMainPage({ user }) {
               <EmptyState
                 icon={HelpCircle}
                 title="No matches found yet"
-                description="We're continuously searching for matches. Check back later!"
+                description="Our AI is continuously searching. We'll show potential matches here as soon as they're found."
               />
             )}
           </div>
         ) : (
           <EmptyState
             icon={Package}
-            title="No lost items"
-            description="Post a lost item to see AI-powered matches here"
+            title="No active lost items"
+            description="If you lose something, post it here to enable AI-powered matching."
             buttonText="Post Lost Item"
             onButtonClick={() => navigate("/dashboard/post-new")}
           />
         )}
       </section>
-
       {/* Recent Posts Section */}
       <section>
         <SectionHeader
-          title="My Recent Posts"
-          description="Your active lost and found items"
-          linkText={myRecentPosts.length > 0 ? "View all" : null}
+          title="My Active Posts"
+          description="Your current lost and found items"
+          linkText={myRecentPosts.length > 0 ? "View all posts" : null}
           linkTo="/dashboard/my-posts"
         />
         {myRecentPosts.length > 0 ? (
@@ -483,18 +662,17 @@ export default function UserMainPage({ user }) {
           <EmptyState
             icon={EyeOff}
             title="No active posts"
-            description="Your posted items will appear here"
+            description="Items you post will appear here. Start by reporting a lost or found item."
             buttonText="Post New Item"
             onButtonClick={() => navigate("/dashboard/post-new")}
           />
         )}
       </section>
-
       {/* Community Activity Section */}
       <section>
         <SectionHeader
-          title="Community Activity"
-          description="Latest items from your campus"
+          title="Latest Community Activity"
+          description={`Recent items reported at your campus`} // Updated description
         />
         {communityActivity.length > 0 ? (
           <div className="bg-white dark:bg-[#2a2a2a] rounded-2xl shadow-sm border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden">
@@ -503,19 +681,21 @@ export default function UserMainPage({ user }) {
                 <ActivityItem key={item.id} item={item} />
               ))}
             </div>
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              totalItems={communityActivity.length}
-              itemsPerPage={itemsPerPage}
-            />
+            {totalPages > 1 && ( // Only show pagination if needed
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                totalItems={communityActivity.length}
+                itemsPerPage={itemsPerPage}
+              />
+            )}
           </div>
         ) : (
           <EmptyState
             icon={Activity}
-            title="No community activity"
-            description="Community posts will appear here"
+            title="No community activity yet"
+            description="Approved posts from others on your campus will show up here."
           />
         )}
       </section>
@@ -527,96 +707,35 @@ export default function UserMainPage({ user }) {
 const SectionHeader = ({ title, description, linkText, linkTo }) => (
   <div className="flex items-center justify-between mb-6">
     <div>
-      <h2 className="text-2xl font-bold text-neutral-800 dark:text-white">
+      <h2 className="text-xl font-bold text-neutral-800 dark:text-white mb-1">
         {title}
       </h2>
-      <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-        {description}
-      </p>
+      {description && (
+        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          {description}
+        </p>
+      )}
     </div>
-    {linkText && (
+    {linkText && linkTo && (
       <Link
         to={linkTo}
-        className="text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1 group"
+        className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm font-medium flex items-center gap-1 transition-colors"
       >
         {linkText}
-        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        <ArrowRight className="w-4 h-4" />
       </Link>
     )}
   </div>
 );
 
-const ChartCard = ({ title, data, type = "area" }) => (
-  <div className="bg-white dark:bg-[#2a2a2a] rounded-2xl p-6 shadow-sm border border-neutral-200 dark:border-[#3a3a3a]">
-    <h3 className="text-lg font-semibold text-neutral-800 dark:text-white mb-6">
-      {title}
-    </h3>
-    <ResponsiveContainer width="100%" height={250}>
-      {type === "area" ? (
-        <AreaChart data={data}>
-          <CartesianGrid
-            strokeDasharray="3 3"
-            className="stroke-neutral-200 dark:stroke-neutral-700"
-          />
-          <XAxis dataKey="day" tick={{ fill: "#6b7280", fontSize: 12 }} />
-          <YAxis tick={{ fill: "#6b7280", fontSize: 12 }} />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "#fff",
-              borderRadius: "8px",
-              border: "1px solid #e5e7eb",
-            }}
-          />
-          <Area
-            type="monotone"
-            dataKey="lost"
-            stackId="1"
-            stroke="#ef4444"
-            fill="#fca5a5"
-          />
-          <Area
-            type="monotone"
-            dataKey="found"
-            stackId="1"
-            stroke="#10b981"
-            fill="#86efac"
-          />
-        </AreaChart>
-      ) : (
-        <BarChart data={data} layout="vertical">
-          <CartesianGrid
-            strokeDasharray="3 3"
-            className="stroke-neutral-200 dark:stroke-neutral-700"
-          />
-          <XAxis type="number" tick={{ fill: "#6b7280", fontSize: 12 }} />
-          <YAxis
-            dataKey="name"
-            type="category"
-            tick={{ fill: "#6b7280", fontSize: 12 }}
-            width={80}
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "#fff",
-              borderRadius: "8px",
-              border: "1px solid #e5e7eb",
-            }}
-          />
-          <Bar dataKey="value" fill="#6b7280" radius={[0, 4, 4, 0]} />
-        </BarChart>
-      )}
-    </ResponsiveContainer>
-  </div>
-);
-
 const MatchCard = ({ item }) => (
   <Link
-    to="/dashboard/browse-all"
-    state={{ itemId: item.id }}
-    className="group bg-white dark:bg-[#2a2a2a] rounded-xl border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden hover:shadow-lg transition-all duration-200"
+    to="/dashboard/browse-all" // Link to browse page
+    state={{ itemId: item.id }} // Pass item ID to potentially highlight/scroll to it
+    className="group bg-white dark:bg-[#2a2a2a] rounded-xl border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden hover:shadow-lg transition-all duration-200 block relative" // Added block and relative
   >
     {item.match_score && (
-      <div className="bg-gradient-to-r from-primary-500 to-primary-600 text-white text-center py-2 text-sm font-semibold">
+      <div className="absolute top-2 left-2 z-10 bg-gradient-to-r from-primary-500 to-purple-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md">
         {item.match_score}% Match
       </div>
     )}
@@ -625,22 +744,26 @@ const MatchCard = ({ item }) => (
         <img
           src={item.image_url}
           alt={item.title}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" // Slightly subtler zoom
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center">
-          <Camera className="w-8 h-8 text-neutral-300" />
+          <Camera className="w-8 h-8 text-neutral-300 dark:text-neutral-600" />
         </div>
       )}
+      {/* Subtle overlay on hover */}
+      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 dark:group-hover:bg-black/20 transition-colors duration-300"></div>
     </div>
     <div className="p-4">
       <h3 className="font-semibold text-neutral-800 dark:text-white line-clamp-1 mb-2">
         {item.title}
       </h3>
       <div className="flex items-center justify-between">
-        <span className="text-sm text-neutral-500">{item.category}</span>
-        <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full text-xs font-medium">
-          Found
+        <span className="text-sm text-neutral-500 dark:text-neutral-400">
+          {item.category}
+        </span>
+        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full text-xs font-medium">
+          <CheckCircle className="w-3 h-3" /> Found
         </span>
       </div>
     </div>
@@ -649,36 +772,44 @@ const MatchCard = ({ item }) => (
 
 const ItemCard = ({ item }) => (
   <Link
-    to="/dashboard/browse-all"
-    state={{ itemId: item.id }}
-    className="group bg-white dark:bg-[#2a2a2a] rounded-xl border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden hover:shadow-lg transition-all duration-200"
+    to="/dashboard/browse-all" // Link to browse page
+    state={{ itemId: item.id }} // Pass item ID
+    className="group bg-white dark:bg-[#2a2a2a] rounded-xl border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden hover:shadow-lg transition-all duration-200 block" // Added block
   >
     <div className="aspect-square bg-neutral-100 dark:bg-[#1a1a1a] relative overflow-hidden">
       {item.image_url ? (
         <img
           src={item.image_url}
           alt={item.title}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center">
-          <Camera className="w-8 h-8 text-neutral-300" />
+          <Camera className="w-8 h-8 text-neutral-300 dark:text-neutral-600" />
         </div>
       )}
+      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 dark:group-hover:bg-black/20 transition-colors duration-300"></div>
     </div>
     <div className="p-4">
-      <h3 className="font-semibold text-neutral-800 dark:text-white line-clamp-2 mb-3">
+      <h3 className="font-semibold text-neutral-800 dark:text-white line-clamp-2 mb-3 h-12">
+        {" "}
+        {/* Fixed height for title */}
         {item.title}
       </h3>
       <div className="flex items-center justify-between">
         <StatusBadge status={item.moderation_status} />
         <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${
+          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
             item.status === "Lost"
               ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
               : "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
           }`}
         >
+          {item.status === "Lost" ? (
+            <AlertCircle className="w-3 h-3" />
+          ) : (
+            <CheckCircle className="w-3 h-3" />
+          )}
           {item.status}
         </span>
       </div>
@@ -688,11 +819,11 @@ const ItemCard = ({ item }) => (
 
 const ActivityItem = ({ item }) => (
   <Link
-    to="/dashboard/browse-all"
-    state={{ itemId: item.id }}
-    className="flex items-center gap-4 p-5 hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors"
+    to="/dashboard/browse-all" // Link to browse page
+    state={{ itemId: item.id }} // Pass item ID
+    className="flex items-center gap-4 p-5 hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors group" // Added group
   >
-    <div className="w-16 h-16 rounded-xl bg-neutral-100 dark:bg-[#1a1a1a] overflow-hidden flex-shrink-0">
+    <div className="w-16 h-16 rounded-xl bg-neutral-100 dark:bg-[#1a1a1a] overflow-hidden flex-shrink-0 border border-neutral-200 dark:border-[#3a3a3a]">
       {item.image_url ? (
         <img
           src={item.image_url}
@@ -701,33 +832,41 @@ const ActivityItem = ({ item }) => (
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center">
-          <span className="text-xs font-medium text-neutral-400">
-            {item.category?.substring(0, 3).toUpperCase()}
-          </span>
+          {/* Display category initial or icon */}
+          <Tag className="w-5 h-5 text-neutral-400 dark:text-neutral-600" />
         </div>
       )}
     </div>
     <div className="flex-1 min-w-0">
-      <p className="font-semibold text-neutral-800 dark:text-white line-clamp-1">
+      <p className="font-semibold text-neutral-800 dark:text-white line-clamp-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
         {item.title}
       </p>
-      <div className="flex items-center gap-3 mt-1">
+      <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-1">
+        {" "}
+        {/* Flex wrap for smaller screens */}
         <span
-          className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+          className={`text-xs font-medium px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
             item.status === "Lost"
               ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
               : "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
           }`}
         >
+          {item.status === "Lost" ? (
+            <AlertCircle className="w-3 h-3" />
+          ) : (
+            <CheckCircle className="w-3 h-3" />
+          )}
           {item.status}
         </span>
-        <span className="text-sm text-neutral-500">{item.category}</span>
-        <span className="text-sm text-neutral-400">
-          • {timeAgo(item.created_at)}
+        <span className="text-sm text-neutral-500 dark:text-neutral-400">
+          {item.category}
+        </span>
+        <span className="text-sm text-neutral-400 dark:text-neutral-500 flex items-center gap-1">
+          <Clock className="w-3 h-3" /> {timeAgo(item.created_at)}
         </span>
       </div>
     </div>
-    <ArrowRight className="w-5 h-5 text-neutral-400 group-hover:translate-x-1 transition-transform" />
+    <ArrowRight className="w-5 h-5 text-neutral-400 dark:text-neutral-500 group-hover:translate-x-1 transition-transform flex-shrink-0" />
   </Link>
 );
 
@@ -738,26 +877,28 @@ const Pagination = ({
   totalItems,
   itemsPerPage,
 }) => (
-  <div className="px-6 py-4 bg-neutral-50 dark:bg-[#1a1a1a] flex items-center justify-between">
-    <span className="text-sm text-neutral-600 dark:text-neutral-400">
+  <div className="px-6 py-4 bg-neutral-50 dark:bg-[#1a1a1a] flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-neutral-200 dark:border-[#3a3a3a]">
+    <span className="text-sm text-neutral-600 dark:text-neutral-400 order-2 sm:order-1">
       Showing {Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)} to{" "}
-      {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
+      {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} items
     </span>
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 order-1 sm:order-2">
       <button
         onClick={() => onPageChange(Math.max(1, currentPage - 1))}
         disabled={currentPage === 1}
-        className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-neutral-300 dark:border-neutral-600"
+        aria-label="Previous page"
       >
         <ChevronLeft className="w-5 h-5" />
       </button>
-      <span className="px-3 py-1 text-sm font-medium">
-        {currentPage} / {totalPages}
+      <span className="px-3 py-1 text-sm font-medium text-neutral-700 dark:text-neutral-300">
+        Page {currentPage} / {totalPages}
       </span>
       <button
         onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
         disabled={currentPage === totalPages}
-        className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-neutral-300 dark:border-neutral-600"
+        aria-label="Next page"
       >
         <ChevronRight className="w-5 h-5" />
       </button>
@@ -774,19 +915,19 @@ const EmptyState = ({
 }) => (
   <div className="bg-neutral-50 dark:bg-[#2a2a2a]/50 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-2xl p-12">
     <div className="text-center max-w-sm mx-auto">
-      <div className="w-12 h-12 bg-neutral-100 dark:bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-4">
-        <Icon className="w-6 h-6 text-neutral-400" />
+      <div className="w-14 h-14 bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-700 rounded-full flex items-center justify-center mx-auto mb-5 border border-neutral-200 dark:border-neutral-700">
+        <Icon className="w-7 h-7 text-neutral-400 dark:text-neutral-500" />
       </div>
       <h3 className="text-lg font-semibold text-neutral-800 dark:text-white mb-2">
         {title}
       </h3>
-      <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6">
+      <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 leading-relaxed">
         {description}
       </p>
       {buttonText && (
         <button
           onClick={onButtonClick}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors shadow-sm hover:shadow-md"
         >
           <Plus className="w-4 h-4" />
           {buttonText}
@@ -796,18 +937,35 @@ const EmptyState = ({
   </div>
 );
 
-const timeAgo = (date) => {
-  const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+// timeAgo function remains the same
+const timeAgo = (dateString) => {
+  if (!dateString) return "unknown time"; // Handle null or undefined dates
+
+  const date = new Date(dateString);
+  // Check if the date is valid
+  if (isNaN(date.getTime())) {
+    return "invalid date";
+  }
+
+  const seconds = Math.floor((new Date() - date) / 1000);
+
+  // Define time intervals in seconds
   const intervals = [
-    { label: "d", seconds: 86400 },
-    { label: "h", seconds: 3600 },
-    { label: "m", seconds: 60 },
-    { label: "s", seconds: 1 },
+    { label: "year", seconds: 31536000 },
+    { label: "month", seconds: 2592000 },
+    { label: "day", seconds: 86400 },
+    { label: "hour", seconds: 3600 },
+    { label: "minute", seconds: 60 },
+    { label: "second", seconds: 1 },
   ];
 
   for (const interval of intervals) {
     const count = Math.floor(seconds / interval.seconds);
-    if (count >= 1) return `${count}${interval.label} ago`;
+    if (count >= 1) {
+      // Simple pluralization
+      return `${count} ${interval.label}${count > 1 ? "s" : ""} ago`;
+    }
   }
+
   return "just now";
 };

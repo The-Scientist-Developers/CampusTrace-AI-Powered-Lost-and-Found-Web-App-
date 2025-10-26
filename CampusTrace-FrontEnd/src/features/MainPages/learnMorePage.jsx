@@ -11,216 +11,384 @@ import {
   Search,
   CheckCircle,
   Users,
-  BarChart2,
+  BarChart2, // Changed from BarChart3 for variety if needed, or keep BarChart3
   Bell,
+  MessageSquare, // Added for messaging
+  Camera, // Added for visual search
+  KeyRound, // Added for claim process
+  Database, // Added for database/security
+  Mail, // Added for email verification
 } from "lucide-react";
+import { motion } from "framer-motion"; // Import motion
+import { useInView } from "react-intersection-observer"; // Use react-intersection-observer
 
-const FeatureSection = ({ icon: Icon, title, children }) => (
-  <section className="mb-16 animate-fade-in-up">
-    <div className="flex items-center gap-4 mb-4">
-      <div className="bg-primary-600/10 p-3 rounded-full">
-        <Icon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
-      </div>
-      <h2 className="text-3xl font-bold text-neutral-900 dark:text-white">
-        {title}
-      </h2>
-    </div>
-    <div className="text-neutral-600 dark:text-neutral-400 text-lg space-y-4 leading-relaxed border-l-2 border-neutral-200 dark:border-[#3a3a3a] pl-8 ml-5">
-      {children}
-    </div>
-  </section>
-);
-
-const StepCard = ({ icon: Icon, title, step, children }) => (
-  <div className="flex gap-6">
-    <div className="flex flex-col items-center">
-      <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold text-lg">
-        {step}
-      </div>
-      <div className="w-px h-full bg-neutral-200 dark:bg-neutral-700"></div>
-    </div>
-    <div className="pb-12">
-      <div className="flex items-center gap-3 mb-2">
-        <Icon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
-        <h3 className="text-xl font-semibold text-neutral-800 dark:text-white">
+// --- Feature Section Component (Reused with animation) ---
+const FeatureSection = ({ icon: Icon, title, children }) => {
+  const { ref, inView } = useInView({ threshold: 0.2, triggerOnce: true });
+  return (
+    <motion.section
+      ref={ref}
+      initial={{ opacity: 0, y: 50 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className="mb-16"
+    >
+      <div className="flex items-center gap-4 mb-6">
+        <div className="bg-primary-100 dark:bg-primary-500/10 p-4 rounded-xl shadow-sm">
+          <Icon className="w-8 h-8 text-primary-600 dark:text-primary-400" />
+        </div>
+        <h2 className="text-3xl font-bold text-neutral-900 dark:text-white">
           {title}
-        </h3>
+        </h2>
       </div>
-      <p className="text-neutral-600 dark:text-neutral-400">{children}</p>
-    </div>
-  </div>
-);
+      <div className="text-neutral-600 dark:text-neutral-400 text-lg space-y-5 leading-relaxed border-l-4 border-primary-500/30 pl-8 ml-6">
+        {children}
+      </div>
+    </motion.section>
+  );
+};
+
+// --- Step Card Component (Reused with animation) ---
+const StepCard = ({ icon: Icon, title, step, children, index }) => {
+  const { ref, inView } = useInView({ threshold: 0.3, triggerOnce: true });
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, x: -30 }}
+      animate={inView ? { opacity: 1, x: 0 } : {}}
+      transition={{ duration: 0.5, ease: "easeOut", delay: index * 0.1 }}
+      className="flex gap-6 relative" // Added relative positioning
+    >
+      {/* Connecting line for all but the last card */}
+      {index < 3 && ( // Assuming 4 steps, adjust if different
+        <div className="absolute left-[23px] top-14 bottom-0 w-px bg-neutral-200 dark:bg-neutral-700 -z-10"></div>
+      )}
+      <div className="flex flex-col items-center flex-shrink-0">
+        <div className="w-12 h-12 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold text-lg ring-4 ring-primary-100 dark:ring-primary-900/30 mb-2">
+          {step}
+        </div>
+        {/* Removed the vertical line div here, handled by absolute line above */}
+      </div>
+      <div className="pb-12 pt-1">
+        {" "}
+        {/* Adjusted padding */}
+        <div className="flex items-center gap-3 mb-3">
+          <Icon className="w-7 h-7 text-primary-600 dark:text-primary-400" />
+          <h3 className="text-xl font-semibold text-neutral-800 dark:text-white">
+            {title}
+          </h3>
+        </div>
+        <p className="text-neutral-600 dark:text-neutral-400 text-base leading-relaxed">
+          {" "}
+          {/* Adjusted text size */}
+          {children}
+        </p>
+      </div>
+    </motion.div>
+  );
+};
 
 export default function LearnMorePage() {
+  const headerRef = useInView({ threshold: 0.5, triggerOnce: true });
+  const ctaRef = useInView({ threshold: 0.5, triggerOnce: true });
+
   return (
-    <div className="bg-white dark:bg-[#1a1a1a] text-neutral-700 dark:text-gray-100 min-h-screen pt-28 pb-12">
+    <div className="bg-white dark:bg-[#1a1a1a] text-neutral-700 dark:text-gray-100 min-h-screen pt-28 pb-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <header className="text-center mb-16 animate-fade-in-up">
-          <p className="text-primary-600 dark:text-primary-500 font-semibold tracking-widest uppercase mb-2">
-            How CampusTrace Works
+        {/* Header */}
+        <motion.header
+          ref={headerRef.ref}
+          initial={{ opacity: 0, y: -30 }}
+          animate={headerRef.inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="text-center mb-16 sm:mb-20"
+        >
+          <p className="text-primary-600 dark:text-primary-500 font-semibold tracking-widest uppercase mb-3 text-sm">
+            Inside CampusTrace
           </p>
-          <h1 className="text-5xl md:text-6xl font-extrabold text-neutral-900 dark:text-white">
-            A Detailed Guide
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-neutral-900 dark:text-white leading-tight">
+            How It All Works
           </h1>
-        </header>
+          <p className="mt-4 text-lg sm:text-xl text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto">
+            A comprehensive guide to using CampusTrace, for both users and
+            administrators.
+          </p>
+        </motion.header>
 
         {/* --- Section for General Users --- */}
-        <div className="mb-24">
-          <h2 className="text-3xl font-bold text-center text-neutral-800 dark:text-white mb-12">
-            For Students & Staff
+        <div className="mb-20 sm:mb-24">
+          <h2 className="text-3xl sm:text-4xl font-bold text-center text-neutral-800 dark:text-white mb-12 sm:mb-16 border-b-2 border-primary-500/30 pb-4 inline-block mx-auto">
+            For Students & Staff 🧑‍🎓👩‍🏫
           </h2>
-          <div>
+          <div className="relative">
+            {" "}
+            {/* Added relative for line positioning */}
             <StepCard
               icon={UserPlus}
-              title="Sign Up with Your University Email"
+              title="Easy & Secure Sign Up"
               step="1"
+              index={0} // Add index for animation delay
             >
-              To ensure a secure community, you must sign up using your official
-              university email address. Our system verifies that your email
-              domain is on your university's approved list, instantly connecting
-              you to your campus's private lost and found network.
+              Join using your official university email (e.g.,
+              `yourname@university.edu`). Our system verifies your domain
+              against your university's approved list, granting immediate
+              access. Don't have one? Use the **Manual Registration** option
+              with your personal email and university ID photo – an admin will
+              verify your request. Includes **Google reCAPTCHA** for security.
             </StepCard>
             <StepCard
               icon={FilePlus}
-              title="Post a Lost or Found Item"
+              title="Report Lost or Found Items"
               step="2"
+              index={1}
             >
-              Use the simple form to post details about your item. You can write
-              a basic description and use our **AI Helper** to enhance it with
-              key details. If you lost an item, our system immediately starts
-              looking for matches.
-            </StepCard>
-            <StepCard icon={Search} title="Find and Claim Your Item" step="3">
-              If you lost an item, check your dashboard for AI-powered "Possible
-              Matches." You can also browse all "Found" items or use our
-              **Visual Search** by uploading an image. When you see yours, click
-              "Claim This Item" and provide a secret detail to prove ownership.
-              The finder will be notified privately to review your claim.
+              Click "Post New Item". Describe the item (color, brand, unique
+              marks), specify the category and location. Uploading a clear photo
+              is highly recommended. Use the **AI Helper (powered by Google
+              Gemini)** to automatically enhance your description and generate
+              relevant keyword tags for better searchability.
             </StepCard>
             <StepCard
-              icon={CheckCircle}
-              title="Approve Claims & Recover"
-              step="4"
+              icon={Search}
+              title="Find Items & AI Matches"
+              step="3"
+              index={2}
             >
-              If you found an item, you'll receive a notification when someone
-              claims it. Review their claim on your "My Posts" page. Once a
-              claim is approved, the system securely shares contact details so
-              you can coordinate a safe return on campus.
+              Browse all approved items on the "Browse All" page using filters
+              (status, category, date) and text search. For lost items, check
+              your main dashboard for **AI-Powered Matches** generated by
+              comparing text and image embeddings (using SentenceTransformers &
+              CLIP) with 'Found' items. You can also perform a **Visual Search**
+              by uploading an image.
+            </StepCard>
+            <StepCard
+              icon={KeyRound} // Changed icon
+              title="Claim & Communicate Securely"
+              step="4"
+              index={3}
+            >
+              Found your item? Click "Claim This Item" and provide a unique
+              identifying detail. The finder reviews your claim privately. If
+              approved, a **secure in-app chat** is created automatically in the
+              "Messages" section. Use this chat to coordinate a safe return on
+              campus without sharing personal contact info unless you choose to.
             </StepCard>
           </div>
-          <div className="text-center mt-8 animate-fade-in-up">
+          {/* User CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={headerRef.inView ? { opacity: 1, y: 0 } : {}} // Trigger based on header view
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="text-center mt-12"
+          >
             <Link
               to="/login"
-              className="px-8 py-3 bg-primary-600 text-white text-lg font-bold rounded-full shadow-lg hover:bg-primary-700 transition-all transform hover:scale-105"
+              className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white text-lg font-bold rounded-full shadow-lg hover:bg-primary-700 transition-all transform hover:scale-105 hover:-translate-y-1 duration-300"
             >
-              Get Started
+              Sign Up or Log In <LogIn size={20} />
             </Link>
-          </div>
+          </motion.div>
         </div>
 
         {/* Section for University Admins */}
-        <div className="mb-24">
-          <h2 className="text-3xl font-bold text-center text-neutral-800 dark:text-white mb-12">
-            For University Administrators
+        <div className="mb-20 sm:mb-24">
+          <h2 className="text-3xl sm:text-4xl font-bold text-center text-neutral-800 dark:text-white mb-12 sm:mb-16 border-b-2 border-primary-500/30 pb-4 inline-block mx-auto">
+            For University Admins 🛡️
           </h2>
-          <div>
-            <StepCard icon={UserPlus} title="Register Your University" step="1">
-              Navigate to the{" "}
+          <div className="relative">
+            {" "}
+            {/* Added relative for line positioning */}
+            <StepCard
+              icon={UserPlus}
+              title="Register Your University"
+              step="1"
+              index={0}
+            >
+              Visit the{" "}
               <Link
                 to="/register-university"
-                className="text-primary-600 hover:underline"
+                className="text-primary-600 hover:underline font-medium"
               >
                 "For Universities"
               </Link>{" "}
-              page. Fill out the form with your university's name and your
-              official admin email to create the master account for your
-              institution.
+              page. Provide your university's name and your official admin
+              email. This creates the initial admin account and automatically
+              registers your email domain. You'll receive a verification email.
             </StepCard>
-            <StepCard icon={LogIn} title="Instant Activation & Login" step="2">
-              Upon submission, your university is instantly registered, your
-              administrator account is created, and your email domain is
-              automatically whitelisted for sign-ups. You can then immediately
-              proceed to the{" "}
-              <Link to="/login" className="text-primary-600 hover:underline">
-                login page
-              </Link>
-              .
+            <StepCard
+              icon={LogIn}
+              title="Access the Admin Dashboard"
+              step="2"
+              index={1}
+            >
+              After verifying your email and logging in, you'll be directed to
+              the Admin Dashboard. Here you get an **Overview** with key
+              statistics (users, pending items, recovery rate) and activity
+              charts, updated in real-time.
             </StepCard>
-            <StepCard icon={Settings} title="Configure Your Campus" step="3">
-              From the Admin Dashboard, you can manage user roles, moderate
-              posts, view analytics, and configure campus-specific settings like
-              adding more allowed email domains (e.g., `student.university.edu`
-              vs `staff.university.edu`) or setting up keyword blacklists for
-              content filtering.
+            <StepCard
+              icon={Settings}
+              title="Configure Campus Settings"
+              step="3"
+              index={2}
+            >
+              Go to "Settings" to customize CampusTrace for your institution.
+              Set the public site name, add **multiple allowed email domains**
+              (e.g., for students, faculty, alumni), enable/disable
+              auto-approval for new posts, and create a **keyword blacklist** to
+              automatically flag posts for review.
             </StepCard>
-            <StepCard icon={Users} title="Manage Your Community" step="4">
-              The admin dashboard provides a comprehensive user management
-              interface. You can view all registered users, assign roles
-              (Member, Moderator, Admin), and ban users if necessary to maintain
-              a safe and productive environment.
+            <StepCard
+              icon={Users}
+              title="Manage Users & Moderate Content"
+              step="4"
+              index={3}
+            >
+              Use "User Management" to view, search, assign roles (Member,
+              Moderator, Admin), and ban users. Approve or reject ID
+              verification requests in "Manual Verifications". Review new item
+              posts in "Post Moderation", view details (including images), and
+              approve/reject them, triggering notifications to the user.
             </StepCard>
           </div>
-          <div className="text-center mt-8 animate-fade-in-up">
+          {/* Admin CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={headerRef.inView ? { opacity: 1, y: 0 } : {}} // Trigger based on header view
+            transition={{ duration: 0.6, delay: 0.7 }}
+            className="text-center mt-12"
+          >
             <Link
               to="/register-university"
-              className="px-8 py-3 bg-primary-600 text-white text-lg font-bold rounded-full shadow-lg hover:bg-primary-700 transition-all transform hover:scale-105"
+              className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-lg font-bold rounded-full shadow-lg hover:bg-primary-700 transition-all transform hover:scale-105 hover:-translate-y-1 duration-300"
             >
-              Register Your University Now
+              Register Your University <University size={20} />
             </Link>
-          </div>
+          </motion.div>
         </div>
 
-        {/* Section for Technology */}
-        <FeatureSection title="Our Technology Stack" icon={Server}>
+        {/* Technology Sections */}
+        <FeatureSection title="Core Technology" icon={Server}>
           <p>
-            CampusTrace is built on a modern, scalable tech stack. The backend
-            is powered by **FastAPI**, a high-performance Python framework,
-            chosen for its speed and asynchronous capabilities. The frontend is
-            a dynamic **React** single-page application built with Vite,
-            ensuring a fast and responsive user experience.
+            CampusTrace runs on a modern stack: a **FastAPI (Python)** backend
+            for high performance and asynchronous operations, paired with a
+            **React (Vite)** frontend for a smooth, interactive user experience.
           </p>
           <p>
-            Our entire infrastructure is built on **Supabase**, an open-source
-            Firebase alternative, which provides a robust **PostgreSQL**
-            database, authentication, file storage, and real-time capabilities.
-            This allows for rapid development and a highly reliable and scalable
-            platform.
+            The foundation is **Supabase**, providing a managed **PostgreSQL**
+            database with vector support (pgvector), secure authentication, file
+            storage for images, and real-time updates via websockets for
+            notifications and messaging.
           </p>
         </FeatureSection>
 
-        <FeatureSection title="AI-Powered Intelligence" icon={BrainCircuit}>
+        <FeatureSection title="AI Integration" icon={BrainCircuit}>
           <p>
-            We leverage a multi-faceted AI approach. For text analysis,
-            description enhancement, and generating keyword tags, we use the
-            powerful **Google Gemini AI API**. For image-based searching and
-            matching, we utilize the **CLIP (Contrastive Language–Image
-            Pre-training) model** and **SentenceTransformers** to create vector
-            embeddings of images and text.
-          </p>
-          <p>
-            This dual-AI strategy allows our search algorithm to understand both
-            the textual and visual context of an item, powering a proactive
-            matching system that suggests reunions with high accuracy.
+            Multiple AI models enhance CampusTrace:
+            <ul className="list-disc space-y-2 pl-6 mt-3">
+              <li>
+                **Google Gemini:** Powers the "Enhance with AI" feature for post
+                descriptions and generates relevant keyword tags automatically
+                upon posting.
+              </li>
+              <li>
+                **CLIP Model:** Generates vector embeddings from uploaded item
+                images, enabling powerful visual search capabilities.
+              </li>
+              <li>
+                **SentenceTransformers:** Creates vector embeddings from item
+                titles and descriptions for semantic text matching alongside
+                visual matching.
+              </li>
+              <li>
+                **MediaPipe Face Detection:** Runs in the browser during profile
+                picture upload/capture to ensure a valid face is present,
+                enhancing community trust (no data sent to server for this).
+              </li>
+            </ul>
           </p>
         </FeatureSection>
 
-        <FeatureSection title="Secure & Verified Community" icon={ShieldCheck}>
+        <FeatureSection title="Security & Verification" icon={ShieldCheck}>
           <p>
-            Trust is essential. We ensure every user is a verified member of
-            their campus community by requiring sign-ups with an official
-            university email address. This is enforced by a domain whitelist
-            controlled by each university's administrator. We also integrate
-            **Google reCAPTCHA** to protect against automated sign-ups.
-          </p>
-          <p>
-            Furthermore, each university operates in its own secure, isolated
-            environment using a **multi-tenant architecture**. This is enforced
-            at the database level using Supabase's powerful **Row Level Security
-            (RLS)**, ensuring data is never accidentally exposed across
-            university boundaries.
+            Security is paramount:
+            <ul className="list-disc space-y-2 pl-6 mt-3">
+              <li>
+                **Domain Whitelisting:** Admins control allowed university email
+                domains for standard registration.
+              </li>
+              <li>
+                **Manual Verification:** A secure process for users with
+                personal emails, requiring admin approval of uploaded university
+                IDs stored securely in Supabase Storage.
+              </li>
+              <li>
+                **Google reCAPTCHA:** Protects both standard and manual sign-up
+                forms from bots.
+              </li>
+              <li>
+                **Multi-Tenancy with RLS:** Supabase Row Level Security strictly
+                isolates data (posts, users, messages) between different
+                universities, ensuring privacy.
+              </li>
+              <li>
+                **Secure Claims & Messaging:** The claim process and in-app chat
+                prevent premature sharing of personal contact information.
+              </li>
+            </ul>
           </p>
         </FeatureSection>
+
+        {/* Final CTA */}
+        <motion.div
+          ref={ctaRef.ref}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={ctaRef.inView ? { opacity: 1, scale: 1 } : {}}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="mt-20 text-center bg-gradient-to-br from-primary-50 to-indigo-100 dark:from-neutral-800 dark:to-neutral-900 p-10 sm:p-14 rounded-2xl shadow-lg border border-neutral-200 dark:border-neutral-700"
+        >
+          <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900 dark:text-white mb-5">
+            Ready to Experience Smarter Lost & Found?
+          </h2>
+          <p className="text-lg text-neutral-600 dark:text-neutral-400 max-w-xl mx-auto mb-8">
+            Join CampusTrace today and help build a more connected and helpful
+            campus community.
+          </p>
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white text-lg font-bold rounded-full shadow-lg hover:bg-primary-700 transition-all transform hover:scale-105 hover:-translate-y-1 duration-300"
+          >
+            Get Started <LogIn size={20} />
+          </Link>
+        </motion.div>
       </div>
+      {/* Basic CSS for animations if not using Tailwind animations directly */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.8s ease-out forwards;
+        }
+        .animate-fade-in-up {
+          animation: fadeInUp 0.8s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 }

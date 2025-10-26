@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { motion, useAnimation } from "framer-motion";
+import { useInView as useIntersectionObserver } from "react-intersection-observer"; // Renamed hook
 import {
   ShieldCheck,
   Search,
@@ -23,38 +25,22 @@ import {
   Settings,
   Lock,
   University,
+  Eye, // Added Eye icon for visibility/showcase
 } from "lucide-react";
-import logo from "../../Images/Logo.svg";
+import logo from "../../Images/Logo.svg"; // Ensure this path is correct
 
-// --- Enhanced Custom Hook for Intersection Observer ---
-const useInView = (options = {}) => {
-  const ref = useRef(null);
-  const [isInView, setIsInView] = useState(false);
-  const [hasAnimated, setHasAnimated] = useState(false);
+// --- Custom Hook for Intersection Observer (using react-intersection-observer) ---
+const useInView = (options = { threshold: 0.1, triggerOnce: true }) => {
+  const { ref, inView } = useIntersectionObserver(options);
+  const animation = useAnimation();
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsInView(entry.isIntersecting);
-        if (entry.isIntersecting && !hasAnimated) {
-          setHasAnimated(true);
-        }
-      },
-      { threshold: 0.1, ...options }
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
+    if (inView) {
+      animation.start("visible");
     }
+  }, [animation, inView]);
 
-    return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
-      }
-    };
-  }, [hasAnimated, options]);
-
-  return { ref, isInView, hasAnimated };
+  return { ref, animation, inView };
 };
 
 // --- Parallax Hook ---
@@ -99,20 +85,37 @@ const ScrollProgress = () => {
   );
 };
 
-// --- Feature Slider Component with Enhanced Animation ---
+// --- Feature Slider Component ---
 const FeatureSlider = ({ features }) => {
-  const { ref, hasAnimated } = useInView();
+  const controls = useAnimation();
+  const { ref, inView } = useIntersectionObserver({
+    threshold: 0.1,
+    triggerOnce: true,
+  });
+
+  useEffect(() => {
+    if (inView) {
+      controls.start("visible");
+    }
+  }, [controls, inView]);
 
   return (
-    <div ref={ref} className="py-12 sm:py-16 overflow-hidden">
+    <motion.div
+      ref={ref}
+      animate={controls}
+      initial="hidden"
+      variants={{
+        visible: {
+          opacity: 1,
+          y: 0,
+          transition: { duration: 0.8, delay: 0.2 },
+        },
+        hidden: { opacity: 0, y: 20 },
+      }}
+      className="py-12 sm:py-16 overflow-hidden"
+    >
       <div className="max-w-7xl mx-auto text-center">
-        <p
-          className={`text-xs sm:text-sm font-semibold text-neutral-500 dark:text-neutral-400 tracking-wider mb-6 sm:mb-8 transition-all duration-1000 px-4 ${
-            hasAnimated
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-10"
-          }`}
-        >
+        <p className="text-xs sm:text-sm font-semibold text-neutral-500 dark:text-neutral-400 tracking-wider mb-6 sm:mb-8 px-4">
           KEY FEATURES OF CAMPUSTRACE
         </p>
         <div className="relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_10%,white_90%,transparent)]">
@@ -134,21 +137,34 @@ const FeatureSlider = ({ features }) => {
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
-// --- FAQ Item Component with Smooth Animation ---
+// --- FAQ Item Component ---
 const FAQItem = ({ question, answer, isOpen, onToggle, index }) => {
-  const { ref, hasAnimated } = useInView();
+  const controls = useAnimation();
+  const { ref, inView } = useIntersectionObserver({
+    threshold: 0.1,
+    triggerOnce: true,
+  });
+
+  useEffect(() => {
+    if (inView) {
+      controls.start({
+        opacity: 1,
+        x: 0,
+        transition: { duration: 0.5, delay: index * 0.1 },
+      });
+    }
+  }, [controls, inView, index]);
 
   return (
-    <div
+    <motion.div
       ref={ref}
-      className={`border-b border-neutral-200 dark:border-neutral-800 last:border-0 transition-all duration-700 ${
-        hasAnimated ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-10"
-      }`}
-      style={{ transitionDelay: `${index * 100}ms` }}
+      animate={controls}
+      initial={{ opacity: 0, x: -20 }}
+      className="border-b border-neutral-200 dark:border-neutral-800 last:border-0"
     >
       <button
         onClick={onToggle}
@@ -157,32 +173,36 @@ const FAQItem = ({ question, answer, isOpen, onToggle, index }) => {
         <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-neutral-900 dark:text-white pr-4 sm:pr-8 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
           {question}
         </h3>
-        <div
-          className={`p-1.5 sm:p-2 rounded-full bg-primary-100 dark:bg-primary-500/10 transition-all duration-500 flex-shrink-0 ${
-            isOpen ? "rotate-180 scale-110" : "rotate-0 scale-100"
-          }`}
+        <motion.div
+          animate={{ rotate: isOpen ? 180 : 0, scale: isOpen ? 1.1 : 1 }}
+          transition={{ duration: 0.3 }}
+          className="p-1.5 sm:p-2 rounded-full bg-primary-100 dark:bg-primary-500/10 flex-shrink-0"
         >
           <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600 dark:text-primary-400" />
-        </div>
+        </motion.div>
       </button>
-      <div
-        className={`grid transition-all duration-500 ease-out ${
-          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-        }`}
+      <motion.div
+        initial={false}
+        animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+        className="overflow-hidden"
       >
-        <div className="overflow-hidden">
-          <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 pb-5 sm:pb-6 px-4 leading-relaxed">
+        <div className="pb-5 sm:pb-6 px-4">
+          <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 leading-relaxed">
             {answer}
           </p>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 
-// --- Enhanced Feature Card Component ---
+// --- Feature Card Component ---
 const FeatureCard = ({ icon: Icon, title, description, index }) => {
-  const { ref, hasAnimated } = useInView();
+  const { ref, animation, inView } = useInView({
+    threshold: 0.2,
+    triggerOnce: true,
+  });
   const [isHovered, setIsHovered] = useState(false);
   const cardRef = useRef(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -190,8 +210,8 @@ const FeatureCard = ({ icon: Icon, title, description, index }) => {
   const handleMouseMove = (e) => {
     if (!cardRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 20;
-    const y = ((e.clientY - rect.top) / rect.height - 0.5) * 20;
+    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 15; // Reduced intensity
+    const y = ((e.clientY - rect.top) / rect.height - 0.5) * 15; // Reduced intensity
     setMousePosition({ x, y });
   };
 
@@ -201,49 +221,53 @@ const FeatureCard = ({ icon: Icon, title, description, index }) => {
   };
 
   return (
-    <div
+    <motion.div
       ref={ref}
-      className={`transform transition-all duration-700 ${
-        hasAnimated
-          ? "opacity-100 translate-y-0 rotate-0"
-          : "opacity-0 translate-y-20 rotate-1"
-      }`}
+      animate={animation}
+      initial="hidden"
+      variants={{
+        visible: {
+          opacity: 1,
+          y: 0,
+          rotate: 0,
+          transition: { duration: 0.6, delay: index * 0.1 },
+        },
+        hidden: { opacity: 0, y: 50, rotate: 2 },
+      }}
       style={{
-        transitionDelay: `${index * 100}ms`,
         transform: isHovered
           ? `perspective(1000px) rotateX(${-mousePosition.y}deg) rotateY(${
               mousePosition.x
-            }deg) translateZ(10px)`
+            }deg) translateZ(5px)` // Reduced translateZ
           : "perspective(1000px) rotateX(0) rotateY(0) translateZ(0)",
       }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }} // Spring animation for hover
       onMouseEnter={() => setIsHovered(true)}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
       <div
         ref={cardRef}
-        className={`relative rounded-2xl bg-white dark:bg-[#2a2a2a] p-6 sm:p-8 shadow-md hover:shadow-2xl transition-all duration-500 h-full group ${
-          isHovered ? "scale-105" : "scale-100"
-        }`}
+        className={`relative rounded-2xl bg-white dark:bg-[#2a2a2a] p-6 sm:p-8 shadow-md hover:shadow-xl transition-all duration-300 h-full group border border-transparent hover:border-primary-500/20`} // Added border effect
       >
-        {/* Glow Effect */}
-        {isHovered && (
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary-400/20 to-purple-400/20 blur-xl -z-10 animate-pulse" />
-        )}
+        {/* Subtle Glow Effect on Hover */}
+        <div
+          className={`absolute -inset-px rounded-2xl transition-opacity duration-300 opacity-0 group-hover:opacity-100 ${
+            isHovered
+              ? "bg-gradient-to-br from-primary-400/10 via-transparent to-purple-400/10"
+              : ""
+          }`}
+          aria-hidden="true"
+        />
 
         <div className="relative mb-4 sm:mb-6">
-          <div
-            className={`flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 bg-primary-100 dark:bg-primary-500/10 rounded-lg transition-all duration-500 ${
-              isHovered ? "scale-110 rotate-6" : ""
-            }`}
+          <motion.div
+            animate={{ scale: isHovered ? 1.1 : 1, rotate: isHovered ? 6 : 0 }}
+            transition={{ type: "spring", stiffness: 400, damping: 15 }}
+            className="flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 bg-primary-100 dark:bg-primary-500/10 rounded-lg"
           >
             <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600 dark:text-primary-400" />
-          </div>
-          {isHovered && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-500/20 rounded-lg blur-md animate-ping" />
-            </div>
-          )}
+          </motion.div>
         </div>
 
         <h3 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white mb-2 sm:mb-3 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
@@ -253,59 +277,63 @@ const FeatureCard = ({ icon: Icon, title, description, index }) => {
         <p className="text-neutral-600 dark:text-neutral-400 text-xs sm:text-sm leading-relaxed">
           {description}
         </p>
-
-        <div className="absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 overflow-hidden rounded-2xl">
-          <div
-            className={`absolute -top-8 -right-8 sm:-top-10 sm:-right-10 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-primary-500/10 to-transparent transform rotate-45 transition-all duration-500 ${
-              isHovered ? "scale-150" : "scale-100"
-            }`}
-          />
+        {/* Corner Decoration */}
+        <div className="absolute top-0 right-0 w-12 h-12 sm:w-16 sm:h-16 overflow-hidden rounded-tr-2xl rounded-bl-2xl">
+          <div className="absolute -top-6 -right-6 sm:-top-8 sm:-right-8 w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-primary-500/10 to-transparent transform rotate-45 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
 // --- Feature Section Component ---
-const FeatureSection = ({ title, subtitle, features, startIndex = 0 }) => {
-  const { ref, hasAnimated } = useInView();
+const FeatureSection = ({ title, subtitle, features, id, startIndex = 0 }) => {
+  const { ref, animation, inView } = useInView({
+    threshold: 0.1,
+    triggerOnce: true,
+  });
   const titleParallax = useParallax(0.1);
 
   return (
-    <section ref={ref} className="py-16 sm:py-20 relative">
+    <section
+      ref={ref}
+      id={id}
+      className="py-16 sm:py-20 relative overflow-hidden"
+    >
+      {/* Subtle background gradient */}
       <div
-        className="absolute inset-0 opacity-5 dark:opacity-[0.02]"
+        className="absolute inset-x-0 top-0 h-96 bg-gradient-to-b from-primary-50/50 to-transparent dark:from-primary-900/10 dark:to-transparent -z-10"
         style={{ transform: `translateY(${titleParallax}px)` }}
-      >
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 sm:w-96 sm:h-96 bg-gradient-to-r from-primary-400 to-purple-400 rounded-full blur-3xl" />
-      </div>
+      />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div
-          className={`text-center mb-10 sm:mb-12 relative transition-all duration-1000 ${
-            hasAnimated
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-10"
-          }`}
+        <motion.div
+          animate={animation}
+          initial="hidden"
+          variants={{
+            visible: { opacity: 1, y: 0, transition: { duration: 0.8 } },
+            hidden: { opacity: 0, y: 30 },
+          }}
+          className="text-center mb-10 sm:mb-14 relative"
         >
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-3 sm:mb-4 relative inline-block">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-neutral-900 dark:text-white mb-4 sm:mb-6 relative inline-block px-4">
             {title}
-            <span
-              className={`absolute -bottom-2 left-0 h-0.5 sm:h-1 bg-gradient-to-r from-primary-400 to-primary-600 rounded-full transition-all duration-1000 ${
-                hasAnimated ? "w-full" : "w-0"
-              }`}
-              style={{ transitionDelay: "500ms" }}
+            {/* Underline animation */}
+            <motion.span
+              initial={{ width: 0 }}
+              animate={inView ? { width: "60%" } : {}}
+              transition={{
+                duration: 0.8,
+                delay: 0.5,
+                ease: [0.25, 1, 0.5, 1],
+              }} // Smoother ease
+              className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 bg-gradient-to-r from-primary-400 to-primary-600 rounded-full"
             />
           </h2>
-          <p
-            className={`text-sm sm:text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto mt-4 sm:mt-6 transition-all duration-1000 px-4 ${
-              hasAnimated ? "opacity-100" : "opacity-0"
-            }`}
-            style={{ transitionDelay: "200ms" }}
-          >
+          <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto mt-4 sm:mt-6 px-4">
             {subtitle}
           </p>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {features.map((feature, index) => (
@@ -321,66 +349,153 @@ const FeatureSection = ({ title, subtitle, features, startIndex = 0 }) => {
   );
 };
 
+// --- Screenshot Section Component ---
+const ScreenshotSection = ({ screenshots }) => {
+  const { ref, animation, inView } = useInView({
+    threshold: 0.2,
+    triggerOnce: true,
+  });
+
+  return (
+    <section
+      ref={ref}
+      className="py-16 sm:py-20 bg-neutral-100 dark:bg-[#2a2a2a] overflow-hidden"
+    >
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          animate={animation}
+          initial="hidden"
+          variants={{
+            visible: { opacity: 1, y: 0, transition: { duration: 0.8 } },
+            hidden: { opacity: 0, y: 30 },
+          }}
+          className="text-center mb-10 sm:mb-14"
+        >
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-neutral-900 dark:text-white mb-4 sm:mb-6 relative inline-block px-4">
+            See CampusTrace in Action
+            <motion.span
+              initial={{ width: 0 }}
+              animate={inView ? { width: "60%" } : {}}
+              transition={{
+                duration: 0.8,
+                delay: 0.5,
+                ease: [0.25, 1, 0.5, 1],
+              }}
+              className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 bg-gradient-to-r from-primary-400 to-primary-600 rounded-full"
+            />
+          </h2>
+          <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto mt-4 sm:mt-6 px-4">
+            Take a visual tour of our key features and user-friendly interface.
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          {screenshots.map((screenshot, index) => {
+            const itemControls = useAnimation();
+            const { ref: itemRef, inView: itemInView } =
+              useIntersectionObserver({ threshold: 0.2, triggerOnce: true });
+
+            useEffect(() => {
+              if (itemInView) {
+                itemControls.start({
+                  opacity: 1,
+                  y: 0,
+                  scale: 1,
+                  transition: { duration: 0.6, delay: index * 0.15 },
+                });
+              }
+            }, [itemControls, itemInView, index]);
+
+            return (
+              <motion.div
+                key={index}
+                ref={itemRef}
+                animate={itemControls}
+                initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                className="rounded-xl overflow-hidden shadow-lg border border-neutral-200 dark:border-neutral-700 aspect-[16/10] group" // Added aspect ratio
+              >
+                <img
+                  src={screenshot.src}
+                  alt={screenshot.alt}
+                  className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ease-in-out" // Added hover scale
+                />
+                {/* Optional: Add a caption overlay */}
+                {/* <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
+                     <p className="text-white text-sm font-medium">{screenshot.alt}</p>
+                 </div> */}
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [openFAQ, setOpenFAQ] = useState(0);
+  const [openFAQ, setOpenFAQ] = useState(0); // Start with the first FAQ open
   const heroParallax = useParallax(0.3);
   const gridParallax = useParallax(-0.2);
 
   useEffect(() => {
     document.documentElement.style.scrollBehavior = "smooth";
+    // Set overflow-x to hidden to prevent horizontal scroll during animations
+    document.body.style.overflowX = "hidden";
     return () => {
       document.documentElement.style.scrollBehavior = "auto";
+      document.body.style.overflowX = ""; // Reset on unmount
     };
   }, []);
 
   // Quick features for the slider
   const quickFeatures = [
     { icon: Sparkles, title: "AI-Powered Matching" },
-    { icon: Search, title: "Visual Search" },
-    { icon: MessageCircle, title: "In-App Messaging" },
-    { icon: Award, title: "Gamification & Leaderboard" },
-    { icon: KeyRound, title: "Secure Claim Process" },
-    { icon: Users, title: "Verified Community" },
+    { icon: Search, title: "Visual & Text Search" }, // Updated
+    { icon: MessageSquare, title: "Secure In-App Messaging" }, // Updated
+    { icon: Award, title: "Leaderboard Recognition" }, // Updated
+    { icon: KeyRound, title: "Verified Claim Process" }, // Updated
+    { icon: ShieldCheck, title: "University-Verified Users" }, // Updated
+    { icon: LayoutDashboard, title: "Admin Management Tools" }, // Added
   ];
 
   // Detailed features for students
   const studentFeatures = [
     {
       icon: Sparkles,
-      title: "AI-Powered Search",
+      title: "AI-Powered Search & Matching",
       description:
-        "Our smart search understands both text and images. Describe an item or upload a photo to find visually similar results instantly, powered by CLIP models.",
+        "Describe or upload a photo of your item. Our AI (CLIP & SentenceTransformers) finds visual and text matches, proactively notifying you of potential finds.",
     },
     {
       icon: Zap,
-      title: "Proactive Matching",
+      title: "Real-Time Notifications",
       description:
-        "When you report a lost item, our system doesn't wait. It actively scans new 'found' posts and notifies you of high-probability matches on your dashboard.",
+        "Get instant alerts via dashboard and email (optional) for possible matches, claim updates, new messages, and post moderation status changes.",
     },
     {
       icon: KeyRound,
-      title: "Secure Claim Process",
+      title: "Secure Claim & Messaging",
       description:
-        "Prove ownership by providing a unique detail only you would know. Your claim is sent privately to the finder for verification before any contact info is shared.",
-    },
-    {
-      icon: Bell,
-      title: "Real-Time Notifications",
-      description:
-        "Stay in the loop with instant alerts for new matches, claims on your items, and updates on your posts' moderation status.",
+        "Claim items with a unique detail. Once approved, securely chat in-app with the finder/claimant to arrange the return without sharing personal contact info initially.",
     },
     {
       icon: FilePlus,
       title: "AI-Enhanced Posting",
       description:
-        "Not sure what to write? Our AI Helper, powered by Google Gemini, can take your basic description and enhance it to be more detailed and effective.",
+        "Struggling with the description? Our Google Gemini-powered AI Helper suggests improvements and relevant tags to increase visibility.",
+    },
+    {
+      icon: Award,
+      title: "Community Leaderboard",
+      description:
+        "Get recognized for helping others! Successfully returning items earns you points and a spot on the campus leaderboard.",
     },
     {
       icon: UserCheck,
-      title: "Intelligent Profile Photos",
+      title: "Verified Profile Picture AI",
       description:
-        "To build a trusted community, our system ensures you upload a valid profile picture by using in-browser AI to detect if a face is present.",
+        "Ensure a safe community. Our AI checks for a valid face during profile picture uploads, promoting trust and accountability.",
     },
   ];
 
@@ -388,90 +503,121 @@ export default function LandingPage() {
   const adminFeatures = [
     {
       icon: LayoutDashboard,
-      title: "Centralized Dashboard",
+      title: "Comprehensive Admin Dashboard",
       description:
-        "Get a real-time overview of your campus activity, including total users, active posts, recovery rates, and weekly trends, all in one place.",
+        "Monitor campus activity with real-time stats: user counts, pending posts/verifications, recovery rates, and activity charts.",
     },
     {
       icon: Users,
-      title: "Full User Management",
+      title: "Robust User Management",
       description:
-        "Easily manage all users within your university. Assign roles like 'Moderator' or 'Admin', and maintain community safety by banning users if necessary.",
+        "View, search, and manage all users within your university. Assign roles (Moderator, Admin), approve manual verifications, and ban users if needed.",
     },
     {
       icon: ShieldCheck,
-      title: "Effortless Content Moderation",
+      title: "Efficient Moderation Tools",
       description:
-        "Review, approve, or reject new posts from a simple, intuitive interface to ensure all content aligns with your community standards.",
+        "Quickly review and approve/reject new item posts. View post details, including images and descriptions, directly from the moderation queue.",
     },
     {
       icon: Settings,
-      title: "Campus Configuration",
+      title: "Customizable Campus Settings",
       description:
-        "Tailor the platform to your needs. Set the site name, add multiple approved email domains (e.g., for students and staff), and create keyword blacklists for auto-flagging.",
+        "Tailor CampusTrace: set the site name, manage allowed email domains for registration, configure auto-approval rules, and create keyword blacklists.",
+    },
+    {
+      icon: Bell,
+      title: "Admin Notifications",
+      description:
+        "Stay informed with notifications for new posts awaiting moderation and manual verification requests requiring your attention.",
     },
     {
       icon: Lock,
-      title: "Secure Data Isolation",
+      title: "Secure Multi-Tenant System",
       description:
-        "Your university's data is completely separate from others. Our multi-tenant architecture with Row Level Security ensures total privacy and security.",
+        "Rest easy knowing your university's data is isolated using Supabase Row Level Security, ensuring privacy and compliance.",
+    },
+  ];
+
+  const screenshots = [
+    { src: "/screenshots/user-dashboard.png", alt: "User Dashboard Overview" }, // Replace with your actual screenshot paths
+    { src: "/screenshots/browse-items.png", alt: "Browse All Items Page" },
+    {
+      src: "/screenshots/post-item-ai.png",
+      alt: "Post New Item with AI Helper",
     },
     {
-      icon: University,
-      title: "Verified Community",
-      description:
-        "Ensure every user is a legitimate member of your campus by controlling which email domains are allowed to register.",
+      src: "/screenshots/item-details-claim.png",
+      alt: "Item Details and Claim Modal",
     },
+    { src: "/screenshots/messages.png", alt: "In-App Messaging Interface" },
+    {
+      src: "/screenshots/admin-dashboard.png",
+      alt: "Admin Dashboard Analytics",
+    },
+    // Add more as needed, e.g., admin moderation
+    // { src: "/screenshots/admin-moderation.png", alt: "Admin Post Moderation Queue" },
   ];
 
   const faqs = [
     {
-      question: "How does the AI-powered 'Possible Matches' feature work?",
+      question: "How does the AI matching work for my lost item?",
       answer:
-        "When you report a 'Lost' item, our AI automatically scans all 'Found' items, analyzing text and images for similarities. High-probability matches appear on your main dashboard to help you get your item back faster.",
+        "When you post a 'Lost' item, our AI analyzes its text (title, description, category) and image (if provided) using SentenceTransformers and CLIP models. It then compares this against all approved 'Found' items in your university, calculating similarity scores. High-scoring matches appear under 'AI-Powered Matches' on your dashboard.",
     },
     {
-      question: "How do I communicate with someone about an item?",
+      question: "How do I communicate securely after a claim is approved?",
       answer:
-        "You can use the 'Message Poster' button on any item page to start a private, in-app conversation. After a claim is approved, a chat is automatically created for you and the other person to coordinate the return safely.",
+        "Once a finder approves a claim on their 'Found' item, a private chat conversation is automatically created between the finder and claimant. Both users receive a notification linking directly to this chat in the 'Messages' section. You can coordinate the return here without initially sharing external contact details.",
     },
     {
       question: "What if I don't have a university email?",
       answer:
-        "No problem! You can still sign up with a personal email (like Gmail). You will be prompted to select your university and upload a photo of your university ID for manual verification by an administrator.",
+        "You can register using a personal email (like Gmail). During sign-up, choose the 'Register with your University ID instead' option. You'll select your university and upload a clear photo of your ID. An administrator from your university will review your request. You'll receive an email notification once approved.",
     },
     {
-      question: "Why must I be verified to use the platform?",
+      question: "Is my personal information safe?",
       answer:
-        "Verification ensures that only members of the campus community can participate. This creates a trusted and secure environment for everyone, which is our top priority.",
+        "Yes. Your primary login email is not displayed publicly. Contact information is only shared within the secure in-app chat after a claim is mutually approved. Optional contact details added to a post description are visible. We use Supabase's security features, including Row Level Security, to protect user data and isolate university information.",
+    },
+    {
+      question: "How does the Leaderboard work?",
+      answer:
+        "Successfully returning a 'Found' item to its owner (marked as 'Recovered' after claim approval) earns the finder points. The Leaderboard page ranks users within your university based on the number of items they've helped return, encouraging community participation.",
     },
   ];
 
-  const howItWorksRef = useInView();
-  const ctaRef = useInView();
+  const howItWorksRef = useInView({ threshold: 0.2, triggerOnce: true }); // Use custom hook
+  const ctaRef = useInView({ threshold: 0.3, triggerOnce: true }); // Use custom hook
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1a] text-neutral-800 dark:text-neutral-300 flex flex-col overflow-x-hidden">
       <ScrollProgress />
 
+      {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur-lg border-b border-neutral-200/50 dark:border-neutral-800/50">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20">
+            {/* Logo and Brand Name */}
             <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
-              <img
+              <motion.img
                 src={logo}
                 alt="Campus Trace Logo"
-                className="h-8 w-8 sm:h-10 sm:w-auto rounded-full group-hover:scale-110 group-hover:rotate-12 transition-all duration-500"
+                className="h-8 w-8 sm:h-10 sm:w-auto rounded-full"
+                whileHover={{ scale: 1.15, rotate: 15 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
               />
               <span className="text-lg sm:text-xl font-bold text-neutral-800 dark:text-white">
                 CampusTrace
               </span>
             </Link>
 
+            {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-6">
               {[
                 { to: "#how-it-works", label: "How It Works", isAnchor: true },
                 { to: "#features", label: "Features", isAnchor: true },
+                { to: "#screenshots", label: "Showcase", isAnchor: true }, // New Showcase link
                 { to: "/about", label: "About Us", isAnchor: false },
                 {
                   to: "/register-university",
@@ -484,11 +630,6 @@ export default function LandingPage() {
                     key={link.to}
                     href={link.to}
                     className="relative text-sm font-semibold text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-300 group"
-                    style={{
-                      animation: `fadeInDown 0.5s ease-out ${
-                        index * 100
-                      }ms both`,
-                    }}
                   >
                     {link.label}
                     <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-primary-400 to-primary-600 group-hover:w-full transition-all duration-300" />
@@ -498,11 +639,6 @@ export default function LandingPage() {
                     key={link.to}
                     to={link.to}
                     className="relative text-sm font-semibold text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-300 group"
-                    style={{
-                      animation: `fadeInDown 0.5s ease-out ${
-                        index * 100
-                      }ms both`,
-                    }}
                   >
                     {link.label}
                     <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-primary-400 to-primary-600 group-hover:w-full transition-all duration-300" />
@@ -511,15 +647,13 @@ export default function LandingPage() {
               )}
               <Link
                 to="/login"
-                className="px-5 py-2 bg-gradient-to-r from-primary-600 to-primary-500 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 transition-all duration-300"
-                style={{
-                  animation: "fadeInDown 0.5s ease-out 400ms both",
-                }}
+                className="px-5 py-2 bg-gradient-to-r from-primary-600 to-primary-500 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 hover:scale-105 transition-all duration-300"
               >
                 Log In
               </Link>
             </div>
 
+            {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 rounded-lg text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all duration-300"
@@ -533,15 +667,18 @@ export default function LandingPage() {
             </button>
           </div>
 
-          <div
-            className={`md:hidden overflow-hidden transition-all duration-500 ${
-              mobileMenuOpen ? "max-h-96 py-4" : "max-h-0"
-            }`}
+          {/* Mobile Menu */}
+          <motion.div
+            initial={false}
+            animate={{ height: mobileMenuOpen ? "auto" : 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="md:hidden overflow-hidden"
           >
-            <div className="space-y-1 border-t border-neutral-200 dark:border-neutral-800 pt-4">
+            <div className="pt-2 pb-4 space-y-1 border-t border-neutral-200 dark:border-neutral-800">
               {[
                 { to: "#how-it-works", label: "How It Works", isAnchor: true },
                 { to: "#features", label: "Features", isAnchor: true },
+                { to: "#screenshots", label: "Showcase", isAnchor: true },
                 { to: "/about", label: "About Us", isAnchor: false },
                 {
                   to: "/register-university",
@@ -554,10 +691,7 @@ export default function LandingPage() {
                     key={link.to}
                     href={link.to}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`block px-4 py-3 text-base font-medium text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-all duration-300 ${
-                      mobileMenuOpen ? `animate-slideInLeft` : ""
-                    }`}
-                    style={{ animationDelay: `${index * 50}ms` }}
+                    className="block px-3 py-2 text-base font-medium text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors duration-200"
                   >
                     {link.label}
                   </a>
@@ -566,10 +700,7 @@ export default function LandingPage() {
                     key={link.to}
                     to={link.to}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`block px-4 py-3 text-base font-medium text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-all duration-300 ${
-                      mobileMenuOpen ? `animate-slideInLeft` : ""
-                    }`}
-                    style={{ animationDelay: `${index * 50}ms` }}
+                    className="block px-3 py-2 text-base font-medium text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors duration-200"
                   >
                     {link.label}
                   </Link>
@@ -578,39 +709,39 @@ export default function LandingPage() {
               <Link
                 to="/login"
                 onClick={() => setMobileMenuOpen(false)}
-                className="block mx-4 mt-4 py-3 text-center bg-gradient-to-r from-primary-600 to-primary-500 text-white text-base font-semibold rounded-lg shadow-md"
+                className="block w-full mt-3 py-3 text-center bg-gradient-to-r from-primary-600 to-primary-500 text-white text-base font-semibold rounded-lg shadow-md"
               >
                 Log In
               </Link>
             </div>
-          </div>
+          </motion.div>
         </nav>
       </header>
 
       <main className="flex-grow pt-16 sm:pt-20 relative z-10">
-        {/* Hero Section with Parallax */}
+        {/* Hero Section */}
         <section className="min-h-[calc(70vh-64px)] sm:min-h-[calc(80vh-80px)] flex items-center justify-center text-center relative overflow-hidden px-4">
-          {/* Animated Background Grid */}
           <div
             className="absolute inset-0 opacity-20 dark:opacity-5 [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_100%)]"
             style={{ transform: `translateY(${gridParallax}px)` }}
           >
+            {/* Grid pattern SVG */}
             <svg
               aria-hidden="true"
-              className="absolute inset-0 h-full w-full text-neutral-300 dark:text-neutral-800"
+              className="absolute inset-0 h-full w-full text-neutral-300 dark:text-neutral-800/50"
             >
               <defs>
                 <pattern
                   id="grid-pattern"
-                  width="80"
-                  height="80"
+                  width="72"
+                  height="72"
                   patternUnits="userSpaceOnUse"
                   x="50%"
-                  y="100%"
-                  patternTransform="translate(0 -1)"
+                  y="50%"
+                  patternTransform="translate(-36 -36)"
                 >
                   <path
-                    d="M0 80V.5H80"
+                    d="M0 72V.5H72"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="1"
@@ -621,157 +752,210 @@ export default function LandingPage() {
             </svg>
           </div>
 
-          {/* Floating orbs */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-20 left-10 sm:left-20 w-32 h-32 sm:w-64 sm:h-64 bg-primary-400/20 rounded-full blur-3xl animate-float" />
-            <div className="absolute bottom-10 right-10 sm:bottom-20 sm:right-20 w-48 h-48 sm:w-96 sm:h-96 bg-primary-600/10 rounded-full blur-3xl animate-float-delayed" />
+          <div className="absolute inset-0 overflow-hidden -z-10">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1.5, ease: "easeOut" }}
+              className="absolute top-10 left-10 sm:left-20 w-48 h-48 sm:w-72 sm:h-72 bg-primary-400/10 dark:bg-primary-500/10 rounded-full blur-3xl animate-float"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1.5, ease: "easeOut", delay: 0.3 }}
+              className="absolute bottom-10 right-10 sm:bottom-20 sm:right-20 w-64 h-64 sm:w-96 sm:h-96 bg-purple-400/10 dark:bg-purple-500/10 rounded-full blur-3xl animate-float-delayed"
+            />
           </div>
 
-          <div
-            className="max-w-4xl mx-auto py-12 sm:py-16 relative"
+          <motion.div
+            className="max-w-4xl mx-auto py-12 sm:py-16 relative z-10"
             style={{ transform: `translateY(${heroParallax}px)` }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.1 }}
           >
-            <div className="animate-fade-in-up">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-neutral-900 dark:text-white leading-tight">
-                Reconnect with Your Lost Items,{" "}
-                <span className="bg-gradient-to-r from-primary-600 via-primary-500 to-primary-600 dark:from-primary-400 dark:via-primary-500 dark:to-primary-400 bg-clip-text text-transparent animate-gradient bg-[length:200%_auto] block sm:inline mt-2 sm:mt-0">
-                  Effortlessly
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: [0.25, 1, 0.5, 1] }} // Smoother ease
+            >
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-neutral-900 dark:text-white leading-tight">
+                Reconnect What's Lost,{" "}
+                <span className="bg-gradient-to-r from-primary-600 via-purple-500 to-pink-500 dark:from-primary-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent animate-gradient bg-[length:200%_auto] block sm:inline mt-2 sm:mt-0">
+                  Powered by AI
                 </span>
               </h1>
-            </div>
+            </motion.div>
 
-            <p
-              className="mt-4 sm:mt-6 max-w-2xl mx-auto text-base sm:text-lg text-neutral-600 dark:text-neutral-400 animate-fade-in-up"
-              style={{ animationDelay: "200ms" }}
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+              className="mt-5 sm:mt-8 max-w-2xl mx-auto text-base sm:text-lg md:text-xl text-neutral-600 dark:text-neutral-400"
             >
-              Our AI-powered platform simplifies the search for lost items on
-              campus, connecting you with your belongings faster and more
-              accurately than ever before.
-            </p>
+              CampusTrace uses smart technology to make finding lost items on
+              campus simple and fast. Join your university's secure lost and
+              found network today.
+            </motion.p>
 
-            <div
-              className="mt-8 sm:mt-10 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 animate-fade-in-up"
-              style={{ animationDelay: "400ms" }}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
+              className="mt-10 sm:mt-12 flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6"
             >
               <Link
                 to="/login"
-                className="group px-6 sm:px-8 py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white font-semibold rounded-lg shadow-lg hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden"
+                className="group px-7 sm:px-9 py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden text-base sm:text-lg w-full sm:w-auto"
               >
                 <span className="relative z-10">Get Started</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform relative z-10" />
                 <div className="absolute inset-0 bg-gradient-to-r from-primary-700 to-primary-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </Link>
-            </div>
-          </div>
+              <a
+                href="#features" // Link to features section
+                className="group px-7 sm:px-9 py-3 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-1 hover:scale-105 transition-all duration-300 border border-neutral-200 dark:border-neutral-700 w-full sm:w-auto text-center"
+              >
+                Learn More
+              </a>
+            </motion.div>
+          </motion.div>
         </section>
 
-        {/* Feature Slider */}
         <FeatureSlider features={quickFeatures} />
 
         {/* How It Works Section */}
         <section
           id="how-it-works"
+          ref={howItWorksRef.ref} // Use ref from custom hook
           className="py-16 sm:py-20 bg-white dark:bg-[#2a2a2a]"
         >
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-            <div
-              ref={howItWorksRef.ref}
-              className={`text-center mb-12 sm:mb-16 transition-all duration-1000 ${
-                howItWorksRef.hasAnimated
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-10"
-              }`}
+            <motion.div // Animate the section header
+              animate={howItWorksRef.animation}
+              initial="hidden"
+              variants={{
+                visible: { opacity: 1, y: 0, transition: { duration: 0.8 } },
+                hidden: { opacity: 0, y: 30 },
+              }}
+              className="text-center mb-12 sm:mb-16"
             >
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-3 sm:mb-4">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-neutral-900 dark:text-white mb-4 sm:mb-6">
                 How It Works
               </h2>
-              <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400">
-                Three simple steps to recover your lost items.
+              <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400 max-w-xl mx-auto">
+                Recovering lost items is simple with CampusTrace.
               </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-              <div className="hidden md:block absolute top-10 left-1/3 right-1/3 h-0.5 border-t-2 border-dashed border-neutral-300 dark:border-neutral-700 -translate-y-1/2"></div>
+            </motion.div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12 relative">
+              {/* Connecting Line */}
+              <div className="hidden md:block absolute top-8 left-1/3 right-1/3 h-1 border-t-2 border-dashed border-neutral-300 dark:border-neutral-700 -translate-y-1/2"></div>
+
               {[
                 {
                   icon: FilePlus,
-                  title: "1. Report Your Item",
+                  title: "1. Report Item",
                   description:
-                    "Quickly post details and a photo of a lost or found item using our simple form.",
+                    "Quickly post details and a photo of a lost or found item. Use the AI Helper for better descriptions.",
                 },
                 {
                   icon: Sparkles,
-                  title: "2. AI Does the Work",
+                  title: "2. AI Matches",
                   description:
-                    "Our smart system analyzes your post and searches for potential matches across campus.",
+                    "Our smart system analyzes text and images, suggesting potential matches on your dashboard.",
                 },
                 {
-                  icon: Bell,
-                  title: "3. Get Connected",
+                  icon: MessageSquare, // Changed icon
+                  title: "3. Connect Securely",
                   description:
-                    "Receive instant notifications for matches and claims, then securely arrange the return.",
+                    "Claim items with a unique detail. Chat safely in-app after approval to arrange the return.",
                 },
               ].map((step, index) => {
-                const stepRef = useInView();
+                const stepView = useInView({
+                  threshold: 0.3,
+                  triggerOnce: true,
+                });
                 return (
-                  <div
+                  <motion.div
                     key={step.title}
-                    ref={stepRef.ref}
-                    className={`relative transition-all duration-700 ${
-                      stepRef.hasAnimated
-                        ? "opacity-100 translate-y-0"
-                        : "opacity-0 translate-y-10"
-                    }`}
-                    style={{ transitionDelay: `${index * 200}ms` }}
+                    ref={stepView.ref}
+                    animate={stepView.animation}
+                    initial="hidden"
+                    variants={{
+                      visible: {
+                        opacity: 1,
+                        y: 0,
+                        transition: { duration: 0.6, delay: index * 0.15 },
+                      },
+                      hidden: { opacity: 0, y: 40 },
+                    }}
+                    className="relative text-center group"
                   >
-                    <div className="text-center group">
-                      <div className="relative inline-block mb-4 sm:mb-6">
-                        <div className="flex items-center justify-center h-14 w-14 sm:h-16 sm:w-16 bg-primary-100 dark:bg-primary-500/10 rounded-full mx-auto ring-4 ring-white dark:ring-[#2a2a2a] group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
-                          <step.icon className="w-6 h-6 sm:w-8 sm:h-8 text-primary-600 dark:text-primary-400" />
-                        </div>
-                      </div>
-                      <h3 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white mb-2 sm:mb-3">
-                        {step.title}
-                      </h3>
-                      <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed text-xs sm:text-sm">
-                        {step.description}
-                      </p>
+                    <div className="relative inline-block mb-5 sm:mb-8">
+                      <motion.div
+                        whileHover={{ scale: 1.1, rotate: 10 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 300,
+                          damping: 10,
+                        }}
+                        className="flex items-center justify-center h-16 w-16 sm:h-20 sm:w-20 bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-500/10 dark:to-primary-500/20 rounded-full mx-auto ring-4 ring-white dark:ring-[#2a2a2a]"
+                      >
+                        <step.icon className="w-7 h-7 sm:w-9 sm:h-9 text-primary-600 dark:text-primary-400" />
+                      </motion.div>
+                      {/* Animated Ring */}
+                      <span className="absolute inset-0 rounded-full ring-2 ring-primary-500/30 animate-ping opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                     </div>
-                  </div>
+                    <h3 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white mb-3 sm:mb-4">
+                      {step.title}
+                    </h3>
+                    <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed text-sm sm:text-base">
+                      {step.description}
+                    </p>
+                  </motion.div>
                 );
               })}
             </div>
           </div>
         </section>
 
-        {/* Features for Students */}
+        {/* Features Section */}
         <div id="features">
           <FeatureSection
             title="For Students & Staff"
-            subtitle="Powerful tools designed to make finding and returning items effortless."
+            subtitle="Smart tools designed for effortless item recovery within your trusted campus community."
             features={studentFeatures}
+            id="student-features"
             startIndex={0}
           />
 
-          {/* Features for Administrators */}
-          <section className="bg-white dark:bg-[#2a2a2a]">
+          <section className="bg-neutral-100 dark:bg-[#2a2a2a]">
             <FeatureSection
               title="For University Administrators"
-              subtitle="A complete suite of tools to manage your campus community with ease."
+              subtitle="Manage your campus lost and found efficiently with powerful, secure admin tools."
               features={adminFeatures}
-              startIndex={6}
+              id="admin-features"
+              startIndex={studentFeatures.length} // Continue index count
             />
           </section>
         </div>
 
+        {/* Screenshot Showcase Section */}
+        <ScreenshotSection screenshots={screenshots} />
+
         {/* FAQ Section */}
-        <section className="py-16 sm:py-20">
+        <section className="py-16 sm:py-20 bg-white dark:bg-[#1a1a1a]">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-10 sm:mb-12">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-3 sm:mb-4">
-                Frequently Asked Questions
+            <div className="text-center mb-10 sm:mb-14">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-neutral-900 dark:text-white mb-4 sm:mb-6">
+                Got Questions?
               </h2>
+              <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400">
+                Find quick answers to common queries about CampusTrace.
+              </p>
             </div>
-            <div className="bg-white dark:bg-[#2a2a2a] rounded-2xl p-4 sm:p-6 shadow-lg border border-neutral-200 dark:border-neutral-700">
+            <div className="bg-white dark:bg-[#2a2a2a] rounded-2xl p-2 sm:p-4 shadow-lg border border-neutral-200 dark:border-neutral-700/50">
               {faqs.map((faq, index) => (
                 <FAQItem
                   key={index}
@@ -788,149 +972,184 @@ export default function LandingPage() {
 
         {/* CTA Section */}
         <section
-          ref={ctaRef.ref}
-          className={`py-16 sm:py-24 bg-gradient-to-br from-primary-600 via-primary-500 to-primary-600 text-white text-center relative overflow-hidden transition-all duration-1000 ${
-            ctaRef.hasAnimated ? "opacity-100" : "opacity-50"
-          }`}
+          ref={ctaRef.ref} // Use ref from custom hook
+          className="py-20 sm:py-28 bg-gradient-to-br from-primary-600 via-purple-600 to-pink-600 text-white text-center relative overflow-hidden"
         >
           {/* Animated background shapes */}
-          <div className="absolute inset-0">
-            <div className="absolute top-0 left-0 w-48 h-48 sm:w-72 sm:h-72 bg-white/10 rounded-full blur-3xl animate-pulse" />
-            <div className="absolute bottom-0 right-0 w-64 h-64 sm:w-96 sm:h-96 bg-white/5 rounded-full blur-3xl animate-pulse-delayed" />
+          <div className="absolute inset-0 opacity-20">
+            <div className="absolute top-0 left-0 w-64 h-64 sm:w-96 sm:h-96 bg-white/10 rounded-full blur-3xl animate-pulse -translate-x-1/2 -translate-y-1/2" />
+            <div className="absolute bottom-0 right-0 w-72 h-72 sm:w-[500px] sm:h-[500px] bg-white/5 rounded-full blur-3xl animate-pulse-delayed translate-x-1/2 translate-y-1/2" />
           </div>
 
-          <div
-            className={`max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative transition-all duration-1000 ${
-              ctaRef.hasAnimated
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 translate-y-10"
-            }`}
+          <motion.div // Animate CTA content
+            animate={ctaRef.animation}
+            initial="hidden"
+            variants={{
+              visible: {
+                opacity: 1,
+                y: 0,
+                transition: { duration: 0.8, delay: 0.2 },
+              },
+              hidden: { opacity: 0, y: 30 },
+            }}
+            className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10"
           >
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">
-              Ready to Join Your Campus Community?
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-5 sm:mb-8">
+              Ready to Simplify Lost & Found?
             </h2>
-            <p className="text-base sm:text-lg md:text-xl mb-8 sm:mb-10 text-white/90 max-w-2xl mx-auto">
-              Register with your university email to start finding and reporting
-              items today.
+            <p className="text-lg sm:text-xl md:text-2xl mb-10 sm:mb-12 text-white/90 max-w-2xl mx-auto">
+              Join your campus community on CampusTrace. Sign up with your
+              university email or ID today.
             </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6">
               <Link
                 to="/login"
-                className="group px-8 sm:px-10 py-3 sm:py-4 bg-white text-primary-600 text-base sm:text-lg font-bold rounded-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-2 hover:scale-105 transition-all duration-300 inline-flex items-center justify-center gap-2 relative overflow-hidden"
+                className="group px-8 sm:px-10 py-3 sm:py-4 bg-white text-primary-600 text-base sm:text-lg font-bold rounded-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 transition-all duration-300 inline-flex items-center justify-center gap-2 relative overflow-hidden w-full sm:w-auto"
               >
-                <span className="relative z-10">Get Started Now</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform relative z-10" />
+                <span className="relative z-10">Sign Up / Log In</span>
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1.5 transition-transform relative z-10" />
                 <div className="absolute inset-0 bg-gradient-to-r from-neutral-100 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </Link>
               <Link
                 to="/register-university"
-                className="group px-8 sm:px-10 py-3 sm:py-4 bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white text-base sm:text-lg font-bold rounded-lg hover:bg-white/20 transform hover:-translate-y-2 hover:scale-105 transition-all duration-300"
+                className="group px-8 sm:px-10 py-3 sm:py-4 bg-white/10 backdrop-blur-sm border-2 border-white/40 text-white text-base sm:text-lg font-bold rounded-lg hover:bg-white/20 transform hover:-translate-y-1 hover:scale-105 transition-all duration-300 w-full sm:w-auto text-center"
               >
                 For Universities
               </Link>
             </div>
-          </div>
+          </motion.div>
         </section>
       </main>
 
-      <footer className="bg-white dark:bg-[#1a1a1a] py-12 sm:py-16 border-t border-neutral-200 dark:border-neutral-800">
+      {/* Footer */}
+      <footer className="bg-neutral-100 dark:bg-[#111111] py-16 sm:py-20 border-t border-neutral-200 dark:border-neutral-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8 sm:mb-12">
-            <div className="col-span-1 md:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-10 sm:gap-12 mb-10 sm:mb-14">
+            {/* Brand Info */}
+            <div className="col-span-1 md:col-span-2 lg:col-span-2">
               <Link
                 to="/"
-                className="flex items-center gap-2 sm:gap-3 text-xl sm:text-2xl font-bold text-primary-600 dark:text-primary-400 mb-4 group"
+                className="flex items-center gap-3 text-2xl font-bold text-primary-600 dark:text-primary-400 mb-5 group"
               >
-                <img
+                <motion.img
                   src={logo}
                   alt="Campus Trace Logo"
-                  className="h-8 w-8 sm:h-10 sm:w-auto rounded-full group-hover:rotate-12 transition-transform duration-500"
+                  className="h-9 w-9 sm:h-11 sm:w-auto rounded-lg"
+                  whileHover={{ rotate: 15 }}
                 />
                 <span>CampusTrace</span>
               </Link>
-              <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 mb-6 max-w-md">
-                The smart way to recover lost items on campus. Powered by AI,
-                driven by community.
+              <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 mb-6 max-w-sm leading-relaxed">
+                Simplifying lost and found on campus with AI-powered matching
+                and a secure, verified community.
               </p>
             </div>
+
+            {/* Quick Links */}
             <div>
-              <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">
+              <h3 className="font-semibold text-neutral-900 dark:text-white mb-5 text-lg">
                 Quick Links
               </h3>
-              <ul className="space-y-2 sm:space-y-3">
+              <ul className="space-y-3">
                 <li>
-                  <a
-                    href="#how-it-works"
-                    className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-300 hover:translate-x-1 inline-block"
-                  >
+                  <a href="#how-it-works" className="footer-link">
                     How It Works
                   </a>
                 </li>
                 <li>
-                  <a
-                    href="#features"
-                    className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-300 hover:translate-x-1 inline-block"
-                  >
+                  <a href="#features" className="footer-link">
                     Features
                   </a>
                 </li>
                 <li>
-                  <Link
-                    to="/about"
-                    className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-300 hover:translate-x-1 inline-block"
-                  >
-                    About Us
-                  </Link>
+                  <a href="#screenshots" className="footer-link">
+                    Showcase
+                  </a>
                 </li>
                 <li>
-                  <Link
-                    to="/register-university"
-                    className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-300 hover:translate-x-1 inline-block"
-                  >
-                    For Universities
+                  <Link to="/about" className="footer-link">
+                    About Us
                   </Link>
                 </li>
               </ul>
             </div>
+
+            {/* Resources */}
             <div>
-              <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">
+              <h3 className="font-semibold text-neutral-900 dark:text-white mb-5 text-lg">
+                Resources
+              </h3>
+              <ul className="space-y-3">
+                <li>
+                  <Link to="/register-university" className="footer-link">
+                    For Universities
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/learn-more" className="footer-link">
+                    Detailed Guide
+                  </Link>
+                </li>
+                <li>
+                  <a href="#faq" className="footer-link">
+                    FAQ
+                  </a>
+                </li>{" "}
+                {/* Link to FAQ section */}
+              </ul>
+            </div>
+
+            {/* Contact */}
+            <div>
+              <h3 className="font-semibold text-neutral-900 dark:text-white mb-5 text-lg">
                 Contact
               </h3>
-              <ul className="space-y-2 sm:space-y-3">
+              <ul className="space-y-3">
                 <li>
                   <a
                     href="mailto:contactCampustrace@gmail.com"
-                    className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-300 break-words"
+                    className="footer-link break-words"
                   >
                     contactCampustrace@gmail.com
                   </a>
                 </li>
+                {/* Add Social Links if available */}
+                {/* <li className="flex gap-4 pt-2">
+                                <a href="#" className="text-neutral-500 hover:text-primary-600"><Github size={20}/></a>
+                                <a href="#" className="text-neutral-500 hover:text-primary-600"><Linkedin size={20}/></a>
+                            </li> */}
               </ul>
             </div>
           </div>
-          <div className="pt-8 border-t border-neutral-200 dark:border-neutral-800 text-center sm:flex sm:justify-between">
-            <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mb-4 sm:mb-0">
+
+          {/* Bottom Bar */}
+          <div className="pt-8 border-t border-neutral-200 dark:border-neutral-800 text-center sm:flex sm:justify-between sm:items-center">
+            <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-500 mb-4 sm:mb-0">
               © {new Date().getFullYear()} CampusTrace. All rights reserved.
             </p>
-            <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
-              A project by: Bugauisan, Respicio, & Cacho
+            <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-500">
+              Project By: Bugauisan, Respicio, & Cacho (ISU - Cauayan)
             </p>
           </div>
         </div>
       </footer>
 
       <style jsx>{`
+        .footer-link {
+          @apply text-sm sm:text-base text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-300 hover:translate-x-1 inline-block;
+        }
+
+        /* Keyframes */
         @keyframes fadeInDown {
           from {
             opacity: 0;
-            transform: translateY(-20px);
+            transform: translateY(-15px);
           }
           to {
             opacity: 1;
             transform: translateY(0);
           }
         }
-
         @keyframes fadeIn {
           from {
             opacity: 0;
@@ -939,48 +1158,52 @@ export default function LandingPage() {
             opacity: 1;
           }
         }
-
         @keyframes slideInLeft {
           from {
             opacity: 0;
-            transform: translateX(-20px);
+            transform: translateX(-15px);
           }
           to {
             opacity: 1;
             transform: translateX(0);
           }
         }
-
         @keyframes float {
           0%,
           100% {
-            transform: translateY(0) rotate(0deg);
+            transform: translateY(0px) rotate(0deg);
           }
           50% {
-            transform: translateY(-20px) rotate(10deg);
+            transform: translateY(-15px) rotate(5deg);
           }
         }
-
         @keyframes float-delayed {
           0%,
           100% {
-            transform: translateY(0) rotate(0deg);
+            transform: translateY(0px) rotate(0deg);
           }
           50% {
-            transform: translateY(-30px) rotate(-10deg);
+            transform: translateY(-20px) rotate(-5deg);
           }
         }
-
         @keyframes pulse-delayed {
           0%,
           100% {
             opacity: 0.5;
           }
           50% {
-            opacity: 0.8;
+            opacity: 0.7;
           }
         }
-
+        @keyframes gradient {
+          0%,
+          100% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+        }
         @keyframes slide {
           from {
             transform: translateX(0);
@@ -990,60 +1213,37 @@ export default function LandingPage() {
           }
         }
 
-        .animate-fade-in {
-          animation: fadeIn 1s ease-out;
-        }
-
-        .animate-fade-in-delayed {
-          animation: fadeIn 1s ease-out 200ms both;
-        }
-
+        /* Apply animations */
         .animate-fade-in-up {
-          animation: fade-in-up 0.8s ease-out;
+          animation: fade-in-up 0.8s ease-out forwards;
         }
+        .animate-slideInLeft {
+          animation: slideInLeft 0.3s ease-out forwards;
+        }
+        .animate-float {
+          animation: float 7s ease-in-out infinite;
+        }
+        .animate-float-delayed {
+          animation: float-delayed 9s ease-in-out infinite 0.5s;
+        } /* Added delay */
+        .animate-pulse-delayed {
+          animation: pulse-delayed 4s ease-in-out infinite;
+        }
+        .animate-gradient {
+          animation: gradient 4s ease infinite;
+        } /* Slower gradient shift */
+        .animate-slide {
+          animation: slide 40s linear infinite;
+        } /* Slower slide */
 
         @keyframes fade-in-up {
           from {
             opacity: 0;
-            transform: translateY(30px);
+            transform: translateY(25px);
           }
           to {
             opacity: 1;
             transform: translateY(0);
-          }
-        }
-
-        .animate-slideInLeft {
-          animation: slideInLeft 0.3s ease-out;
-        }
-
-        .animate-float {
-          animation: float 6s ease-in-out infinite;
-        }
-
-        .animate-float-delayed {
-          animation: float-delayed 8s ease-in-out infinite;
-        }
-
-        .animate-pulse-delayed {
-          animation: pulse-delayed 4s ease-in-out infinite;
-        }
-
-        .animate-gradient {
-          animation: gradient 3s ease infinite;
-        }
-
-        .animate-slide {
-          animation: slide 30s linear infinite;
-        }
-
-        @keyframes gradient {
-          0%,
-          100% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
           }
         }
       `}</style>

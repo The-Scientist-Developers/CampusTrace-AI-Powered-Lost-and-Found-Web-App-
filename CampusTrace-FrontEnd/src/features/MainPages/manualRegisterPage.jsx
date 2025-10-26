@@ -1,323 +1,3 @@
-// import React, { useState, useEffect, useRef } from "react";
-// import { Link, useNavigate } from "react-router-dom";
-// import { supabase, getAccessToken } from "../../api/apiClient";
-// import { toast } from "react-hot-toast";
-// import ReCAPTCHA from "react-google-recaptcha";
-// import {
-//   ShieldCheck,
-//   University,
-//   UploadCloud,
-//   Loader2,
-//   CheckCircle,
-//   User,
-//   Mail,
-//   Lock,
-// } from "lucide-react";
-
-// const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-
-// const InputField = ({ label, children }) => (
-//   <div>
-//     <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-//       {label}
-//     </label>
-//     {children}
-//   </div>
-// );
-
-// export default function ManualRegisterPage() {
-//   const [universities, setUniversities] = useState([]);
-//   const [formData, setFormData] = useState({
-//     fullName: "",
-//     email: "",
-//     password: "",
-//   });
-//   const [confirmPassword, setConfirmPassword] = useState("");
-//   const [selectedUniversity, setSelectedUniversity] = useState("");
-//   const [idFile, setIdFile] = useState(null);
-//   const [captchaToken, setCaptchaToken] = useState(null);
-//   const [isLoading, setIsLoading] = useState(false);
-//   const [isSubmitted, setIsSubmitted] = useState(false);
-//   const recaptchaRef = useRef(null);
-
-//   useEffect(() => {
-//     const fetchUniversities = async () => {
-//       const { data, error } = await supabase
-//         .from("universities")
-//         .select("id, name")
-//         .eq("status", "active");
-//       if (error) toast.error("Could not load universities.");
-//       else setUniversities(data);
-//     };
-//     fetchUniversities();
-//   }, []);
-
-//   const handleFileChange = (e) => {
-//     const file = e.target.files[0];
-//     if (file && file.type.startsWith("image/")) setIdFile(file);
-//     else {
-//       toast.error("Please upload a valid image file.");
-//       setIdFile(null);
-//     }
-//   };
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     if (
-//       !selectedUniversity ||
-//       !idFile ||
-//       !formData.fullName ||
-//       !formData.email ||
-//       !formData.password
-//     ) {
-//       toast.error("Please fill out all fields.");
-//       return;
-//     }
-//     if (formData.password !== confirmPassword) {
-//       toast.error("Passwords do not match.");
-//       return;
-//     }
-//     // *** NEW: Password Strength Validation ***
-//     if (formData.password.length < 6) {
-//       toast.error("Password must be at least 6 characters long.");
-//       return;
-//     }
-//     if (!captchaToken) {
-//       toast.error("Please complete the CAPTCHA verification.");
-//       return;
-//     }
-
-//     setIsLoading(true);
-//     const toastId = toast.loading("Submitting registration...");
-
-//     try {
-//       const submissionForm = new FormData();
-//       submissionForm.append("full_name", formData.fullName);
-//       submissionForm.append("email", formData.email);
-//       submissionForm.append("password", formData.password);
-//       submissionForm.append("university_id", selectedUniversity);
-//       submissionForm.append("id_file", idFile);
-//       submissionForm.append("captchaToken", captchaToken);
-
-//       const response = await fetch(`${API_BASE_URL}/api/auth/signup-manual`, {
-//         method: "POST",
-//         body: submissionForm,
-//       });
-
-//       const data = await response.json();
-//       if (!response.ok) {
-//         // Handle specific weak password error from backend
-//         if (data.detail && data.detail.toLowerCase().includes("password")) {
-//           throw new Error(
-//             "Password is too weak. Please include uppercase, lowercase, numbers, and symbols."
-//           );
-//         }
-//         throw new Error(data.detail || "Submission failed.");
-//       }
-
-//       toast.success("Registration Submitted!", { id: toastId });
-//       setIsSubmitted(true);
-//     } catch (error) {
-//       toast.error(error.message, { id: toastId });
-//       recaptchaRef.current?.reset();
-//     } finally {
-//       setIsLoading(false);
-//     }
-//   };
-
-//   if (isSubmitted) {
-//     return (
-//       <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1a] flex items-center justify-center p-4">
-//         <div className="w-full max-w-md text-center bg-white dark:bg-[#2a2a2a] p-8 rounded-xl shadow-lg border border-neutral-200 dark:border-[#3a3a3a]">
-//           <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
-//           <h2 className="text-2xl font-bold text-neutral-800 dark:text-white">
-//             Registration Submitted!
-//           </h2>
-//           <p className="mt-2 text-neutral-600 dark:text-neutral-400">
-//             Please check your email to confirm your account. You will receive
-//             another email once an administrator has approved your request.
-//           </p>
-//           <Link
-//             to="/login"
-//             className="mt-6 inline-block w-full px-4 py-2 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition"
-//           >
-//             Back to Log In
-//           </Link>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1a] flex items-center justify-center p-4">
-//       <div className="w-full max-w-md">
-//         <div className="text-center mb-8">
-//           <ShieldCheck className="mx-auto h-12 w-12 text-primary-600 mb-4" />
-//           <h1 className="text-3xl font-bold text-neutral-800 dark:text-white">
-//             Register with a Personal Email
-//           </h1>
-//           <p className="mt-2 text-neutral-500 dark:text-neutral-400">
-//             Provide your details and a photo of your university ID for manual
-//             account approval.
-//           </p>
-//         </div>
-
-//         <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-8">
-//           <form onSubmit={handleSubmit} className="space-y-6">
-//             {/* Form Fields */}
-//             <InputField label="Full Name">
-//               <div className="relative">
-//                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-//                 <input
-//                   type="text"
-//                   value={formData.fullName}
-//                   onChange={(e) =>
-//                     setFormData({ ...formData, fullName: e.target.value })
-//                   }
-//                   required
-//                   className="form-input w-full pl-10"
-//                   placeholder="John Doe"
-//                 />
-//               </div>
-//             </InputField>
-//             <InputField label="Personal Email">
-//               <div className="relative">
-//                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-//                 <input
-//                   type="email"
-//                   value={formData.email}
-//                   onChange={(e) =>
-//                     setFormData({ ...formData, email: e.target.value })
-//                   }
-//                   required
-//                   className="form-input w-full pl-10"
-//                   placeholder="you@gmail.com"
-//                 />
-//               </div>
-//             </InputField>
-//             <InputField label="Password">
-//               <div className="relative">
-//                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-//                 <input
-//                   type="password"
-//                   value={formData.password}
-//                   onChange={(e) =>
-//                     setFormData({ ...formData, password: e.target.value })
-//                   }
-//                   required
-//                   className="form-input w-full pl-10"
-//                   placeholder="Minimum 6 characters"
-//                 />
-//               </div>
-//             </InputField>
-//             <InputField label="Confirm Password">
-//               <div className="relative">
-//                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-//                 <input
-//                   type="password"
-//                   value={confirmPassword}
-//                   onChange={(e) => setConfirmPassword(e.target.value)}
-//                   required
-//                   className="form-input w-full pl-10"
-//                   placeholder="Re-enter your password"
-//                 />
-//               </div>
-//             </InputField>
-//             <InputField label="Select Your University">
-//               <div className="relative">
-//                 <University className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-//                 <select
-//                   value={selectedUniversity}
-//                   onChange={(e) => setSelectedUniversity(e.target.value)}
-//                   required
-//                   className="form-select w-full pl-10"
-//                 >
-//                   <option value="" disabled>
-//                     Select a university...
-//                   </option>
-//                   {universities.map((uni) => (
-//                     <option key={uni.id} value={uni.id}>
-//                       {uni.name}
-//                     </option>
-//                   ))}
-//                 </select>
-//               </div>
-//             </InputField>
-
-//             <InputField label="Upload a clear photo of your University ID">
-//               <div className="mt-2 flex justify-center p-6 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-lg">
-//                 <div className="text-center">
-//                   {idFile ? (
-//                     <div className="font-medium text-green-600 dark:text-green-400">
-//                       {idFile.name}
-//                     </div>
-//                   ) : (
-//                     <UploadCloud className="mx-auto w-12 h-12 text-neutral-400 dark:text-neutral-500" />
-//                   )}
-//                   <div className="mt-4 flex text-sm">
-//                     <label
-//                       htmlFor="id-upload"
-//                       className="relative cursor-pointer rounded-md bg-white dark:bg-[#2a2a2a] font-semibold text-primary-600 hover:text-primary-500"
-//                     >
-//                       <span>{idFile ? "Change file" : "Upload a file"}</span>
-//                       <input
-//                         id="id-upload"
-//                         type="file"
-//                         onChange={handleFileChange}
-//                         accept="image/*"
-//                         className="sr-only"
-//                       />
-//                     </label>
-//                   </div>
-//                 </div>
-//               </div>
-//             </InputField>
-
-//             <div className="flex justify-center pt-2">
-//               <ReCAPTCHA
-//                 ref={recaptchaRef}
-//                 sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-//                 onChange={setCaptchaToken}
-//                 theme={
-//                   window.matchMedia("(prefers-color-scheme: dark)").matches
-//                     ? "dark"
-//                     : "light"
-//                 }
-//               />
-//             </div>
-
-//             <button
-//               type="submit"
-//               disabled={isLoading}
-//               className="w-full flex justify-center py-3 px-4 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
-//             >
-//               {isLoading ? (
-//                 <Loader2 className="animate-spin" />
-//               ) : (
-//                 "Submit for Review"
-//               )}
-//             </button>
-//           </form>
-//         </div>
-//         <div className="text-center mt-6">
-//           <Link
-//             to="/login"
-//             className="text-sm text-primary-600 dark:text-primary-400 hover:underline"
-//           >
-//             Back to Login
-//           </Link>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-
-
-
-
-
-
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase, getAccessToken } from "../../api/apiClient";
@@ -375,7 +55,7 @@ export default function ManualRegisterPage() {
           .from("universities")
           .select("id, name")
           .eq("status", "active");
-        
+
         if (error) {
           console.error("Error fetching universities:", error);
           toast.error("Could not load universities. Please refresh the page.");
@@ -447,7 +127,7 @@ export default function ManualRegisterPage() {
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    
+
     if (!file) {
       setErrors({ ...errors, idFile: null });
       setIdFile(null);
@@ -456,7 +136,10 @@ export default function ManualRegisterPage() {
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      setErrors({ ...errors, idFile: "Please upload a valid image file (JPG, PNG, or WEBP)" });
+      setErrors({
+        ...errors,
+        idFile: "Please upload a valid image file (JPG, PNG, or WEBP)",
+      });
       setIdFile(null);
       toast.error("Please upload a valid image file.");
       e.target.value = null;
@@ -485,7 +168,7 @@ export default function ManualRegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate form
     if (!validateForm()) {
       toast.error("Please fix all errors before submitting.");
@@ -518,68 +201,114 @@ export default function ManualRegisterPage() {
           data = await response.json();
         } catch (jsonError) {
           console.error("Failed to parse response as JSON:", jsonError);
-          throw new Error("Server returned an invalid response. Please try again later.");
+          throw new Error(
+            "Server returned an invalid response. Please try again later."
+          );
         }
       } catch (fetchError) {
         console.error("Network error during fetch:", fetchError);
-        if (fetchError.message.includes("Failed to fetch") || fetchError.message.includes("NetworkError")) {
-          throw new Error("Network error. Please check your internet connection and try again.");
+        if (
+          fetchError.message.includes("Failed to fetch") ||
+          fetchError.message.includes("NetworkError")
+        ) {
+          throw new Error(
+            "Network error. Please check your internet connection and try again."
+          );
         }
-        throw new Error("Unable to connect to the server. Please try again later.");
+        throw new Error(
+          "Unable to connect to the server. Please try again later."
+        );
       }
-      
+
       if (!response.ok) {
         const errorDetail = data.detail || data.message || "";
         console.error("Server error response:", response.status, errorDetail);
-        
+
         // Handle specific backend errors
-        if (errorDetail.toLowerCase().includes("already exists") || errorDetail.toLowerCase().includes("duplicate")) {
-          setErrors({ ...errors, email: "A user with this email already exists" });
+        if (
+          errorDetail.toLowerCase().includes("already exists") ||
+          errorDetail.toLowerCase().includes("duplicate")
+        ) {
+          setErrors({
+            ...errors,
+            email: "A user with this email already exists",
+          });
           throw new Error("A user with this email already exists.");
         }
-        if (errorDetail.toLowerCase().includes("invalid id file type") || errorDetail.toLowerCase().includes("file type")) {
+        if (
+          errorDetail.toLowerCase().includes("invalid id file type") ||
+          errorDetail.toLowerCase().includes("file type")
+        ) {
           setErrors({ ...errors, idFile: "Invalid file type" });
-          throw new Error("Invalid ID file type. Please upload JPG, PNG, or WEBP.");
+          throw new Error(
+            "Invalid ID file type. Please upload JPG, PNG, or WEBP."
+          );
         }
-        if (errorDetail.toLowerCase().includes("password") && errorDetail.toLowerCase().includes("weak")) {
+        if (
+          errorDetail.toLowerCase().includes("password") &&
+          errorDetail.toLowerCase().includes("weak")
+        ) {
           setErrors({ ...errors, password: "Password is too weak" });
           throw new Error(
             "Password is too weak. Please include uppercase, lowercase, numbers, and symbols."
           );
         }
-        if (errorDetail.toLowerCase().includes("captcha") || errorDetail.toLowerCase().includes("recaptcha")) {
+        if (
+          errorDetail.toLowerCase().includes("captcha") ||
+          errorDetail.toLowerCase().includes("recaptcha")
+        ) {
           setErrors({ ...errors, captcha: "CAPTCHA verification failed" });
           throw new Error("CAPTCHA verification failed. Please try again.");
         }
         if (errorDetail.toLowerCase().includes("university")) {
           setErrors({ ...errors, university: "Invalid university selection" });
-          throw new Error("Invalid university selected. Please choose a valid university.");
+          throw new Error(
+            "Invalid university selected. Please choose a valid university."
+          );
         }
-        if (errorDetail.toLowerCase().includes("email") && errorDetail.toLowerCase().includes("invalid")) {
+        if (
+          errorDetail.toLowerCase().includes("email") &&
+          errorDetail.toLowerCase().includes("invalid")
+        ) {
           setErrors({ ...errors, email: "Invalid email format" });
-          throw new Error("Invalid email format. Please enter a valid email address.");
+          throw new Error(
+            "Invalid email format. Please enter a valid email address."
+          );
         }
-        
+
         // HTTP status code specific errors
         if (response.status === 400) {
-          throw new Error(errorDetail || "Invalid request. Please check your information and try again.");
+          throw new Error(
+            errorDetail ||
+              "Invalid request. Please check your information and try again."
+          );
         }
         if (response.status === 403) {
-          throw new Error("Access denied. Please try again or contact support.");
+          throw new Error(
+            "Access denied. Please try again or contact support."
+          );
         }
         if (response.status === 409) {
-          throw new Error("This email is already registered. Please use a different email.");
+          throw new Error(
+            "This email is already registered. Please use a different email."
+          );
         }
         if (response.status === 413) {
-          throw new Error("File size too large. Please upload a smaller image (max 5MB).");
+          throw new Error(
+            "File size too large. Please upload a smaller image (max 5MB)."
+          );
         }
         if (response.status === 429) {
-          throw new Error("Too many requests. Please wait a few minutes and try again.");
+          throw new Error(
+            "Too many requests. Please wait a few minutes and try again."
+          );
         }
         if (response.status >= 500) {
-          throw new Error("Server error. Please try again later or contact support.");
+          throw new Error(
+            "Server error. Please try again later or contact support."
+          );
         }
-        
+
         throw new Error(errorDetail || "Submission failed. Please try again.");
       }
 
@@ -587,11 +316,12 @@ export default function ManualRegisterPage() {
       setIsSubmitted(true);
     } catch (error) {
       console.error("Registration error:", error);
-      
+
       // Display user-friendly error message
-      const errorMessage = error.message || "An unexpected error occurred. Please try again.";
+      const errorMessage =
+        error.message || "An unexpected error occurred. Please try again.";
       toast.error(errorMessage, { id: toastId });
-      
+
       // Reset CAPTCHA on error
       if (recaptchaRef.current) {
         try {
@@ -657,8 +387,8 @@ export default function ManualRegisterPage() {
                     setErrors({ ...errors, fullName: null });
                   }}
                   className={`w-full pl-10 px-4 py-2 bg-white dark:bg-[#1a1a1a] border ${
-                    errors.fullName 
-                      ? "border-red-500 dark:border-red-500" 
+                    errors.fullName
+                      ? "border-red-500 dark:border-red-500"
                       : "border-neutral-300 dark:border-neutral-600"
                   } rounded-lg text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400`}
                   placeholder="John Doe"
@@ -678,8 +408,8 @@ export default function ManualRegisterPage() {
                     setErrors({ ...errors, email: null });
                   }}
                   className={`w-full pl-10 px-4 py-2 bg-white dark:bg-[#1a1a1a] border ${
-                    errors.email 
-                      ? "border-red-500 dark:border-red-500" 
+                    errors.email
+                      ? "border-red-500 dark:border-red-500"
                       : "border-neutral-300 dark:border-neutral-600"
                   } rounded-lg text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400`}
                   placeholder="you@gmail.com"
@@ -699,8 +429,8 @@ export default function ManualRegisterPage() {
                     setErrors({ ...errors, password: null });
                   }}
                   className={`w-full pl-10 px-4 py-2 bg-white dark:bg-[#1a1a1a] border ${
-                    errors.password 
-                      ? "border-red-500 dark:border-red-500" 
+                    errors.password
+                      ? "border-red-500 dark:border-red-500"
                       : "border-neutral-300 dark:border-neutral-600"
                   } rounded-lg text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400`}
                   placeholder="Minimum 6 characters"
@@ -720,8 +450,8 @@ export default function ManualRegisterPage() {
                     setErrors({ ...errors, confirmPassword: null });
                   }}
                   className={`w-full pl-10 px-4 py-2 bg-white dark:bg-[#1a1a1a] border ${
-                    errors.confirmPassword 
-                      ? "border-red-500 dark:border-red-500" 
+                    errors.confirmPassword
+                      ? "border-red-500 dark:border-red-500"
                       : "border-neutral-300 dark:border-neutral-600"
                   } rounded-lg text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400`}
                   placeholder="Re-enter your password"
@@ -730,7 +460,10 @@ export default function ManualRegisterPage() {
             </InputField>
 
             {/* University Field */}
-            <InputField label="Select Your University" error={errors.university}>
+            <InputField
+              label="Select Your University"
+              error={errors.university}
+            >
               <div className="relative">
                 <University className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400 pointer-events-none z-10" />
                 <select
@@ -740,23 +473,27 @@ export default function ManualRegisterPage() {
                     setErrors({ ...errors, university: null });
                   }}
                   className={`w-full pl-10 px-4 py-2 bg-white dark:bg-[#1a1a1a] border ${
-                    errors.university 
-                      ? "border-red-500 dark:border-red-500" 
+                    errors.university
+                      ? "border-red-500 dark:border-red-500"
                       : "border-neutral-300 dark:border-neutral-600"
                   } rounded-lg text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 appearance-none`}
                   style={{
                     backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                    backgroundPosition: 'right 0.5rem center',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundSize: '1.5em 1.5em',
-                    paddingRight: '2.5rem'
+                    backgroundPosition: "right 0.5rem center",
+                    backgroundRepeat: "no-repeat",
+                    backgroundSize: "1.5em 1.5em",
+                    paddingRight: "2.5rem",
                   }}
                 >
                   <option value="" className="text-neutral-400">
                     Select a university...
                   </option>
                   {universities.map((uni) => (
-                    <option key={uni.id} value={uni.id} className="text-neutral-900 dark:text-neutral-100">
+                    <option
+                      key={uni.id}
+                      value={uni.id}
+                      className="text-neutral-900 dark:text-neutral-100"
+                    >
                       {uni.name}
                     </option>
                   ))}
@@ -765,12 +502,17 @@ export default function ManualRegisterPage() {
             </InputField>
 
             {/* ID Upload Field */}
-            <InputField label="Upload a clear photo of your University ID" error={errors.idFile}>
-              <div className={`mt-2 flex justify-center p-6 border-2 border-dashed ${
-                errors.idFile 
-                  ? "border-red-500 dark:border-red-500" 
-                  : "border-neutral-300 dark:border-neutral-700"
-              } rounded-lg hover:border-primary-400 dark:hover:border-primary-500 transition-colors`}>
+            <InputField
+              label="Upload a clear photo of your University ID"
+              error={errors.idFile}
+            >
+              <div
+                className={`mt-2 flex justify-center p-6 border-2 border-dashed ${
+                  errors.idFile
+                    ? "border-red-500 dark:border-red-500"
+                    : "border-neutral-300 dark:border-neutral-700"
+                } rounded-lg hover:border-primary-400 dark:hover:border-primary-500 transition-colors`}
+              >
                 <div className="text-center">
                   {idFile ? (
                     <div className="font-medium text-green-600 dark:text-green-400">
@@ -811,11 +553,17 @@ export default function ManualRegisterPage() {
                   onChange={handleCaptchaChange}
                   onExpired={() => {
                     setCaptchaToken(null);
-                    setErrors({ ...errors, captcha: "CAPTCHA expired, please verify again" });
+                    setErrors({
+                      ...errors,
+                      captcha: "CAPTCHA expired, please verify again",
+                    });
                   }}
                   onErrored={() => {
                     setCaptchaToken(null);
-                    setErrors({ ...errors, captcha: "CAPTCHA error, please try again" });
+                    setErrors({
+                      ...errors,
+                      captcha: "CAPTCHA error, please try again",
+                    });
                     toast.error("CAPTCHA error. Please try again.");
                   }}
                   theme={
@@ -850,7 +598,7 @@ export default function ManualRegisterPage() {
             </button>
           </form>
         </div>
-        
+
         <div className="text-center mt-6">
           <Link
             to="/login"
