@@ -254,6 +254,7 @@ export default function LoginPage() {
         newErrors.confirmPassword = "Passwords do not match";
       }
 
+      const score = Object.values(passwordStrength).filter(Boolean).length;
       if (score < 3) {
         newErrors.password = "Please create a stronger password";
       }
@@ -476,7 +477,50 @@ export default function LoginPage() {
       return;
     }
 
+    // Check if email domain is registered
+    const emailDomain = formData.email.split("@")[1];
+    if (!emailDomain) {
+      toast.error("Please enter a valid email address", {
+        duration: 5000,
+        position: "top-center",
+      });
+      return;
+    }
+
     setLoading(true);
+
+    // First, check if the domain is registered
+    try {
+      const { data: domainData, error: domainError } = await supabase
+        .from("allowed_domains")
+        .select("university_id")
+        .eq("domain_name", emailDomain)
+        .single();
+
+      if (domainError || !domainData) {
+        toast.error(
+          `The email domain "${emailDomain}" is not registered with CampusTrace. Please contact your university administrator or register your university.`,
+          {
+            duration: 7000,
+            position: "top-center",
+          }
+        );
+        setLoading(false);
+        resetCaptcha();
+        return;
+      }
+    } catch (err) {
+      toast.error(
+        `The email domain "${emailDomain}" is not registered with CampusTrace. Please use a registered university email.`,
+        {
+          duration: 7000,
+          position: "top-center",
+        }
+      );
+      setLoading(false);
+      resetCaptcha();
+      return;
+    }
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
