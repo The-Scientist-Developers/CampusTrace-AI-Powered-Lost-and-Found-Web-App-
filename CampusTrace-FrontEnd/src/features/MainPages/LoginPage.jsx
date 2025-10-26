@@ -150,7 +150,6 @@ export default function LoginPage() {
   const [cooldownTime, setCooldownTime] = useState(0);
   const [lastAttemptTime, setLastAttemptTime] = useState(null);
 
-  // Password strength states
   const [passwordStrength, setPasswordStrength] = useState({
     hasMinLength: false,
     hasUpperCase: false,
@@ -159,35 +158,16 @@ export default function LoginPage() {
     hasSpecialChar: false,
   });
 
-  // Rate limiting cooldown timer
   useEffect(() => {
     if (cooldownTime > 0) {
-      console.log(
-        `🔒 [RATE LIMIT] Cooldown active: ${cooldownTime} seconds remaining`
-      );
       const timer = setTimeout(() => setCooldownTime(cooldownTime - 1), 1000);
       return () => clearTimeout(timer);
     } else if (cooldownTime === 0 && loginAttempts >= 5) {
-      // Reset attempts after cooldown expires
-      console.log("✅ [RATE LIMIT] Cooldown expired, resetting attempts");
       setLoginAttempts(0);
       setLastAttemptTime(null);
     }
   }, [cooldownTime, loginAttempts]);
 
-  // Log rate limit state changes
-  useEffect(() => {
-    console.log("📊 [RATE LIMIT STATE]", {
-      loginAttempts,
-      cooldownTime,
-      lastAttemptTime: lastAttemptTime
-        ? new Date(lastAttemptTime).toLocaleTimeString()
-        : null,
-      isBlocked: cooldownTime > 0 || loginAttempts >= 5,
-    });
-  }, [loginAttempts, cooldownTime, lastAttemptTime]);
-
-  // Password strength checker
   useEffect(() => {
     if (!isLogin) {
       const strength = {
@@ -198,13 +178,6 @@ export default function LoginPage() {
         hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(formData.password),
       };
       setPasswordStrength(strength);
-
-      const score = Object.values(strength).filter(Boolean).length;
-      console.log("🔐 [PASSWORD STRENGTH]", {
-        score: `${score}/5`,
-        requirements: strength,
-        strength: score <= 2 ? "Weak" : score <= 3 ? "Medium" : "Strong",
-      });
     }
   }, [formData.password, isLogin]);
 
@@ -281,14 +254,8 @@ export default function LoginPage() {
         newErrors.confirmPassword = "Passwords do not match";
       }
 
-      // Additional password strength validation for signup
-      const score = Object.values(passwordStrength).filter(Boolean).length;
       if (score < 3) {
         newErrors.password = "Please create a stronger password";
-        console.log(
-          "❌ [PASSWORD VALIDATION] Password too weak, score:",
-          score
-        );
       }
     }
 
@@ -307,27 +274,16 @@ export default function LoginPage() {
     setCaptchaToken(null);
   };
 
-  // Check rate limiting
   const checkRateLimit = () => {
     const now = Date.now();
-    console.log("🔍 [RATE LIMIT CHECK] Starting check...");
 
-    // Reset attempts if more than 15 minutes have passed since last attempt
     if (lastAttemptTime && now - lastAttemptTime > 15 * 60 * 1000) {
-      const minutesPassed = Math.floor((now - lastAttemptTime) / 60000);
-      console.log(
-        `⏰ [RATE LIMIT] ${minutesPassed} minutes passed since last attempt. Resetting counters.`
-      );
       setLoginAttempts(0);
       setLastAttemptTime(null);
       return true;
     }
 
-    // Check if user is in cooldown
     if (cooldownTime > 0) {
-      console.log(
-        `🚫 [RATE LIMIT] BLOCKED - In cooldown for ${cooldownTime} more seconds`
-      );
       toast.error(`Too many attempts. Please wait ${cooldownTime} seconds.`, {
         duration: 3000,
         position: "top-center",
@@ -336,12 +292,8 @@ export default function LoginPage() {
       return false;
     }
 
-    // Check if too many attempts (block BEFORE allowing 5th attempt)
     if (loginAttempts >= 5) {
-      console.log(
-        "⛔ [RATE LIMIT] BLOCKED - Max attempts (5) reached. Starting 60s cooldown."
-      );
-      setCooldownTime(60); // 60 second cooldown after 5 attempts
+      setCooldownTime(60);
       toast.error("Too many login attempts. Please wait 60 seconds.", {
         duration: 5000,
         position: "top-center",
@@ -350,17 +302,12 @@ export default function LoginPage() {
       return false;
     }
 
-    console.log(
-      `✅ [RATE LIMIT] Check passed. Current attempts: ${loginAttempts}/5`
-    );
     return true;
   };
 
-  // Simplified error parser with clear mappings
   const parseSignupError = (detail = "") => {
     const lower = detail.toLowerCase();
 
-    // Map specific backend errors to user-friendly messages
     const errorMappings = [
       {
         check: (s) =>
@@ -395,22 +342,17 @@ export default function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    console.log("🔐 [LOGIN] Starting login attempt...");
     setTouched({ email: true, password: true });
 
     if (!validate()) {
-      console.log("❌ [LOGIN] Validation failed");
       return;
     }
 
-    // Check rate limiting
     if (!checkRateLimit()) {
-      console.log("🚫 [LOGIN] Rate limit check failed - blocking attempt");
       return;
     }
 
     if (!captchaToken) {
-      console.log("❌ [LOGIN] No CAPTCHA token");
       toast.error("Please complete the CAPTCHA verification", {
         duration: 4000,
         position: "top-center",
@@ -422,12 +364,8 @@ export default function LoginPage() {
     const currentAttempt = loginAttempts + 1;
     setLoginAttempts(currentAttempt);
     setLastAttemptTime(Date.now());
-    console.log(
-      `📝 [LOGIN] Attempt #${currentAttempt} at ${new Date().toLocaleTimeString()}`
-    );
 
     try {
-      // Step 1: Authenticate User
       const { data: authData, error: authError } =
         await supabase.auth.signInWithPassword({
           email: formData.email,
@@ -435,7 +373,6 @@ export default function LoginPage() {
         });
 
       if (authError) {
-        console.log("❌ [LOGIN] Authentication failed:", authError.message);
         const msg = authError.message || "";
 
         if (msg.includes("Email not confirmed")) {
@@ -443,13 +380,7 @@ export default function LoginPage() {
         }
 
         if (msg.includes("Invalid login credentials")) {
-          console.log(
-            `⚠️ [LOGIN] Invalid credentials - Attempt ${currentAttempt}/5`
-          );
-
-          // Trigger cooldown on 5th failed attempt
           if (currentAttempt >= 5) {
-            console.log("🔒 [LOGIN] Max attempts reached. Starting cooldown.");
             setCooldownTime(60);
           }
 
@@ -459,11 +390,7 @@ export default function LoginPage() {
         throw authError;
       }
 
-      // Step 2: Check Verification Status IF Auth Succeeded
       if (authData.user) {
-        console.log(
-          "✅ [LOGIN] Authentication successful, checking profile..."
-        );
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
           .select("is_verified, is_banned")
@@ -471,33 +398,24 @@ export default function LoginPage() {
           .single();
 
         if (profileError) {
-          console.error(
-            "❌ [LOGIN] Error fetching profile:",
-            profileError.message
-          );
           await supabase.auth.signOut();
           throw new Error(
             "Could not verify account status. Please try again later."
           );
         }
 
-        // Step 3: Handle Banned or Unverified Users
         if (profileData?.is_banned) {
-          console.log("🚫 [LOGIN] User is banned");
           await supabase.auth.signOut();
           throw new Error("Your account has been suspended.");
         }
 
         if (profileData && profileData.is_verified === false) {
-          console.log("⏳ [LOGIN] User not verified");
           await supabase.auth.signOut();
           throw new Error(
             "Your account is awaiting administrator approval. Please check back later."
           );
         }
 
-        // Step 4: If Verified and Not Banned - Reset rate limiting
-        console.log("🎉 [LOGIN] Login successful! Resetting rate limits.");
         setLoginAttempts(0);
         setLastAttemptTime(null);
         setCooldownTime(0);
@@ -510,13 +428,7 @@ export default function LoginPage() {
         throw new Error("Authentication failed unexpectedly.");
       }
     } catch (err) {
-      console.log("❌ [LOGIN] Login failed:", err.message);
-
-      // Trigger cooldown on 5th failed attempt (catch-all for any error)
       if (currentAttempt >= 5) {
-        console.log(
-          "🔒 [LOGIN] Max attempts (5) reached after this failure. Starting cooldown."
-        );
         setCooldownTime(60);
       }
 
@@ -532,7 +444,6 @@ export default function LoginPage() {
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    console.log("📝 [SIGNUP] Starting signup process...");
 
     setTouched({
       email: true,
@@ -542,15 +453,11 @@ export default function LoginPage() {
     });
 
     if (!validate()) {
-      console.log("❌ [SIGNUP] Validation failed");
       return;
     }
 
-    // Check password strength for signup
     const score = Object.values(passwordStrength).filter(Boolean).length;
-    console.log(`🔐 [SIGNUP] Password strength score: ${score}/5`);
     if (score < 3) {
-      console.log("❌ [SIGNUP] Password too weak");
       toast.error(
         "Please create a stronger password that meets at least 3 requirements",
         {
@@ -562,7 +469,6 @@ export default function LoginPage() {
     }
 
     if (!captchaToken) {
-      console.log("❌ [SIGNUP] No CAPTCHA token");
       toast.error("Please complete the CAPTCHA verification", {
         duration: 4000,
         position: "top-center",
@@ -571,10 +477,8 @@ export default function LoginPage() {
     }
 
     setLoading(true);
-    console.log("🚀 [SIGNUP] Sending signup request to backend...");
 
     try {
-      // Let the backend handle ALL validation including existing users
       const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -589,11 +493,8 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        console.log("❌ [SIGNUP] Backend error:", data.detail || data.message);
-        // Parse the error from backend and show it to user
         const errorMessage = parseSignupError(data.detail || data.message);
 
-        // Show toast with appropriate styling
         toast.error(errorMessage, {
           duration: 6000,
           position: "top-center",
@@ -602,8 +503,6 @@ export default function LoginPage() {
         throw new Error(errorMessage);
       }
 
-      // Success - backend handled everything correctly
-      console.log("✅ [SIGNUP] Account created successfully!");
       toast.success(
         data.message || "Account created! Check your email to confirm",
         {
@@ -612,7 +511,6 @@ export default function LoginPage() {
         }
       );
 
-      // Reset form and switch to login
       setIsLogin(true);
       setFormData({ fullName: "", email: "", password: "" });
       setConfirmPassword("");
@@ -620,8 +518,6 @@ export default function LoginPage() {
       setTouched({});
       resetCaptcha();
     } catch (err) {
-      // Error already shown via toast, just reset captcha
-      console.error("❌ [SIGNUP] Signup error:", err);
       resetCaptcha();
     } finally {
       setLoading(false);

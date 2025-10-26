@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   useLocation,
   NavLink as RouterNavLink,
@@ -18,111 +18,386 @@ import {
   Moon,
   User,
   UserCheck,
+  MessageSquare,
+  HelpCircle,
+  Plus,
 } from "lucide-react";
 import logo from "../../Images/Logo.svg";
 import { useTheme } from "../../contexts/ThemeContext";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
-// ---------------- Skeleton Loader ---------------- //
+// --- Skeleton Loader --- //
 const AdminDashboardSkeleton = ({ isSidebarOpen, mobileMenu }) => (
-  <div className="h-screen flex flex-col bg-slate-50 dark:bg-[#1a1a1a]">
-    <header className="h-16 px-6 bg-white/60 dark:bg-[#2a2a2a]/60 backdrop-blur-md border-b border-neutral-200/60 dark:border-[#3a3a3a]/60 flex items-center justify-between">
-      <Skeleton circle width={32} height={32} />
-      <Skeleton width={120} height={24} />
+  <div className="h-screen flex flex-col bg-neutral-50 dark:bg-[#1a1a1a] text-neutral-800 dark:text-neutral-300 overflow-hidden">
+    <header className="h-14 sm:h-16 px-3 sm:px-4 lg:px-6 bg-white/70 dark:bg-[#2a2a2a]/70 backdrop-blur-lg border-b border-neutral-200 dark:border-[#3a3a3a] flex items-center justify-between shadow-sm z-30 flex-shrink-0">
+      <div className="flex items-center gap-2">
+        <Skeleton circle width={32} height={32} className="md:hidden" />
+        <Skeleton circle width={32} height={32} className="hidden md:block" />
+        <h1 className="hidden sm:block">
+          <Skeleton width={120} height={24} />
+        </h1>
+      </div>
+      <div className="flex items-center gap-2">
+        <Skeleton circle width={32} height={32} />
+        <Skeleton circle width={32} height={32} />
+        <Skeleton
+          width={140}
+          height={40}
+          borderRadius={8}
+          className="hidden sm:block"
+        />
+      </div>
     </header>
     <div className="flex flex-1 overflow-hidden">
       <aside
-        className={`transition-all duration-300 bg-white/40 dark:bg-[#2a2a2a]/40 backdrop-blur-xl border-r border-neutral-200/40 dark:border-[#3a3a3a]/40 ${
-          isSidebarOpen ? "w-64" : "w-20"
-        }`}
+        className={`fixed md:relative inset-y-0 left-0 z-50 bg-white/95 dark:bg-[#2a2a2a]/95 backdrop-blur-md flex flex-col transition-all duration-300 ease-in-out ${
+          mobileMenu
+            ? "translate-x-0 w-[280px] shadow-2xl"
+            : "-translate-x-full md:translate-x-0"
+        } ${isSidebarOpen ? "md:w-64" : "md:w-20"} h-full`}
       >
-        <div className="p-4">
-          {[...Array(5)].map((_, i) => (
-            <Skeleton key={i} height={40} borderRadius={8} className="mb-2" />
-          ))}
+        <div className="flex flex-col h-full overflow-hidden">
+          <div className="p-4 flex items-center gap-3 border-b border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0">
+            <Skeleton circle width={32} height={32} />
+            {(isSidebarOpen || mobileMenu) && (
+              <div className="flex flex-col overflow-hidden">
+                <Skeleton width={100} height={16} />
+                <Skeleton width={120} height={12} />
+              </div>
+            )}
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <nav className="p-3 space-y-1.5">
+              {[...Array(7)].map((_, i) => (
+                <Skeleton key={i} height={42} borderRadius={8} />
+              ))}
+            </nav>
+          </div>
+          <div className="p-3 border-t border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0">
+            <div className="space-y-1.5">
+              {[...Array(2)].map((_, i) => (
+                <Skeleton key={i} height={42} borderRadius={8} />
+              ))}
+            </div>
+            <div className="border-t border-neutral-200 dark:border-[#3a3a3a] my-3"></div>
+            <div className="p-2 flex items-center gap-3">
+              <Skeleton circle width={36} height={36} />
+              {(isSidebarOpen || mobileMenu) && (
+                <div className="flex-1 min-w-0">
+                  <Skeleton width={100} height={16} />
+                  <Skeleton width={140} height={12} />
+                </div>
+              )}
+            </div>
+            <Skeleton height={42} borderRadius={8} className="mt-2" />
+          </div>
         </div>
       </aside>
-      <main className="flex-1 p-6 overflow-y-auto">
-        <Skeleton height={40} width={200} />
-        <Skeleton height={300} className="mt-6" />
+      <main className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-[#1a1a1a]">
+        <div className="p-4 md:p-6 lg:p-8 min-h-full">
+          <Skeleton height={40} width={200} className="mb-6" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} height={120} borderRadius={8} />
+            ))}
+          </div>
+        </div>
       </main>
     </div>
   </div>
 );
 
-// ---------------- Menu Config ---------------- //
+// --- Menu Configuration --- //
 const menuItems = [
-  { href: "/admin", label: "Overview", icon: Home, exact: true },
+  { label: "Overview", icon: Home, path: "/admin", exact: true },
   {
-    href: "/admin/post-moderation",
     label: "Post Moderation",
     icon: ShieldCheck,
+    path: "/admin/post-moderation",
   },
-  { href: "/admin/user-management", label: "User Management", icon: Users },
+  { label: "User Management", icon: Users, path: "/admin/user-management" },
   {
-    href: "/admin/manual-verifications",
     label: "Manual Verifications",
     icon: UserCheck,
+    path: "/admin/manual-verifications",
   },
-  { href: "/admin/notifications", label: "Notifications", icon: Bell },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
-  { href: "/admin/profile", label: "Profile", icon: User },
+  { label: "Notifications", icon: Bell, path: "/admin/notifications" },
+  { label: "Profile", icon: User, path: "/admin/profile" },
 ];
 
-// ---------------- NavLink ---------------- //
-const AdminNavLink = ({ item, isOpen, onClick }) => {
-  const location = useLocation();
-  const isActive = item.exact
-    ? location.pathname === item.href
-    : location.pathname.startsWith(item.href);
+const bottomItems = [
+  { label: "Settings", icon: Settings, path: "/admin/settings" },
+  { label: "Help", icon: HelpCircle, path: "/admin/help" },
+];
 
-  return (
-    <RouterNavLink
-      to={item.href}
-      onClick={onClick}
-      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-300
-        ${
-          isActive
-            ? "bg-gradient-to-r from-indigo-500/15 to-indigo-500/10 text-indigo-500 border border-indigo-500/30 shadow-sm"
-            : "text-neutral-600 dark:text-neutral-400 hover:bg-white/20 dark:hover:bg-white/10 hover:text-neutral-900 dark:hover:text-white hover:shadow-[0_0_10px_rgba(99,102,241,0.1)]"
-        }
-        ${!isOpen ? "justify-center" : ""}
-        group`}
-    >
-      <item.icon
-        className={`w-5 h-5 flex-shrink-0 transition-colors duration-200 ${
-          isActive
-            ? "text-indigo-500"
-            : "text-neutral-500 dark:text-neutral-500"
-        }`}
-      />
-      {isOpen && (
-        <span className="transition-opacity duration-300 ease-in-out opacity-90 group-hover:opacity-100">
-          {item.label}
-        </span>
-      )}
-    </RouterNavLink>
-  );
-};
+// --- NavLink Component --- //
+const NavLink = ({ item, isOpen, exact }) => (
+  <RouterNavLink
+    to={item.path}
+    end={exact}
+    title={!isOpen ? item.label : ""}
+    className={({ isActive }) => `
+      flex items-center gap-3 px-3 py-2.5 sm:py-2.5 rounded-lg transition-all duration-200 min-h-[44px]
+      ${
+        isActive
+          ? "bg-indigo-500/10 text-indigo-500 font-semibold"
+          : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 hover:text-neutral-900 dark:hover:text-white"
+      }
+      ${!isOpen ? "justify-center" : ""}
+      group relative
+    `}
+  >
+    {({ isActive }) => (
+      <>
+        <item.icon
+          className={`w-5 h-5 flex-shrink-0 transition-colors duration-200 ${
+            isActive
+              ? "text-indigo-500"
+              : "text-neutral-500 dark:text-neutral-500 group-hover:text-neutral-800 dark:group-hover:text-white"
+          }`}
+        />
+        {isOpen && (
+          <>
+            <span className="flex-1 text-sm font-medium truncate">
+              {item.label}
+            </span>
+            {item.badge && (
+              <span className="px-2 py-0.5 text-xs bg-indigo-500 text-white rounded-full font-bold min-w-[20px] text-center shadow-md">
+                {item.badge}
+              </span>
+            )}
+          </>
+        )}
+        {!isOpen && item.badge && (
+          <span className="absolute top-1 right-1 w-2 h-2 bg-indigo-500 rounded-full"></span>
+        )}
+      </>
+    )}
+  </RouterNavLink>
+);
 
-// ---------------- Main Layout ---------------- //
-export default function AdminDashboardLayout({
-  children,
-  user,
-  isLoading = false,
-}) {
+// --- Main Admin Layout Component --- //
+export default function AdminDashboardLayout({ children, user }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
 
-  const [isSidebarOpen, setSidebarOpen] = useState(() => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
     const saved = localStorage.getItem("adminSidebarOpen");
     return saved !== null ? JSON.parse(saved) : window.innerWidth >= 1024;
   });
   const [mobileMenu, setMobileMenu] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [messageCount, setMessageCount] = useState(0);
+  const [pendingPostsCount, setPendingPostsCount] = useState(0);
+  const [pendingVerificationsCount, setPendingVerificationsCount] = useState(0);
+  const [siteName, setSiteName] = useState("CampusTrace");
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Fetch all data including real-time counts
+  const fetchAllData = useCallback(async () => {
+    if (!user?.id) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // Fetch admin profile
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+      } else {
+        setProfile(profileData);
+
+        // Fetch site settings
+        if (profileData?.university_id) {
+          const { data: settingsData } = await supabase
+            .from("site_settings")
+            .select("setting_value")
+            .eq("university_id", profileData.university_id)
+            .eq("setting_key", "site_name")
+            .single();
+
+          if (settingsData) {
+            setSiteName(settingsData.setting_value);
+          }
+        }
+      }
+
+      // Fetch notification count
+      const { count: notifCount, error: notifError } = await supabase
+        .from("notifications")
+        .select("*", { head: true, count: "exact" })
+        .eq("recipient_id", user.id)
+        .eq("status", "unread");
+
+      if (!notifError) setNotificationCount(notifCount || 0);
+
+      // Fetch unread messages count (admin-specific)
+      const { count: msgCount, error: msgError } = await supabase
+        .from("messages")
+        .select("*", { head: true, count: "exact" })
+        .eq("recipient_id", user.id)
+        .eq("is_read", false);
+
+      if (!msgError) setMessageCount(msgCount || 0);
+
+      // Fetch pending posts count
+      const { count: postsCount, error: postsError } = await supabase
+        .from("posts")
+        .select("*", { head: true, count: "exact" })
+        .eq("status", "pending");
+
+      if (!postsError) setPendingPostsCount(postsCount || 0);
+
+      // Fetch pending verifications count
+      const { count: verCount, error: verError } = await supabase
+        .from("profiles")
+        .select("*", { head: true, count: "exact" })
+        .eq("verification_status", "pending");
+
+      if (!verError) setPendingVerificationsCount(verCount || 0);
+    } catch (error) {
+      console.error("Error in fetchAllData:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user?.id]);
+
+  // Initial data fetch and real-time subscriptions
+  useEffect(() => {
+    fetchAllData();
+
+    // Profile updates subscription
+    const profileSubscription = supabase
+      .channel(`admin:profiles:${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${user.id}`,
+        },
+        (payload) => setProfile(payload.new)
+      )
+      .subscribe();
+
+    // Notifications subscription
+    const notificationSubscription = supabase
+      .channel(`admin:notifications:${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `recipient_id=eq.${user.id}`,
+        },
+        () => fetchAllData()
+      )
+      .subscribe();
+
+    // Messages subscription
+    const messageSubscription = supabase
+      .channel(`admin:messages:${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "messages",
+          filter: `recipient_id=eq.${user.id}`,
+        },
+        () => fetchAllData()
+      )
+      .subscribe();
+
+    // Posts subscription for moderation
+    const postsSubscription = supabase
+      .channel("admin:posts")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "posts",
+        },
+        () => fetchAllData()
+      )
+      .subscribe();
+
+    // Profiles subscription for verifications
+    const verificationsSubscription = supabase
+      .channel("admin:verifications")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "profiles",
+        },
+        () => fetchAllData()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(profileSubscription);
+      supabase.removeChannel(notificationSubscription);
+      supabase.removeChannel(messageSubscription);
+      supabase.removeChannel(postsSubscription);
+      supabase.removeChannel(verificationsSubscription);
+    };
+  }, [user?.id, fetchAllData]);
+
+  // Compute menu items with badges
+  const computedMenuItems = useMemo(() => {
+    return menuItems.map((item) => {
+      if (item.label === "Notifications") {
+        return {
+          ...item,
+          badge: notificationCount > 0 ? String(notificationCount) : null,
+        };
+      }
+      if (item.label === "Messages") {
+        return {
+          ...item,
+          badge: messageCount > 0 ? String(messageCount) : null,
+        };
+      }
+      if (item.label === "Post Moderation") {
+        return {
+          ...item,
+          badge: pendingPostsCount > 0 ? String(pendingPostsCount) : null,
+        };
+      }
+      if (item.label === "Manual Verifications") {
+        return {
+          ...item,
+          badge:
+            pendingVerificationsCount > 0
+              ? String(pendingVerificationsCount)
+              : null,
+        };
+      }
+      return item;
+    });
+  }, [
+    notificationCount,
+    messageCount,
+    pendingPostsCount,
+    pendingVerificationsCount,
+  ]);
+
+  // Handle window resize
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) setMobileMenu(false);
@@ -131,69 +406,93 @@ export default function AdminDashboardLayout({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Save sidebar state
   useEffect(() => {
-    if (window.innerWidth >= 768)
+    if (window.innerWidth >= 768) {
       localStorage.setItem("adminSidebarOpen", JSON.stringify(isSidebarOpen));
+    }
   }, [isSidebarOpen]);
 
+  // Close mobile menu on navigation
   useEffect(() => {
     setMobileMenu(false);
   }, [location]);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenu) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenu]);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
 
     try {
-      // Optional: Check for an active session before attempting logout
       const {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session) {
         console.log("No active session found. Skipping server logout.");
-        // Proceed to local cleanup and navigation
       } else {
-        // Attempt server-side logout
         await supabase.auth.signOut();
         console.log("Logout successful.");
       }
     } catch (error) {
       console.error("Logout failed:", error.message);
-      // Fallback: Force local logout to clear the session client-side
-      // This avoids the 403 by skipping the server call
       await supabase.auth.signOut({ scope: "local" });
       console.log("Fallback: Local logout completed.");
     } finally {
-      // Always reset loading state and navigate
       setIsLoggingOut(false);
       navigate("/login");
     }
   };
 
-  const getInitial = () => user?.email?.[0].toUpperCase() || "A";
+  const displayName =
+    profile?.full_name || user?.email?.split("@")[0] || "Admin";
+  const avatarUrl =
+    profile?.avatar_url ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      displayName
+    )}&background=6366f1&color=ffffff&bold=true`;
 
-  if (isLoading)
+  const pageTitle =
+    menuItems.find((item) =>
+      item.exact
+        ? location.pathname === item.path
+        : location.pathname.startsWith(item.path)
+    )?.label || "Admin Panel";
+
+  if (isLoading) {
     return (
       <AdminDashboardSkeleton
         isSidebarOpen={isSidebarOpen}
         mobileMenu={mobileMenu}
       />
     );
+  }
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-b from-slate-50 to-slate-100 dark:from-black dark:to-neutral-950 text-neutral-900 dark:text-neutral-300 transition-all duration-300">
+    <div className="h-screen flex flex-col bg-neutral-50 dark:bg-[#1a1a1a] text-neutral-800 dark:text-neutral-300 overflow-hidden">
+      {/* Mobile menu overlay */}
       {mobileMenu && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden animate-fade-in"
+          className="fixed inset-0 bg-black/60 z-40 md:hidden"
           onClick={() => setMobileMenu(false)}
         />
       )}
 
       {/* Header */}
-      <header className="h-16 px-6 lg:px-10 bg-white/60 dark:bg-[#2a2a2a]/60 backdrop-blur-lg border-b border-neutral-200/60 dark:border-[#3a3a3a]/60 flex items-center justify-between shadow-[0_2px_10px_rgba(0,0,0,0.05)]">
-        <div className="flex items-center gap-4">
+      <header className="h-14 sm:h-16 px-3 sm:px-4 lg:px-6 bg-white/70 dark:bg-[#2a2a2a]/70 backdrop-blur-lg border-b border-neutral-200 dark:border-[#3a3a3a] flex items-center justify-between shadow-sm z-30 flex-shrink-0">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setMobileMenu(!mobileMenu)}
-            className="md:hidden p-2 text-neutral-500 hover:bg-white/30 dark:hover:bg-neutral-800/60 rounded-lg transition"
+            className="md:hidden p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
           >
             {mobileMenu ? (
               <X className="w-6 h-6" />
@@ -202,20 +501,22 @@ export default function AdminDashboardLayout({
             )}
           </button>
           <button
-            onClick={() => setSidebarOpen(!isSidebarOpen)}
-            className="hidden md:block p-2 text-neutral-500 hover:bg-white/30 dark:hover:bg-neutral-800/60 rounded-lg transition"
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="hidden md:block p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>
-          <h1 className="text-lg font-semibold tracking-tight text-neutral-900 dark:text-white opacity-90">
-            Admin Panel
+          <h1 className="text-lg sm:text-xl font-semibold text-neutral-800 dark:text-white truncate">
+            <span className="hidden sm:inline">{pageTitle}</span>
+            <span className="sm:hidden">
+              {pageTitle === "Overview" ? "Admin" : pageTitle}
+            </span>
           </h1>
         </div>
-
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1 sm:gap-2">
           <button
             onClick={toggleTheme}
-            className="p-2 text-neutral-500 hover:bg-white/30 dark:hover:bg-neutral-800/60 rounded-lg transition"
+            className="p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
           >
             {theme === "light" ? (
               <Moon className="w-5 h-5" />
@@ -223,92 +524,141 @@ export default function AdminDashboardLayout({
               <Sun className="w-5 h-5" />
             )}
           </button>
-          <button className="p-2 text-neutral-500 relative hover:bg-white/30 dark:hover:bg-neutral-800/60 rounded-lg transition">
+          <button
+            onClick={() => navigate("/admin/notifications")}
+            className="p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg relative transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
+          >
             <Bell className="w-5 h-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-indigo-500 rounded-full"></span>
+            {notificationCount > 0 && (
+              <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-indigo-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 border-2 border-white dark:border-neutral-900">
+                {notificationCount > 9 ? "9+" : notificationCount}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => navigate("/admin/post-moderation")}
+            className="px-3 sm:px-4 py-2 bg-indigo-600 text-white font-semibold text-sm rounded-lg hover:bg-indigo-700 flex items-center gap-1 sm:gap-2 transition-colors shadow-sm"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span className="hidden sm:inline">Moderate</span>
+            <span className="sm:hidden">Mod</span>
           </button>
         </div>
       </header>
 
-      {/* Sidebar + Main */}
+      {/* Main content area */}
       <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
         <aside
-          className={`fixed md:relative inset-y-0 left-0 z-50 bg-white/40 dark:bg-[#2a2a2a]/40 backdrop-blur-xl border-r border-neutral-200/40 dark:border-[#3a3a3a]/40 transition-all duration-500 ease-in-out top-16 md:top-0 shadow-[inset_0_0_1px_rgba(255,255,255,0.3)] ${
+          className={`fixed md:relative inset-y-0 left-0 z-50 bg-white/95 dark:bg-[#2a2a2a]/95 backdrop-blur-md md:bg-white dark:md:bg-neutral-900 flex flex-col transition-all duration-300 ease-in-out ${
             mobileMenu
-              ? "translate-x-0 w-72"
+              ? "translate-x-0 w-[280px] shadow-2xl"
               : "-translate-x-full md:translate-x-0"
-          } ${
-            isSidebarOpen ? "md:w-64" : "md:w-20"
-          } h-[calc(100vh-4rem)] md:h-full`}
+          } ${isSidebarOpen ? "md:w-64" : "md:w-20"} h-full md:h-auto`}
         >
-          {/* Logo */}
-          <div className="p-4 flex items-center gap-3 border-b border-neutral-200/40 dark:border-[#3a3a3a]/40">
-            <img
-              src={logo}
-              alt="Campus Trace Logo"
-              className="w-8 h-8 rounded-full"
-            />
-            {(isSidebarOpen || mobileMenu) && (
-              <span className="font-semibold text-neutral-900 dark:text-white text-lg opacity-90">
-                Campus Trace
-              </span>
-            )}
-          </div>
-
-          {/* Nav */}
-          <nav className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-transparent hover:scrollbar-thumb-neutral-400/30 transition-all">
-            {menuItems.map((item) => (
-              <AdminNavLink
-                key={item.href}
-                item={item}
-                isOpen={isSidebarOpen || mobileMenu}
-                onClick={() => mobileMenu && setMobileMenu(false)}
-              />
-            ))}
-          </nav>
-
-          {/* Profile + Sign out */}
-          <div className="p-3 border-t border-neutral-200/40 dark:border-[#3a3a3a]/40">
+          {/* Sidebar content wrapper */}
+          <div className="flex flex-col h-full overflow-hidden">
+            {/* Logo section */}
             <div
-              className="p-2 flex items-center gap-3 cursor-pointer rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition"
-              onClick={() => navigate("/admin/profile")}
+              className={`p-4 flex items-center gap-3 border-b border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0 ${
+                !isSidebarOpen && !mobileMenu ? "justify-center" : ""
+              }`}
             >
               <img
-                src={`https://ui-avatars.com/api/?name=${getInitial()}&background=6366f1&color=ffffff`}
-                alt="Admin"
-                className="w-9 h-9 rounded-full"
+                src={logo}
+                alt="Campus Trace Logo"
+                className="w-8 h-8 rounded-md flex-shrink-0"
               />
               {(isSidebarOpen || mobileMenu) && (
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate text-neutral-800 dark:text-white">
-                    {user?.email?.split("@")[0] || "Admin"}
-                  </p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-                    {user?.email}
-                  </p>
+                <div className="flex flex-col overflow-hidden">
+                  <span className="font-bold text-sm text-neutral-800 dark:text-white leading-tight truncate">
+                    {siteName} Admin
+                  </span>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                    Administrator Panel
+                  </span>
                 </div>
               )}
             </div>
 
-            <button
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-neutral-600 dark:text-neutral-400 hover:bg-red-500/10 hover:text-red-500 transition-all duration-300 mt-2 ${
-                !isSidebarOpen && !mobileMenu ? "justify-center" : ""
-              }`}
-            >
-              <LogOut className="w-5 h-5" />
-              {(isSidebarOpen || mobileMenu) && (
-                <span className="text-sm font-medium">
-                  {isLoggingOut ? "Signing out..." : "Sign Out"}
-                </span>
-              )}
-            </button>
+            {/* Scrollable navigation area */}
+            <div className="flex-1 overflow-y-auto overflow-x-hidden">
+              <nav className="p-3 space-y-1">
+                {computedMenuItems.map((item) => (
+                  <NavLink
+                    key={`menu-${item.label}`}
+                    item={item}
+                    isOpen={isSidebarOpen || mobileMenu}
+                    exact={item.exact}
+                  />
+                ))}
+              </nav>
+            </div>
+
+            {/* Bottom section - fixed at bottom */}
+            <div className="border-t border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0">
+              <div className="p-3">
+                <div className="space-y-1">
+                  {bottomItems.map((item) => (
+                    <NavLink
+                      key={`bottom-${item.label}`}
+                      item={item}
+                      isOpen={isSidebarOpen || mobileMenu}
+                    />
+                  ))}
+                </div>
+
+                {/* Divider */}
+                <div className="border-t border-neutral-200 dark:border-[#3a3a3a] my-3"></div>
+
+                {/* User profile section */}
+                <div
+                  className={`p-2 flex items-center gap-3 cursor-pointer rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors ${
+                    !isSidebarOpen && !mobileMenu ? "justify-center" : ""
+                  }`}
+                  onClick={() => navigate("/admin/profile")}
+                >
+                  <img
+                    src={avatarUrl}
+                    alt="Admin Avatar"
+                    className="w-9 h-9 rounded-full flex-shrink-0"
+                  />
+                  {(isSidebarOpen || mobileMenu) && (
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate text-neutral-800 dark:text-white">
+                        {displayName}
+                      </p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sign out button */}
+                <button
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className={`w-full mt-2 flex items-center gap-3 px-3 py-2.5 rounded-lg text-neutral-600 dark:text-neutral-400 hover:bg-red-500/10 hover:text-red-500 transition-all duration-200 disabled:opacity-50 min-h-[44px] ${
+                    !isSidebarOpen && !mobileMenu ? "justify-center" : ""
+                  }`}
+                  title={!isSidebarOpen && !mobileMenu ? "Sign Out" : ""}
+                >
+                  <LogOut className="w-5 h-5 flex-shrink-0" />
+                  {(isSidebarOpen || mobileMenu) && (
+                    <span className="text-sm font-medium">
+                      {isLoggingOut ? "Signing out..." : "Sign Out"}
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </aside>
 
-        <main className="flex-1 overflow-y-auto bg-slate-50/60 dark:bg-[#1a1a1a] backdrop-blur-sm animate-fade-in">
-          <div className="p-6 sm:p-8 lg:p-10">{children}</div>
+        {/* Main content */}
+        <main className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-[#1a1a1a]">
+          <div className="p-4 md:p-6 lg:p-8 min-h-full">{children}</div>
         </main>
       </div>
     </div>

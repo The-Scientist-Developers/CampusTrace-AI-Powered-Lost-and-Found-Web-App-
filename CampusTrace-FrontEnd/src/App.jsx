@@ -322,6 +322,7 @@ function AppContent() {
               path="manual-verifications"
               element={<ManualVerificationAdminPage />}
             />
+            <Route path="help" element={<HelpPage user={session?.user} />} />
           </Route>
         </Routes>
       </Router>

@@ -187,9 +187,12 @@ export default function DashboardLayout({ children, user }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [profile, setProfile] = useState(null);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [messageCount, setMessageCount] = useState(0);
+  const [myPostsCount, setMyPostsCount] = useState(0);
   const [siteName, setSiteName] = useState("CampusTrace");
   const [isLoading, setIsLoading] = useState(true);
 
+  // Fetch all data including real-time counts
   const fetchAllData = useCallback(async () => {
     if (!user?.id) {
       setIsLoading(false);
@@ -197,6 +200,7 @@ export default function DashboardLayout({ children, user }) {
     }
 
     try {
+      // Fetch user profile
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
@@ -208,6 +212,7 @@ export default function DashboardLayout({ children, user }) {
       } else {
         setProfile(profileData);
 
+        // Fetch site settings
         if (profileData?.university_id) {
           const { data: settingsData } = await supabase
             .from("site_settings")
@@ -222,14 +227,32 @@ export default function DashboardLayout({ children, user }) {
         }
       }
 
-      const { count, error: countError } = await supabase
+      // Fetch notification count
+      const { count: notifCount, error: notifError } = await supabase
         .from("notifications")
         .select("*", { head: true, count: "exact" })
         .eq("recipient_id", user.id)
         .eq("status", "unread");
-      if (countError)
-        console.error("Error fetching notification count:", countError);
-      else setNotificationCount(count || 0);
+
+      if (!notifError) setNotificationCount(notifCount || 0);
+
+      // Fetch unread messages count
+      const { count: msgCount, error: msgError } = await supabase
+        .from("messages")
+        .select("*", { head: true, count: "exact" })
+        .eq("recipient_id", user.id)
+        .eq("is_read", false);
+
+      if (!msgError) setMessageCount(msgCount || 0);
+
+      // Fetch active posts count
+      const { count: postsCount, error: postsError } = await supabase
+        .from("posts")
+        .select("*", { head: true, count: "exact" })
+        .eq("user_id", user.id)
+        .in("status", ["active", "pending", "claimed"]);
+
+      if (!postsError) setMyPostsCount(postsCount || 0);
     } catch (error) {
       console.error("Error in fetchAllData:", error);
     } finally {
@@ -237,11 +260,13 @@ export default function DashboardLayout({ children, user }) {
     }
   }, [user?.id]);
 
+  // Initial data fetch and real-time subscriptions
   useEffect(() => {
     fetchAllData();
 
+    // Profile updates subscription
     const profileSubscription = supabase
-      .channel(`public:profiles:id=eq.${user.id}`)
+      .channel(`user:profiles:${user.id}`)
       .on(
         "postgres_changes",
         {
@@ -254,8 +279,9 @@ export default function DashboardLayout({ children, user }) {
       )
       .subscribe();
 
+    // Notifications subscription
     const notificationSubscription = supabase
-      .channel(`public:notifications:recipient_id=eq.${user.id}`)
+      .channel(`user:notifications:${user.id}`)
       .on(
         "postgres_changes",
         {
@@ -264,16 +290,100 @@ export default function DashboardLayout({ children, user }) {
           table: "notifications",
           filter: `recipient_id=eq.${user.id}`,
         },
-        () => fetchAllData()
+        async () => {
+          // Refetch notification count
+          const { count } = await supabase
+            .from("notifications")
+            .select("*", { head: true, count: "exact" })
+            .eq("recipient_id", user.id)
+            .eq("status", "unread");
+          setNotificationCount(count || 0);
+        }
+      )
+      .subscribe();
+
+    // Messages subscription
+    const messageSubscription = supabase
+      .channel(`user:messages:${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "messages",
+          filter: `recipient_id=eq.${user.id}`,
+        },
+        async () => {
+          // Refetch message count
+          const { count } = await supabase
+            .from("messages")
+            .select("*", { head: true, count: "exact" })
+            .eq("recipient_id", user.id)
+            .eq("is_read", false);
+          setMessageCount(count || 0);
+        }
+      )
+      .subscribe();
+
+    // Posts subscription for user's own posts
+    const postsSubscription = supabase
+      .channel(`user:posts:${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "posts",
+          filter: `user_id=eq.${user.id}`,
+        },
+        async () => {
+          // Refetch posts count
+          const { count } = await supabase
+            .from("posts")
+            .select("*", { head: true, count: "exact" })
+            .eq("user_id", user.id)
+            .in("status", ["active", "pending", "claimed"]);
+          setMyPostsCount(count || 0);
+        }
+      )
+      .subscribe();
+
+    // Comments subscription for user's posts
+    const commentsSubscription = supabase
+      .channel(`user:comments`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "comments",
+        },
+        async (payload) => {
+          // Check if comment is on user's post
+          const { data: post } = await supabase
+            .from("posts")
+            .select("user_id")
+            .eq("id", payload.new.post_id)
+            .single();
+
+          if (post?.user_id === user.id) {
+            // Trigger notification refetch
+            fetchAllData();
+          }
+        }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(profileSubscription);
       supabase.removeChannel(notificationSubscription);
+      supabase.removeChannel(messageSubscription);
+      supabase.removeChannel(postsSubscription);
+      supabase.removeChannel(commentsSubscription);
     };
   }, [user?.id, fetchAllData]);
 
+  // Compute menu items with badges
   const computedMenuItems = useMemo(() => {
     return menuItems.map((item) => {
       if (item.label === "Notifications") {
@@ -282,10 +392,23 @@ export default function DashboardLayout({ children, user }) {
           badge: notificationCount > 0 ? String(notificationCount) : null,
         };
       }
+      if (item.label === "Messages") {
+        return {
+          ...item,
+          badge: messageCount > 0 ? String(messageCount) : null,
+        };
+      }
+      if (item.label === "My Posts") {
+        return {
+          ...item,
+          badge: myPostsCount > 0 ? String(myPostsCount) : null,
+        };
+      }
       return item;
     });
-  }, [notificationCount]);
+  }, [notificationCount, messageCount, myPostsCount]);
 
+  // Handle window resize
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) setMobileMenu(false);
@@ -294,12 +417,14 @@ export default function DashboardLayout({ children, user }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Save sidebar state
   useEffect(() => {
     if (window.innerWidth >= 768) {
       localStorage.setItem("userSidebarOpen", JSON.stringify(isSidebarOpen));
     }
   }, [isSidebarOpen]);
 
+  // Close mobile menu on navigation
   useEffect(() => {
     setMobileMenu(false);
   }, [location]);
@@ -316,30 +441,25 @@ export default function DashboardLayout({ children, user }) {
     };
   }, [mobileMenu]);
 
+  // Handle logout
   const handleLogout = async () => {
     setIsLoggingOut(true);
 
     try {
-      // Optional: Check for an active session before attempting logout
       const {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session) {
         console.log("No active session found. Skipping server logout.");
-        // Proceed to local cleanup and navigation
       } else {
-        // Attempt server-side logout
         await supabase.auth.signOut();
         console.log("Logout successful.");
       }
     } catch (error) {
       console.error("Logout failed:", error.message);
-      // Fallback: Force local logout to clear the session client-side
-      // This avoids the 403 by skipping the server call
       await supabase.auth.signOut({ scope: "local" });
       console.log("Fallback: Local logout completed.");
     } finally {
-      // Always reset loading state and navigate
       setIsLoggingOut(false);
       navigate("/login");
     }
@@ -359,6 +479,9 @@ export default function DashboardLayout({ children, user }) {
         ? location.pathname === item.path
         : location.pathname.startsWith(item.path)
     )?.label || "Dashboard";
+
+  // Total count for header notification bell
+  const totalNotifications = notificationCount + messageCount;
 
   if (isLoading) {
     return (
@@ -421,9 +544,20 @@ export default function DashboardLayout({ children, user }) {
             className="p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg relative transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
           >
             <Bell className="w-5 h-5" />
-            {notificationCount > 0 && (
-              <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-primary-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 border-2 border-white dark:border-neutral-900">
-                {notificationCount > 9 ? "9+" : notificationCount}
+            {totalNotifications > 0 && (
+              <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-primary-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 border-2 border-white dark:border-neutral-900 animate-pulse">
+                {totalNotifications > 9 ? "9+" : totalNotifications}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => navigate("/dashboard/messages")}
+            className="p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg relative transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
+          >
+            <MessageSquare className="w-5 h-5" />
+            {messageCount > 0 && (
+              <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-green-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 border-2 border-white dark:border-neutral-900 animate-pulse">
+                {messageCount > 9 ? "9+" : messageCount}
               </span>
             )}
           </button>
@@ -513,7 +647,7 @@ export default function DashboardLayout({ children, user }) {
                   <img
                     src={avatarUrl}
                     alt="User Avatar"
-                    className="w-9 h-9 rounded-full flex-shrink-0"
+                    className="w-9 h-9 rounded-full flex-shrink-0 ring-2 ring-offset-2 ring-primary-500/20"
                   />
                   {(isSidebarOpen || mobileMenu) && (
                     <div className="flex-1 min-w-0">
