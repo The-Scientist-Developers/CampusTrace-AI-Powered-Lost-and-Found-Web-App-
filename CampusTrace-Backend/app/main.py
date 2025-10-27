@@ -1211,10 +1211,12 @@
 # def read_root():
 #     return {"status": "✅ Campus Trace backend is running!", "ai_enabled": model is not None}
 
+
 import os
 import gc
 from pathlib import Path
 from uuid import uuid4
+from datetime import datetime
 from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Form, Request
 from pydantic import BaseModel, EmailStr
 from fastapi.middleware.cors import CORSMiddleware
@@ -1223,29 +1225,26 @@ from typing import List, Optional
 import traceback
 from PIL import Image
 import io
-import json
+import google.generativeai as genai
 import httpx
+import json
 import resend
-from contextlib import contextmanager
 
 from app.config import get_settings
 from app.dependencies import get_current_user_id, supabase
+from app import clip_util, text_embedding_util
 
 # --- Configuration ---
 settings = get_settings()
+model = None
 
-app = FastAPI()
+app = FastAPI(
+    title="CampusTrace API",
+    description="Lost and Found Platform for Universities",
+    version="2.0.0"
+)
 
-# Lazy loading for AI models - only load when needed
-_gemini_model = None
-_clip_model = None
-_text_model = None
-
-# Feature flags from environment
-ENABLE_AI_FEATURES = os.getenv("ENABLE_AI_FEATURES", "false").lower() == "true"
-ENABLE_IMAGE_SEARCH = os.getenv("ENABLE_IMAGE_SEARCH", "false").lower() == "true"
-MAX_IMAGE_SIZE = int(os.getenv("MAX_IMAGE_SIZE", "1048576"))  # 1MB default
-
+# Railway provides ample memory, so we can load models at startup
 if settings.RESEND_API_KEY:
     resend.api_key = settings.RESEND_API_KEY
     print("✅ Resend client configured.")
@@ -1254,88 +1253,61 @@ else:
 
 @app.on_event("startup")
 async def startup_event():
-    """Minimal startup - don't load heavy models here."""
-    print(f"✅ Server started. AI features: {ENABLE_AI_FEATURES}, Image search: {ENABLE_IMAGE_SEARCH}")
-    # Force garbage collection at startup
-    gc.collect()
+    """Load AI models on application startup - Railway has enough memory!"""
+    global model
+    
+    # Load Gemini model
+    if settings.GEMINI_API_KEY:
+        try:
+            genai.configure(api_key=settings.GEMINI_API_KEY)
+            model = genai.GenerativeModel('gemini-2.5-flash')
+            print("✅ Gemini AI model configured successfully.")
+        except Exception as e:
+            print(f"❌ ERROR: Could not configure Gemini AI: {e}")
+    else:
+        print("⚠️ WARNING: GEMINI_API_KEY not found. AI features disabled.")
+    
+    # Load ML models - Railway has memory for these!
+    try:
+        clip_util.load_model()
+        print("✅ CLIP model loaded successfully.")
+    except Exception as e:
+        print(f"⚠️ WARNING: Could not load CLIP model: {e}")
+    
+    try:
+        text_embedding_util.load_model()
+        print("✅ Text embedding model loaded successfully.")
+    except Exception as e:
+        print(f"⚠️ WARNING: Could not load text embedding model: {e}")
+    
+    # Log memory-related settings
+    print(f"📊 Max image size: {int(os.getenv('MAX_IMAGE_SIZE', '5242880')) / 1024 / 1024:.1f}MB")
+    print(f"🚀 Running on Railway with optimized settings")
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Clean up resources on shutdown."""
-    global _gemini_model, _clip_model, _text_model
-    _gemini_model = None
-    _clip_model = None
-    _text_model = None
+    global model
+    model = None
     gc.collect()
-
-# Context manager for temporary model loading
-@contextmanager
-def get_gemini_model():
-    """Load Gemini model only when needed and clean up after use."""
-    global _gemini_model
-    if not ENABLE_AI_FEATURES or not settings.GEMINI_API_KEY:
-        yield None
-        return
-    
-    try:
-        if _gemini_model is None:
-            import google.generativeai as genai
-            genai.configure(api_key=settings.GEMINI_API_KEY)
-            _gemini_model = genai.GenerativeModel('gemini-1.5-flash')  # Use smaller model
-        yield _gemini_model
-    finally:
-        # Optional: clear model from memory after use if memory is critical
-        if os.getenv("AGGRESSIVE_MEMORY_CLEANUP", "false").lower() == "true":
-            _gemini_model = None
-            gc.collect()
-
-@contextmanager
-def get_clip_model():
-    """Load CLIP model only when needed."""
-    global _clip_model
-    if not ENABLE_IMAGE_SEARCH:
-        yield None
-        return
-    
-    try:
-        if _clip_model is None:
-            from app import clip_util
-            _clip_model = clip_util.load_model()
-        yield _clip_model
-    finally:
-        if os.getenv("AGGRESSIVE_MEMORY_CLEANUP", "false").lower() == "true":
-            _clip_model = None
-            gc.collect()
-
-@contextmanager
-def get_text_embedding_model():
-    """Load text embedding model only when needed."""
-    global _text_model
-    if not ENABLE_AI_FEATURES:
-        yield None
-        return
-    
-    try:
-        if _text_model is None:
-            from app import text_embedding_util
-            _text_model = text_embedding_util.load_model()
-        yield _text_model
-    finally:
-        if os.getenv("AGGRESSIVE_MEMORY_CLEANUP", "false").lower() == "true":
-            _text_model = None
-            gc.collect()
+    print("👋 Shutting down gracefully...")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "https://campustrace.site"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173", 
+        "https://campustrace.site",
+        "https://*.up.railway.app"  # Allow Railway preview deployments
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Optimize image processing
-def process_image_efficiently(image_bytes: bytes, max_size=(800, 800)):
-    """Resize image to reduce memory usage."""
+# Optimize image processing with higher limits for Railway
+def process_image_efficiently(image_bytes: bytes, max_size=(1920, 1920)):
+    """Process images with Railway's generous memory."""
     with Image.open(io.BytesIO(image_bytes)) as img:
         # Convert RGBA to RGB if necessary
         if img.mode in ('RGBA', 'LA'):
@@ -1343,12 +1315,12 @@ def process_image_efficiently(image_bytes: bytes, max_size=(800, 800)):
             rgb_img.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
             img = rgb_img
         
-        # Resize if larger than max_size
+        # Resize if larger than max_size (can be more generous on Railway)
         img.thumbnail(max_size, Image.Resampling.LANCZOS)
         
-        # Save to bytes
+        # Save to bytes with good quality
         output = io.BytesIO()
-        img.save(output, format='JPEG', quality=85, optimize=True)
+        img.save(output, format='JPEG', quality=90, optimize=True)
         return output.getvalue()
 
 # ============= Pydantic Models =============
@@ -1485,23 +1457,18 @@ def create_notification(recipient_id: str, university_id: int, message: str, lin
         print(f"❌ Error creating notification: {e}")
 
 async def generate_ai_tags(title: str, description: str) -> Optional[List[str]]:
-    if not ENABLE_AI_FEATURES:
+    """Generate AI tags using Gemini model."""
+    if not model:
         return []
-    
     try:
-        with get_gemini_model() as model:
-            if not model:
-                return []
-            prompt = f"Generate 5-7 relevant, comma-separated keywords for this item. Do not use hashtags. Keywords should include item type, color, brand, and features. Title: '{title}'. Description: '{description}'"
-            response = await model.generate_content_async(prompt)
-            tags_string = response.text.strip().replace("#", "")
-            tags_list = [tag.strip().lower() for tag in tags_string.split(',') if tag.strip()]
-            return tags_list[:7]
+        prompt = f"Generate 5-7 relevant, comma-separated keywords for this item. Do not use hashtags. Keywords should include item type, color, brand, and features. Title: '{title}'. Description: '{description}'"
+        response = await model.generate_content_async(prompt)
+        tags_string = response.text.strip().replace("#", "")
+        tags_list = [tag.strip().lower() for tag in tags_string.split(',') if tag.strip()]
+        return tags_list[:7]
     except Exception as e:
         print(f"❌ Error generating AI tags: {e}")
         return []
-    finally:
-        gc.collect()
 
 def calculate_simple_match_score(lost_item: dict, found_item: dict) -> int:
     """Calculate a simple text-based similarity score (0-100)."""
@@ -1541,7 +1508,7 @@ async def register_university(payload: UniversityRegistrationRequest):
     new_university_id = None
     new_user_id = None
     try:
-        # 1. Check if university or email already exists
+        # Check if university or email already exists
         uni_exists = supabase.table("universities").select("id").eq("name", payload.university_name).execute()
         if uni_exists.data:
             raise HTTPException(status_code=400, detail="A university with this name already exists.")
@@ -1550,18 +1517,18 @@ async def register_university(payload: UniversityRegistrationRequest):
         if user_exists_res.data:
             raise HTTPException(status_code=400, detail="A user with this email already exists.")
 
-        # 2. Create the new university with 'pending' status
+        # Create the new university with 'pending' status
         new_university_res = supabase.table("universities").insert({"name": payload.university_name, "status": "pending"}).execute()
         new_university_id = new_university_res.data[0]['id']
 
-        # 3. Add the admin's email domain BEFORE creating the user
+        # Add the admin's email domain BEFORE creating the user
         admin_domain = payload.email.split('@')[1]
         supabase.table("allowed_domains").insert({
             "university_id": new_university_id,
             "domain_name": admin_domain
         }).execute()
 
-        # 4. Create the user with email verification
+        # Create the user with email verification
         sign_up_res = supabase.auth.sign_up({
             "email": payload.email,
             "password": payload.password
@@ -1572,14 +1539,14 @@ async def register_university(payload: UniversityRegistrationRequest):
         new_user = sign_up_res.user
         new_user_id = new_user.id
 
-        # 5. Update the profile with admin role and full name
+        # Update the profile with admin role and full name
         supabase.table("profiles").update({
             "full_name": payload.full_name,
             "role": "admin",
             "university_id": new_university_id
         }).eq("id", new_user.id).execute()
 
-        # 6. Activate the university
+        # Activate the university
         supabase.table("universities").update({"status": "active"}).eq("id", new_university_id).execute()
 
         return {"message": "University created successfully. Please check your email to verify your account."}
@@ -1597,8 +1564,6 @@ async def register_university(payload: UniversityRegistrationRequest):
         if new_university_id:
             supabase.table("universities").delete().eq("id", new_university_id).execute()
         raise HTTPException(status_code=500, detail="An internal error occurred during university registration.")
-    finally:
-        gc.collect()
 
 # ============= Auth Routes =============
 @auth_router.post("/signup-manual")
@@ -1615,12 +1580,12 @@ async def signup_manual(
     await verify_captcha(captchaToken, request.client.host)
     
     try:
-        # 1. Check if user already exists
+        # Check if user already exists
         user_exists_res = supabase.from_("profiles").select("id").eq("email", email).execute()
         if user_exists_res.data:
             raise HTTPException(status_code=400, detail="A user with this email already exists.")
 
-        # 2. Create the user in Supabase Auth
+        # Create the user in Supabase Auth
         sign_up_res = supabase.auth.sign_up({
             "email": email,
             "password": password,
@@ -1631,7 +1596,7 @@ async def signup_manual(
         
         user = sign_up_res.user
 
-        # 3. Create or update the user's profile
+        # Create or update the user's profile
         supabase.table("profiles").upsert({
             "id": user.id,
             "full_name": full_name,
@@ -1640,9 +1605,11 @@ async def signup_manual(
             "is_verified": False 
         }).execute()
 
-        # 4. Process and upload the ID image
+        # Process and upload the ID image
         file_bytes = await id_file.read()
-        if len(file_bytes) > MAX_IMAGE_SIZE:
+        # Railway can handle larger images
+        max_id_size = int(os.getenv('MAX_ID_IMAGE_SIZE', '10485760'))  # 10MB default
+        if len(file_bytes) > max_id_size:
             file_bytes = process_image_efficiently(file_bytes)
         
         file_suffix = Path(id_file.filename or "").suffix
@@ -1651,15 +1618,11 @@ async def signup_manual(
         supabase.storage.from_("other_images").upload(
             path=file_path,
             file=file_bytes,
-            file_options={"content-type": "image/jpeg"}
+            file_options={"content-type": id_file.content_type or "application/octet-stream"}
         )
         id_image_url = supabase.storage.from_("other_images").get_public_url(file_path)
-        
-        # Clear file bytes from memory
-        del file_bytes
-        gc.collect()
 
-        # 5. Create verification record
+        # Create verification record
         supabase.table("user_verifications").insert({
             "user_id": user.id,
             "university_id": university_id,
@@ -1667,7 +1630,7 @@ async def signup_manual(
             "status": "pending"
         }).execute()
 
-        # 6. Notify admins
+        # Notify admins
         admins_res = supabase.table("profiles").select("id").eq("university_id", university_id).eq("role", "admin").execute()
         if admins_res.data:
             message = f"New manual verification request from {full_name} is awaiting review."
@@ -1690,8 +1653,6 @@ async def signup_manual(
             except Exception as delete_e:
                 print(f"Failed to clean up user during signup error: {delete_e}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        gc.collect()
 
 @auth_router.post("/signup")
 async def signup_user(payload: SignupRequest, request: Request):
@@ -1702,7 +1663,6 @@ async def signup_user(payload: SignupRequest, request: Request):
         raise HTTPException(status_code=400, detail="This email domain is not registered on CampusTrace.")
     
     try:
-        # Attempt to sign up the user
         result = supabase.auth.sign_up({
             "email": payload.email,
             "password": payload.password,
@@ -1712,26 +1672,21 @@ async def signup_user(payload: SignupRequest, request: Request):
             }
         })
         
-        # Log the full result for debugging
         print(f"Signup result: {result}")
         
-        # Check various response scenarios
         if result.user:
-            # Check if email is already confirmed (existing user)
             if hasattr(result.user, 'confirmed_at') and result.user.confirmed_at:
                 raise HTTPException(
                     status_code=400, 
                     detail="An account with this email already exists. Please sign in instead."
                 )
             
-            # Check if the user has an identities array
             if hasattr(result.user, 'identities') and not result.user.identities:
                 raise HTTPException(
                     status_code=400,
                     detail="An account with this email already exists. Please check your email to confirm your account."
                 )
             
-            # New user created successfully but needs email confirmation
             supabase.table("profiles").update({
                 "full_name": payload.full_name,
                 "university_id": domain_res.data["university_id"],
@@ -1749,17 +1704,9 @@ async def signup_user(payload: SignupRequest, request: Request):
         raise
     except Exception as exc:
         print(f"✗ Signup failure - Full exception: {exc}")
-        print(f"✗ Exception type: {type(exc).__name__}")
-        print(f"✗ Exception args: {exc.args if hasattr(exc, 'args') else 'No args'}")
-        
         error_message = str(exc).lower()
         
         if "user already registered" in error_message:
-            raise HTTPException(
-                status_code=400, 
-                detail="An account with this email already exists. Please sign in instead."
-            )
-        elif "duplicate" in error_message or "already exists" in error_message:
             raise HTTPException(
                 status_code=400, 
                 detail="An account with this email already exists. Please sign in instead."
@@ -1769,12 +1716,7 @@ async def signup_user(payload: SignupRequest, request: Request):
         elif "weak password" in error_message:
             raise HTTPException(status_code=400, detail="Password is too weak. Please use a stronger password.")
         else:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Signup failed: {str(exc)}"
-            )
-    finally:
-        gc.collect()
+            raise HTTPException(status_code=400, detail=f"Signup failed: {str(exc)}")
 
 # ============= Item Routes =============
 @item_router.get("/leaderboard")
@@ -1795,42 +1737,34 @@ async def get_leaderboard(user_id: str = Depends(get_current_user_id)):
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
-    finally:
-        gc.collect()
 
 @item_router.post("/generate-description")
 async def generate_description(payload: DescriptionRequest):
     """Rewrites and enhances a user's draft description using the AI model."""
-    if not ENABLE_AI_FEATURES:
+    if not model:
         raise HTTPException(status_code=503, detail="AI features are not available.")
     
     try:
-        with get_gemini_model() as model:
-            if not model:
-                raise HTTPException(status_code=503, detail="AI model not available.")
-            
-            prompt = f"""
-            A user has provided a draft description for a lost or found item. Rewrite and enhance it to be more clear, detailed, and effective.
+        prompt = f"""
+        A user has provided a draft description for a lost or found item. Rewrite and enhance it to be more clear, detailed, and effective.
 
-            Original Information:
-            - Item Title: "{payload.title}"
-            - Category: "{payload.category}"
-            - User's Draft Description: "{payload.draft_description}"
+        Original Information:
+        - Item Title: "{payload.title}"
+        - Category: "{payload.category}"
+        - User's Draft Description: "{payload.draft_description}"
 
-            Your task:
-            - Refine the language to be clear and concise.
-            - Organize the details logically.
-            - If key details like brand, color, size, or unique marks are missing, add placeholders like [Specify Color] or [Describe any unique marks] to prompt the user to add them.
-            - Ensure the tone is helpful.
-            - Return only the improved description text, without any introductory phrases like "Here's the improved description:".
-            """
-            response = await model.generate_content_async(prompt)
-            return {"description": response.text.strip()}
+        Your task:
+        - Refine the language to be clear and concise.
+        - Organize the details logically.
+        - If key details like brand, color, size, or unique marks are missing, add placeholders like [Specify Color] or [Describe any unique marks].
+        - Ensure the tone is helpful.
+        - Return only the improved description text.
+        """
+        response = await model.generate_content_async(prompt)
+        return {"description": response.text.strip()}
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to generate AI description: {str(e)}")
-    finally:
-        gc.collect()
 
 @item_router.post("/create")
 async def create_item(item_data: str = Form(...), image_file: Optional[UploadFile] = File(None), user_id: str = Depends(get_current_user_id)):
@@ -1853,45 +1787,35 @@ async def create_item(item_data: str = Form(...), image_file: Optional[UploadFil
         elif uni_settings["auto_approve_posts"]:
             moderation_status = "approved"
         
+        # Generate AI tags
         ai_tags = await generate_ai_tags(item.title, item.description)
-        image_url, image_embedding = None, None
-        text_embedding = None
         
-        # Only generate text embedding if AI features are enabled
-        if ENABLE_AI_FEATURES:
-            combined_text = f"{item.title}. {item.description}"
-            with get_text_embedding_model() as text_model:
-                if text_model:
-                    from app import text_embedding_util
-                    text_embedding = text_embedding_util.get_text_embedding(combined_text)
-
+        # Generate text embedding
+        combined_text = f"{item.title}. {item.description}"
+        text_embedding = text_embedding_util.get_text_embedding(combined_text)
+        
+        image_url, image_embedding = None, None
+        
         if image_file:
-            # Check file size
             image_bytes = await image_file.read()
-            if len(image_bytes) > MAX_IMAGE_SIZE:
+            max_image_size = int(os.getenv('MAX_IMAGE_SIZE', '5242880'))  # 5MB default for Railway
+            
+            if len(image_bytes) > max_image_size:
                 image_bytes = process_image_efficiently(image_bytes)
             
-            # Only generate image embedding if image search is enabled
-            if ENABLE_IMAGE_SEARCH:
-                with get_clip_model() as clip_model:
-                    if clip_model:
-                        from app import clip_util
-                        pil_image = Image.open(io.BytesIO(image_bytes))
-                        image_embedding = clip_util.get_image_embedding(pil_image)
-                        pil_image.close()
+            # Generate image embedding
+            pil_image = Image.open(io.BytesIO(image_bytes))
+            image_embedding = clip_util.get_image_embedding(pil_image)
+            pil_image.close()
             
             file_suffix = Path(image_file.filename or "").suffix
             file_path = f"public/{user_id}/{uuid4().hex}{file_suffix}"
             supabase.storage.from_("item_images").upload(
                 path=file_path, 
                 file=image_bytes, 
-                file_options={"content-type": "image/jpeg"}
+                file_options={"content-type": image_file.content_type or "application/octet-stream"}
             )
             image_url = supabase.storage.from_("item_images").get_public_url(file_path)
-            
-            # Clear image bytes from memory
-            del image_bytes
-            gc.collect()
 
         post_data = {
             "title": item.title, 
@@ -1928,14 +1852,9 @@ async def create_item(item_data: str = Form(...), image_file: Optional[UploadFil
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        gc.collect()
 
 @item_router.post("/image-search")
 async def search_by_image(image_file: UploadFile = File(...), user_id: str = Depends(get_current_user_id)):
-    if not ENABLE_IMAGE_SEARCH:
-        raise HTTPException(status_code=503, detail="Image search is not available.")
-    
     try:
         profile_res = supabase.table("profiles").select("university_id").eq("id", user_id).single().execute()
         if not profile_res.data: 
@@ -1943,21 +1862,9 @@ async def search_by_image(image_file: UploadFile = File(...), user_id: str = Dep
         university_id = profile_res.data['university_id']
         
         image_bytes = await image_file.read()
-        if len(image_bytes) > MAX_IMAGE_SIZE:
-            image_bytes = process_image_efficiently(image_bytes)
-        
-        with get_clip_model() as clip_model:
-            if not clip_model:
-                raise HTTPException(status_code=503, detail="Image search model not available.")
-            
-            from app import clip_util
-            pil_image = Image.open(io.BytesIO(image_bytes))
-            query_embedding = clip_util.get_image_embedding(pil_image)
-            pil_image.close()
-        
-        # Clear image from memory
-        del image_bytes
-        gc.collect()
+        pil_image = Image.open(io.BytesIO(image_bytes))
+        query_embedding = clip_util.get_image_embedding(pil_image)
+        pil_image.close()
         
         matches = supabase.rpc('match_items_by_embedding', {
             'p_university_id': university_id, 
@@ -1965,12 +1872,11 @@ async def search_by_image(image_file: UploadFile = File(...), user_id: str = Dep
             'p_match_threshold': 0.75, 
             'p_match_count': 10
         }).execute()
+        
         return matches.data
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Image search failed: {str(e)}")
-    finally:
-        gc.collect()
 
 @item_router.get("/find-matches/{item_id}")
 async def find_matches_for_item(
@@ -2009,8 +1915,6 @@ async def find_matches_for_item(
     except Exception as e:
         traceback.print_exc()
         return []
-    finally:
-        gc.collect()
 
 @item_router.put("/{item_id}/recover")
 async def mark_as_recovered(item_id: int, user_id: str = Depends(get_current_user_id)):
@@ -2041,8 +1945,6 @@ async def mark_as_recovered(item_id: int, user_id: str = Depends(get_current_use
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        gc.collect()
 
 # ============= Conversations Router =============
 @conversations_router.post("/")
@@ -2086,8 +1988,6 @@ async def get_or_create_conversation(item_id: int = Form(...), user_id: str = De
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        gc.collect()
 
 @conversations_router.delete("/{conversation_id}")
 async def delete_conversation(conversation_id: int, user_id: str = Depends(get_current_user_id)):
@@ -2125,8 +2025,6 @@ async def delete_conversation(conversation_id: int, user_id: str = Depends(get_c
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"An error occurred while deleting the conversation: {str(e)}")
-    finally:
-        gc.collect()
 
 # ============= Claims Routes =============
 @claims_router.post("/create")
@@ -2164,8 +2062,6 @@ async def submit_claim(payload: ClaimCreate, claimant_id: str = Depends(get_curr
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        gc.collect()
 
 @claims_router.get("/item/{item_id}")
 async def get_claims_for_item(item_id: int, user_id: str = Depends(get_current_user_id)):
@@ -2180,8 +2076,6 @@ async def get_claims_for_item(item_id: int, user_id: str = Depends(get_current_u
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        gc.collect()
 
 @claims_router.put("/{claim_id}/respond")
 async def respond_to_claim(claim_id: int, payload: ClaimRespond, finder_id: str = Depends(get_current_user_id)):
@@ -2233,8 +2127,6 @@ async def respond_to_claim(claim_id: int, payload: ClaimRespond, finder_id: str 
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        gc.collect()
 
 # ============= Admin Routes =============
 @admin_router.get("/manual-verifications")
@@ -2269,8 +2161,6 @@ async def get_manual_verifications(admin_id: str = Depends(get_current_user_id))
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        gc.collect()
 
 @admin_router.post("/manual-verifications/{verification_id}/respond")
 async def respond_to_verification(
@@ -2314,7 +2204,7 @@ async def respond_to_verification(
 
             if user_email and settings.RESEND_API_KEY:
                 try:
-                    login_url = "http://localhost:5173/login"
+                    login_url = "https://campustrace.site/login"
 
                     email_html = f"""
                     <p>Hi {user_name},</p>
@@ -2337,11 +2227,6 @@ async def respond_to_verification(
                     print(f"✅ Approval email sent to {user_email}, ID: {email_response['id']}")
                 except Exception as email_error:
                     print(f"❌ Failed to send approval email to {user_email}: {email_error}")
-            else:
-                missing = []
-                if not user_email: missing.append("user email")
-                if not settings.RESEND_API_KEY: missing.append("Resend API key")
-                print(f"⚠️ User {user_id_to_verify} approved, but skipping email due to missing: {', '.join(missing)}.")
 
             create_notification(
                 recipient_id=user_id_to_verify,
@@ -2365,8 +2250,6 @@ async def respond_to_verification(
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"An internal error occurred: {str(e)}")
-    finally:
-        gc.collect()
 
 @admin_router.post("/items/{item_id}/status")
 async def set_item_status(item_id: str, data: StatusUpdate, admin_id: str = Depends(get_current_user_id)):
@@ -2387,8 +2270,6 @@ async def set_item_status(item_id: str, data: StatusUpdate, admin_id: str = Depe
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        gc.collect()
 
 @admin_router.post("/users/{user_id}/ban")
 async def set_user_ban(user_id: str, data: BanUpdate, admin_id: str = Depends(get_current_user_id)):
@@ -2398,8 +2279,6 @@ async def set_user_ban(user_id: str, data: BanUpdate, admin_id: str = Depends(ge
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        gc.collect()
 
 @admin_router.post("/users/{user_id}/role")
 async def set_user_role(user_id: str, data: RoleUpdate, admin_id: str = Depends(get_current_user_id)):
@@ -2409,8 +2288,6 @@ async def set_user_role(user_id: str, data: RoleUpdate, admin_id: str = Depends(
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        gc.collect()
 
 # ============= Profile Routes =============
 @profile_router.put("/")
@@ -2424,8 +2301,9 @@ async def update_profile(full_name: Optional[str] = Form(None), avatar: Optional
             filename = f"{current_user_id}/{uuid4().hex}{file_suffix}"
             file_bytes = await avatar.read()
             
-            if len(file_bytes) > MAX_IMAGE_SIZE:
-                file_bytes = process_image_efficiently(file_bytes)
+            max_avatar_size = int(os.getenv('MAX_AVATAR_SIZE', '2097152'))  # 2MB for avatars
+            if len(file_bytes) > max_avatar_size:
+                file_bytes = process_image_efficiently(file_bytes, max_size=(400, 400))
             
             supabase.storage.from_("other_images").upload(
                 path=filename,
@@ -2434,9 +2312,6 @@ async def update_profile(full_name: Optional[str] = Form(None), avatar: Optional
             )
             public_url = supabase.storage.from_("other_images").get_public_url(filename)
             updates["avatar_url"] = f"{public_url}?t={uuid4().hex}"
-            
-            del file_bytes
-            gc.collect()
 
         if not updates:
             raise HTTPException(status_code=400, detail="No update information provided.")
@@ -2447,8 +2322,6 @@ async def update_profile(full_name: Optional[str] = Form(None), avatar: Optional
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        gc.collect()
 
 @profile_router.get("/preferences")
 async def get_user_preferences(current_user_id: str = Depends(get_current_user_id)):
@@ -2481,8 +2354,6 @@ async def get_user_preferences(current_user_id: str = Depends(get_current_user_i
                 "email_notifications_enabled": True
             }
         }
-    finally:
-        gc.collect()
 
 @profile_router.put("/preferences")
 async def update_user_preferences(preferences: UserPreferences, current_user_id: str = Depends(get_current_user_id)):
@@ -2502,8 +2373,6 @@ async def update_user_preferences(preferences: UserPreferences, current_user_id:
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to update preferences: {str(e)}")
-    finally:
-        gc.collect()
 
 # ============= Include Routers =============
 app.include_router(auth_router)
@@ -2515,11 +2384,23 @@ app.include_router(onboarding_router)
 app.include_router(claims_router) 
 app.include_router(conversations_router)
 
-# ============= Root Route =============
+# ============= Health Check & Root =============
+@app.get("/health")
+async def health_check():
+    """Railway health check endpoint."""
+    return {
+        "status": "healthy",
+        "service": "campustrace-api",
+        "ai_enabled": model is not None,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
 @app.get("/")
 def read_root():
     return {
-        "status": "✅ Campus Trace backend is running!", 
-        "ai_enabled": ENABLE_AI_FEATURES,
-        "image_search_enabled": ENABLE_IMAGE_SEARCH
+        "status": "✅ Campus Trace backend is running on Railway!", 
+        "ai_enabled": model is not None,
+        "environment": "production",
+        "docs": "/docs",
+        "health": "/health"
     }
