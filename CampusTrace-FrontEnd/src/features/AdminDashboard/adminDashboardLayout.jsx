@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import logo from "../../Images/Logo.svg";
 import {
   useLocation,
   NavLink as RouterNavLink,
@@ -564,7 +565,7 @@ export default function AdminDashboardLayout({ children, user }) {
               }`}
             >
               <img
-                src="/Logo.svg"
+                src={logo}
                 alt="CampusTrace logo"
                 className="w-10 h-10 flex-shrink-0"
               />

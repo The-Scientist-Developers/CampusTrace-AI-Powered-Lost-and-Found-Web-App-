@@ -4,6 +4,7 @@ import claimItem from "../../assets/claimitem.png";
 import dashboardUser from "../../assets/dashboarduser.png";
 import messageImg from "../../assets/Messenger.png";
 import postNewItem from "../../assets/PostItem.png";
+import logo from "../../Images/Logo.svg";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion, useAnimation } from "framer-motion";
@@ -47,8 +48,6 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import logo from "../../Images/Logo.svg";
-
 // --- Enhanced Screenshot Gallery Component ---
 const ProfessionalScreenshotGallery = ({ screenshots }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);

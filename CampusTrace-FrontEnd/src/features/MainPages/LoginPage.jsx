@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../../api/apiClient.js";
 import { toast, Toaster } from "react-hot-toast";
+import logo from "../../Images/Logo.svg";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import {
   Mail,
@@ -605,11 +606,7 @@ export default function LoginPage() {
               to="/"
               className="flex items-center gap-3 mb-12 w-fit hover:opacity-80 transition-opacity"
             >
-              <img
-                src="/Logo.svg"
-                alt="CampusTrace logo"
-                className="h-10 w-10"
-              />
+              <img src={logo} alt="CampusTrace logo" className="h-10 w-10" />
               <span className="text-xl font-bold text-neutral-900 dark:text-white">
                 CampusTrace
               </span>
@@ -668,7 +665,7 @@ export default function LoginPage() {
                 className="inline-flex flex-col items-center hover:opacity-80 transition-opacity"
               >
                 <img
-                  src="/Logo.svg"
+                  src={logo}
                   alt="CampusTrace logo"
                   className="mx-auto h-12 w-12 mb-4"
                 />
