@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../../api/apiClient";
 import { toast } from "react-hot-toast";
+import { API_BASE_URL } from "../../../api/apiClient";
 import {
   ImageIcon,
   Loader2,
@@ -35,7 +36,7 @@ const apiClient = {
   async respondToClaim(claimId, approved) {
     const token = await this.getAccessToken();
     const response = await fetch(
-      `http://localhost:8000/api/claims/${claimId}/respond`,
+      `${API_BASE_URL}/api/claims/${claimId}/respond`,
       {
         method: "PUT",
         headers: {
@@ -54,7 +55,7 @@ const apiClient = {
   async markAsRecovered(itemId) {
     const token = await this.getAccessToken();
     const response = await fetch(
-      `http://localhost:8000/api/items/${itemId}/recover`,
+      `${API_BASE_URL}/api/items/${itemId}/recover`,
       {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },

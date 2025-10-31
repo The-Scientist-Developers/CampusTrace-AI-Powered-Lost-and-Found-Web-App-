@@ -35,11 +35,7 @@ import {
 } from "recharts";
 import { useTheme } from "../../../contexts/ThemeContext"; // Import useTheme
 
-// Fix for mobile access - use your computer's IP when in development
-const API_BASE_URL =
-  process.env.NODE_ENV === "production"
-    ? "https://your-api-domain.com" // Replace with your production API URL
-    : `http://${window.location.hostname}:8000`; // This will work on both desktop and mobile
+import { API_BASE_URL } from "../../../api/apiClient.js";
 
 // --- StatusBadge Component ---
 const StatusBadge = ({ status }) => {

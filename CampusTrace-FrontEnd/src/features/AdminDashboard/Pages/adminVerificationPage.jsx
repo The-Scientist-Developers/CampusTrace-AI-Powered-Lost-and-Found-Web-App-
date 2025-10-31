@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { supabase, getAccessToken } from "../../../api/apiClient";
 import { toast } from "react-hot-toast";
 import { Loader2, Check, X, ShieldCheck, Inbox } from "lucide-react";
+import { API_BASE_URL } from "../../../api/apiClient";
 
 const VerificationCard = ({ request, onRespond }) => (
   <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-5">
@@ -57,7 +58,7 @@ export default function ManualVerificationAdminPage() {
     try {
       const token = await getAccessToken();
       const response = await fetch(
-        "http://localhost:8000/admin/manual-verifications",
+        `${API_BASE_URL}/admin/manual-verifications`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -83,7 +84,7 @@ export default function ManualVerificationAdminPage() {
     try {
       const token = await getAccessToken();
       const response = await fetch(
-        `http://localhost:8000/admin/manual-verifications/${verificationId}/respond`,
+        `${API_BASE_URL}/admin/manual-verifications/${verificationId}/respond`,
         {
           method: "POST",
           headers: {

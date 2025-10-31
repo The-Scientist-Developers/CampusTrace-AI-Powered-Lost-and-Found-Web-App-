@@ -11,6 +11,10 @@ import { ThemeProvider, useTheme } from "./contexts/ThemeContext.jsx";
 import { SkeletonTheme } from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
+// --- NEW IMPORTS ---
+import ErrorBoundary from "./features/MainPages/errorBoundary.jsx"; // Import the Error Boundary
+import NotFoundPage from "./features/MainPages/notFoundPage.jsx"; // Import the 404 page
+
 // Page Imports
 import LandingPage from "./features/MainPages/landingPage.jsx";
 import LoginPage from "./features/MainPages/LoginPage.jsx";
@@ -41,7 +45,8 @@ import ManualRegisterPage from "./features/MainPages/manualRegisterPage.jsx";
 import ManualVerificationAdminPage from "./features/AdminDashboard/Pages/adminVerificationPage.jsx";
 import PendingApprovalPage from "./features/MainPages/pendingApprovalPage.jsx";
 import ForgotPasswordPage from "./features/MainPages/forgotPasswordPage.jsx";
-// --- Router Guards ---
+
+// --- Router Guards (No changes) ---
 function PrivateRouter({ children, isLoading, session }) {
   if (isLoading) return <LoadingScreen />;
   if (!session) return <Navigate to="/login" replace />;
@@ -66,7 +71,7 @@ function AuthRedirect({ session, profile, isLoading }) {
   return <Navigate to="/dashboard" replace />;
 }
 
-// Admin Layout Wrapper with loading state
+// Admin Layout Wrapper (No changes)
 function AdminLayoutWrapper({ user }) {
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [profile, setProfile] = useState(null);
@@ -130,7 +135,6 @@ function AdminLayoutWrapper({ user }) {
 }
 
 // --- Main App Content Component ---
-// This component now contains the core logic and can access the theme context.
 function AppContent() {
   const { theme } = useTheme();
   const [session, setSession] = useState(null);
@@ -193,145 +197,155 @@ function AppContent() {
       baseColor={theme === "dark" ? "#2a2a2a" : "#ebebeb"}
       highlightColor={theme === "dark" ? "#333333" : "#f5f5f5"}
     >
-      <Router>
-        <Routes>
-          <Route
-            path="/"
-            element={
-              session ? (
-                <AuthRedirect
-                  session={session}
-                  profile={profile}
-                  isLoading={isLoading}
-                />
-              ) : (
-                <LandingPage />
-              )
-            }
-          />
-          <Route
-            path="/login"
-            element={
-              session ? (
-                <AuthRedirect
-                  session={session}
-                  profile={profile}
-                  isLoading={isLoading}
-                />
-              ) : (
-                <LoginPage />
-              )
-            }
-          />
-          <Route
-            path="/register-university"
-            element={<RegisterUniversityPage />}
-          />
-          <Route path="/manual-verification" element={<ManualRegisterPage />} />
-          <Route path="/reset-password" element={<UpdatePasswordPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/about" element={<AboutUsPage />} />
-          <Route path="/learn-more" element={<LearnMorePage />} />
-          <Route path="/pending-approval" element={<PendingApprovalPage />} />
+      {/* --- ADDED ERRORBOUNDARY WRAPPER --- */}
+      <ErrorBoundary>
+        <Router>
+          <Routes>
+            {/* --- Public Routes --- */}
+            <Route
+              path="/"
+              element={
+                session ? (
+                  <AuthRedirect
+                    session={session}
+                    profile={profile}
+                    isLoading={isLoading}
+                  />
+                ) : (
+                  <LandingPage />
+                )
+              }
+            />
+            <Route
+              path="/login"
+              element={
+                session ? (
+                  <AuthRedirect
+                    session={session}
+                    profile={profile}
+                    isLoading={isLoading}
+                  />
+                ) : (
+                  <LoginPage />
+                )
+              }
+            />
+            <Route
+              path="/register-university"
+              element={<RegisterUniversityPage />}
+            />
+            <Route
+              path="/manual-verification"
+              element={<ManualRegisterPage />}
+            />
+            <Route path="/reset-password" element={<UpdatePasswordPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/about" element={<AboutUsPage />} />
+            <Route path="/learn-more" element={<LearnMorePage />} />
+            <Route path="/pending-approval" element={<PendingApprovalPage />} />
 
-          {/* User Dashboard Routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRouter session={session} isLoading={isLoading}>
-                <DashboardLayout user={session?.user}>
-                  <Outlet />
-                </DashboardLayout>
-              </PrivateRouter>
-            }
-          >
-            <Route index element={<UserMainPage user={session?.user} />} />
+            {/* --- User Dashboard Routes --- */}
             <Route
-              path="profile"
-              element={<UserProfilePage user={session?.user} />}
-            />
-            <Route
-              path="post-new"
-              element={<PostNewItem user={session?.user} />}
-            />
-            <Route path="leaderboard" element={<LeaderboardPage />} />
-            <Route
-              path="my-posts"
-              element={<MyPostsPage user={session?.user} />}
-            />
-            <Route
-              path="notifications"
-              element={<NotificationPage user={session?.user} />}
-            />
-            <Route
-              path="browse-all"
-              element={<BrowseAllPage user={session?.user} />}
-            />
-            <Route
-              path="messages"
-              element={<MessagesPage user={session?.user} />}
-            />
-            <Route
-              path="messages/:conversationId"
-              element={<MessagesPage user={session?.user} />}
-            />
-            <Route
-              path="settings"
-              element={<UserSettingsPage user={session?.user} />}
-            />
-            <Route path="help" element={<HelpPage user={session?.user} />} />
-          </Route>
+              path="/dashboard"
+              element={
+                <PrivateRouter session={session} isLoading={isLoading}>
+                  <DashboardLayout user={session?.user}>
+                    <Outlet />
+                  </DashboardLayout>
+                </PrivateRouter>
+              }
+            >
+              <Route index element={<UserMainPage user={session?.user} />} />
+              <Route
+                path="profile"
+                element={<UserProfilePage user={session?.user} />}
+              />
+              <Route
+                path="post-new"
+                element={<PostNewItem user={session?.user} />}
+              />
+              <Route path="leaderboard" element={<LeaderboardPage />} />
+              <Route
+                path="my-posts"
+                element={<MyPostsPage user={session?.user} />}
+              />
+              <Route
+                path="notifications"
+                element={<NotificationPage user={session?.user} />}
+              />
+              <Route
+                path="browse-all"
+                element={<BrowseAllPage user={session?.user} />}
+              />
+              <Route
+                path="messages"
+                element={<MessagesPage user={session?.user} />}
+              />
+              <Route
+                path="messages/:conversationId"
+                element={<MessagesPage user={session?.user} />}
+              />
+              <Route
+                path="settings"
+                element={<UserSettingsPage user={session?.user} />}
+              />
+              <Route path="help" element={<HelpPage user={session?.user} />} />
+            </Route>
 
-          {/* Admin Dashboard Routes */}
-          <Route
-            path="/admin"
-            element={
-              <PrivateRouter session={session} isLoading={isLoading}>
-                <RoleBasedRouter
-                  profile={profile}
-                  requiredRole="admin"
-                  isLoading={isLoading}
-                >
-                  <AdminLayoutWrapper user={session?.user} />
-                </RoleBasedRouter>
-              </PrivateRouter>
-            }
-          >
-            <Route index element={<AdminMainPage user={session?.user} />} />
+            {/* --- Admin Dashboard Routes --- */}
             <Route
-              path="user-management"
-              element={<UserManagement user={session?.user} />}
-            />
-            <Route
-              path="post-moderation"
-              element={<PostModerationPage user={session?.user} />}
-            />
-            <Route
-              path="notifications"
-              element={<AdminNotificationPage user={session?.user} />}
-            />
-            <Route
-              path="settings"
-              element={<AdminSettingsPage user={session?.user} />}
-            />
-            <Route
-              path="profile"
-              element={<AdminProfilePage user={session?.user} />}
-            />
-            <Route
-              path="manual-verifications"
-              element={<ManualVerificationAdminPage />}
-            />
-            <Route path="help" element={<HelpPage user={session?.user} />} />
-          </Route>
-        </Routes>
-      </Router>
+              path="/admin"
+              element={
+                <PrivateRouter session={session} isLoading={isLoading}>
+                  <RoleBasedRouter
+                    profile={profile}
+                    requiredRole="admin"
+                    isLoading={isLoading}
+                  >
+                    <AdminLayoutWrapper user={session?.user} />
+                  </RoleBasedRouter>
+                </PrivateRouter>
+              }
+            >
+              <Route index element={<AdminMainPage user={session?.user} />} />
+              <Route
+                path="user-management"
+                element={<UserManagement user={session?.user} />}
+              />
+              <Route
+                path="post-moderation"
+                element={<PostModerationPage user={session?.user} />}
+              />
+              <Route
+                path="notifications"
+                element={<AdminNotificationPage user={session?.user} />}
+              />
+              <Route
+                path="settings"
+                element={<AdminSettingsPage user={session?.user} />}
+              />
+              <Route
+                path="profile"
+                element={<AdminProfilePage user={session?.user} />}
+              />
+              <Route
+                path="manual-verifications"
+                element={<ManualVerificationAdminPage />}
+              />
+              <Route path="help" element={<HelpPage user={session?.user} />} />
+            </Route>
+
+            {/* --- ADDED 404 CATCH-ALL ROUTE --- */}
+            {/* This must be the LAST route in the list */}
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Router>
+      </ErrorBoundary>
     </SkeletonTheme>
   );
 }
 
-// --- App Component Wrapper ---
-// The main App component now only provides the theme context.
+// --- App Component Wrapper (No changes) ---
 function App() {
   return (
     <ThemeProvider>

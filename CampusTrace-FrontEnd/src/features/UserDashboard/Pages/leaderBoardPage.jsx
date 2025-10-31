@@ -4,6 +4,7 @@ import { toast } from "react-hot-toast";
 import { Award, Loader2, Shield, Star, Trophy } from "lucide-react";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
+import { API_BASE_URL } from "../../../api/apiClient";
 
 const LeaderboardRowSkeleton = () => (
   <div className="flex items-center gap-4 p-4">
@@ -90,12 +91,9 @@ export default function LeaderboardPage() {
         const token = await getAccessToken();
         if (!token) throw new Error("Authentication required.");
 
-        const response = await fetch(
-          "http://localhost:8000/api/items/leaderboard",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        const response = await fetch(`${API_BASE_URL}/api/items/leaderboard`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         if (!response.ok) {
           const errData = await response.json();

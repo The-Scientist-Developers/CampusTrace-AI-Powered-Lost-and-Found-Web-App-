@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "../../../api/apiClient";
+import { API_BASE_URL } from "../../../api/apiClient";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Send,
@@ -154,7 +155,7 @@ const MessagesPage = ({ user }) => {
 
       // Make DELETE request to backend
       const response = await fetch(
-        `http://localhost:8000/api/conversations/${convoToDelete.id}`,
+        `${API_BASE_URL}/api/conversations/${convoToDelete.id}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },

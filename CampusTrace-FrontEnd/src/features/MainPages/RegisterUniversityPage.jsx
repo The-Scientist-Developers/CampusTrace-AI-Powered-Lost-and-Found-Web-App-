@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import { API_BASE_URL } from "../../api/apiClient";
 import {
   Building,
   User,
@@ -39,7 +40,7 @@ export default function RegisterUniversityPage() {
 
     try {
       const response = await fetch(
-        "http://localhost:8000/api/onboarding/register-university",
+        `${API_BASE_URL}/api/onboarding/register-university`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

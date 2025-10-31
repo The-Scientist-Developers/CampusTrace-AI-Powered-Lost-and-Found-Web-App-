@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../../../api/apiClient";
+import { API_BASE_URL } from "../../../api/apiClient";
 import { toast } from "react-hot-toast";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -33,7 +34,7 @@ async function getAccessToken() {
 const apiClient = {
   async submitClaim(itemId, verificationMessage) {
     const token = await getAccessToken();
-    const response = await fetch("http://localhost:8000/api/claims/create", {
+    const response = await fetch(`${API_BASE_URL}/api/claims/create`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -242,7 +243,7 @@ const ItemDetailsModal = ({ item, onClose, onClaim, user }) => {
       const formData = new FormData();
       formData.append("item_id", item.id);
 
-      const response = await fetch("http://localhost:8000/api/conversations/", {
+      const response = await fetch(`${API_BASE_URL}/api/conversations/`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -731,16 +732,13 @@ export default function BrowseAllPage({ user }) {
       formData.append("image_file", file);
 
       // Call your backend image search endpoint
-      const response = await fetch(
-        "http://localhost:8000/api/items/image-search",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/api/items/image-search`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -986,15 +984,11 @@ export default function BrowseAllPage({ user }) {
                 {(imagePreview || debouncedSearchTerm) && (
                   <button
                     onClick={
-                      imagePreview
-                        ? clearImageSearch
-                        : () => fetchPosts(true)
+                      imagePreview ? clearImageSearch : () => fetchPosts(true)
                     }
                     className="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700"
                   >
-                    {imagePreview
-                      ? "Clear Image Search"
-                      : "Reset Text Search"}
+                    {imagePreview ? "Clear Image Search" : "Reset Text Search"}
                   </button>
                 )}
               </div>
