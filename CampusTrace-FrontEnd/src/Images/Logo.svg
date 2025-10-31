@@ -1,38 +1,137 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
-  CampusTrace - Trace Flow Logo (Scaled Full-Frame Version)
-  Description: Flowing abstract design representing "lost and found" reconnection.
-  Gradient: #4338CA -> #4F46E5
-  Background: Transparent
-  Resolution: 4096x4096, fills entire frame.
--->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4096 4096" width="4096" height="4096" role="img" aria-labelledby="title desc">
-  <title id="title">CampusTrace Trace Flow Symbol</title>
-  <desc id="desc">A Gemini-inspired abstract flowing shape representing reconnection between lost and found items.</desc>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Definitions -->
   <defs>
-    <linearGradient id="grad1" x1="0" y1="1" x2="1" y2="0">
-      <stop offset="0%" stop-color="#4338CA"/>
-      <stop offset="100%" stop-color="#4F46E5"/>
+    <!-- Main violet gradient -->
+    <linearGradient id="mainViolet" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B7FFF;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#7C3AED;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6B21A8;stop-opacity:1" />
     </linearGradient>
-    <radialGradient id="glow" cx="50%" cy="50%" r="60%">
-      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.5"/>
-      <stop offset="100%" stop-color="#4F46E5" stop-opacity="0"/>
-    </radialGradient>
+    
+    <!-- Light violet accent -->
+    <linearGradient id="lightViolet" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#A78BFA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#9333EA;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Pulsing glow effect -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <filter id="shadow">
+      <feDropShadow dx="1" dy="3" stdDeviation="4" flood-opacity="0.25"/>
+    </filter>
   </defs>
-
-  <rect width="4096" height="4096" fill="transparent"/>
-
-  <!-- Left flowing curve (Lost) -->
-  <path d="M880 1360 C560 760, 560 3400, 2048 3400 C3536 3400, 3536 1360, 2048 1360 C1680 1360, 1280 1120, 880 1360 Z"
-        fill="url(#grad1)" opacity="0.95"/>
-
-  <!-- Right flowing curve (Found) -->
-  <path d="M3216 3400 C3536 3960, 3536 1040, 2048 1040 C560 1040, 560 3400, 2048 3400 C2416 3400, 2816 3640, 3216 3400 Z"
-        fill="url(#grad1)" opacity="0.8"/>
-
-  <!-- Overlap highlight (Connection moment) -->
-  <circle cx="2048" cy="2304" r="960" fill="url(#glow)" opacity="0.8"/>
-
-  <!-- Central trace mark -->
-  <circle cx="2048" cy="2304" r="160" fill="#FFFFFF" opacity="0.85"/>
+  
+  <!-- Campus Trace Magnetic C -->
+  <g transform="translate(100, 100)">
+    <!-- Main C body -->
+    <path d="
+      M 50 -30
+      L 50 -55
+      L 35 -70
+      L -35 -70
+      L -60 -45
+      L -60 -25
+      L -70 -15
+      L -70 15
+      L -60 25
+      L -60 45
+      L -35 70
+      L 35 70
+      L 50 55
+      L 50 30
+      L 30 30
+      L 30 45
+      L 20 55
+      L -20 55
+      L -40 35
+      L -40 -35
+      L -20 -55
+      L 20 -55
+      L 30 -45
+      L 30 -30
+      Z
+    " fill="url(#mainViolet)" filter="url(#shadow)"/>
+    
+    <!-- Magnetic ends with pulsing animation -->
+    <rect x="36" y="-34" width="20" height="26" fill="url(#lightViolet)" rx="3">
+      <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="36" y="8" width="20" height="26" fill="url(#lightViolet)" rx="3">
+      <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" begin="1s" repeatCount="indefinite"/>
+    </rect>
+    
+    <!-- Magnetic pole indicators with pulse -->
+    <circle cx="46" cy="-21" r="3" fill="#fff" opacity="0.7">
+      <animate attributeName="r" values="3;4;3" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="46" cy="21" r="3" fill="#fff" opacity="0.7">
+      <animate attributeName="r" values="3;4;3" dur="2s" begin="1s" repeatCount="indefinite"/>
+    </circle>
+    
+    <!-- Tech overlay -->
+    <rect x="-63" y="-7" width="35" height="5" fill="#fff" opacity="0.25"/>
+    <rect x="-63" y="2" width="35" height="5" fill="#fff" opacity="0.25"/>
+    
+    <!-- Side grip -->
+    <rect x="-70" y="-8" width="11" height="16" fill="#5B21B6" rx="2"/>
+    
+    <!-- Animated magnetic field lines -->
+    <path d="M 58 -25 Q 68 0, 58 25" stroke="#A78BFA" stroke-width="2" fill="none" opacity="0.4" stroke-dasharray="4,4">
+      <animate attributeName="stroke-dashoffset" values="0;8" dur="1s" repeatCount="indefinite"/>
+    </path>
+    <path d="M 63 -20 Q 72 0, 63 20" stroke="#A78BFA" stroke-width="1.5" fill="none" opacity="0.3" stroke-dasharray="3,5">
+      <animate attributeName="stroke-dashoffset" values="0;8" dur="1.5s" repeatCount="indefinite"/>
+    </path>
+    
+    <!-- Lost items being attracted (animated dots) -->
+    <!-- Keys -->
+    <g>
+      <circle cx="75" cy="-15" r="3" fill="#FFD700" opacity="0.8">
+        <animate attributeName="cx" values="75;58;75" dur="3s" repeatCount="indefinite"/>
+        <animate attributeName="cy" values="-15;-21;-15" dur="3s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="78" cy="-13" r="2" fill="#FFA500" opacity="0.6">
+        <animate attributeName="cx" values="78;60;78" dur="3s" repeatCount="indefinite"/>
+        <animate attributeName="cy" values="-13;-19;-13" dur="3s" repeatCount="indefinite"/>
+      </circle>
+    </g>
+    
+    <!-- Phone -->
+    <rect x="72" y="15" width="4" height="6" rx="1" fill="#1F2937" opacity="0.8">
+      <animate attributeName="x" values="72;56;72" dur="3.5s" begin="0.5s" repeatCount="indefinite"/>
+      <animate attributeName="y" values="15;21;15" dur="3.5s" begin="0.5s" repeatCount="indefinite"/>
+    </rect>
+    
+    <!-- Wallet -->
+    <rect x="70" y="0" width="5" height="4" fill="#8B4513" opacity="0.7">
+      <animate attributeName="x" values="70;55;70" dur="4s" begin="1s" repeatCount="indefinite"/>
+    </rect>
+    
+    <!-- ID Card -->
+    <rect x="74" y="-30" width="6" height="4" fill="#3B82F6" opacity="0.6">
+      <animate attributeName="x" values="74;58;74" dur="3.2s" begin="1.5s" repeatCount="indefinite"/>
+      <animate attributeName="y" values="-30;-25;-30" dur="3.2s" begin="1.5s" repeatCount="indefinite"/>
+    </rect>
+    
+    <!-- Floating particles being attracted -->
+    <circle cx="80" cy="5" r="1" fill="#A78BFA" opacity="0.5">
+      <animate attributeName="cx" values="80;60;80" dur="2s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.5;0" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="82" cy="-5" r="1" fill="#A78BFA" opacity="0.5">
+      <animate attributeName="cx" values="82;60;82" dur="2.5s" begin="0.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.5;0" dur="2.5s" begin="0.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="78" cy="25" r="1" fill="#A78BFA" opacity="0.5">
+      <animate attributeName="cx" values="78;58;78" dur="2.2s" begin="1s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.5;0" dur="2.2s" begin="1s" repeatCount="indefinite"/>
+    </circle>
+  </g>
 </svg>

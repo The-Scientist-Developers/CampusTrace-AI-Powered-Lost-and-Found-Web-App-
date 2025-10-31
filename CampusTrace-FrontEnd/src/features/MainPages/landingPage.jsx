@@ -1,9 +1,9 @@
 import adminAnalytics from "../../assets/adminanalytics.png";
-import browseAllItem from "../../assets/browseallitem.png";
+import browseAllItem from "../../assets/BrowseAll.png";
 import claimItem from "../../assets/claimitem.png";
-import dashboardUser from "../../assets/dashboaruser.png";
-import messageImg from "../../assets/message.png";
-import postNewItem from "../../assets/postnewitem.png";
+import dashboardUser from "../../assets/dashboarduser.png";
+import messageImg from "../../assets/messenger.png";
+import postNewItem from "../../assets/PostItem.png";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion, useAnimation } from "framer-motion";
@@ -71,7 +71,7 @@ const ProfessionalScreenshotGallery = ({ screenshots }) => {
   return (
     <>
       {/* Gallery Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 lg:auto-rows-[minmax(250px,_auto)] gap-6 sm:gap-8">
         {screenshots.map((screenshot, index) => {
           const itemControls = useAnimation();
           const { ref: itemRef, inView: itemInView } = useIntersectionObserver({
@@ -90,13 +90,25 @@ const ProfessionalScreenshotGallery = ({ screenshots }) => {
             }
           }, [itemControls, itemInView, index]);
 
+          // --- Bento Grid Layout Classes ---
+          const bentoClasses = [
+            "lg:col-span-2 lg:row-span-2", // 0: dashboardUser (Main)
+            "lg:col-span-1", // 1: browseAllItem
+            "lg:col-span-1", // 2: postNewItem
+            "lg:col-span-1", // 3: claimItem
+            "lg:col-span-1", // 4: messageImg
+            "lg:col-span-1", // 5: adminAnalytics
+          ];
+
           return (
             <motion.div
               key={index}
               ref={itemRef}
               animate={itemControls}
               initial={{ opacity: 0, y: 40, scale: 0.95 }}
-              className="group relative rounded-xl overflow-hidden bg-white dark:bg-neutral-800 cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-500"
+              className={`group relative rounded-xl overflow-hidden bg-white dark:bg-neutral-800 cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-500 ${
+                bentoClasses[index] || "lg:col-span-1"
+              }`}
               onClick={() => openLightbox(index)}
             >
               {/* Aspect Ratio Container */}
@@ -207,21 +219,24 @@ const ProfessionalScreenshotGallery = ({ screenshots }) => {
                 </div>
               </div>
 
-              {/* Bottom Card Section */}
-              <div className="p-4 bg-white dark:bg-neutral-800 border-t border-neutral-200 dark:border-neutral-700">
+              {/* REMOVED THIS SECTION: This is what created the "attached" look.
+                The title is already in the hover overlay, which is cleaner.
+              */}
+              {/* <div className="p-4 bg-white dark:bg-neutral-800 border-t border-neutral-200 dark:border-neutral-700">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300 truncate pr-2">
                     {screenshot.alt}
                   </span>
                   <Eye className="w-4 h-4 text-neutral-400 flex-shrink-0" />
                 </div>
-              </div>
+              </div> 
+              */}
             </motion.div>
           );
         })}
       </div>
 
-      {/* Professional Lightbox */}
+      {/* Professional Lightbox (No changes here) */}
       <Lightbox
         open={lightboxOpen}
         close={() => setLightboxOpen(false)}
@@ -414,7 +429,7 @@ const ScrollProgress = () => {
   return (
     <div className="fixed top-0 left-0 right-0 h-1 bg-transparent z-[60]">
       <div
-        className="h-full bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600 transition-all duration-150 shadow-lg shadow-primary-500/50"
+        className="h-full bg-primary-500 transition-all duration-150 shadow-lg shadow-primary-500/50"
         style={{ width: `${progress}%` }}
       />
     </div>
@@ -660,7 +675,7 @@ const FeatureSection = ({ title, subtitle, features, id, startIndex = 0 }) => {
                 delay: 0.5,
                 ease: [0.25, 1, 0.5, 1],
               }}
-              className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 bg-gradient-to-r from-primary-400 to-primary-600 rounded-full"
+              className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 bg-primary-500 rounded-full"
             />
           </h2>
           <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto mt-4 sm:mt-6 px-4">
@@ -682,7 +697,7 @@ const FeatureSection = ({ title, subtitle, features, id, startIndex = 0 }) => {
   );
 };
 
-// --- Enhanced Screenshot Section Component ---
+// --- Enhanced Screenshot Section Component (No changes here) ---
 const ScreenshotSection = ({ screenshots }) => {
   const { ref, animation, inView } = useInView({
     threshold: 0.2,
@@ -715,7 +730,7 @@ const ScreenshotSection = ({ screenshots }) => {
                 delay: 0.5,
                 ease: [0.25, 1, 0.5, 1],
               }}
-              className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 bg-gradient-to-r from-primary-400 to-primary-600 rounded-full"
+              className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 bg-primary-500 rounded-full"
             />
           </h2>
           <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto mt-4 sm:mt-6 px-4">
@@ -764,7 +779,7 @@ export default function LandingPage() {
       icon: Sparkles,
       title: "AI-Powered Search & Matching",
       description:
-        "Describe or upload a photo of your item. Our AI (CLIP & SentenceTransformers) finds visual and text matches, proactively notifying you of potential finds.",
+        "Describe or upload a photo of your item. Our AI (jina AI) finds visual and text matches, proactively notifying you of potential finds.",
     },
     {
       icon: Zap,
@@ -883,7 +898,7 @@ export default function LandingPage() {
     {
       question: "How does the AI matching work for my lost item?",
       answer:
-        "When you post a 'Lost' item, our AI analyzes its text (title, description, category) and image (if provided) using SentenceTransformers and CLIP models. It then compares this against all approved 'Found' items in your university, calculating similarity scores. High-scoring matches appear under 'AI-Powered Matches' on your dashboard.",
+        "When you post a 'Lost' item, our AI analyzes its text (title, description, category) and image (if provided) using Jina AI. It then compares this against all approved 'Found' items in your university, calculating similarity scores. High-scoring matches appear under 'AI-Powered Matches' on your dashboard.",
     },
     {
       question: "How do I communicate securely after a claim is approved?",
@@ -922,10 +937,9 @@ export default function LandingPage() {
             <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
               <motion.img
                 src={logo}
-                alt="Campus Trace Logo"
-                className="h-8 w-8 sm:h-10 sm:w-auto rounded-full"
+                alt="CampusTrace logo"
+                className="h-10 w-10 sm:h-12 sm:w-12"
                 whileHover={{ scale: 1.15, rotate: 15 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10 }}
               />
               <span className="text-lg sm:text-xl font-bold text-neutral-800 dark:text-white">
                 CampusTrace
@@ -952,7 +966,7 @@ export default function LandingPage() {
                     className="relative text-sm font-semibold text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-300 group"
                   >
                     {link.label}
-                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-primary-400 to-primary-600 group-hover:w-full transition-all duration-300" />
+                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary-500 group-hover:w-full transition-all duration-300" />
                   </a>
                 ) : (
                   <Link
@@ -961,13 +975,13 @@ export default function LandingPage() {
                     className="relative text-sm font-semibold text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-300 group"
                   >
                     {link.label}
-                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-primary-400 to-primary-600 group-hover:w-full transition-all duration-300" />
+                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary-500 group-hover:w-full transition-all duration-300" />
                   </Link>
                 )
               )}
               <Link
                 to="/login"
-                className="px-5 py-2 bg-gradient-to-r from-primary-600 to-primary-500 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 hover:scale-105 transition-all duration-300"
+                className="px-5 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 hover:scale-105 transition-all duration-300"
               >
                 Log In
               </Link>
@@ -1029,7 +1043,7 @@ export default function LandingPage() {
               <Link
                 to="/login"
                 onClick={() => setMobileMenuOpen(false)}
-                className="block w-full mt-3 py-3 text-center bg-gradient-to-r from-primary-600 to-primary-500 text-white text-base font-semibold rounded-lg shadow-md"
+                className="block w-full mt-3 py-3 text-center bg-primary-600 text-white text-base font-semibold rounded-lg shadow-md"
               >
                 Log In
               </Link>
@@ -1101,7 +1115,7 @@ export default function LandingPage() {
             >
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-neutral-900 dark:text-white leading-tight">
                 Reconnect What's Lost,{" "}
-                <span className="bg-gradient-to-r from-primary-600 via-purple-500 to-pink-500 dark:from-primary-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent animate-gradient bg-[length:200%_auto] block sm:inline mt-2 sm:mt-0">
+                <span className="text-primary-600 dark:text-primary-400 block sm:inline mt-2 sm:mt-0">
                   Powered by AI
                 </span>
               </h1>
@@ -1126,11 +1140,11 @@ export default function LandingPage() {
             >
               <Link
                 to="/login"
-                className="group px-7 sm:px-9 py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden text-base sm:text-lg w-full sm:w-auto"
+                className="group px-7 sm:px-9 py-3 bg-primary-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden text-base sm:text-lg w-full sm:w-auto"
               >
                 <span className="relative z-10">Get Started</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform relative z-10" />
-                <div className="absolute inset-0 bg-gradient-to-r from-primary-700 to-primary-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-primary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </Link>
               <Link
                 to="/learn-more"
@@ -1220,7 +1234,7 @@ export default function LandingPage() {
                           stiffness: 300,
                           damping: 10,
                         }}
-                        className="flex items-center justify-center h-16 w-16 sm:h-20 sm:w-20 bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-500/10 dark:to-primary-500/20 rounded-full mx-auto ring-4 ring-white dark:ring-[#2a2a2a]"
+                        className="flex items-center justify-center h-16 w-16 sm:h-20 sm:w-20 bg-primary-100 dark:bg-primary-500/10 rounded-full mx-auto ring-4 ring-white dark:ring-[#2a2a2a]"
                       >
                         <step.icon className="w-7 h-7 sm:w-9 sm:h-9 text-primary-600 dark:text-primary-400" />
                       </motion.div>
@@ -1293,7 +1307,7 @@ export default function LandingPage() {
         {/* CTA Section */}
         <section
           ref={ctaRef.ref}
-          className="py-20 sm:py-28 bg-gradient-to-br from-primary-600 via-purple-600 to-pink-600 text-white text-center relative overflow-hidden"
+          className="py-20 sm:py-28 bg-primary-600 text-white text-center relative overflow-hidden"
         >
           {/* Animated background shapes */}
           <div className="absolute inset-0 opacity-20">
@@ -1328,7 +1342,7 @@ export default function LandingPage() {
               >
                 <span className="relative z-10">Sign Up / Log In</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1.5 transition-transform relative z-10" />
-                <div className="absolute inset-0 bg-gradient-to-r from-neutral-100 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-neutral-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </Link>
               <Link
                 to="/register-university"
@@ -1353,8 +1367,8 @@ export default function LandingPage() {
               >
                 <motion.img
                   src={logo}
-                  alt="Campus Trace Logo"
-                  className="h-9 w-9 sm:h-11 sm:w-auto rounded-lg"
+                  alt="CampusTrace logo"
+                  className="h-10 w-10 sm:h-12 sm:w-12"
                   whileHover={{ rotate: 15 }}
                 />
                 <span>CampusTrace</span>
@@ -1448,7 +1462,7 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      <style jsx>{`
+      <style>{`
         .footer-link {
           @apply text-sm sm:text-base text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-300 hover:translate-x-1 inline-block;
         }

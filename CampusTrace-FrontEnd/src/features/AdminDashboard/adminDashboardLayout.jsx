@@ -566,8 +566,8 @@ export default function AdminDashboardLayout({ children, user }) {
             >
               <img
                 src={logo}
-                alt="Campus Trace Logo"
-                className="w-8 h-8 rounded-md flex-shrink-0"
+                alt="CampusTrace logo"
+                className="w-10 h-10 flex-shrink-0"
               />
               {(isSidebarOpen || mobileMenu) && (
                 <div className="flex flex-col overflow-hidden">

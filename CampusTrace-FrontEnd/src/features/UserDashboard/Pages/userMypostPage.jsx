@@ -121,6 +121,157 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+// --- NEW PREVIEW MODAL ---
+const MyPostPreviewModal = ({ item, onClose }) => {
+  if (!item) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="sticky top-0 bg-white dark:bg-[#2a2a2a] border-b border-neutral-200 dark:border-[#3a3a3a] p-6 rounded-t-2xl">
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <span
+                  className={`text-xs font-semibold px-3 py-1 rounded-full ${
+                    item.status?.toLowerCase() === "lost"
+                      ? "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400"
+                      : "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400"
+                  }`}
+                >
+                  {item.status}
+                </span>
+                <span className="text-xs font-medium px-3 py-1 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
+                  {item.category}
+                </span>
+              </div>
+              <h2 className="text-2xl font-bold text-neutral-800 dark:text-white">
+                {item.title}
+              </h2>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-gray-400"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Image */}
+            <div className="w-full h-80 flex items-center justify-center bg-neutral-100 dark:bg-zinc-800 rounded-xl p-4">
+              {item.image_url ? (
+                <img
+                  src={item.image_url}
+                  alt={item.title}
+                  className="max-w-full max-h-full object-contain rounded-lg"
+                />
+              ) : (
+                <div className="text-center">
+                  <Camera className="w-16 h-16 text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
+                  <p className="text-neutral-500 text-sm">No Image Available</p>
+                </div>
+              )}
+            </div>
+
+            {/* Info Grid */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-[#1a1a1a] rounded-lg">
+                <MapPin className="w-5 h-5 text-neutral-500" />
+                <div>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    Location
+                  </p>
+                  <p className="font-medium text-neutral-800 dark:text-white">
+                    {item.location || "N/A"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-[#1a1a1a] rounded-lg">
+                <Calendar className="w-5 h-5 text-neutral-500" />
+                <div>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    Date Posted
+                  </p>
+                  <p className="font-medium text-neutral-800 dark:text-white">
+                    {new Date(item.created_at).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-[#1a1a1a] rounded-lg">
+                <Clock className="w-5 h-5 text-neutral-500" />
+                <div>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    Time Posted
+                  </p>
+                  <p className="font-medium text-neutral-800 dark:text-white">
+                    {new Date(item.created_at).toLocaleTimeString("en-US", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="bg-neutral-50 dark:bg-[#1a1a1a] rounded-xl p-5 mb-6">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3">
+              Description
+            </p>
+            <p className="text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap leading-relaxed">
+              {item.description || "No description provided."}
+            </p>
+          </div>
+
+          {/* AI Tags */}
+          {item.ai_tags && item.ai_tags.length > 0 && (
+            <div className="bg-neutral-50 dark:bg-[#1a1a1a] rounded-xl p-5 mb-6">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <Tag className="w-3.5 h-3.5" />
+                AI Generated Tags
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {item.ai_tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-xs font-medium px-3 py-1 rounded-full bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Moderation Status */}
+          <div className="bg-neutral-50 dark:bg-[#1a1a1a] rounded-xl p-5">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3">
+              Post Status
+            </p>
+            <StatusBadge status={item.moderation_status} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Enhanced ClaimCard component
 const ClaimCard = ({ claim, onRespond, item }) => (
   <div className="bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-[#1a1a1a] dark:to-[#1f1f1f] rounded-xl p-5 border border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-all">
@@ -169,20 +320,26 @@ const ClaimCard = ({ claim, onRespond, item }) => (
 );
 
 // Enhanced PostCard
-const PostCard = ({ post, onDelete, onMarkRecovered, hasClaims }) => {
+const PostCard = ({ post, onDelete, onMarkRecovered, hasClaims, onClick }) => {
   const isLost = post.status?.toLowerCase() === "lost";
   const canRecover =
     post.moderation_status === "pending_return" ||
     (post.status === "Lost" && post.moderation_status === "approved");
 
   return (
-    <div className="group relative bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+    <div
+      onClick={() => onClick(post)}
+      className="group relative bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+    >
       {/* Delete button */}
       <button
-        onClick={() => onDelete(post.id)}
+        onClick={(e) => {
+          e.stopPropagation(); // Prevent modal from opening
+          onDelete(post.id);
+        }}
         className="absolute top-3 right-3 z-10 p-2 bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur-sm text-neutral-600 dark:text-gray-400 rounded-lg
-                   opacity-0 group-hover:opacity-100 transition-all duration-200
-                   hover:bg-red-500 hover:text-white hover:scale-110"
+                  opacity-0 group-hover:opacity-100 transition-all duration-200
+                  hover:bg-red-500 hover:text-white hover:scale-110"
         title="Delete Post"
       >
         <Trash2 className="w-4 h-4" />
@@ -260,7 +417,10 @@ const PostCard = ({ post, onDelete, onMarkRecovered, hasClaims }) => {
 
           {canRecover && (
             <button
-              onClick={() => onMarkRecovered(post.id)}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent modal from opening
+                onMarkRecovered(post.id);
+              }}
               className="w-full py-2.5 bg-blue-600 text-white font-semibold rounded-lg text-sm hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 group"
             >
               <Package className="w-4 h-4 group-hover:scale-110 transition-transform" />
@@ -318,6 +478,7 @@ export default function MyPostsPage({ user }) {
   const [activeTab, setActiveTab] = useState("myPosts");
   const [postStatusFilter, setPostStatusFilter] = useState("active");
   const [error, setError] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null); // <-- State for modal
 
   const fetchClaims = async (foundItems) => {
     if (foundItems.length === 0) return;
@@ -666,6 +827,7 @@ export default function MyPostsPage({ user }) {
                   <PostCard
                     key={post.id}
                     post={post}
+                    onClick={setSelectedItem} // <-- Pass setter to card
                     onDelete={handleDeletePost}
                     onMarkRecovered={handleMarkAsRecovered}
                     hasClaims={claims[post.id]?.length > 0}
@@ -753,6 +915,14 @@ export default function MyPostsPage({ user }) {
               </div>
             )}
           </div>
+        )}
+
+        {/* --- RENDER THE MODAL --- */}
+        {selectedItem && (
+          <MyPostPreviewModal
+            item={selectedItem}
+            onClose={() => setSelectedItem(null)}
+          />
         )}
       </div>
     </div>

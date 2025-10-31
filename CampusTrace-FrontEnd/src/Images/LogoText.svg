@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" 
+     width="512" 
+     height="512" 
+     viewBox="0 0 512 512" 
+     role="img" 
+     aria-labelledby="logo-text-title"
+     preserveAspectRatio="xMidYMid meet">
+  
+  <title id="logo-text-title">CampusTrace Logo</title>
+  
+  <!-- Background (transparent) -->
+  <rect width="100%" height="100%" fill="none"/>
+  
+  <!-- Main logo group - larger and bolder -->
+  <g id="logo-text-mark">
+    <!-- Geometric letter C - larger and more prominent -->
+    <path
+      d="M 80 80 
+         L 280 80 
+         Q 320 80 320 120
+         L 320 160
+         Q 320 185 295 185
+         L 155 185
+         Q 130 185 130 210
+         L 130 302
+         Q 130 327 155 327
+         L 295 327
+         Q 320 327 320 352
+         L 320 392
+         Q 320 432 280 432
+         L 80 432
+         Q 40 432 40 392
+         L 40 120
+         Q 40 80 80 80
+         Z
+         
+         M 350 327
+         L 430 327
+         Q 455 327 455 352
+         L 455 392
+         Q 455 432 415 432
+         L 350 432
+         Q 325 432 325 407
+         L 325 352
+         Q 325 327 350 327
+         Z
+         
+         M 350 80
+         L 415 80
+         Q 455 80 455 120
+         L 455 160
+         Q 455 185 430 185
+         L 350 185
+         Q 325 185 325 160
+         L 325 105
+         Q 325 80 350 80
+         Z"
+      fill="currentColor"
+    />
+  </g>
+</svg>
