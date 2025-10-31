@@ -19,7 +19,6 @@ import {
   XCircle,
   Clock,
 } from "lucide-react";
-import logo from "../../Images/Logo.svg";
 import ReCAPTCHA from "react-google-recaptcha";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -606,7 +605,11 @@ export default function LoginPage() {
               to="/"
               className="flex items-center gap-3 mb-12 w-fit hover:opacity-80 transition-opacity"
             >
-              <img src={logo} alt="CampusTrace logo" className="h-10 w-10" />
+              <img
+                src="/Logo.svg"
+                alt="CampusTrace logo"
+                className="h-10 w-10"
+              />
               <span className="text-xl font-bold text-neutral-900 dark:text-white">
                 CampusTrace
               </span>
@@ -665,7 +668,7 @@ export default function LoginPage() {
                 className="inline-flex flex-col items-center hover:opacity-80 transition-opacity"
               >
                 <img
-                  src={logo}
+                  src="/Logo.svg"
                   alt="CampusTrace logo"
                   className="mx-auto h-12 w-12 mb-4"
                 />

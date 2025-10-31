@@ -22,7 +22,6 @@ import {
   HelpCircle,
   Plus,
 } from "lucide-react";
-import logo from "../../Images/Logo.svg";
 import { useTheme } from "../../contexts/ThemeContext";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -565,7 +564,7 @@ export default function AdminDashboardLayout({ children, user }) {
               }`}
             >
               <img
-                src={logo}
+                src="/Logo.svg"
                 alt="CampusTrace logo"
                 className="w-10 h-10 flex-shrink-0"
               />
