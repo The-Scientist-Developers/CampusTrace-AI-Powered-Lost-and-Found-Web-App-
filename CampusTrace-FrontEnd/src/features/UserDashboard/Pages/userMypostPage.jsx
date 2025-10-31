@@ -486,7 +486,7 @@ export default function MyPostsPage({ user }) {
     try {
       const token = await apiClient.getAccessToken();
       const claimsPromises = foundItems.map((item) =>
-        fetch(`http://localhost:8000/api/claims/item/${item.id}`, {
+        fetch(`${API_BASE_URL}/api/claims/item/${item.id}`, {
           headers: { Authorization: `Bearer ${token}` },
         }).then((res) => res.json())
       );
