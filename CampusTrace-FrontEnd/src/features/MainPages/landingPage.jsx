@@ -2,7 +2,7 @@ import adminAnalytics from "../../assets/adminanalytics.png";
 import browseAllItem from "../../assets/BrowseAll.png";
 import claimItem from "../../assets/claimitem.png";
 import dashboardUser from "../../assets/dashboarduser.png";
-import messageImg from "../../assets/messenger.png";
+import messageImg from "../../assets/Messenger.png";
 import postNewItem from "../../assets/PostItem.png";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
