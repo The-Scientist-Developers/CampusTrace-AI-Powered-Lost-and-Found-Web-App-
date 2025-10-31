@@ -1,13 +1,6 @@
 import React from "react";
-// --- THIS IS THE FIX ---
-// Added the .jsx file extension to the import path
-import ErrorFallback from "./errorFallback.jsx"; // Import the UI component
+import ErrorFallback from "./features/MainPages/errorFallbackPage.jsx"; // Import the UI component
 
-/**
- * A React Error Boundary.
- * This class component catches JavaScript errors anywhere in its child component tree,
- * logs those errors, and displays a fallback UI (ErrorFallback) instead of crashing.
- */
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
