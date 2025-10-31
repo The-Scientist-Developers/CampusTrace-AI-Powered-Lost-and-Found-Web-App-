@@ -1,5 +1,7 @@
 import React from "react";
-import ErrorFallback from "./ErrorFallback"; // Import the UI component
+// --- THIS IS THE FIX ---
+// Added the .jsx file extension to the import path
+import ErrorFallback from "./ErrorFallback.jsx"; // Import the UI component
 
 /**
  * A React Error Boundary.
