@@ -1,5 +1,5 @@
 import React from "react";
-import ErrorFallback from "./features/MainPages/errorFallbackPage.jsx"; // Import the UI component
+import ErrorFallback from "../features/MainPages/errorFallbackPage.jsx"; // Import the UI component
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
