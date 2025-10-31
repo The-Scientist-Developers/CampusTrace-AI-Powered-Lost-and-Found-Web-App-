@@ -12,7 +12,7 @@ import { SkeletonTheme } from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
 // --- NEW IMPORTS ---
-import ErrorBoundary from "./features/MainPages/errorBoundary.jsx"; // Import the Error Boundary
+import ErrorBoundary from "./components/errorBoundary.jsx"; // Import ErrorBoundary
 import NotFoundPage from "./features/MainPages/notFoundPage.jsx"; // Import the 404 page
 
 // Page Imports
