@@ -136,8 +136,6 @@ const UserProfilePageSkeleton = () => (
 );
 
 const CameraModal = ({ isOpen, onClose, onCapture, videoRef }) => {
-  const videoRef = useRef(null);
-
   useEffect(() => {
     let activeStream = null;
     if (isOpen) {
