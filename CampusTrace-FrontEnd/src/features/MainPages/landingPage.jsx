@@ -1455,7 +1455,7 @@ export default function LandingPage() {
               © {new Date().getFullYear()} CampusTrace. All rights reserved.
             </p>
             <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-500">
-              Project By: Bugauisan, Respicio, & Cacho (ISU - Cauayan)
+              Project By: Bugauisan, Respicio, & Cacho (ISU - Echague)
             </p>
           </div>
         </div>

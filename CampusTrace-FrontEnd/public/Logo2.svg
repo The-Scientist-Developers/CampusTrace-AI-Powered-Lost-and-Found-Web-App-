@@ -1,0 +1,18 @@
+<!-- Option 4: Minimalist CT Monogram -->
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="purple" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#673DE6"/>
+      <stop offset="100%" style="stop-color:#5025D1"/>
+    </linearGradient>
+  </defs>
+  
+  <g transform="translate(60, 60)">
+    <!-- Background circle -->
+    <circle cx="0" cy="0" r="40" fill="url(#purple)" opacity="0.1"/>
+    
+    <!-- Abstract C and T merged -->
+    <path d="M -15 -25 Q -30 -25 -30 -10 L -30 10 Q -30 25 -15 25 L -5 25 L -5 15 L -15 15 Q -20 15 -20 10 L -20 -10 Q -20 -15 -15 -15 L 5 -15 L 5 25 L 15 25 L 15 -15 L 25 -15 L 25 -25 L -15 -25 Z" 
+          fill="url(#purple)"/>
+  </g>
+</svg>

@@ -1,0 +1,40 @@
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "CampusTrace",
+  "url": "https://www.campustrace.site/",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://www.campustrace.site/dashboard/browse-all?search={search_term_string}",
+    "query-input": "required name=search_term_string"
+  },
+  "mainEntity": {
+    "@type": "ItemList",
+    "itemListElement": [
+      {
+        "@type": "WebPage",
+        "position": 1,
+        "name": "Learn More",
+        "url": "https://www.campustrace.site/learn-more"
+      },
+      {
+        "@type": "WebPage",
+        "position": 2,
+        "name": "About Us",
+        "url": "https://www.campustrace.site/about"
+      },
+      {
+        "@type": "WebPage",
+        "position": 3,
+        "name": "For Universities",
+        "url": "https://www.campustrace.site/register-university"
+      },
+      {
+        "@type": "WebPage",
+        "position": 4,
+        "name": "Login",
+        "url": "https://www.campustrace.site/login"
+      }
+    ]
+  }
+}
