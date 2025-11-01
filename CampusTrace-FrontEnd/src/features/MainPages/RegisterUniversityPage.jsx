@@ -62,7 +62,7 @@ export default function RegisterUniversityPage() {
       toast.success("Registration successful! Please check your email.", {
         id: toastId,
       });
-      setIsSubmitted(true); // Show the verification message
+      setIsSubmitted(true);
     } catch (error) {
       setError(error.message);
       toast.error(error.message, { id: toastId });

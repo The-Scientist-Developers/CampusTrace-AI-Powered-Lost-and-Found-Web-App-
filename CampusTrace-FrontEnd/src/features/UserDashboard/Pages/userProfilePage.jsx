@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { supabase, apiClient } from "../../../api/apiClient"; // Make sure apiClient path is correct
+import { supabase, apiClient } from "../../../api/apiClient";
 import { toast } from "react-hot-toast";
 import {
   User,
@@ -17,7 +17,6 @@ import { FaceDetector, FilesetResolver } from "@mediapipe/tasks-vision";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
-// --- StatCard Component (No changes needed, but ensure it's responsive) ---
 const StatCard = ({ label, value, icon: Icon }) => (
   <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] p-4 sm:p-6 rounded-xl shadow-sm flex items-center gap-4">
     <Icon className="w-6 h-6 sm:w-8 sm:h-8 text-primary-600 flex-shrink-0" />
@@ -32,7 +31,6 @@ const StatCard = ({ label, value, icon: Icon }) => (
   </div>
 );
 
-// --- Skeleton Components (Adjusted slightly for responsiveness) ---
 const StatCardSkeleton = () => (
   <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] p-4 sm:p-6 rounded-xl shadow-sm flex items-center gap-4">
     <Skeleton circle width={32} height={32} />
@@ -137,15 +135,14 @@ const UserProfilePageSkeleton = () => (
   </div>
 );
 
-// --- Camera Modal Component (No changes needed) ---
-const CameraModal = ({ isOpen, onClose, onCapture, onFileSelect }) => {
+const CameraModal = ({ isOpen, onClose, onCapture, videoRef }) => {
   const videoRef = useRef(null);
 
   useEffect(() => {
     let activeStream = null;
     if (isOpen) {
       navigator.mediaDevices
-        .getUserMedia({ video: { facingMode: "user" } }) // Prioritize front camera
+        .getUserMedia({ video: { facingMode: "user" } })
         .then((stream) => {
           activeStream = stream;
           if (videoRef.current) {
@@ -206,8 +203,8 @@ const CameraModal = ({ isOpen, onClose, onCapture, onFileSelect }) => {
           {" "}
           {/* Stack buttons on mobile */}
           <button
-            onClick={handleCapture}
-            className="px-4 py-2 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition w-full sm:w-auto" // Full width on mobile
+            onClick={onCapture}
+            className="px-4 py-2 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition w-full sm:w-auto"
           >
             Capture
           </button>
@@ -247,7 +244,6 @@ export default function UserProfilePage({ user }) {
   const [faceDetector, setFaceDetector] = useState(null);
   const [isModelsLoading, setIsModelsLoading] = useState(true);
 
-  // Initialize MediaPipe Face Detector
   useEffect(() => {
     const createFaceDetector = async () => {
       try {
@@ -272,7 +268,6 @@ export default function UserProfilePage({ user }) {
     createFaceDetector();
   }, []);
 
-  // Fetch User Data
   useEffect(() => {
     if (!user?.id) {
       setLoading(false);
@@ -288,7 +283,7 @@ export default function UserProfilePage({ user }) {
             .from("items")
             .select("*")
             .eq("user_id", user.id)
-            .order("created_at", { ascending: false }), // Order posts
+            .order("created_at", { ascending: false }),
         ]);
 
         if (profileRes.error) throw profileRes.error;
@@ -303,13 +298,12 @@ export default function UserProfilePage({ user }) {
         setError("Failed to load profile.");
         toast.error("Failed to load profile data.");
       } finally {
-        setTimeout(() => setLoading(false), 500); // Shorter delay
+        setTimeout(() => setLoading(false), 500);
       }
     };
     fetchData();
   }, [user]);
 
-  // Process Image (Face Detection)
   const processImageForUpload = async (file) => {
     if (isModelsLoading || !faceDetector) {
       toast.error("AI models are still loading, please wait a moment.");
@@ -346,7 +340,7 @@ export default function UserProfilePage({ user }) {
 
       toast.success("Face detected!", { id: toastId });
       setAvatarFile(file);
-      setAvatarUrl(URL.createObjectURL(file)); // Show preview immediately
+      setAvatarUrl(URL.createObjectURL(file));
     } catch (err) {
       toast.error("Could not analyze image.", { id: toastId });
       console.error(err);
@@ -365,15 +359,13 @@ export default function UserProfilePage({ user }) {
     processImageForUpload(file);
   };
 
-  // Handle Profile Update Submission
   const handleProfileUpdate = async () => {
     if (!profile || (!fullName.trim() && !avatarFile)) {
       toast.error("No changes to save.");
-      return; // No changes to save
+      return;
     }
     setIsUploading(true);
     try {
-      // Use apiClient defined in apiClient.js
       const response = await apiClient.updateProfile({
         fullName: fullName.trim(),
         avatarFile,
@@ -384,9 +376,9 @@ export default function UserProfilePage({ user }) {
         throw new Error("Invalid response from profile update.");
       }
       setProfile(updatedProfile);
-      setAvatarUrl(updatedProfile.avatar_url); // Update with the final URL from storage
+      setAvatarUrl(updatedProfile.avatar_url);
       setFullName(updatedProfile.full_name || "");
-      setAvatarFile(null); // Clear the temporary file
+      setAvatarFile(null);
       setIsEditing(false);
       toast.success("Profile updated successfully!");
     } catch (err) {
@@ -397,7 +389,6 @@ export default function UserProfilePage({ user }) {
     }
   };
 
-  // Calculate Stats
   const totalPosts = posts.length;
   const foundItems = posts.filter(
     (p) => p.status?.toLowerCase() === "found"

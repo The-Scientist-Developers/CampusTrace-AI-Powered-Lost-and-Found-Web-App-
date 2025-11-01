@@ -48,7 +48,6 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-// --- Enhanced Screenshot Gallery Component ---
 const ProfessionalScreenshotGallery = ({ screenshots }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -69,7 +68,6 @@ const ProfessionalScreenshotGallery = ({ screenshots }) => {
 
   return (
     <>
-      {/* Gallery Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 lg:auto-rows-[minmax(250px,_auto)] gap-6 sm:gap-8">
         {screenshots.map((screenshot, index) => {
           const itemControls = useAnimation();
@@ -89,14 +87,13 @@ const ProfessionalScreenshotGallery = ({ screenshots }) => {
             }
           }, [itemControls, itemInView, index]);
 
-          // --- Bento Grid Layout Classes ---
           const bentoClasses = [
-            "lg:col-span-2 lg:row-span-2", // 0: dashboardUser (Main)
-            "lg:col-span-1", // 1: browseAllItem
-            "lg:col-span-1", // 2: postNewItem
-            "lg:col-span-1", // 3: claimItem
-            "lg:col-span-1", // 4: messageImg
-            "lg:col-span-1", // 5: adminAnalytics
+            "lg:col-span-2 lg:row-span-2",
+            "lg:col-span-1",
+            "lg:col-span-1",
+            "lg:col-span-1",
+            "lg:col-span-1",
+            "lg:col-span-1",
           ];
 
           return (
@@ -380,7 +377,6 @@ const ProfessionalScreenshotGallery = ({ screenshots }) => {
   );
 };
 
-// --- Custom Hooks (keep existing) ---
 const useInView = (options = { threshold: 0.1, triggerOnce: true }) => {
   const { ref, inView } = useIntersectionObserver(options);
   const animation = useAnimation();
@@ -409,7 +405,6 @@ const useParallax = (speed = 0.5) => {
   return offset;
 };
 
-// --- Scroll Progress Bar Component (keep existing) ---
 const ScrollProgress = () => {
   const [progress, setProgress] = useState(0);
 
@@ -435,7 +430,6 @@ const ScrollProgress = () => {
   );
 };
 
-// --- Feature Slider Component (keep existing) ---
 const FeatureSlider = ({ features }) => {
   const controls = useAnimation();
   const { ref, inView } = useIntersectionObserver({
@@ -491,7 +485,6 @@ const FeatureSlider = ({ features }) => {
   );
 };
 
-// --- FAQ Item Component (keep existing) ---
 const FAQItem = ({ question, answer, isOpen, onToggle, index }) => {
   const controls = useAnimation();
   const { ref, inView } = useIntersectionObserver({
@@ -547,7 +540,6 @@ const FAQItem = ({ question, answer, isOpen, onToggle, index }) => {
   );
 };
 
-// --- Feature Card Component (keep existing) ---
 const FeatureCard = ({ icon: Icon, title, description, index }) => {
   const { ref, animation, inView } = useInView({
     threshold: 0.2,
@@ -635,7 +627,6 @@ const FeatureCard = ({ icon: Icon, title, description, index }) => {
   );
 };
 
-// --- Feature Section Component (keep existing) ---
 const FeatureSection = ({ title, subtitle, features, id, startIndex = 0 }) => {
   const { ref, animation, inView } = useInView({
     threshold: 0.1,
@@ -696,7 +687,6 @@ const FeatureSection = ({ title, subtitle, features, id, startIndex = 0 }) => {
   );
 };
 
-// --- Enhanced Screenshot Section Component (No changes here) ---
 const ScreenshotSection = ({ screenshots }) => {
   const { ref, animation, inView } = useInView({
     threshold: 0.2,
@@ -772,7 +762,6 @@ export default function LandingPage() {
     { icon: LayoutDashboard, title: "Admin Management Tools" },
   ];
 
-  // Detailed features for students
   const studentFeatures = [
     {
       icon: Sparkles,
@@ -812,7 +801,6 @@ export default function LandingPage() {
     },
   ];
 
-  // Features for administrators
   const adminFeatures = [
     {
       icon: LayoutDashboard,
@@ -852,7 +840,6 @@ export default function LandingPage() {
     },
   ];
 
-  // Enhanced screenshots with descriptions
   const screenshots = [
     {
       src: dashboardUser,

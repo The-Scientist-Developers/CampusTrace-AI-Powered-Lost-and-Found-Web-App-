@@ -10,7 +10,6 @@ export default function ForgotPasswordPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [cooldownTime, setCooldownTime] = useState(0);
 
-  // Cooldown timer effect
   React.useEffect(() => {
     if (cooldownTime > 0) {
       const timer = setTimeout(() => setCooldownTime(cooldownTime - 1), 1000);
@@ -21,13 +20,11 @@ export default function ForgotPasswordPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    // Frontend validation: Email is required
     if (!email.trim()) {
       toast.error("Please enter your email address.");
       return;
     }
 
-    // Frontend validation: Valid email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       toast.error("Please enter a valid email address.");
@@ -43,9 +40,8 @@ export default function ForgotPasswordPage() {
       });
 
       if (error) {
-        // Handle specific Supabase errors
         if (error.message.toLowerCase().includes("rate limit")) {
-          setCooldownTime(60); // 60 second cooldown
+          setCooldownTime(60);
           throw new Error("Too many requests. Please try again later.");
         }
         if (error.message.toLowerCase().includes("not found")) {
@@ -67,7 +63,7 @@ export default function ForgotPasswordPage() {
 
   const handleResendEmail = async () => {
     setIsSubmitted(false);
-    setCooldownTime(60); // Set 60 second cooldown after resend
+    setCooldownTime(60);
     await handleSubmit(new Event("submit"));
   };
 

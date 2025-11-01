@@ -78,21 +78,18 @@ export default function ManualRegisterPage() {
   const validateForm = () => {
     const newErrors = {};
 
-    // Full Name validation
     if (!formData.fullName.trim()) {
       newErrors.fullName = "Full name is required";
     } else if (formData.fullName.trim().length < 2) {
       newErrors.fullName = "Full name must be at least 2 characters";
     }
 
-    // Email validation
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
     } else if (!validateEmail(formData.email)) {
       newErrors.email = "Please enter a valid email address";
     }
 
-    // Password validation
     if (!formData.password) {
       newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
@@ -106,17 +103,14 @@ export default function ManualRegisterPage() {
       newErrors.confirmPassword = "Passwords do not match";
     }
 
-    // University validation
     if (!selectedUniversity) {
       newErrors.university = "Please select your university";
     }
 
-    // ID File validation
     if (!idFile) {
       newErrors.idFile = "Please upload your university ID";
     }
 
-    // CAPTCHA validation
     if (!captchaToken) {
       newErrors.captcha = "Please complete the CAPTCHA verification";
     }
@@ -134,7 +128,6 @@ export default function ManualRegisterPage() {
       return;
     }
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       setErrors({
         ...errors,
@@ -146,7 +139,6 @@ export default function ManualRegisterPage() {
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       setErrors({ ...errors, idFile: "File size must be less than 5MB" });
       setIdFile(null);
@@ -169,7 +161,6 @@ export default function ManualRegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate form
     if (!validateForm()) {
       toast.error("Please fix all errors before submitting.");
       return;
@@ -196,7 +187,6 @@ export default function ManualRegisterPage() {
           body: submissionForm,
         });
 
-        // Try to parse JSON response
         try {
           data = await response.json();
         } catch (jsonError) {
@@ -224,7 +214,6 @@ export default function ManualRegisterPage() {
         const errorDetail = data.detail || data.message || "";
         console.error("Server error response:", response.status, errorDetail);
 
-        // Handle specific backend errors
         if (
           errorDetail.toLowerCase().includes("already exists") ||
           errorDetail.toLowerCase().includes("duplicate")
@@ -276,7 +265,6 @@ export default function ManualRegisterPage() {
           );
         }
 
-        // HTTP status code specific errors
         if (response.status === 400) {
           throw new Error(
             errorDetail ||
@@ -317,12 +305,10 @@ export default function ManualRegisterPage() {
     } catch (error) {
       console.error("Registration error:", error);
 
-      // Display user-friendly error message
       const errorMessage =
         error.message || "An unexpected error occurred. Please try again.";
       toast.error(errorMessage, { id: toastId });
 
-      // Reset CAPTCHA on error
       if (recaptchaRef.current) {
         try {
           recaptchaRef.current.reset();
@@ -375,7 +361,6 @@ export default function ManualRegisterPage() {
 
         <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Full Name Field */}
             <InputField label="Full Name" error={errors.fullName}>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
@@ -396,7 +381,6 @@ export default function ManualRegisterPage() {
               </div>
             </InputField>
 
-            {/* Email Field */}
             <InputField label="Personal Email" error={errors.email}>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
@@ -417,7 +401,6 @@ export default function ManualRegisterPage() {
               </div>
             </InputField>
 
-            {/* Password Field */}
             <InputField label="Password" error={errors.password}>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
@@ -438,7 +421,6 @@ export default function ManualRegisterPage() {
               </div>
             </InputField>
 
-            {/* Confirm Password Field */}
             <InputField label="Confirm Password" error={errors.confirmPassword}>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
@@ -459,7 +441,6 @@ export default function ManualRegisterPage() {
               </div>
             </InputField>
 
-            {/* University Field */}
             <InputField
               label="Select Your University"
               error={errors.university}
@@ -501,7 +482,6 @@ export default function ManualRegisterPage() {
               </div>
             </InputField>
 
-            {/* ID Upload Field */}
             <InputField
               label="Upload a clear photo of your University ID"
               error={errors.idFile}
@@ -544,7 +524,6 @@ export default function ManualRegisterPage() {
               </div>
             </InputField>
 
-            {/* CAPTCHA Field */}
             <div>
               <div className="flex justify-center pt-2">
                 <ReCAPTCHA
@@ -581,7 +560,6 @@ export default function ManualRegisterPage() {
               )}
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={isLoading}

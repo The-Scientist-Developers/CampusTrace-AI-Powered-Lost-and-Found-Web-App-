@@ -3,11 +3,9 @@ import { supabase } from "../../../api/apiClient";
 import { Toaster, toast } from "react-hot-toast";
 import { Settings as SettingsIcon, ShieldCheck, Loader2 } from "lucide-react";
 
-// --- 1. SKELETON IMPORTS ---
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
-// --- (No changes to SectionCard, SettingInput, SettingToggle, SubmitButton) ---
 const SectionCard = ({ title, description, icon: Icon, children }) => (
   <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm">
     <div className="p-6">
@@ -97,8 +95,6 @@ const SubmitButton = ({
     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : label}
   </button>
 );
-
-// --- 2. SKELETON COMPONENTS ---
 
 const SettingInputSkeleton = () => (
   <div>

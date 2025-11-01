@@ -62,7 +62,6 @@ function useDebounce(value, delay) {
   return debouncedValue;
 }
 
-// Helper function to parse contact info and generate links
 const parseContactInfo = (contactInfo) => {
   if (!contactInfo) return [];
 
@@ -143,7 +142,6 @@ const ClaimModal = ({ item, onClose, onSubmit }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // ✅ ONLY Frontend validation - no backend required
     if (!verificationMessage.trim()) {
       toast.error("Please provide a verification detail.");
       return;
@@ -158,7 +156,6 @@ const ClaimModal = ({ item, onClose, onSubmit }) => {
       });
       onClose();
     } catch (error) {
-      // Display backend error messages
       toast.error(error.message || "Failed to submit claim.", { id: toastId });
     } finally {
       setIsSubmitting(false);
@@ -231,7 +228,7 @@ const ItemDetailsModal = ({ item, onClose, onClaim, user }) => {
   const contactMethods = parseContactInfo(item.contact_info);
   const isFoundItem = item.status?.toLowerCase() === "found";
   const isMyOwnItem = item.profiles?.id === user?.id;
-  const showActionButtons = !isMyOwnItem; // Show buttons for both lost and found if not my item
+  const showActionButtons = !isMyOwnItem;
 
   const handleStartConversation = async () => {
     setIsCreatingChat(true);
@@ -582,13 +579,9 @@ export default function BrowseAllPage({ user }) {
   const [totalPosts, setTotalPosts] = useState(0);
   const postsPerPage = 12;
 
-  // --- UI/UX Enhancement State ---
   const [imagePreview, setImagePreview] = useState(null);
 
-  // --- UI/UX Enhancement Effect: Clean up Object URL ---
   useEffect(() => {
-    // This effect runs when imagePreview changes
-    // It returns a cleanup function
     return () => {
       if (imagePreview) {
         URL.revokeObjectURL(imagePreview);
@@ -677,19 +670,17 @@ export default function BrowseAllPage({ user }) {
     if (!imagePreview) {
       fetchPosts();
     }
-  }, [fetchPosts, imagePreview]); // Add imagePreview dependency
+  }, [fetchPosts, imagePreview]);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [sortBy]);
 
-  // --- UI/UX Enhancement: Handler to clear image search ---
   const clearImageSearch = () => {
-    setImagePreview(null); // This will trigger the revoke a-well
+    setImagePreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
-    // Re-fetch posts, resetting text search as well
     fetchPosts(true);
   };
 
@@ -697,23 +688,20 @@ export default function BrowseAllPage({ user }) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       toast.error("Please select a valid image file.");
       return;
     }
 
-    // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
       toast.error("Image size must be less than 5MB.");
       return;
     }
 
-    // --- UI/UX Enhancement: Clear text search and set preview ---
-    setSearchTerm(""); // Image search is mutually exclusive with text search
+    setSearchTerm("");
     if (imagePreview) {
-      URL.revokeObjectURL(imagePreview); // Clean up old preview if any
+      URL.revokeObjectURL(imagePreview);
     }
     const previewUrl = URL.createObjectURL(file);
     setImagePreview(previewUrl);
@@ -727,7 +715,6 @@ export default function BrowseAllPage({ user }) {
         throw new Error("Authentication required.");
       }
 
-      // Create FormData and append the image file
       const formData = new FormData();
       formData.append("image_file", file);
 
@@ -747,7 +734,6 @@ export default function BrowseAllPage({ user }) {
 
       const data = await response.json();
 
-      // Check if results exist
       const results = data.results || data || [];
 
       if (results.length === 0) {
@@ -770,11 +756,9 @@ export default function BrowseAllPage({ user }) {
       toast.error(error.message || "Failed to search by image.", {
         id: toastId,
       });
-      // --- UI/UX Enhancement: Clear preview on error ---
       setImagePreview(null);
     } finally {
       setIsImageSearching(false);
-      // Reset the file input so the same file can be selected again
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -782,7 +766,6 @@ export default function BrowseAllPage({ user }) {
   };
 
   const handleCategoryChange = (category) => {
-    // --- UI/UX Enhancement: Clear image search when filters change ---
     if (imagePreview) {
       clearImageSearch();
     }

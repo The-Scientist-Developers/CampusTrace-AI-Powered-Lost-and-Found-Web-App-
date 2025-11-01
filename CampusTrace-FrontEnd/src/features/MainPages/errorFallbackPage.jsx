@@ -2,10 +2,6 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { AlertTriangle, Home, RefreshCw } from "lucide-react";
 
-/**
- * A general-purpose error fallback component.
- * This is displayed by an ErrorBoundary when the app encounters a runtime crash.
- */
 export default function ErrorFallback({ error }) {
   return (
     <div
@@ -24,7 +20,6 @@ export default function ErrorFallback({ error }) {
             Please try again.
           </p>
 
-          {/* Optional: Show error message in development */}
           {process.env.NODE_ENV === "development" && error && (
             <pre className="text-left text-xs text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg overflow-x-auto mb-6">
               {error.message}

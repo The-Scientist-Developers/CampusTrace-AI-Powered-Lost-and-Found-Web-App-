@@ -65,7 +65,6 @@ export default function NotificationsPage({ user }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
@@ -80,7 +79,6 @@ export default function NotificationsPage({ user }) {
     try {
       console.log("🔍 Fetching notifications for user:", user.id);
 
-      // Get total count
       const { count, error: countError } = await supabase
         .from("notifications")
         .select("*", { count: "exact", head: true })
@@ -89,7 +87,6 @@ export default function NotificationsPage({ user }) {
       if (countError) throw countError;
       setTotalCount(count || 0);
 
-      // Fetch paginated data
       const from = (currentPage - 1) * rowsPerPage;
       const to = from + rowsPerPage - 1;
 
@@ -180,7 +177,6 @@ export default function NotificationsPage({ user }) {
     }
   };
 
-  // Calculate unread count from all notifications (not just current page)
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -196,7 +192,6 @@ export default function NotificationsPage({ user }) {
     fetchUnreadCount();
   }, [user, notifications]);
 
-  // Pagination calculations
   const totalPages = Math.ceil(totalCount / rowsPerPage);
   const startEntry = totalCount === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
   const endEntry = Math.min(currentPage * rowsPerPage, totalCount);

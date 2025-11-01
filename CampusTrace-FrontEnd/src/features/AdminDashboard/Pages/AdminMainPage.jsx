@@ -41,7 +41,6 @@ import {
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
-// --- Enhanced Stat Card with Trend ---
 const StatCard = ({
   title,
   value,
@@ -51,7 +50,6 @@ const StatCard = ({
   percentage,
   loading,
 }) => {
-  // Map color to actual Tailwind classes
   const colorClasses = {
     indigo: {
       bg: "bg-indigo-500/10",
@@ -117,7 +115,6 @@ const StatCard = ({
   );
 };
 
-// --- Activity Item Enhanced ---
 const ActivityItem = ({ text, time, icon: Icon, type }) => {
   const typeColors = {
     post: "text-blue-500",
@@ -146,7 +143,6 @@ const ActivityItem = ({ text, time, icon: Icon, type }) => {
   );
 };
 
-// --- Skeleton Components ---
 const ChartSkeleton = ({ height = 300 }) => (
   <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] p-6 rounded-xl shadow-sm">
     <Skeleton height={24} width={200} className="mb-6" />
@@ -186,7 +182,6 @@ const AdminMainPageSkeleton = () => (
   </div>
 );
 
-// --- Custom Tooltip ---
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
@@ -245,7 +240,6 @@ export default function AdminMainPage({ user }) {
         throw new Error("Admin university not found.");
       }
 
-      // Fetch all data in parallel
       const [
         userCountRes,
         moderationCountRes,
@@ -257,7 +251,6 @@ export default function AdminMainPage({ user }) {
         userGrowthRes,
         hourlyPostsRes,
       ] = await Promise.all([
-        // Basic counts
         supabase
           .from("profiles")
           .select("id", { count: "exact" })
@@ -318,7 +311,6 @@ export default function AdminMainPage({ user }) {
           .eq("university_id", adminUniversityId),
       ]);
 
-      // Check for errors
       const results = [
         userCountRes,
         moderationCountRes,
@@ -334,7 +326,6 @@ export default function AdminMainPage({ user }) {
         if (res.error) throw res.error;
       }
 
-      // Calculate stats
       const approvedCount = approvedPostsRes.count || 0;
       const recoveredCount = recoveredPostsRes.count || 0;
       const rejectedCount = rejectedPostsRes.count || 0;
@@ -345,7 +336,6 @@ export default function AdminMainPage({ user }) {
           ? Math.round((recoveredCount / totalResolvedPosts) * 100)
           : 0;
 
-      // Calculate trend percentages (mock data for demo)
       setStats({
         totalUsers: userCountRes.count || 0,
         awaitingModeration: pendingCount,
@@ -357,7 +347,6 @@ export default function AdminMainPage({ user }) {
         recoveryRateChange: 3,
       });
 
-      // Process weekly posts
       const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
       const postsPerDay = Array(7)
         .fill(0)
@@ -378,7 +367,6 @@ export default function AdminMainPage({ user }) {
       });
       setWeeklyPosts(postsPerDay);
 
-      // Process user growth data
       const growthData = Array(30)
         .fill(0)
         .map((_, i) => {
@@ -396,7 +384,6 @@ export default function AdminMainPage({ user }) {
         if (entry) entry.users++;
       });
 
-      // Calculate cumulative growth
       let cumulative = 0;
       growthData.forEach((d) => {
         cumulative += d.users;
@@ -404,7 +391,6 @@ export default function AdminMainPage({ user }) {
       });
       setUserGrowth(growthData);
 
-      // Process hourly activity
       const hours = Array(24)
         .fill(0)
         .map((_, i) => ({
@@ -418,7 +404,6 @@ export default function AdminMainPage({ user }) {
       });
       setHourlyActivity(hours);
 
-      // Post status distribution
       const distribution = [
         { name: "Approved", value: approvedCount, color: "#10b981" },
         { name: "Pending", value: pendingCount, color: "#f59e0b" },
@@ -427,7 +412,6 @@ export default function AdminMainPage({ user }) {
       ];
       setPostStatusDistribution(distribution);
 
-      // Process recent activity with types
       const activities = activityRes.data.map((item) => ({
         id: item.id,
         text: `New post: "${item.title}"`,

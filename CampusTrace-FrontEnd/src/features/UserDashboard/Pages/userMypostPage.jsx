@@ -27,7 +27,6 @@ import {
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
-// API client for claim actions
 const apiClient = {
   async getAccessToken() {
     const { data } = await supabase.auth.getSession();
@@ -122,7 +121,6 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-// --- NEW PREVIEW MODAL ---
 const MyPostPreviewModal = ({ item, onClose }) => {
   if (!item) return null;
 
@@ -273,7 +271,6 @@ const MyPostPreviewModal = ({ item, onClose }) => {
   );
 };
 
-// Enhanced ClaimCard component
 const ClaimCard = ({ claim, onRespond, item }) => (
   <div className="bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-[#1a1a1a] dark:to-[#1f1f1f] rounded-xl p-5 border border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-all">
     <div className="flex items-start gap-4">
@@ -320,7 +317,6 @@ const ClaimCard = ({ claim, onRespond, item }) => (
   </div>
 );
 
-// Enhanced PostCard
 const PostCard = ({ post, onDelete, onMarkRecovered, hasClaims, onClick }) => {
   const isLost = post.status?.toLowerCase() === "lost";
   const canRecover =
@@ -332,10 +328,9 @@ const PostCard = ({ post, onDelete, onMarkRecovered, hasClaims, onClick }) => {
       onClick={() => onClick(post)}
       className="group relative bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer"
     >
-      {/* Delete button */}
       <button
         onClick={(e) => {
-          e.stopPropagation(); // Prevent modal from opening
+          e.stopPropagation();
           onDelete(post.id);
         }}
         className="absolute top-3 right-3 z-10 p-2 bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur-sm text-neutral-600 dark:text-gray-400 rounded-lg
@@ -346,7 +341,6 @@ const PostCard = ({ post, onDelete, onMarkRecovered, hasClaims, onClick }) => {
         <Trash2 className="w-4 h-4" />
       </button>
 
-      {/* Claims indicator */}
       {hasClaims && (
         <div className="absolute top-3 left-3 z-10 px-2.5 py-1 bg-primary-600 text-white rounded-full text-xs font-semibold flex items-center gap-1.5 animate-pulse">
           <MessageSquare className="w-3.5 h-3.5" />
@@ -434,7 +428,6 @@ const PostCard = ({ post, onDelete, onMarkRecovered, hasClaims, onClick }) => {
   );
 };
 
-// --- SKELETON COMPONENTS ---
 const PostCardSkeleton = () => (
   <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden flex flex-col h-full">
     <Skeleton height={208} />
@@ -838,7 +831,6 @@ export default function MyPostsPage({ user }) {
             )}
           </>
         ) : (
-          // Claims Tab
           <div className="space-y-6">
             {posts
               .filter((p) => p.status === "Found" && claims[p.id]?.length > 0)
@@ -847,7 +839,6 @@ export default function MyPostsPage({ user }) {
                   key={`claim-item-${post.id}`}
                   className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden"
                 >
-                  {/* Item Header */}
                   <div className="p-6 bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/10 dark:to-primary-900/20 border-b border-neutral-200 dark:border-neutral-700">
                     <div className="flex items-center gap-4">
                       {post.image_url ? (

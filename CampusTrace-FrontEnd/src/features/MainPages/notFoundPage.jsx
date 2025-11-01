@@ -2,10 +2,6 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { SearchX, ArrowLeft } from "lucide-react";
 
-/**
- * A 404 "Not Found" page component.
- * This component is displayed when a user navigates to a route that does not exist.
- */
 export default function NotFoundPage() {
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1a] flex items-center justify-center p-4">

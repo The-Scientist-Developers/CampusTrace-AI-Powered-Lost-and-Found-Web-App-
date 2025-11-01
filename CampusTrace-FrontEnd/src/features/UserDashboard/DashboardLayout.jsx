@@ -27,7 +27,6 @@ import { useTheme } from "../../contexts/ThemeContext";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
-// --- Skeleton Loader --- //
 const DashboardSkeleton = ({ isSidebarOpen, mobileMenu }) => (
   <div className="h-screen flex flex-col bg-neutral-50 dark:bg-[#1a1a1a] text-neutral-800 dark:text-neutral-300 overflow-hidden">
     <header className="h-14 sm:h-16 px-3 sm:px-4 lg:px-6 bg-white/70 dark:bg-[#2a2a2a]/70 backdrop-blur-lg border-b border-neutral-200 dark:border-[#3a3a3a] flex items-center justify-between shadow-sm z-30 flex-shrink-0">
@@ -192,7 +191,6 @@ export default function DashboardLayout({ children, user }) {
   const [siteName, setSiteName] = useState("CampusTrace");
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch all data *except* siteName (which depends on profile)
   const fetchAllData = useCallback(async () => {
     if (!user?.id) {
       setIsLoading(false);
@@ -200,7 +198,6 @@ export default function DashboardLayout({ children, user }) {
     }
 
     try {
-      // Fetch user profile
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
@@ -211,10 +208,8 @@ export default function DashboardLayout({ children, user }) {
         console.error("Error fetching profile:", profileError);
       } else {
         setProfile(profileData);
-        // Site name fetching is now handled by a separate useEffect
       }
 
-      // Fetch notification count
       const { count: notifCount, error: notifError } = await supabase
         .from("notifications")
         .select("*", { head: true, count: "exact" })
@@ -223,7 +218,6 @@ export default function DashboardLayout({ children, user }) {
 
       if (!notifError) setNotificationCount(notifCount || 0);
 
-      // Fetch unread messages count (via conversations)
       const { count: msgCount, error: msgError } = await supabase
         .from("conversations")
         .select("*", { head: true, count: "exact" })
@@ -231,7 +225,6 @@ export default function DashboardLayout({ children, user }) {
 
       if (!msgError) setMessageCount(msgCount || 0);
 
-      // Fetch active posts count
       const { count: postsCount, error: postsError } = await supabase
         .from("items")
         .select("*", { head: true, count: "exact" })
@@ -246,11 +239,9 @@ export default function DashboardLayout({ children, user }) {
     }
   }, [user?.id]);
 
-  // Initial data fetch and real-time subscriptions
   useEffect(() => {
     fetchAllData();
 
-    // Profile updates subscription
     const profileSubscription = supabase
       .channel(`user:profiles:${user.id}`)
       .on(
@@ -265,7 +256,6 @@ export default function DashboardLayout({ children, user }) {
       )
       .subscribe();
 
-    // Notifications subscription
     const notificationSubscription = supabase
       .channel(`user:notifications:${user.id}`)
       .on(
@@ -277,7 +267,6 @@ export default function DashboardLayout({ children, user }) {
           filter: `recipient_id=eq.${user.id}`,
         },
         async () => {
-          // Refetch notification count
           const { count } = await supabase
             .from("notifications")
             .select("*", { head: true, count: "exact" })
@@ -288,7 +277,6 @@ export default function DashboardLayout({ children, user }) {
       )
       .subscribe();
 
-    // Messages subscription (track via conversations)
     const messageSubscription = supabase
       .channel(`user:messages:${user.id}`)
       .on(
@@ -299,7 +287,6 @@ export default function DashboardLayout({ children, user }) {
           table: "conversations",
         },
         async () => {
-          // Refetch conversation count when conversations change
           const { count } = await supabase
             .from("conversations")
             .select("*", { head: true, count: "exact" })
@@ -309,7 +296,6 @@ export default function DashboardLayout({ children, user }) {
       )
       .subscribe();
 
-    // Posts subscription for user's own posts
     const postsSubscription = supabase
       .channel(`user:posts:${user.id}`)
       .on(
@@ -321,7 +307,6 @@ export default function DashboardLayout({ children, user }) {
           filter: `user_id=eq.${user.id}`,
         },
         async () => {
-          // Refetch posts count
           const { count } = await supabase
             .from("items")
             .select("*", { head: true, count: "exact" })
@@ -332,7 +317,6 @@ export default function DashboardLayout({ children, user }) {
       )
       .subscribe();
 
-    // Comments subscription for user's posts
     const commentsSubscription = supabase
       .channel(`user:comments`)
       .on(
@@ -343,7 +327,6 @@ export default function DashboardLayout({ children, user }) {
           table: "comments",
         },
         async (payload) => {
-          // Check if comment is on user's post
           const { data: post } = await supabase
             .from("items")
             .select("user_id")
@@ -351,7 +334,6 @@ export default function DashboardLayout({ children, user }) {
             .single();
 
           if (post?.user_id === user.id) {
-            // Trigger notification refetch
             fetchAllData();
           }
         }
@@ -367,15 +349,10 @@ export default function DashboardLayout({ children, user }) {
     };
   }, [user?.id, fetchAllData]);
 
-  // --- [NEW EFFECT HOOK FOR SITE NAME] ---
-  // This effect fetches the site name when the profile is loaded
-  // and subscribes to real-time changes for the site name.
   useEffect(() => {
-    // Only run if the profile (with university_id) is loaded
     if (profile?.university_id) {
       const universityId = profile.university_id;
 
-      // 1. Fetch the initial site name
       const fetchSiteName = async () => {
         const { data: settingsData } = await supabase
           .from("site_settings")
@@ -387,13 +364,12 @@ export default function DashboardLayout({ children, user }) {
         if (settingsData) {
           setSiteName(settingsData.setting_value);
         } else {
-          setSiteName("CampusTrace"); // Reset to default if not found
+          setSiteName("CampusTrace");
         }
       };
 
       fetchSiteName();
 
-      // 2. Create a Realtime subscription for THIS specific setting
       const siteNameSubscription = supabase
         .channel(`site-name:${universityId}`)
         .on(
@@ -402,10 +378,9 @@ export default function DashboardLayout({ children, user }) {
             event: "UPDATE",
             schema: "public",
             table: "site_settings",
-            filter: `university_id=eq.${universityId}`, // Filter for this university
+            filter: `university_id=eq.${universityId}`,
           },
           (payload) => {
-            // Check if the site_name was the key that changed
             if (payload.new.setting_key === "site_name") {
               console.log(
                 "Site name updated in real-time!",
@@ -417,15 +392,14 @@ export default function DashboardLayout({ children, user }) {
         )
         .subscribe();
 
-      // 3. Cleanup
       return () => {
         supabase.removeChannel(siteNameSubscription);
       };
+    } else {
+      setSiteName("CampusTrace");
     }
-  }, [profile]); // <-- This hook runs every time the profile state changes
-  // --- [END OF NEW HOOK] ---
+  }, [profile]);
 
-  // Refetch notification count when leaving notification page
   useEffect(() => {
     const refetchNotificationCount = async () => {
       if (!user?.id) return;
@@ -439,13 +413,11 @@ export default function DashboardLayout({ children, user }) {
       setNotificationCount(count || 0);
     };
 
-    // Refetch when navigating away from notifications page
     if (!location.pathname.includes("/notifications")) {
       refetchNotificationCount();
     }
   }, [location.pathname, user?.id]);
 
-  // Compute menu items with badges
   const computedMenuItems = useMemo(() => {
     return menuItems.map((item) => {
       if (item.label === "Notifications") {
@@ -479,19 +451,16 @@ export default function DashboardLayout({ children, user }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Save sidebar state
   useEffect(() => {
     if (window.innerWidth >= 768) {
       localStorage.setItem("userSidebarOpen", JSON.stringify(isSidebarOpen));
     }
   }, [isSidebarOpen]);
 
-  // Close mobile menu on navigation
   useEffect(() => {
     setMobileMenu(false);
   }, [location]);
 
-  // Prevent body scroll when mobile menu is open
   useEffect(() => {
     if (mobileMenu) {
       document.body.style.overflow = "hidden";
@@ -503,7 +472,6 @@ export default function DashboardLayout({ children, user }) {
     };
   }, [mobileMenu]);
 
-  // Handle logout
   const handleLogout = async () => {
     setIsLoggingOut(true);
 
@@ -542,7 +510,6 @@ export default function DashboardLayout({ children, user }) {
         : location.pathname.startsWith(item.path)
     )?.label || "Dashboard";
 
-  // Total count for header notification bell
   const totalNotifications = notificationCount + messageCount;
 
   if (isLoading) {
@@ -556,7 +523,6 @@ export default function DashboardLayout({ children, user }) {
 
   return (
     <div className="h-screen flex flex-col bg-neutral-50 dark:bg-[#1a1a1a] text-neutral-800 dark:text-neutral-300 overflow-hidden">
-      {/* Mobile menu overlay */}
       {mobileMenu && (
         <div
           className="fixed inset-0 bg-black/60 z-40 md:hidden"
@@ -564,7 +530,6 @@ export default function DashboardLayout({ children, user }) {
         />
       )}
 
-      {/* Header */}
       <header className="h-14 sm:h-16 px-3 sm:px-4 lg:px-6 bg-white/70 dark:bg-[#2a2a2a]/70 backdrop-blur-lg border-b border-neutral-200 dark:border-[#3a3a3a] flex items-center justify-between shadow-sm z-30 flex-shrink-0">
         <div className="flex items-center gap-2">
           <button
@@ -634,9 +599,7 @@ export default function DashboardLayout({ children, user }) {
         </div>
       </header>
 
-      {/* Main content area */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
         <aside
           className={`fixed md:relative inset-y-0 left-0 z-50 bg-white/95 dark:bg-[#2a2a2a]/95 backdrop-blur-md md:bg-white dark:md:bg-neutral-900 flex flex-col transition-all duration-300 ease-in-out ${
             mobileMenu
@@ -644,9 +607,7 @@ export default function DashboardLayout({ children, user }) {
               : "-translate-x-full md:translate-x-0"
           } ${isSidebarOpen ? "md:w-64" : "md:w-20"} h-full md:h-auto`}
         >
-          {/* Sidebar content wrapper - this ensures proper scrolling */}
           <div className="flex flex-col h-full overflow-hidden">
-            {/* Logo section */}
             <div
               className={`p-4 flex items-center gap-3 border-b border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0 ${
                 !isSidebarOpen && !mobileMenu ? "justify-center" : ""
@@ -669,7 +630,6 @@ export default function DashboardLayout({ children, user }) {
               )}
             </div>
 
-            {/* Scrollable navigation area */}
             <div className="flex-1 overflow-y-auto overflow-x-hidden">
               <nav className="p-3 space-y-1">
                 {computedMenuItems.map((item) => (
@@ -683,7 +643,6 @@ export default function DashboardLayout({ children, user }) {
               </nav>
             </div>
 
-            {/* Bottom section - fixed at bottom */}
             <div className="border-t border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0">
               <div className="p-3">
                 <div className="space-y-1">
@@ -696,10 +655,8 @@ export default function DashboardLayout({ children, user }) {
                   ))}
                 </div>
 
-                {/* Divider */}
                 <div className="border-t border-neutral-200 dark:border-[#3a3a3a] my-3"></div>
 
-                {/* User profile section */}
                 <div
                   className={`p-2 flex items-center gap-3 cursor-pointer rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors ${
                     !isSidebarOpen && !mobileMenu ? "justify-center" : ""
@@ -723,7 +680,6 @@ export default function DashboardLayout({ children, user }) {
                   )}
                 </div>
 
-                {/* Sign out button */}
                 <button
                   onClick={handleLogout}
                   disabled={isLoggingOut}
@@ -744,7 +700,6 @@ export default function DashboardLayout({ children, user }) {
           </div>
         </aside>
 
-        {/* Main content */}
         <main className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-[#1a1a1a]">
           <div className="p-4 md:p-6 lg:p-8 min-h-full">{children}</div>
         </main>

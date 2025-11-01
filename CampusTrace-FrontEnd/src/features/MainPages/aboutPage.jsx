@@ -4,11 +4,9 @@ import JohnImage from "../../assets/frank.jpg";
 import WilliamImage from "../../assets/william.jpg";
 import JeromeImage from "../../assets/jerome.jpg";
 
-// Reusable component for each team member
 const TeamMemberCard = ({ name, role, imageUrl, githubUrl, linkedinUrl }) => (
   <div className="flex flex-col items-center bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl p-6 shadow-sm transition-transform duration-300 hover:scale-105 hover:shadow-lg">
     <div className="w-28 h-28 rounded-full bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden mb-4 border-2 border-primary-500/50">
-      {/* Updated avatar to use the new primary color scheme */}
       <img
         src={
           imageUrl ||

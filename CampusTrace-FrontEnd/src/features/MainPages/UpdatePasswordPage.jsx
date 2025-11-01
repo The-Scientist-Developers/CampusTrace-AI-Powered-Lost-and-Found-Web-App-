@@ -19,22 +19,22 @@ export default function UpdatePasswordPage() {
   });
   const navigate = useNavigate();
 
-  // Check if user has a valid session/token for password reset
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      // If no session or error, redirect to forgot password page
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
       if (!session || error) {
         toast.error("Invalid or expired reset link. Please request a new one.");
         navigate("/forgot-password");
       }
     };
-    
+
     checkSession();
   }, [navigate]);
 
-  // Password strength checker
   useEffect(() => {
     setPasswordStrength({
       hasMinLength: password.length >= 6,
@@ -48,12 +48,11 @@ export default function UpdatePasswordPage() {
   const handleUpdatePassword = async (event) => {
     event.preventDefault();
 
-    // Password validation
     if (password.length < 6) {
       toast.error("Password must be at least 6 characters long.");
       return;
     }
-    
+
     if (password !== confirmPassword) {
       toast.error("Passwords do not match.");
       return;
@@ -68,31 +67,36 @@ export default function UpdatePasswordPage() {
       });
 
       if (error) {
-        // Handle specific Supabase errors
-        if (error.message.includes("expired") || error.message.includes("invalid")) {
-          throw new Error("Token expired or link is invalid. Please request a new password reset.");
+        if (
+          error.message.includes("expired") ||
+          error.message.includes("invalid")
+        ) {
+          throw new Error(
+            "Token expired or link is invalid. Please request a new password reset."
+          );
         }
         if (error.message.toLowerCase().includes("should be different")) {
-          throw new Error("New password should be different from the old password.");
+          throw new Error(
+            "New password should be different from the old password."
+          );
         }
         throw error;
       }
 
-      // Sign out the user after password update
       await supabase.auth.signOut();
 
       toast.success("Password updated successfully! Please sign in again.", {
         id: toastId,
         duration: 5000,
       });
-      
-      // Redirect to login after a short delay
+
       setTimeout(() => {
         navigate("/login");
       }, 1000);
-      
     } catch (error) {
-      toast.error(error.message || "Failed to update password.", { id: toastId });
+      toast.error(error.message || "Failed to update password.", {
+        id: toastId,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -131,7 +135,10 @@ export default function UpdatePasswordPage() {
           <div className="space-y-4">
             {/* New Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-neutral-700 dark:text-zinc-300 mb-1">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-neutral-700 dark:text-zinc-300 mb-1"
+              >
                 New Password
               </label>
               <div className="relative">
@@ -158,7 +165,7 @@ export default function UpdatePasswordPage() {
                   )}
                 </button>
               </div>
-              
+
               {/* Password Strength Indicator */}
               {password && (
                 <div className="mt-2 space-y-2">
@@ -166,16 +173,33 @@ export default function UpdatePasswordPage() {
                     <span className="text-xs text-neutral-600 dark:text-zinc-400">
                       Password strength:
                     </span>
-                    <span className={`text-xs font-medium ${getPasswordStrengthColor()}`}>
+                    <span
+                      className={`text-xs font-medium ${getPasswordStrengthColor()}`}
+                    >
                       {getPasswordStrengthText()}
                     </span>
                   </div>
                   <div className="space-y-1">
-                    <PasswordRequirement met={passwordStrength.hasMinLength} text="At least 6 characters" />
-                    <PasswordRequirement met={passwordStrength.hasUpperCase} text="One uppercase letter" />
-                    <PasswordRequirement met={passwordStrength.hasLowerCase} text="One lowercase letter" />
-                    <PasswordRequirement met={passwordStrength.hasNumber} text="One number" />
-                    <PasswordRequirement met={passwordStrength.hasSpecialChar} text="One special character" />
+                    <PasswordRequirement
+                      met={passwordStrength.hasMinLength}
+                      text="At least 6 characters"
+                    />
+                    <PasswordRequirement
+                      met={passwordStrength.hasUpperCase}
+                      text="One uppercase letter"
+                    />
+                    <PasswordRequirement
+                      met={passwordStrength.hasLowerCase}
+                      text="One lowercase letter"
+                    />
+                    <PasswordRequirement
+                      met={passwordStrength.hasNumber}
+                      text="One number"
+                    />
+                    <PasswordRequirement
+                      met={passwordStrength.hasSpecialChar}
+                      text="One special character"
+                    />
                   </div>
                 </div>
               )}
@@ -183,7 +207,10 @@ export default function UpdatePasswordPage() {
 
             {/* Confirm Password Field */}
             <div>
-              <label htmlFor="confirm-password" className="block text-sm font-medium text-neutral-700 dark:text-zinc-300 mb-1">
+              <label
+                htmlFor="confirm-password"
+                className="block text-sm font-medium text-neutral-700 dark:text-zinc-300 mb-1"
+              >
                 Confirm New Password
               </label>
               <div className="relative">
@@ -210,19 +237,23 @@ export default function UpdatePasswordPage() {
                   )}
                 </button>
               </div>
-              
+
               {/* Password Match Indicator */}
               {confirmPassword && (
                 <div className="mt-2 flex items-center">
                   {password === confirmPassword ? (
                     <>
                       <CheckCircle className="h-4 w-4 text-green-500 mr-1.5" />
-                      <span className="text-xs text-green-600 dark:text-green-400">Passwords match</span>
+                      <span className="text-xs text-green-600 dark:text-green-400">
+                        Passwords match
+                      </span>
                     </>
                   ) : (
                     <>
                       <XCircle className="h-4 w-4 text-red-500 mr-1.5" />
-                      <span className="text-xs text-red-600 dark:text-red-400">Passwords do not match</span>
+                      <span className="text-xs text-red-600 dark:text-red-400">
+                        Passwords do not match
+                      </span>
                     </>
                   )}
                 </div>
@@ -233,7 +264,12 @@ export default function UpdatePasswordPage() {
           <div>
             <button
               type="submit"
-              disabled={isLoading || !password || !confirmPassword || password !== confirmPassword}
+              disabled={
+                isLoading ||
+                !password ||
+                !confirmPassword ||
+                password !== confirmPassword
+              }
               className="group relative flex w-full justify-center rounded-md border border-transparent bg-primary-600 py-3 px-4 text-sm font-semibold text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-950 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 ease-in-out"
             >
               <span className="absolute inset-y-0 left-0 flex items-center pl-3">
@@ -257,7 +293,13 @@ function PasswordRequirement({ met, text }) {
       ) : (
         <XCircle className="h-3 w-3 text-neutral-400 dark:text-zinc-600 mr-1.5 flex-shrink-0" />
       )}
-      <span className={met ? "text-green-600 dark:text-green-400" : "text-neutral-500 dark:text-zinc-500"}>
+      <span
+        className={
+          met
+            ? "text-green-600 dark:text-green-400"
+            : "text-neutral-500 dark:text-zinc-500"
+        }
+      >
         {text}
       </span>
     </div>

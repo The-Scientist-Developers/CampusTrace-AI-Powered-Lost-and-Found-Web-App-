@@ -18,7 +18,7 @@ import {
   Clock,
 } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
-import { supabase, getAccessToken } from "../../../api/apiClient.js"; //
+import { supabase, getAccessToken } from "../../../api/apiClient.js";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import {
@@ -31,13 +31,12 @@ import {
   ResponsiveContainer,
   Area,
   AreaChart,
-  Cell, // Import Cell for BarChart colors
+  Cell,
 } from "recharts";
-import { useTheme } from "../../../contexts/ThemeContext"; // Import useTheme
+import { useTheme } from "../../../contexts/ThemeContext";
 
 import { API_BASE_URL } from "../../../api/apiClient.js";
 
-// --- StatusBadge Component ---
 const StatusBadge = ({ status }) => {
   const statusConfig = {
     approved: {
@@ -82,17 +81,16 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-// --- Statistics Card Component ---
 const StatCard = ({ icon: Icon, title, value, trend, color = "primary" }) => {
   const colors = {
-    primary: "from-primary-500 to-primary-600", // Adjusted to use primary theme color
+    primary: "from-primary-500 to-primary-600",
     green: "from-green-500 to-green-600",
     red: "from-red-500 to-rose-600",
     blue: "from-blue-500 to-cyan-600",
   };
 
   const iconColors = {
-    primary: "text-primary-600 dark:text-primary-400", // Adjusted icon color
+    primary: "text-primary-600 dark:text-primary-400",
     green: "text-green-600 dark:text-green-400",
     red: "text-red-600 dark:text-red-400",
     blue: "text-blue-600 dark:text-blue-400",
@@ -130,7 +128,6 @@ const StatCard = ({ icon: Icon, title, value, trend, color = "primary" }) => {
   );
 };
 
-// --- Loading Skeletons ---
 const CardSkeleton = () => (
   <div className="bg-white dark:bg-[#2a2a2a] rounded-2xl p-6 shadow-sm border border-neutral-200 dark:border-[#3a3a3a]">
     <Skeleton height={120} className="rounded-xl mb-4" />
@@ -153,17 +150,16 @@ const DashboardSkeleton = () => (
   </div>
 );
 
-// --- Custom Tooltip ---
 const CustomTooltip = ({ active, payload, label }) => {
-  const { theme } = useTheme(); // Get current theme
+  const { theme } = useTheme();
 
   if (active && payload && payload.length) {
     return (
       <div
         className={`p-3 rounded-lg shadow-lg border ${
           theme === "light"
-            ? "bg-white border-neutral-200" // Use light theme colors
-            : "bg-[#2a2a2a] border-[#3a3a3a]" // Use dark theme colors
+            ? "bg-white border-neutral-200"
+            : "bg-[#2a2a2a] border-[#3a3a3a]"
         }`}
       >
         <p className="text-sm font-semibold text-neutral-800 dark:text-white mb-1">
@@ -184,16 +180,14 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-// --- Chart Card Component ---
 const ChartCard = ({ title, data, type = "area" }) => {
-  const { theme } = useTheme(); // Get current theme
+  const { theme } = useTheme();
 
-  // Define colors based on theme
-  const primaryColor = "#674CC4"; //
-  const lostColor = "#ef4444"; // Red
-  const foundColor = "#22c55e"; // Tailwind green-500
-  const axisColor = theme === "light" ? "#555555" : "#a3a3a3"; // light.subtle or neutral-400
-  const gridColor = theme === "light" ? "#E3E3E3" : "#3a3a3a"; // light.border or dark.border
+  const primaryColor = "#674CC4";
+  const lostColor = "#ef4444";
+  const foundColor = "#22c55e";
+  const axisColor = theme === "light" ? "#555555" : "#a3a3a3";
+  const gridColor = theme === "light" ? "#E3E3E3" : "#3a3a3a";
 
   return (
     <div className="bg-white dark:bg-[#2a2a2a] rounded-2xl p-6 shadow-sm border border-neutral-200 dark:border-[#3a3a3a]">
@@ -272,7 +266,6 @@ const ChartCard = ({ title, data, type = "area" }) => {
   );
 };
 
-// --- Main Dashboard Component ---
 export default function UserMainPage({ user }) {
   const [myRecentPosts, setMyRecentPosts] = useState([]);
   const [communityActivity, setCommunityActivity] = useState([]);
@@ -306,10 +299,9 @@ export default function UserMainPage({ user }) {
   }, [user]);
 
   const fetchDashboardData = async () => {
-    setLoading(true); // Ensure loading starts
-    setError(null); // Clear previous errors
+    setLoading(true);
+    setError(null);
     try {
-      // Get user profile
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("university_id")
@@ -317,9 +309,8 @@ export default function UserMainPage({ user }) {
         .single();
 
       if (profileError) throw profileError;
-      if (!profile) throw new Error("User profile not found."); // Add check
+      if (!profile) throw new Error("User profile not found.");
 
-      // Fetch all user's items
       const { data: allMyItems = [], error: itemsError } = await supabase
         .from("items")
         .select("*")
@@ -327,27 +318,25 @@ export default function UserMainPage({ user }) {
 
       if (itemsError) throw itemsError;
 
-      // Fetch active posts (Ensure statuses are correct)
       const { data: activePosts = [] } = await supabase
         .from("items")
         .select("*")
         .eq("user_id", user.id)
-        .in("moderation_status", ["approved", "pending", "pending_return"]) // Include relevant statuses
+        .in("moderation_status", ["approved", "pending", "pending_return"])
         .order("created_at", { ascending: false })
         .limit(4);
 
-      // Fetch community activity (Ensure university_id exists)
       if (profile.university_id) {
         const { data: communityData = [] } = await supabase
           .from("items")
           .select("*, profiles(id, full_name, email)")
           .eq("university_id", profile.university_id)
-          .eq("moderation_status", "approved") // Only show approved items in community feed
+          .eq("moderation_status", "approved")
           .order("created_at", { ascending: false })
-          .limit(50); // Limit community fetch for performance
+          .limit(50);
         setCommunityActivity(communityData);
       } else {
-        setCommunityActivity([]); // Set empty if no university_id
+        setCommunityActivity([]);
         console.warn(
           "User profile does not have a university_id, community activity cannot be fetched."
         );
@@ -375,13 +364,12 @@ export default function UserMainPage({ user }) {
 
       processChartData(allMyItems);
 
-      // Get latest lost item and matches (ensure correct statuses)
       const latestLostItem = allMyItems
         .filter(
           (item) =>
             item.status === "Lost" &&
             item.moderation_status !== "recovered" &&
-            item.moderation_status !== "rejected" // Don't show matches for rejected items
+            item.moderation_status !== "rejected"
         )
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
 
@@ -389,12 +377,12 @@ export default function UserMainPage({ user }) {
         setMyLostItem(latestLostItem);
         await fetchMatches(latestLostItem.id);
       } else {
-        setMyLostItem(null); // Clear if no lost item found
-        setPossibleMatches([]); // Clear matches as well
+        setMyLostItem(null);
+        setPossibleMatches([]);
       }
     } catch (err) {
       console.error("Dashboard error:", err);
-      setError(err.message || "Failed to load dashboard data."); // Set more specific error
+      setError(err.message || "Failed to load dashboard data.");
     } finally {
       setLoading(false);
     }
@@ -402,10 +390,10 @@ export default function UserMainPage({ user }) {
 
   const fetchMatches = async (itemId) => {
     try {
-      const token = await getAccessToken(); // Ensure getAccessToken is correctly imported/defined
+      const token = await getAccessToken();
       if (!token) {
         console.warn("No access token found, cannot fetch matches.");
-        return; // Don't proceed without token
+        return;
       }
 
       const response = await fetch(
@@ -414,7 +402,6 @@ export default function UserMainPage({ user }) {
       );
 
       if (!response.ok) {
-        // Check response status
         const errorData = await response.json().catch(() => ({
           detail: "Failed to fetch matches, invalid server response.",
         }));
@@ -424,21 +411,17 @@ export default function UserMainPage({ user }) {
       }
 
       const matches = await response.json();
-      // Ensure matches is an array before slicing
       setPossibleMatches(Array.isArray(matches) ? matches.slice(0, 4) : []);
     } catch (err) {
       console.error("Error fetching matches:", err);
-      // Optionally show a non-blocking toast
-      // toast.error("Could not fetch item matches.");
-      setPossibleMatches([]); // Set empty on error
+      setPossibleMatches([]);
     }
   };
 
   const processChartData = (items) => {
-    // Weekly data
     const weeklyData = [];
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Normalize today to start of day
+    today.setHours(0, 0, 0, 0);
 
     for (let i = 6; i >= 0; i--) {
       const date = new Date(today);
@@ -446,7 +429,7 @@ export default function UserMainPage({ user }) {
       const dayName = date.toLocaleDateString("en", { weekday: "short" });
       const dayItems = items.filter((item) => {
         const itemDate = new Date(item.created_at);
-        itemDate.setHours(0, 0, 0, 0); // Normalize item date
+        itemDate.setHours(0, 0, 0, 0);
         return itemDate.getTime() === date.getTime();
       });
       weeklyData.push({
@@ -726,9 +709,9 @@ const SectionHeader = ({ title, description, linkText, linkTo }) => (
 
 const MatchCard = ({ item }) => (
   <Link
-    to="/dashboard/browse-all" // Link to browse page
-    state={{ itemId: item.id }} // Pass item ID to potentially highlight/scroll to it
-    className="group bg-white dark:bg-[#2a2a2a] rounded-xl border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden hover:shadow-lg transition-all duration-200 block relative" // Added block and relative
+    to="/dashboard/browse-all"
+    state={{ itemId: item.id }}
+    className="group bg-white dark:bg-[#2a2a2a] rounded-xl border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden hover:shadow-lg transition-all duration-200 block relative"
   >
     {item.match_score && (
       <div className="absolute top-2 left-2 z-10 bg-gradient-to-r from-primary-500 to-purple-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md">
@@ -945,7 +928,6 @@ const timeAgo = (dateString) => {
 
   const seconds = Math.floor((new Date() - date) / 1000);
 
-  // Define time intervals in seconds
   const intervals = [
     { label: "year", seconds: 31536000 },
     { label: "month", seconds: 2592000 },
@@ -958,7 +940,6 @@ const timeAgo = (dateString) => {
   for (const interval of intervals) {
     const count = Math.floor(seconds / interval.seconds);
     if (count >= 1) {
-      // Simple pluralization
       return `${count} ${interval.label}${count > 1 ? "s" : ""} ago`;
     }
   }

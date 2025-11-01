@@ -11,11 +11,9 @@ import { ThemeProvider, useTheme } from "./contexts/ThemeContext.jsx";
 import { SkeletonTheme } from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
-// --- NEW IMPORTS ---
-import ErrorBoundary from "./components/errorBoundary.jsx"; // Import ErrorBoundary
-import NotFoundPage from "./features/MainPages/notFoundPage.jsx"; // Import the 404 page
+import ErrorBoundary from "./components/errorBoundary.jsx";
+import NotFoundPage from "./features/MainPages/notFoundPage.jsx";
 
-// Page Imports
 import LandingPage from "./features/MainPages/landingPage.jsx";
 import LoginPage from "./features/MainPages/LoginPage.jsx";
 import DashboardLayout from "./features/UserDashboard/DashboardLayout.jsx";
@@ -46,7 +44,6 @@ import ManualVerificationAdminPage from "./features/AdminDashboard/Pages/adminVe
 import PendingApprovalPage from "./features/MainPages/pendingApprovalPage.jsx";
 import ForgotPasswordPage from "./features/MainPages/forgotPasswordPage.jsx";
 
-// --- Router Guards (No changes) ---
 function PrivateRouter({ children, isLoading, session }) {
   if (isLoading) return <LoadingScreen />;
   if (!session) return <Navigate to="/login" replace />;
@@ -71,7 +68,6 @@ function AuthRedirect({ session, profile, isLoading }) {
   return <Navigate to="/dashboard" replace />;
 }
 
-// Admin Layout Wrapper (No changes)
 function AdminLayoutWrapper({ user }) {
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [profile, setProfile] = useState(null);
@@ -134,7 +130,6 @@ function AdminLayoutWrapper({ user }) {
   );
 }
 
-// --- Main App Content Component ---
 function AppContent() {
   const { theme } = useTheme();
   const [session, setSession] = useState(null);
@@ -197,11 +192,9 @@ function AppContent() {
       baseColor={theme === "dark" ? "#2a2a2a" : "#ebebeb"}
       highlightColor={theme === "dark" ? "#333333" : "#f5f5f5"}
     >
-      {/* --- ADDED ERRORBOUNDARY WRAPPER --- */}
       <ErrorBoundary>
         <Router>
           <Routes>
-            {/* --- Public Routes --- */}
             <Route
               path="/"
               element={
@@ -244,7 +237,6 @@ function AppContent() {
             <Route path="/learn-more" element={<LearnMorePage />} />
             <Route path="/pending-approval" element={<PendingApprovalPage />} />
 
-            {/* --- User Dashboard Routes --- */}
             <Route
               path="/dashboard"
               element={
@@ -292,7 +284,6 @@ function AppContent() {
               <Route path="help" element={<HelpPage user={session?.user} />} />
             </Route>
 
-            {/* --- Admin Dashboard Routes --- */}
             <Route
               path="/admin"
               element={
@@ -335,7 +326,6 @@ function AppContent() {
               <Route path="help" element={<HelpPage user={session?.user} />} />
             </Route>
 
-            {/* --- ADDED 404 CATCH-ALL ROUTE --- */}
             {/* This must be the LAST route in the list */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
@@ -345,7 +335,6 @@ function AppContent() {
   );
 }
 
-// --- App Component Wrapper (No changes) ---
 function App() {
   return (
     <ThemeProvider>

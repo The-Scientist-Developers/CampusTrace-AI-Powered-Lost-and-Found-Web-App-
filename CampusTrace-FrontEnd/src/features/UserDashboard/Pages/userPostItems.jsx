@@ -18,7 +18,6 @@ import { notifyAdminsNewPost } from "../../../utils/notificationHelpers";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
-// --- SKELETON COMPONENT ---
 const PostNewItemSkeleton = () => (
   <div className="max-w-3xl mx-auto px-4">
     {/* Header */}
@@ -87,11 +86,7 @@ export default function PostNewItem() {
     setImagePreview("");
   };
 
-  // ========================================
-  // AI Helper (handleImproveDescription)
-  // ========================================
   const handleImproveDescription = async () => {
-    // ✅ Already existed: "Please write a brief description first..." (Frontend validation)
     if (!description.trim()) {
       toast.error(
         "Please write a brief description first for the AI to improve."
@@ -126,7 +121,6 @@ export default function PostNewItem() {
 
       if (!response.ok) {
         const errData = await response.json();
-        // ✅ Already existed: "AI helper failed." (Backend error from Gemini)
         throw new Error(errData.detail || "AI helper failed.");
       }
 
@@ -140,13 +134,9 @@ export default function PostNewItem() {
     }
   };
 
-  // ========================================
-  // Create Post (handleSubmit)
-  // ========================================
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // ✅ Already existed: "Please fill out all required fields." (Frontend validation for title, description, location)
     if (!title || !description || !location) {
       toast.error("Please fill out all required fields.");
       return;
@@ -187,7 +177,6 @@ export default function PostNewItem() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        // ✅ Already existed: "Failed to post item." (Generic backend error)
         throw new Error(errorData.detail || "Failed to post item.");
       }
 
@@ -228,7 +217,6 @@ export default function PostNewItem() {
 
   return (
     <div className="max-w-3xl mx-auto px-4">
-      {/* Improved Header */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full mb-4 shadow-lg">
           <UploadCloud className="w-8 h-8 text-white" />

@@ -25,7 +25,6 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { API_BASE_URL } from "../../api/apiClient.js";
 
-// Password requirement component
 const PasswordRequirement = ({ met, text }) => (
   <div className="flex items-center text-xs">
     {met ? (
@@ -145,7 +144,6 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Rate limiting states
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [cooldownTime, setCooldownTime] = useState(0);
   const [lastAttemptTime, setLastAttemptTime] = useState(null);
@@ -203,7 +201,6 @@ export default function LoginPage() {
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         if (!session) {
-          // User signed out
         }
       }
     );
@@ -477,7 +474,6 @@ export default function LoginPage() {
       return;
     }
 
-    // Check if email domain is registered
     const emailDomain = formData.email.split("@")[1];
     if (!emailDomain) {
       toast.error("Please enter a valid email address", {
@@ -489,7 +485,6 @@ export default function LoginPage() {
 
     setLoading(true);
 
-    // First, check if the domain is registered
     try {
       const { data: domainData, error: domainError } = await supabase
         .from("allowed_domains")
@@ -599,7 +594,6 @@ export default function LoginPage() {
       />
 
       <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white dark:from-neutral-950 dark:to-neutral-900 flex">
-        {/* Left Panel (Desktop Only) */}
         <div className="hidden lg:flex lg:w-1/2 xl:w-2/5 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-neutral-900 dark:to-neutral-950 p-12 flex-col justify-between">
           <div>
             <Link
@@ -650,7 +644,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Right Panel (Login/Signup Form) */}
         <div className="flex-1 flex items-center justify-center p-6">
           <motion.div
             className="w-full max-w-sm lg:max-w-md"
@@ -658,7 +651,6 @@ export default function LoginPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            {/* Mobile Header */}
             <div className="lg:hidden text-center mb-8">
               <Link
                 to="/"
@@ -675,7 +667,6 @@ export default function LoginPage() {
               </Link>
             </div>
 
-            {/* Form Card */}
             <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-neutral-200 dark:border-neutral-800 p-8">
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">
@@ -688,7 +679,6 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              {/* Rate limit warning */}
               {cooldownTime > 0 && (
                 <div className="mb-6 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
                   <div className="flex items-center text-sm text-amber-800 dark:text-amber-200">
@@ -701,7 +691,6 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {/* Sign In / Sign Up Toggle */}
               <div className="flex bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1 mb-8">
                 <button
                   className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all ${
@@ -737,13 +726,11 @@ export default function LoginPage() {
                 </button>
               </div>
 
-              {/* Form */}
               <form
                 onSubmit={isLogin ? handleLogin : handleSignup}
                 className="space-y-5"
                 noValidate
               >
-                {/* Full Name Field (Sign Up Only) */}
                 <AnimatePresence mode="wait">
                   {!isLogin && (
                     <motion.div
@@ -771,7 +758,6 @@ export default function LoginPage() {
                   )}
                 </AnimatePresence>
 
-                {/* Email Field */}
                 <InputField
                   icon={Mail}
                   label="Email Address"
@@ -788,7 +774,6 @@ export default function LoginPage() {
                   aria-invalid={!!errors.email && touched.email}
                 />
 
-                {/* Password Field */}
                 <div>
                   <InputField
                     icon={Lock}
@@ -806,7 +791,6 @@ export default function LoginPage() {
                     aria-invalid={!!errors.password && touched.password}
                   />
 
-                  {/* Password Strength Indicator (Sign Up Only) */}
                   {!isLogin && formData.password && (
                     <div className="mt-3 space-y-2">
                       <div className="flex items-center justify-between">
@@ -852,7 +836,6 @@ export default function LoginPage() {
                   )}
                 </div>
 
-                {/* Confirm Password Field (Sign Up Only) */}
                 <AnimatePresence mode="wait">
                   {!isLogin && (
                     <motion.div
@@ -880,7 +863,6 @@ export default function LoginPage() {
                             !!errors.confirmPassword && touched.confirmPassword
                           }
                         />
-                        {/* Password Match Indicator */}
                         {confirmPassword && !errors.confirmPassword && (
                           <div className="mt-2 flex items-center">
                             {formData.password === confirmPassword ? (
@@ -905,7 +887,6 @@ export default function LoginPage() {
                   )}
                 </AnimatePresence>
 
-                {/* Remember Me / Forgot Password (Login Only) */}
                 {isLogin && (
                   <div className="flex justify-between items-center">
                     <label className="flex items-center cursor-pointer">
@@ -926,7 +907,6 @@ export default function LoginPage() {
                   </div>
                 )}
 
-                {/* reCAPTCHA */}
                 <div className="flex justify-center py-4">
                   <ReCAPTCHA
                     ref={recaptchaRef}
@@ -940,7 +920,6 @@ export default function LoginPage() {
                   />
                 </div>
 
-                {/* Submit Button */}
                 <button
                   type="submit"
                   disabled={loading || !captchaToken || cooldownTime > 0}
@@ -980,7 +959,6 @@ export default function LoginPage() {
                 </button>
               </form>
 
-              {/* "or" Separator */}
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-neutral-200 dark:border-neutral-800"></div>
@@ -992,7 +970,6 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Manual Registration Link (Sign Up Only) */}
               <AnimatePresence>
                 {!isLogin && (
                   <motion.div
@@ -1016,7 +993,6 @@ export default function LoginPage() {
                 )}
               </AnimatePresence>
 
-              {/* Toggle between Sign In / Sign Up */}
               <div className="text-center mt-6">
                 <button
                   className="text-primary-600 dark:text-primary-400 hover:text-primary-700

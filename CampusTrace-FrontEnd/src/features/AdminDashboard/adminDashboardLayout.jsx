@@ -27,7 +27,6 @@ import { useTheme } from "../../contexts/ThemeContext";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
-// --- Skeleton Loader --- //
 const AdminDashboardSkeleton = ({ isSidebarOpen, mobileMenu }) => (
   <div className="h-screen flex flex-col bg-neutral-50 dark:bg-[#1a1a1a] text-neutral-800 dark:text-neutral-300 overflow-hidden">
     <header className="h-14 sm:h-16 px-3 sm:px-4 lg:px-6 bg-white/70 dark:bg-[#2a2a2a]/70 backdrop-blur-lg border-b border-neutral-200 dark:border-[#3a3a3a] flex items-center justify-between shadow-sm z-30 flex-shrink-0">
@@ -108,7 +107,6 @@ const AdminDashboardSkeleton = ({ isSidebarOpen, mobileMenu }) => (
   </div>
 );
 
-// --- Menu Configuration --- //
 const menuItems = [
   { label: "Overview", icon: Home, path: "/admin", exact: true },
   {
@@ -131,7 +129,6 @@ const bottomItems = [
   { label: "Help", icon: HelpCircle, path: "/admin/help" },
 ];
 
-// --- NavLink Component --- //
 const NavLink = ({ item, isOpen, exact }) => (
   <RouterNavLink
     to={item.path}
@@ -177,7 +174,6 @@ const NavLink = ({ item, isOpen, exact }) => (
   </RouterNavLink>
 );
 
-// --- Main Admin Layout Component --- //
 export default function AdminDashboardLayout({ children, user }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -197,7 +193,6 @@ export default function AdminDashboardLayout({ children, user }) {
   const [siteName, setSiteName] = useState("CampusTrace");
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch all data including real-time counts
   const fetchAllData = useCallback(async () => {
     if (!user?.id) {
       setIsLoading(false);
@@ -205,7 +200,6 @@ export default function AdminDashboardLayout({ children, user }) {
     }
 
     try {
-      // Fetch admin profile
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
@@ -217,7 +211,6 @@ export default function AdminDashboardLayout({ children, user }) {
       } else {
         setProfile(profileData);
 
-        // Fetch site settings
         if (profileData?.university_id) {
           const { data: settingsData } = await supabase
             .from("site_settings")
@@ -232,7 +225,6 @@ export default function AdminDashboardLayout({ children, user }) {
         }
       }
 
-      // Fetch notification count
       const { count: notifCount, error: notifError } = await supabase
         .from("notifications")
         .select("*", { head: true, count: "exact" })
@@ -241,7 +233,6 @@ export default function AdminDashboardLayout({ children, user }) {
 
       if (!notifError) setNotificationCount(notifCount || 0);
 
-      // Fetch unread messages count (admin-specific)
       const { count: msgCount, error: msgError } = await supabase
         .from("messages")
         .select("*", { head: true, count: "exact" })
@@ -250,7 +241,6 @@ export default function AdminDashboardLayout({ children, user }) {
 
       if (!msgError) setMessageCount(msgCount || 0);
 
-      // Fetch pending posts count
       const { count: postsCount, error: postsError } = await supabase
         .from("posts")
         .select("*", { head: true, count: "exact" })
@@ -258,7 +248,6 @@ export default function AdminDashboardLayout({ children, user }) {
 
       if (!postsError) setPendingPostsCount(postsCount || 0);
 
-      // Fetch pending verifications count
       const { count: verCount, error: verError } = await supabase
         .from("profiles")
         .select("*", { head: true, count: "exact" })
@@ -272,11 +261,9 @@ export default function AdminDashboardLayout({ children, user }) {
     }
   }, [user?.id]);
 
-  // Initial data fetch and real-time subscriptions
   useEffect(() => {
     fetchAllData();
 
-    // Profile updates subscription
     const profileSubscription = supabase
       .channel(`admin:profiles:${user.id}`)
       .on(
@@ -291,7 +278,6 @@ export default function AdminDashboardLayout({ children, user }) {
       )
       .subscribe();
 
-    // Notifications subscription
     const notificationSubscription = supabase
       .channel(`admin:notifications:${user.id}`)
       .on(
@@ -306,7 +292,6 @@ export default function AdminDashboardLayout({ children, user }) {
       )
       .subscribe();
 
-    // Messages subscription
     const messageSubscription = supabase
       .channel(`admin:messages:${user.id}`)
       .on(
@@ -321,7 +306,6 @@ export default function AdminDashboardLayout({ children, user }) {
       )
       .subscribe();
 
-    // Posts subscription for moderation
     const postsSubscription = supabase
       .channel("admin:posts")
       .on(
@@ -335,7 +319,6 @@ export default function AdminDashboardLayout({ children, user }) {
       )
       .subscribe();
 
-    // Profiles subscription for verifications
     const verificationsSubscription = supabase
       .channel("admin:verifications")
       .on(
@@ -358,7 +341,6 @@ export default function AdminDashboardLayout({ children, user }) {
     };
   }, [user?.id, fetchAllData]);
 
-  // Compute menu items with badges
   const computedMenuItems = useMemo(() => {
     return menuItems.map((item) => {
       if (item.label === "Notifications") {
@@ -397,7 +379,6 @@ export default function AdminDashboardLayout({ children, user }) {
     pendingVerificationsCount,
   ]);
 
-  // Handle window resize
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) setMobileMenu(false);
@@ -406,19 +387,16 @@ export default function AdminDashboardLayout({ children, user }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Save sidebar state
   useEffect(() => {
     if (window.innerWidth >= 768) {
       localStorage.setItem("adminSidebarOpen", JSON.stringify(isSidebarOpen));
     }
   }, [isSidebarOpen]);
 
-  // Close mobile menu on navigation
   useEffect(() => {
     setMobileMenu(false);
   }, [location]);
 
-  // Prevent body scroll when mobile menu is open
   useEffect(() => {
     if (mobileMenu) {
       document.body.style.overflow = "hidden";
@@ -479,7 +457,6 @@ export default function AdminDashboardLayout({ children, user }) {
 
   return (
     <div className="h-screen flex flex-col bg-neutral-50 dark:bg-[#1a1a1a] text-neutral-800 dark:text-neutral-300 overflow-hidden">
-      {/* Mobile menu overlay */}
       {mobileMenu && (
         <div
           className="fixed inset-0 bg-black/60 z-40 md:hidden"
@@ -487,7 +464,6 @@ export default function AdminDashboardLayout({ children, user }) {
         />
       )}
 
-      {/* Header */}
       <header className="h-14 sm:h-16 px-3 sm:px-4 lg:px-6 bg-white/70 dark:bg-[#2a2a2a]/70 backdrop-blur-lg border-b border-neutral-200 dark:border-[#3a3a3a] flex items-center justify-between shadow-sm z-30 flex-shrink-0">
         <div className="flex items-center gap-2">
           <button
@@ -546,9 +522,7 @@ export default function AdminDashboardLayout({ children, user }) {
         </div>
       </header>
 
-      {/* Main content area */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
         <aside
           className={`fixed md:relative inset-y-0 left-0 z-50 bg-white/95 dark:bg-[#2a2a2a]/95 backdrop-blur-md md:bg-white dark:md:bg-neutral-900 flex flex-col transition-all duration-300 ease-in-out ${
             mobileMenu
@@ -556,9 +530,7 @@ export default function AdminDashboardLayout({ children, user }) {
               : "-translate-x-full md:translate-x-0"
           } ${isSidebarOpen ? "md:w-64" : "md:w-20"} h-full md:h-auto`}
         >
-          {/* Sidebar content wrapper */}
           <div className="flex flex-col h-full overflow-hidden">
-            {/* Logo section */}
             <div
               className={`p-4 flex items-center gap-3 border-b border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0 ${
                 !isSidebarOpen && !mobileMenu ? "justify-center" : ""
@@ -581,7 +553,6 @@ export default function AdminDashboardLayout({ children, user }) {
               )}
             </div>
 
-            {/* Scrollable navigation area */}
             <div className="flex-1 overflow-y-auto overflow-x-hidden">
               <nav className="p-3 space-y-1">
                 {computedMenuItems.map((item) => (
@@ -595,7 +566,6 @@ export default function AdminDashboardLayout({ children, user }) {
               </nav>
             </div>
 
-            {/* Bottom section - fixed at bottom */}
             <div className="border-t border-neutral-200 dark:border-[#3a3a3a] flex-shrink-0">
               <div className="p-3">
                 <div className="space-y-1">
@@ -608,10 +578,8 @@ export default function AdminDashboardLayout({ children, user }) {
                   ))}
                 </div>
 
-                {/* Divider */}
                 <div className="border-t border-neutral-200 dark:border-[#3a3a3a] my-3"></div>
 
-                {/* User profile section */}
                 <div
                   className={`p-2 flex items-center gap-3 cursor-pointer rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors ${
                     !isSidebarOpen && !mobileMenu ? "justify-center" : ""
@@ -635,7 +603,6 @@ export default function AdminDashboardLayout({ children, user }) {
                   )}
                 </div>
 
-                {/* Sign out button */}
                 <button
                   onClick={handleLogout}
                   disabled={isLoggingOut}
@@ -656,7 +623,6 @@ export default function AdminDashboardLayout({ children, user }) {
           </div>
         </aside>
 
-        {/* Main content */}
         <main className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-[#1a1a1a]">
           <div className="p-4 md:p-6 lg:p-8 min-h-full">{children}</div>
         </main>

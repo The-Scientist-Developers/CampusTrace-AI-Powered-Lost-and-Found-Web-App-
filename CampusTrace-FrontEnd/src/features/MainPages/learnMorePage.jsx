@@ -23,7 +23,6 @@ import {
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 
-// --- Feature Section Component (Reused with animation) ---
 const FeatureSection = ({ icon: Icon, title, children }) => {
   const { ref, inView } = useInView({ threshold: 0.2, triggerOnce: true });
   return (
@@ -49,7 +48,6 @@ const FeatureSection = ({ icon: Icon, title, children }) => {
   );
 };
 
-// --- Step Card Component (Reused with animation) ---
 const StepCard = ({ icon: Icon, title, step, children, index }) => {
   const { ref, inView } = useInView({ threshold: 0.3, triggerOnce: true });
   return (
@@ -60,7 +58,6 @@ const StepCard = ({ icon: Icon, title, step, children, index }) => {
       transition={{ duration: 0.5, ease: "easeOut", delay: index * 0.1 }}
       className="flex gap-6 relative"
     >
-      {/* Connecting line for all but the last card */}
       {index < 3 && (
         <div className="absolute left-[23px] top-14 bottom-0 w-px bg-neutral-200 dark:bg-neutral-700 -z-10"></div>
       )}
@@ -91,7 +88,6 @@ export default function LearnMorePage() {
   return (
     <div className="bg-white dark:bg-[#1a1a1a] text-neutral-700 dark:text-gray-100 min-h-screen pt-28 pb-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <motion.header
           ref={headerRef.ref}
           initial={{ opacity: 0, y: -30 }}
@@ -111,7 +107,6 @@ export default function LearnMorePage() {
           </p>
         </motion.header>
 
-        {/* --- Section for General Users --- */}
         <div className="mb-20 sm:mb-24">
           <h2 className="text-3xl sm:text-4xl font-bold text-center text-neutral-800 dark:text-white mb-12 sm:mb-16 border-b-2 border-primary-500/30 pb-4 inline-block mx-auto">
             For Students & Staff
@@ -156,8 +151,8 @@ export default function LearnMorePage() {
               advanced filters (status, category, date range) and keyword
               search. For lost items, your dashboard displays AI-generated
               matches created by analyzing text and image embeddings through
-              SentenceTransformers and CLIP models. Additionally, utilize our
-              Visual Search feature by uploading an image for instant matching.
+              Jina AI. Additionally, utilize our Visual Search feature by
+              uploading an image for instant matching.
             </StepCard>
             <StepCard
               icon={KeyRound}
@@ -174,7 +169,6 @@ export default function LearnMorePage() {
               voluntarily shared.
             </StepCard>
           </div>
-          {/* User CTA */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={headerRef.inView ? { opacity: 1, y: 0 } : {}}
@@ -190,7 +184,6 @@ export default function LearnMorePage() {
           </motion.div>
         </div>
 
-        {/* Section for University Admins */}
         <div className="mb-20 sm:mb-24">
           <h2 className="text-3xl sm:text-4xl font-bold text-center text-neutral-800 dark:text-white mb-12 sm:mb-16 border-b-2 border-primary-500/30 pb-4 inline-block mx-auto">
             For University Administrators
@@ -255,7 +248,6 @@ export default function LearnMorePage() {
               trigger automated user notifications.
             </StepCard>
           </div>
-          {/* Admin CTA */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={headerRef.inView ? { opacity: 1, y: 0 } : {}}
@@ -271,7 +263,6 @@ export default function LearnMorePage() {
           </motion.div>
         </div>
 
-        {/* Final CTA */}
         <motion.div
           ref={ctaRef.ref}
           initial={{ opacity: 0, scale: 0.9 }}
@@ -294,7 +285,6 @@ export default function LearnMorePage() {
           </Link>
         </motion.div>
       </div>
-      {/* Basic CSS for animations if not using Tailwind animations directly */}
       <style jsx>{`
         @keyframes fadeIn {
           from {

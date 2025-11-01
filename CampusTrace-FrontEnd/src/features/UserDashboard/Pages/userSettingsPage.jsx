@@ -4,11 +4,9 @@ import { toast } from "react-hot-toast";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import axios from "axios";
 
-// --- Skeleton Imports ---
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
-// --- Section Card Component ---
 const SectionCard = ({ title, description, children }) => (
   <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm">
     <div className="p-6 border-b border-neutral-200 dark:border-[#3a3a3a]">
@@ -23,7 +21,6 @@ const SectionCard = ({ title, description, children }) => (
   </div>
 );
 
-// --- Setting Toggle Component ---
 const SettingToggle = ({
   label,
   description,
@@ -59,7 +56,6 @@ const SettingToggle = ({
   </div>
 );
 
-// --- Skeleton Components ---
 const SettingToggleSkeleton = () => (
   <div className="flex items-center justify-between py-2">
     <div>
@@ -105,13 +101,11 @@ const UserSettingsPageSkeleton = () => (
   </div>
 );
 
-// --- Main Component ---
 export default function UserSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // State for all notification preferences
   const [matchNotifications, setMatchNotifications] = useState(true);
   const [claimNotifications, setClaimNotifications] = useState(true);
   const [messageNotifications, setMessageNotifications] = useState(true);
@@ -119,7 +113,6 @@ export default function UserSettingsPage() {
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] =
     useState(true);
 
-  // Fetch user preferences on mount
   useEffect(() => {
     const fetchPreferences = async () => {
       try {
@@ -157,7 +150,6 @@ export default function UserSettingsPage() {
     fetchPreferences();
   }, []);
 
-  // Save preferences handler
   const handlePreferencesSave = async () => {
     setIsSaving(true);
     try {
@@ -192,7 +184,6 @@ export default function UserSettingsPage() {
     }
   };
 
-  // Delete account handler
   const handleDeleteAccount = async () => {
     const confirmationText = "DELETE";
     const promptResponse = window.prompt(
@@ -219,12 +210,10 @@ export default function UserSettingsPage() {
     }
   };
 
-  // Show loading skeleton
   if (loading) {
     return <UserSettingsPageSkeleton />;
   }
 
-  // Main render
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8 animate-fadeIn">
       <h1 className="text-4xl font-bold text-neutral-800 dark:text-white mb-8">
