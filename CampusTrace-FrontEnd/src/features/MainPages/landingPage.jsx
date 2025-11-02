@@ -655,7 +655,7 @@ const FeatureSection = ({ title, subtitle, features, id, startIndex = 0 }) => {
           }}
           className="text-center mb-10 sm:mb-14 relative"
         >
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-neutral-900 dark:text-white mb-4 sm:mb-6 relative inline-block px-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4 relative inline-block px-4">
             {title}
             <motion.span
               initial={{ width: 0 }}
@@ -668,7 +668,7 @@ const FeatureSection = ({ title, subtitle, features, id, startIndex = 0 }) => {
               className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 bg-primary-500 rounded-full"
             />
           </h2>
-          <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto mt-4 sm:mt-6 px-4">
+          <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto mt-4 px-4">
             {subtitle}
           </p>
         </motion.div>
@@ -709,7 +709,7 @@ const ScreenshotSection = ({ screenshots }) => {
           }}
           className="text-center mb-10 sm:mb-14"
         >
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-neutral-900 dark:text-white mb-4 sm:mb-6 relative inline-block px-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4 relative inline-block px-4">
             See CampusTrace in Action
             <motion.span
               initial={{ width: 0 }}
@@ -722,7 +722,7 @@ const ScreenshotSection = ({ screenshots }) => {
               className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 bg-primary-500 rounded-full"
             />
           </h2>
-          <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto mt-4 sm:mt-6 px-4">
+          <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto mt-4 px-4">
             Take a visual tour of our key features and user-friendly interface.
             Click any image to view it in full size.
           </p>
@@ -913,27 +913,25 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1a] text-neutral-800 dark:text-neutral-300 flex flex-col overflow-x-hidden">
-      <ScrollProgress />
-
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur-lg border-b border-neutral-200/50 dark:border-neutral-800/50">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-[#1a1a1a] border-b border-neutral-200 dark:border-neutral-800">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-20">
+          <div className="flex items-center justify-between h-16">
             {/* Logo and Brand Name */}
-            <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
+            <Link to="/" className="flex items-center gap-2 group">
               <motion.img
                 src={logo}
                 alt="CampusTrace logo"
-                className="h-10 w-10 sm:h-12 sm:w-12"
-                whileHover={{ scale: 1.15, rotate: 15 }}
+                className="h-8 w-8"
+                whileHover={{ scale: 1.1 }}
               />
-              <span className="text-lg sm:text-xl font-bold text-neutral-800 dark:text-white">
+              <span className="text-base font-semibold text-neutral-800 dark:text-white">
                 CampusTrace
               </span>
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-6">
+            <div className="hidden md:flex items-center gap-8">
               {[
                 { to: "#how-it-works", label: "How It Works", isAnchor: true },
                 { to: "#features", label: "Features", isAnchor: true },
@@ -949,25 +947,23 @@ export default function LandingPage() {
                   <a
                     key={link.to}
                     href={link.to}
-                    className="relative text-sm font-semibold text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-300 group"
+                    className="text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors duration-200"
                   >
                     {link.label}
-                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary-500 group-hover:w-full transition-all duration-300" />
                   </a>
                 ) : (
                   <Link
                     key={link.to}
                     to={link.to}
-                    className="relative text-sm font-semibold text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-300 group"
+                    className="text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors duration-200"
                   >
                     {link.label}
-                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary-500 group-hover:w-full transition-all duration-300" />
                   </Link>
                 )
               )}
               <Link
                 to="/login"
-                className="px-5 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 hover:scale-105 transition-all duration-300"
+                className="px-4 py-1.5 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 transition-colors duration-200"
               >
                 Log In
               </Link>
@@ -976,13 +972,13 @@ export default function LandingPage() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all duration-300"
+              className="md:hidden p-2 rounded-md text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors duration-200"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? (
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5" />
               ) : (
-                <Menu className="w-6 h-6" />
+                <Menu className="w-5 h-5" />
               )}
             </button>
           </div>
@@ -1011,7 +1007,7 @@ export default function LandingPage() {
                     key={link.to}
                     href={link.to}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2 text-base font-medium text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors duration-200"
+                    className="block px-3 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md transition-colors duration-200"
                   >
                     {link.label}
                   </a>
@@ -1020,7 +1016,7 @@ export default function LandingPage() {
                     key={link.to}
                     to={link.to}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2 text-base font-medium text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors duration-200"
+                    className="block px-3 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md transition-colors duration-200"
                   >
                     {link.label}
                   </Link>
@@ -1029,7 +1025,7 @@ export default function LandingPage() {
               <Link
                 to="/login"
                 onClick={() => setMobileMenuOpen(false)}
-                className="block w-full mt-3 py-3 text-center bg-primary-600 text-white text-base font-semibold rounded-lg shadow-md"
+                className="block w-full mt-3 py-2.5 text-center bg-primary-600 text-white text-sm font-medium rounded-md"
               >
                 Log In
               </Link>
@@ -1038,9 +1034,9 @@ export default function LandingPage() {
         </nav>
       </header>
 
-      <main className="flex-grow pt-16 sm:pt-20 relative z-10">
+      <main className="flex-grow pt-16 relative z-10">
         {/* Hero Section */}
-        <section className="min-h-[calc(70vh-64px)] sm:min-h-[calc(80vh-80px)] flex items-center justify-center text-center relative overflow-hidden px-4">
+        <section className="min-h-[calc(70vh-64px)] flex items-center justify-center text-center relative overflow-hidden px-4">
           <div
             className="absolute inset-0 opacity-20 dark:opacity-5 [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_100%)]"
             style={{ transform: `translateY(${gridParallax}px)` }}
@@ -1099,7 +1095,7 @@ export default function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: [0.25, 1, 0.5, 1] }}
             >
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-neutral-900 dark:text-white leading-tight">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-neutral-900 dark:text-white leading-tight">
                 Reconnect What's Lost,{" "}
                 <span className="text-primary-600 dark:text-primary-400 block sm:inline mt-2 sm:mt-0">
                   Powered by AI
@@ -1111,7 +1107,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-              className="mt-5 sm:mt-8 max-w-2xl mx-auto text-base sm:text-lg md:text-xl text-neutral-600 dark:text-neutral-400"
+              className="mt-5 sm:mt-6 max-w-2xl mx-auto text-sm sm:text-base md:text-lg text-neutral-600 dark:text-neutral-400"
             >
               CampusTrace uses smart technology to make finding lost items on
               campus simple and fast. Join your university's secure lost and
@@ -1122,19 +1118,18 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
-              className="mt-10 sm:mt-12 flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6"
+              className="mt-8 sm:mt-10 flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-4"
             >
               <Link
                 to="/login"
-                className="group px-7 sm:px-9 py-3 bg-primary-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden text-base sm:text-lg w-full sm:w-auto"
+                className="group px-6 sm:px-7 py-2.5 bg-primary-600 text-white font-medium rounded-md shadow hover:shadow-lg hover:bg-primary-700 transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base w-full sm:w-auto"
               >
                 <span className="relative z-10">Get Started</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform relative z-10" />
-                <div className="absolute inset-0 bg-primary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform relative z-10" />
               </Link>
               <Link
                 to="/learn-more"
-                className="group px-7 sm:px-9 py-3 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-1 hover:scale-105 transition-all duration-300 border border-neutral-200 dark:border-neutral-700 w-full sm:w-auto text-center"
+                className="px-6 sm:px-7 py-2.5 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 font-medium rounded-md shadow hover:shadow-lg transition-all duration-300 border border-neutral-200 dark:border-neutral-700 w-full sm:w-auto text-center text-sm sm:text-base"
               >
                 Learn More
               </Link>
@@ -1160,10 +1155,10 @@ export default function LandingPage() {
               }}
               className="text-center mb-12 sm:mb-16"
             >
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-neutral-900 dark:text-white mb-4 sm:mb-6">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4">
                 How It Works
               </h2>
-              <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400 max-w-xl mx-auto">
+              <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 max-w-xl mx-auto">
                 Recovering lost items is simple with CampusTrace.
               </p>
             </motion.div>
@@ -1268,10 +1263,10 @@ export default function LandingPage() {
         <section className="py-16 sm:py-20 bg-white dark:bg-[#1a1a1a]">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10 sm:mb-14">
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-neutral-900 dark:text-white mb-4 sm:mb-6">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4">
                 Got Questions?
               </h2>
-              <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400">
+              <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400">
                 Find quick answers to common queries about CampusTrace.
               </p>
             </div>
@@ -1314,25 +1309,24 @@ export default function LandingPage() {
             }}
             className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10"
           >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-5 sm:mb-8">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">
               Ready to Simplify Lost & Found?
             </h2>
-            <p className="text-lg sm:text-xl md:text-2xl mb-10 sm:mb-12 text-white/90 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl mb-8 sm:mb-10 text-white/90 max-w-2xl mx-auto">
               Join your campus community on CampusTrace. Sign up with your
               university email or ID today.
             </p>
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6">
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-4">
               <Link
                 to="/login"
-                className="group px-8 sm:px-10 py-3 sm:py-4 bg-white text-primary-600 text-base sm:text-lg font-bold rounded-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 transition-all duration-300 inline-flex items-center justify-center gap-2 relative overflow-hidden w-full sm:w-auto"
+                className="group px-6 sm:px-8 py-2.5 sm:py-3 bg-white text-primary-600 text-sm sm:text-base font-semibold rounded-md shadow-lg hover:shadow-xl hover:bg-neutral-50 transition-all duration-300 inline-flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 <span className="relative z-10">Sign Up / Log In</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1.5 transition-transform relative z-10" />
-                <div className="absolute inset-0 bg-neutral-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform relative z-10" />
               </Link>
               <Link
                 to="/register-university"
-                className="group px-8 sm:px-10 py-3 sm:py-4 bg-white/10 backdrop-blur-sm border-2 border-white/40 text-white text-base sm:text-lg font-bold rounded-lg hover:bg-white/20 transform hover:-translate-y-1 hover:scale-105 transition-all duration-300 w-full sm:w-auto text-center"
+                className="px-6 sm:px-8 py-2.5 sm:py-3 bg-white/10 backdrop-blur-sm border-2 border-white/40 text-white text-sm sm:text-base font-semibold rounded-md hover:bg-white/20 transition-all duration-300 w-full sm:w-auto text-center"
               >
                 For Universities
               </Link>
@@ -1349,17 +1343,17 @@ export default function LandingPage() {
             <div className="col-span-1 md:col-span-2 lg:col-span-2">
               <Link
                 to="/"
-                className="flex items-center gap-3 text-2xl font-bold text-primary-600 dark:text-primary-400 mb-5 group"
+                className="flex items-center gap-3 text-xl font-bold text-primary-600 dark:text-primary-400 mb-5 group"
               >
                 <motion.img
                   src={logo}
                   alt="CampusTrace logo"
-                  className="h-10 w-10 sm:h-12 sm:w-12"
+                  className="h-8 w-8"
                   whileHover={{ rotate: 15 }}
                 />
                 <span>CampusTrace</span>
               </Link>
-              <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 mb-6 max-w-sm leading-relaxed">
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6 max-w-sm leading-relaxed">
                 Simplifying lost and found on campus with AI-powered matching
                 and a secure, verified community.
               </p>
@@ -1367,7 +1361,7 @@ export default function LandingPage() {
 
             {/* Quick Links */}
             <div>
-              <h3 className="font-semibold text-neutral-900 dark:text-white mb-5 text-lg">
+              <h3 className="font-semibold text-neutral-900 dark:text-white mb-5 text-base">
                 Quick Links
               </h3>
               <ul className="space-y-3">
@@ -1396,7 +1390,7 @@ export default function LandingPage() {
 
             {/* Resources */}
             <div>
-              <h3 className="font-semibold text-neutral-900 dark:text-white mb-5 text-lg">
+              <h3 className="font-semibold text-neutral-900 dark:text-white mb-5 text-base">
                 Resources
               </h3>
               <ul className="space-y-3">

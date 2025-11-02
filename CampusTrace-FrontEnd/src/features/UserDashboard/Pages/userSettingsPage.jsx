@@ -10,15 +10,15 @@ import "react-loading-skeleton/dist/skeleton.css";
 
 const SectionCard = ({ title, description, children }) => (
   <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm">
-    <div className="p-6 border-b border-neutral-200 dark:border-[#3a3a3a]">
-      <h2 className="text-xl font-bold text-neutral-800 dark:text-white">
+    <div className="p-4 sm:p-6 border-b border-neutral-200 dark:border-[#3a3a3a]">
+      <h2 className="text-lg sm:text-xl font-bold text-neutral-800 dark:text-white">
         {title}
       </h2>
-      <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+      <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-1">
         {description}
       </p>
     </div>
-    <div className="p-6 space-y-4">{children}</div>
+    <div className="p-4 sm:p-6 space-y-4">{children}</div>
   </div>
 );
 
@@ -29,16 +29,16 @@ const SettingToggle = ({
   onChange,
   disabled = false,
 }) => (
-  <div className="flex items-center justify-between py-2">
-    <div>
+  <div className="flex flex-col sm:flex-row sm:items-center justify-between py-2 gap-3 sm:gap-0">
+    <div className="flex-1">
       <span className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
         {label}
       </span>
-      <p className="text-xs text-neutral-500 dark:text-neutral-500">
+      <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
         {description}
       </p>
     </div>
-    <label className="relative inline-flex items-center cursor-pointer">
+    <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
       <input
         type="checkbox"
         className="sr-only peer"
@@ -236,8 +236,8 @@ export default function UserSettingsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8 animate-fadeIn">
-      <h1 className="text-4xl font-bold text-neutral-800 dark:text-white mb-8">
+    <div className="max-w-4xl mx-auto py-6 sm:py-8 px-4 sm:px-6 lg:px-8 animate-fadeIn">
+      <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-800 dark:text-white mb-6 sm:mb-8">
         Settings
       </h1>
 
@@ -257,7 +257,8 @@ export default function UserSettingsPage() {
           <select
             value={colorMode}
             onChange={(e) => setColorMode(e.target.value)}
-            className="w-full px-4 py-2.5 bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-lg text-neutral-700 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition"
+            className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-lg text-sm sm:text-base text-neutral-700 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition appearance-none cursor-pointer"
+            style={{ WebkitAppearance: "none", MozAppearance: "none" }}
           >
             <option value="default">🎨 Default (Original Purple)</option>
             <option value="purple">
@@ -277,7 +278,7 @@ export default function UserSettingsPage() {
           <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">
             Adjust the text size for better readability.
           </p>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 sm:flex gap-2 sm:gap-2">
             {[
               { value: "small", label: "Small" },
               { value: "medium", label: "Medium" },
@@ -287,11 +288,11 @@ export default function UserSettingsPage() {
               <button
                 key={size.value}
                 onClick={() => setFontSize(size.value)}
-                className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition ${
+                className={`px-3 sm:px-4 py-2.5 rounded-lg text-sm sm:text-base font-medium transition ${
                   fontSize === size.value
                     ? "bg-primary-500 text-white"
                     : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
-                }`}
+                } sm:flex-1`}
               >
                 {size.label}
               </button>
@@ -372,7 +373,7 @@ export default function UserSettingsPage() {
             <button
               onClick={handlePreferencesSave}
               disabled={isSaving}
-              className="px-5 py-2 mt-2 bg-primary-600 text-white font-semibold text-sm rounded-lg hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ml-auto"
+              className="w-full sm:w-auto px-5 py-2.5 sm:py-2 mt-2 bg-primary-600 text-white font-semibold text-sm rounded-lg hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:ml-auto"
             >
               {isSaving ? (
                 <>
@@ -388,17 +389,17 @@ export default function UserSettingsPage() {
       </div>
 
       {/* Danger Zone Section */}
-      <div className="mt-12">
-        <h2 className="text-xl font-bold text-red-600 dark:text-red-500 mb-2 flex items-center gap-2">
-          <AlertTriangle />
+      <div className="mt-8 sm:mt-12">
+        <h2 className="text-lg sm:text-xl font-bold text-red-600 dark:text-red-500 mb-2 flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6" />
           Danger Zone
         </h2>
-        <div className="bg-white dark:bg-[#2a2a2a] border border-red-200 dark:border-red-500/30 rounded-xl shadow-sm p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h3 className="font-semibold text-neutral-800 dark:text-white">
+        <div className="bg-white dark:bg-[#2a2a2a] border border-red-200 dark:border-red-500/30 rounded-xl shadow-sm p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex-1">
+            <h3 className="text-sm sm:text-base font-semibold text-neutral-800 dark:text-white">
               Delete Your Account
             </h3>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1 max-w-lg">
+            <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 mt-1">
               Once you delete your account, all of your posts and personal data
               will be permanently removed. This action cannot be undone.
             </p>
@@ -406,7 +407,7 @@ export default function UserSettingsPage() {
           <button
             onClick={handleDeleteAccount}
             disabled={isDeleting}
-            className="px-4 py-2 bg-red-600 text-white font-semibold text-sm rounded-lg border border-red-600 hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 flex items-center gap-2"
+            className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-red-600 text-white font-semibold text-sm rounded-lg border border-red-600 hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 flex items-center justify-center gap-2"
           >
             {isDeleting ? (
               <>

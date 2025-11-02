@@ -718,7 +718,7 @@ export default function DashboardLayout({ children, user }) {
             </button>
 
             {showMobileDropdown && (
-              <div className="absolute right-0 top-full mt-2 bg-white dark:bg-neutral-800 rounded-xl shadow-xl border border-neutral-200 dark:border-neutral-700 p-2 w-48 z-50">
+              <div className="absolute right-0 top-full mt-2 bg-white dark:bg-neutral-800 rounded-xl shadow-xl border border-neutral-200 dark:border-neutral-700 p-2 w-56 max-h-[70vh] overflow-y-auto z-50">
                 {profile?.role === "admin" && (
                   <button
                     onClick={() => {
@@ -731,6 +731,7 @@ export default function DashboardLayout({ children, user }) {
                     <span className="text-sm">Admin Panel</span>
                   </button>
                 )}
+
                 <button
                   onClick={() => {
                     toggleTheme();
@@ -747,16 +748,67 @@ export default function DashboardLayout({ children, user }) {
                     {theme === "light" ? "Dark Mode" : "Light Mode"}
                   </span>
                 </button>
-                <button
-                  onClick={() => {
-                    setShowColorPicker(true);
-                    setShowMobileDropdown(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors"
-                >
-                  <Palette className="w-4 h-4" />
-                  <span className="text-sm">Color Theme</span>
-                </button>
+
+                {/* Color Theme Section */}
+                <div className="border-t border-neutral-200 dark:border-neutral-700 my-2"></div>
+                <div className="text-xs font-bold text-neutral-500 dark:text-neutral-400 mb-1 px-3 uppercase tracking-wider">
+                  Color Theme
+                </div>
+
+                {[
+                  {
+                    value: "default",
+                    label: "Default",
+                    color: "#6366f1",
+                    emoji: "🎨",
+                  },
+                  {
+                    value: "purple",
+                    label: "Purple (GAD)",
+                    color: "#a855f7",
+                    emoji: "💜",
+                  },
+                  {
+                    value: "pink",
+                    label: "Pink (Breast Cancer)",
+                    color: "#ec4899",
+                    emoji: "💗",
+                  },
+                  {
+                    value: "blue",
+                    label: "Blue (Autism)",
+                    color: "#3b82f6",
+                    emoji: "💙",
+                  },
+                  {
+                    value: "green",
+                    label: "Green (Environmental)",
+                    color: "#22c55e",
+                    emoji: "💚",
+                  },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      setColorMode(option.value);
+                      setShowMobileDropdown(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-left hover:scale-[1.02] ${
+                      colorMode === option.value
+                        ? "bg-gradient-to-r from-primary-500/20 to-primary-500/10 text-primary-600 dark:text-primary-400 font-semibold"
+                        : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                    }`}
+                  >
+                    <span className="text-base">{option.emoji}</span>
+                    <span className="text-xs flex-1">{option.label}</span>
+                    {colorMode === option.value && (
+                      <div
+                        className="w-2.5 h-2.5 rounded-full shadow-sm ring-2 ring-white dark:ring-neutral-800"
+                        style={{ backgroundColor: option.color }}
+                      />
+                    )}
+                  </button>
+                ))}
               </div>
             )}
           </div>
