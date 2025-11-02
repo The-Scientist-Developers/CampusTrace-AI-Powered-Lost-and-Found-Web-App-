@@ -251,7 +251,8 @@ export default function NotificationsPage({ user }) {
                 key={notification.id}
                 className={`p-4 flex items-start gap-4 transition-colors ${
                   notification.status === "unread"
-                    ? "bg-primary-50 dark:bg-primary-500/5"
+                    ? "bg-neutral-100 dark:bg-[#2a2a2a]"
+                    // ? "bg-primary-50 dark:bg-primary-500/5"
                     : ""
                 }`}
               >
