@@ -43,6 +43,7 @@ import ManualRegisterPage from "./features/MainPages/manualRegisterPage.jsx";
 import ManualVerificationAdminPage from "./features/AdminDashboard/Pages/adminVerificationPage.jsx";
 import PendingApprovalPage from "./features/MainPages/pendingApprovalPage.jsx";
 import ForgotPasswordPage from "./features/MainPages/forgotPasswordPage.jsx";
+import ConfirmEmailPage from "./features/MainPages/confirmPage.jsx";
 
 function PrivateRouter({ children, isLoading, session }) {
   if (isLoading) return <LoadingScreen />;
@@ -233,6 +234,7 @@ function AppContent() {
             />
             <Route path="/reset-password" element={<UpdatePasswordPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/confirm-email" element={<ConfirmEmailPage />} />
             <Route path="/about" element={<AboutUsPage />} />
             <Route path="/learn-more" element={<LearnMorePage />} />
             <Route path="/pending-approval" element={<PendingApprovalPage />} />

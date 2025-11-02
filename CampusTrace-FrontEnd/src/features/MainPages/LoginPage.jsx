@@ -614,7 +614,10 @@ export default function LoginPage() {
         }
       );
 
-      setIsLogin(true);
+      // Store email in localStorage and redirect to confirm page
+      localStorage.setItem("signup_email", formData.email);
+      navigate("/confirm-email");
+
       setFormData({ fullName: "", email: "", password: "" });
       setConfirmPassword("");
       setErrors({});
