@@ -115,7 +115,14 @@ const UserSettingsPageSkeleton = () => (
 );
 
 export default function UserSettingsPage() {
-  const { colorMode, setColorMode, fontSize, setFontSize, contrast, setContrast } = useTheme();
+  const {
+    colorMode,
+    setColorMode,
+    fontSize,
+    setFontSize,
+    contrast,
+    setContrast,
+  } = useTheme();
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -272,18 +279,18 @@ export default function UserSettingsPage() {
           </p>
           <div className="flex gap-2">
             {[
-              { value: 'small', label: 'Small' },
-              { value: 'medium', label: 'Medium' },
-              { value: 'large', label: 'Large' },
-              { value: 'x-large', label: 'X-Large' }
+              { value: "small", label: "Small" },
+              { value: "medium", label: "Medium" },
+              { value: "large", label: "Large" },
+              { value: "x-large", label: "X-Large" },
             ].map((size) => (
               <button
                 key={size.value}
                 onClick={() => setFontSize(size.value)}
                 className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition ${
                   fontSize === size.value
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                    ? "bg-primary-500 text-white"
+                    : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
                 }`}
               >
                 {size.label}
@@ -297,8 +304,10 @@ export default function UserSettingsPage() {
           <SettingToggle
             label="High Contrast Mode"
             description="Increase contrast with black backgrounds and white text for better visibility."
-            checked={contrast === 'high'}
-            onChange={() => setContrast(contrast === 'high' ? 'normal' : 'high')}
+            checked={contrast === "high"}
+            onChange={() =>
+              setContrast(contrast === "high" ? "normal" : "high")
+            }
           />
         </div>
       </SectionCard>

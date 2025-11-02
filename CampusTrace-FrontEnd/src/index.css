@@ -124,7 +124,7 @@ body {
   --color-text: #ffffff;
   --color-primary-500: #00ffff; /* High-contrast cyan */
   --color-border: #ffffff;
-  
+
   background-color: var(--color-bg) !important;
   color: var(--color-text) !important;
 }
