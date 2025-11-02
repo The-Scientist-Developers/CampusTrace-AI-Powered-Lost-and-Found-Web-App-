@@ -156,6 +156,36 @@ export default function LoginPage() {
     hasSpecialChar: false,
   });
 
+  // Email suggestions state
+  const [savedEmails, setSavedEmails] = useState([]);
+  const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
+  const [filteredEmails, setFilteredEmails] = useState([]);
+
+  // Load saved emails from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("campustrace_saved_emails");
+    if (saved) {
+      try {
+        const emails = JSON.parse(saved);
+        setSavedEmails(emails);
+      } catch (error) {
+        console.error("Error loading saved emails:", error);
+      }
+    }
+  }, []);
+
+  // Filter emails based on input
+  useEffect(() => {
+    if (formData.email && savedEmails.length > 0) {
+      const filtered = savedEmails.filter((email) =>
+        email.toLowerCase().includes(formData.email.toLowerCase())
+      );
+      setFilteredEmails(filtered);
+    } else {
+      setFilteredEmails(savedEmails);
+    }
+  }, [formData.email, savedEmails]);
+
   useEffect(() => {
     if (cooldownTime > 0) {
       const timer = setTimeout(() => setCooldownTime(cooldownTime - 1), 1000);
@@ -338,6 +368,37 @@ export default function LoginPage() {
       : detail || "Sign up failed. Please try again.";
   };
 
+  // Function to save email to localStorage
+  const saveEmailToLocalStorage = (email) => {
+    try {
+      const saved = localStorage.getItem("campustrace_saved_emails");
+      let emails = saved ? JSON.parse(saved) : [];
+
+      // Add email if it doesn't exist
+      if (!emails.includes(email)) {
+        emails.unshift(email); // Add to beginning
+        // Keep only last 5 emails
+        emails = emails.slice(0, 5);
+        localStorage.setItem(
+          "campustrace_saved_emails",
+          JSON.stringify(emails)
+        );
+        setSavedEmails(emails);
+      } else {
+        // Move existing email to front
+        emails = emails.filter((e) => e !== email);
+        emails.unshift(email);
+        localStorage.setItem(
+          "campustrace_saved_emails",
+          JSON.stringify(emails)
+        );
+        setSavedEmails(emails);
+      }
+    } catch (error) {
+      console.error("Error saving email to localStorage:", error);
+    }
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setTouched({ email: true, password: true });
@@ -417,6 +478,9 @@ export default function LoginPage() {
         setLoginAttempts(0);
         setLastAttemptTime(null);
         setCooldownTime(0);
+
+        // Save email to localStorage for future suggestions
+        saveEmailToLocalStorage(formData.email);
 
         toast.success("Welcome back!", {
           duration: 3000,
@@ -758,21 +822,50 @@ export default function LoginPage() {
                   )}
                 </AnimatePresence>
 
-                <InputField
-                  icon={Mail}
-                  label="Email Address"
-                  type="email"
-                  placeholder={
-                    isLogin ? "Enter your email" : "you@university.edu"
-                  }
-                  value={formData.email}
-                  onChange={(e) => handleInput("email", e.target.value)}
-                  error={errors.email}
-                  touched={touched.email}
-                  autoComplete="email"
-                  aria-required="true"
-                  aria-invalid={!!errors.email && touched.email}
-                />
+                <div className="relative">
+                  <InputField
+                    icon={Mail}
+                    label="Email Address"
+                    type="email"
+                    placeholder={
+                      isLogin ? "Enter your email" : "you@university.edu"
+                    }
+                    value={formData.email}
+                    onChange={(e) => handleInput("email", e.target.value)}
+                    onFocus={() => setShowEmailSuggestions(true)}
+                    onBlur={() => {
+                      // Delay to allow click on suggestion
+                      setTimeout(() => setShowEmailSuggestions(false), 200);
+                    }}
+                    error={errors.email}
+                    touched={touched.email}
+                    autoComplete="off"
+                    aria-required="true"
+                    aria-invalid={!!errors.email && touched.email}
+                  />
+
+                  {/* Email Suggestions Dropdown */}
+                  {showEmailSuggestions && filteredEmails.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {filteredEmails.map((email, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => {
+                            handleInput("email", email);
+                            setShowEmailSuggestions(false);
+                          }}
+                          className="w-full text-left px-4 py-2.5 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors flex items-center gap-2 text-sm"
+                        >
+                          <Mail className="w-4 h-4 text-neutral-400" />
+                          <span className="text-neutral-900 dark:text-white">
+                            {email}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <div>
                   <InputField

@@ -51,8 +51,6 @@ const PostItemSkeleton = () => (
       className="rounded-md"
     />
     <div className="flex-grow min-w-0">
-      {" "}
-      {/* Added min-w-0 for truncation */}
       <Skeleton height={20} width="70%" />
       <Skeleton height={16} width="50%" className="mt-1" />
     </div>
@@ -68,21 +66,17 @@ const PostItemSkeleton = () => (
 
 const UserProfilePageSkeleton = () => (
   <div className="max-w-4xl mx-auto py-6 sm:py-8 px-4 space-y-6 sm:space-y-8">
-    {" "}
-    {/* Adjusted padding */}
     <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-4 sm:p-6">
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
         <Skeleton
           circle
-          width={96} /* Smaller on mobile */
+          width={96}
           height={96}
           sm:width={128}
           sm:height={128}
           className="border-4 border-neutral-200 dark:border-neutral-700"
         />
         <div className="flex-1 text-center sm:text-left w-full sm:w-auto">
-          {" "}
-          {/* Added width control */}
           <Skeleton
             height={30}
             sm:height={36}
@@ -112,8 +106,6 @@ const UserProfilePageSkeleton = () => (
       </div>
     </div>
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-      {" "}
-      {/* Adjusted gap */}
       <StatCardSkeleton />
       <StatCardSkeleton />
       <StatCardSkeleton />
@@ -135,10 +127,16 @@ const UserProfilePageSkeleton = () => (
   </div>
 );
 
-const CameraModal = ({ isOpen, onClose, onCapture, videoRef }) => {
+const CameraModal = ({
+  isOpen,
+  onClose,
+  onCapture,
+  onFileSelect,
+  videoRef,
+}) => {
   useEffect(() => {
     let activeStream = null;
-    if (isOpen) {
+    if (isOpen && videoRef) {
       navigator.mediaDevices
         .getUserMedia({ video: { facingMode: "user" } })
         .then((stream) => {
@@ -158,18 +156,49 @@ const CameraModal = ({ isOpen, onClose, onCapture, videoRef }) => {
         activeStream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, videoRef]);
 
   const handleCapture = () => {
-    if (videoRef.current) {
+    if (!videoRef.current) {
+      toast.error("Camera not ready. Please try again.");
+      return;
+    }
+
+    const video = videoRef.current;
+
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      toast.error("Camera not ready. Please wait a moment and try again.");
+      return;
+    }
+
+    try {
       const canvas = document.createElement("canvas");
-      canvas.width = videoRef.current.videoWidth;
-      canvas.height = videoRef.current.videoHeight;
-      canvas.getContext("2d").drawImage(videoRef.current, 0, 0);
-      canvas.toBlob((blob) => {
-        onCapture(blob);
-        onClose();
-      }, "image/jpeg");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      const context = canvas.getContext("2d");
+      if (!context) {
+        toast.error("Failed to create canvas context.");
+        return;
+      }
+
+      context.drawImage(video, 0, 0);
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob && blob.size > 0) {
+            onCapture(blob);
+            onClose();
+          } else {
+            toast.error("Failed to capture image. Please try again.");
+          }
+        },
+        "image/jpeg",
+        0.95
+      );
+    } catch (err) {
+      console.error("Canvas capture error:", err);
+      toast.error("Failed to capture image from camera.");
     }
   };
 
@@ -177,38 +206,32 @@ const CameraModal = ({ isOpen, onClose, onCapture, videoRef }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" // Added padding
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-[#2a2a2a] rounded-xl p-4 sm:p-6 w-full max-w-md" // Adjusted padding and max-width
+        className="bg-white dark:bg-[#2a2a2a] rounded-xl p-4 sm:p-6 w-full max-w-md"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-lg sm:text-xl font-bold mb-4 text-neutral-800 dark:text-white">
           Update Profile Picture
         </h3>
         <div className="bg-black rounded-lg overflow-hidden mb-4 aspect-video">
-          {" "}
-          {/* Ensure aspect ratio */}
           <video
             ref={videoRef}
             autoPlay
             playsInline
-            className="w-full h-full object-cover" // Ensure video covers area
+            className="w-full h-full object-cover"
           ></video>
         </div>
         <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
-          {" "}
-          {/* Stack buttons on mobile */}
           <button
-            onClick={onCapture}
+            onClick={handleCapture}
             className="px-4 py-2 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition w-full sm:w-auto"
           >
             Capture
           </button>
           <label className="px-4 py-2 bg-neutral-200 dark:bg-neutral-700 text-neutral-800 dark:text-white font-semibold rounded-lg hover:bg-neutral-300 dark:hover:bg-neutral-600 transition cursor-pointer text-center w-full sm:w-auto">
-            {" "}
-            {/* Full width on mobile */}
             Upload File
             <input
               type="file"
@@ -241,6 +264,8 @@ export default function UserProfilePage({ user }) {
 
   const [faceDetector, setFaceDetector] = useState(null);
   const [isModelsLoading, setIsModelsLoading] = useState(true);
+
+  const videoRef = useRef(null);
 
   useEffect(() => {
     const createFaceDetector = async () => {
@@ -309,14 +334,28 @@ export default function UserProfilePage({ user }) {
     }
 
     const toastId = toast.loading("Analyzing image...");
+    let imageUrl = null;
+
     try {
+      // Validate that the file is a valid image
+      if (!file || !file.type.startsWith("image/")) {
+        throw new Error("Invalid file type");
+      }
+
       const image = new Image();
-      image.src = URL.createObjectURL(file);
+      imageUrl = URL.createObjectURL(file);
+
+      // Wait for image to load with proper error handling
       await new Promise((resolve, reject) => {
-        image.onload = resolve;
-        image.onerror = reject;
+        image.onload = () => resolve();
+        image.onerror = (e) => {
+          console.error("Image load error:", e);
+          reject(new Error("Failed to load image"));
+        };
+        image.src = imageUrl;
       });
 
+      // Run face detection
       const detections = faceDetector.detect(image);
       const confidentDetections = detections.detections.filter(
         (detection) => detection.categories[0].score > 0.5
@@ -340,8 +379,15 @@ export default function UserProfilePage({ user }) {
       setAvatarFile(file);
       setAvatarUrl(URL.createObjectURL(file));
     } catch (err) {
-      toast.error("Could not analyze image.", { id: toastId });
-      console.error(err);
+      toast.error("Could not analyze image. Please try again.", {
+        id: toastId,
+      });
+      console.error("Image processing error:", err);
+    } finally {
+      // Clean up the temporary URL
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl);
+      }
     }
   };
 
@@ -352,9 +398,28 @@ export default function UserProfilePage({ user }) {
     }
   };
 
-  const onCapture = (blob) => {
-    const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
-    processImageForUpload(file);
+  const onCapture = async (blob) => {
+    try {
+      if (!blob) {
+        toast.error("Failed to capture image. Please try again.");
+        return;
+      }
+
+      if (blob.size === 0) {
+        toast.error("Captured image is empty. Please try again.");
+        return;
+      }
+
+      const file = new File([blob], "capture.jpg", {
+        type: "image/jpeg",
+        lastModified: Date.now(),
+      });
+
+      await processImageForUpload(file);
+    } catch (err) {
+      console.error("Capture error:", err);
+      toast.error("Failed to process captured image.");
+    }
   };
 
   const handleProfileUpdate = async () => {
@@ -395,7 +460,6 @@ export default function UserProfilePage({ user }) {
     (p) => p.moderation_status?.toLowerCase() === "recovered"
   ).length;
 
-  // --- Render Logic ---
   if (loading) {
     return <UserProfilePageSkeleton />;
   }
@@ -417,20 +481,27 @@ export default function UserProfilePage({ user }) {
         onClose={() => setIsCameraModalOpen(false)}
         onCapture={onCapture}
         onFileSelect={onAvatarChange}
+        videoRef={videoRef}
       />
-      {/* Profile Header Card - Adjusted for Responsiveness */}
       <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-4 sm:p-6">
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
           <div className="relative flex-shrink-0">
             <img
               src={
-                avatarUrl || // Show preview or final URL
+                avatarUrl ||
                 `https://ui-avatars.com/api/?name=${encodeURIComponent(
                   profile.full_name || profile.email
                 )}&background=eef2ff&color=4338ca`
               }
               alt="Avatar"
               className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-neutral-200 dark:border-neutral-700 object-cover"
+              onError={(e) => {
+                e.preventDefault();
+                e.target.onerror = null;
+                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                  profile.full_name || profile.email || "User"
+                )}&background=eef2ff&color=4338ca`;
+              }}
             />
             {isEditing && (
               <button
@@ -450,8 +521,6 @@ export default function UserProfilePage({ user }) {
             )}
           </div>
           <div className="flex-1 text-center sm:text-left w-full sm:w-auto min-w-0">
-            {" "}
-            {/* Allow text wrapping */}
             {isEditing ? (
               <input
                 type="text"
@@ -462,21 +531,16 @@ export default function UserProfilePage({ user }) {
               />
             ) : (
               <h1 className="text-2xl sm:text-3xl font-bold text-neutral-800 dark:text-white truncate">
-                {" "}
-                {/* Added truncate */}
                 {fullName || profile.email.split("@")[0]}
               </h1>
             )}
             <p className="text-sm sm:text-base text-neutral-500 dark:text-neutral-400 truncate">
-              {" "}
-              {/* Added truncate */}
               {profile.email}
             </p>
             <span className="mt-2 inline-block px-3 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-700 dark:bg-primary-500/20 dark:text-primary-400">
               {profile.role || "Member"}
             </span>
           </div>
-          {/* Edit/Save Buttons - Adjusted for Responsiveness */}
           <div className="w-full sm:w-auto mt-4 sm:mt-0 flex-shrink-0">
             {isEditing ? (
               <div className="flex flex-col sm:flex-row gap-2">
@@ -495,9 +559,9 @@ export default function UserProfilePage({ user }) {
                 <button
                   onClick={() => {
                     setIsEditing(false);
-                    setAvatarUrl(profile.avatar_url || ""); // Revert preview
-                    setFullName(profile.full_name || ""); // Revert name
-                    setAvatarFile(null); // Clear staged file
+                    setAvatarUrl(profile.avatar_url || "");
+                    setFullName(profile.full_name || "");
+                    setAvatarFile(null);
                   }}
                   className="w-full sm:w-auto px-4 py-2 bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-200 font-semibold text-sm rounded-md hover:bg-neutral-300 dark:hover:bg-neutral-600 transition flex items-center justify-center gap-1"
                 >
@@ -517,7 +581,6 @@ export default function UserProfilePage({ user }) {
         </div>
       </div>
 
-      {/* Stats Grid - Adjusted Gap */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
         <StatCard label="Total Posts" value={totalPosts} icon={FileText} />
         <StatCard
@@ -532,7 +595,6 @@ export default function UserProfilePage({ user }) {
         />
       </div>
 
-      {/* Recent Posts Section - Adjusted Padding */}
       <div>
         <h2 className="text-xl sm:text-2xl font-bold text-neutral-800 dark:text-white mb-4">
           Your Recent Posts
@@ -545,28 +607,29 @@ export default function UserProfilePage({ user }) {
                 className="flex items-center gap-3 sm:gap-4 py-3"
               >
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-neutral-100 dark:bg-neutral-800 rounded-md flex-shrink-0 flex items-center justify-center overflow-hidden">
-                  {" "}
-                  {/* Added overflow */}
                   {post.image_url ? (
                     <img
                       src={post.image_url}
-                      alt={post.title || "Item image"} // Use title if available
+                      alt={post.title || "Item image"}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.preventDefault();
+                        e.target.onerror = null;
+                        e.target.src =
+                          'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23999" font-size="12">' +
+                          (post.category || "Item") +
+                          "</text></svg>";
+                      }}
                     />
                   ) : (
                     <span className="text-xs text-neutral-500 px-1 text-center">
-                      {" "}
-                      {/* Added padding/centering */}
                       {post.category}
                     </span>
                   )}
                 </div>
                 <div className="flex-grow min-w-0">
-                  {" "}
-                  {/* Added min-w-0 */}
                   <p className="font-medium text-neutral-800 dark:text-white truncate">
-                    {post.title || "Untitled Post"}{" "}
-                    {/* Provide fallback title */}
+                    {post.title || "Untitled Post"}
                   </p>
                   <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
                     {new Date(post.created_at).toLocaleDateString()}
@@ -574,17 +637,15 @@ export default function UserProfilePage({ user }) {
                 </div>
                 <span
                   className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
-                    // Added flex-shrink-0
                     post.moderation_status === "approved"
                       ? "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400"
                       : post.moderation_status === "recovered"
-                      ? "bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-400" // Added recovered style
+                      ? "bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-400"
                       : post.moderation_status === "pending_return"
-                      ? "bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-400" // Added pending return style
-                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-400" // Default to pending
+                      ? "bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-400"
+                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-400"
                   }`}
                 >
-                  {/* Capitalize status */}
                   {post.moderation_status
                     ? post.moderation_status.charAt(0).toUpperCase() +
                       post.moderation_status.slice(1).replace("_", " ")

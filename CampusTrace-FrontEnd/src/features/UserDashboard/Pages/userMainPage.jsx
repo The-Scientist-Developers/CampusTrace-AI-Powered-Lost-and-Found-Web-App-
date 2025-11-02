@@ -96,6 +96,13 @@ const StatCard = ({ icon: Icon, title, value, trend, color = "primary" }) => {
     blue: "text-blue-600 dark:text-blue-400",
   };
 
+  const iconBgColors = {
+    primary: "bg-primary-100 dark:bg-primary-500/10",
+    green: "bg-green-100 dark:bg-green-500/10",
+    red: "bg-red-100 dark:bg-red-500/10",
+    blue: "bg-blue-100 dark:bg-blue-500/10",
+  };
+
   return (
     <div className="relative bg-white dark:bg-[#2a2a2a] rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-neutral-200 dark:border-[#3a3a3a]">
       <div
@@ -103,7 +110,7 @@ const StatCard = ({ icon: Icon, title, value, trend, color = "primary" }) => {
       />
       <div className="relative">
         <div
-          className={`inline-flex p-3 rounded-xl bg-gradient-to-br ${colors[color]} bg-opacity-10 mb-4`}
+          className={`inline-flex p-3 rounded-xl ${iconBgColors[color]} mb-4`}
         >
           <Icon className={`w-6 h-6 ${iconColors[color]}`} />
         </div>

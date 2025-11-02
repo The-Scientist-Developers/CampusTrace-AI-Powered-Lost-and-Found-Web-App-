@@ -3,6 +3,7 @@ import { supabase } from "../../../api/apiClient";
 import { toast } from "react-hot-toast";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import axios from "axios";
+import { useTheme } from "../../../contexts/ThemeContext";
 
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -69,6 +70,18 @@ const SettingToggleSkeleton = () => (
 const UserSettingsPageSkeleton = () => (
   <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
     <Skeleton height={40} width={200} className="mb-8" />
+    {/* Accessibility Card */}
+    <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm mb-8">
+      <div className="p-6 border-b border-neutral-200 dark:border-[#3a3a3a]">
+        <Skeleton height={24} width={150} />
+        <Skeleton height={20} width={400} className="mt-1" />
+      </div>
+      <div className="p-6 space-y-4">
+        <Skeleton height={20} width={120} />
+        <Skeleton height={16} width={350} />
+        <Skeleton height={44} width="100%" borderRadius={8} />
+      </div>
+    </div>
     {/* Notification Preferences Card */}
     <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm">
       <div className="p-6 border-b border-neutral-200 dark:border-[#3a3a3a]">
@@ -102,6 +115,7 @@ const UserSettingsPageSkeleton = () => (
 );
 
 export default function UserSettingsPage() {
+  const { colorMode, setColorMode, fontSize, setFontSize, contrast, setContrast } = useTheme();
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -220,78 +234,149 @@ export default function UserSettingsPage() {
         Settings
       </h1>
 
-      {/* Notification Preferences Section */}
+      {/* Accessibility Section - Color Themes */}
       <SectionCard
-        title="Notification Preferences"
-        description="Choose how and when you receive updates from Campus Trace."
+        title="Accessibility"
+        description="Customize your visual experience with different color themes for better accessibility and awareness."
       >
-        {/* Email Master Toggle */}
-        <div className="pb-4 mb-4 border-b border-neutral-200 dark:border-neutral-700">
-          <SettingToggle
-            label="Email Notifications"
-            description="Master switch for all email notifications. Disable to stop receiving any emails from Campus Trace."
-            checked={emailNotificationsEnabled}
-            onChange={() =>
-              setEmailNotificationsEnabled(!emailNotificationsEnabled)
-            }
-          />
-        </div>
-
-        {/* Individual Notification Settings */}
-        <div
-          className={
-            emailNotificationsEnabled ? "" : "opacity-50 pointer-events-none"
-          }
-        >
-          <SettingToggle
-            label="Potential Match Alerts"
-            description="Get notified when a 'Found' item matches one of your 'Lost' items."
-            checked={matchNotifications}
-            onChange={() => setMatchNotifications(!matchNotifications)}
-            disabled={!emailNotificationsEnabled}
-          />
-          <SettingToggle
-            label="Claim Notifications"
-            description="Receive alerts when someone claims your found item or responds to your claim."
-            checked={claimNotifications}
-            onChange={() => setClaimNotifications(!claimNotifications)}
-            disabled={!emailNotificationsEnabled}
-          />
-          <SettingToggle
-            label="Message Notifications"
-            description="Get notified when you receive a new message in your conversations."
-            checked={messageNotifications}
-            onChange={() => setMessageNotifications(!messageNotifications)}
-            disabled={!emailNotificationsEnabled}
-          />
-          <SettingToggle
-            label="Moderation Updates"
-            description="Receive notifications about the status of your posts (approved, pending, rejected)."
-            checked={moderationNotifications}
-            onChange={() =>
-              setModerationNotifications(!moderationNotifications)
-            }
-            disabled={!emailNotificationsEnabled}
-          />
-        </div>
-
-        <div className="text-right pt-2">
-          <button
-            onClick={handlePreferencesSave}
-            disabled={isSaving}
-            className="px-5 py-2 mt-2 bg-primary-600 text-white font-semibold text-sm rounded-lg hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ml-auto"
+        <div className="py-2">
+          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2">
+            Color Theme
+          </label>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">
+            Choose a color theme to support various awareness campaigns and
+            improve accessibility.
+          </p>
+          <select
+            value={colorMode}
+            onChange={(e) => setColorMode(e.target.value)}
+            className="w-full px-4 py-2.5 bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-lg text-neutral-700 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition"
           >
-            {isSaving ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              "Save Preferences"
-            )}
-          </button>
+            <option value="default">🎨 Default (Original Purple)</option>
+            <option value="purple">
+              💜 Purple - Gender and Development (GAD)
+            </option>
+            <option value="pink">💗 Pink - Breast Cancer Awareness</option>
+            <option value="blue">💙 Blue - Autism Awareness</option>
+            <option value="green">💚 Green - Environmental Awareness</option>
+          </select>
+        </div>
+
+        {/* Font Size Control */}
+        <div className="py-2 border-t border-neutral-200 dark:border-neutral-700 pt-4 mt-4">
+          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2">
+            Font Size
+          </label>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">
+            Adjust the text size for better readability.
+          </p>
+          <div className="flex gap-2">
+            {[
+              { value: 'small', label: 'Small' },
+              { value: 'medium', label: 'Medium' },
+              { value: 'large', label: 'Large' },
+              { value: 'x-large', label: 'X-Large' }
+            ].map((size) => (
+              <button
+                key={size.value}
+                onClick={() => setFontSize(size.value)}
+                className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition ${
+                  fontSize === size.value
+                    ? 'bg-primary-500 text-white'
+                    : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                }`}
+              >
+                {size.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* High Contrast Mode */}
+        <div className="py-2 border-t border-neutral-200 dark:border-neutral-700 pt-4 mt-4">
+          <SettingToggle
+            label="High Contrast Mode"
+            description="Increase contrast with black backgrounds and white text for better visibility."
+            checked={contrast === 'high'}
+            onChange={() => setContrast(contrast === 'high' ? 'normal' : 'high')}
+          />
         </div>
       </SectionCard>
+
+      {/* Notification Preferences Section */}
+      <div className="mt-8">
+        <SectionCard
+          title="Notification Preferences"
+          description="Choose how and when you receive updates from Campus Trace."
+        >
+          {/* Email Master Toggle */}
+          <div className="pb-4 mb-4 border-b border-neutral-200 dark:border-neutral-700">
+            <SettingToggle
+              label="Email Notifications"
+              description="Master switch for all email notifications. Disable to stop receiving any emails from Campus Trace."
+              checked={emailNotificationsEnabled}
+              onChange={() =>
+                setEmailNotificationsEnabled(!emailNotificationsEnabled)
+              }
+            />
+          </div>
+
+          {/* Individual Notification Settings */}
+          <div
+            className={
+              emailNotificationsEnabled ? "" : "opacity-50 pointer-events-none"
+            }
+          >
+            <SettingToggle
+              label="Potential Match Alerts"
+              description="Get notified when a 'Found' item matches one of your 'Lost' items."
+              checked={matchNotifications}
+              onChange={() => setMatchNotifications(!matchNotifications)}
+              disabled={!emailNotificationsEnabled}
+            />
+            <SettingToggle
+              label="Claim Notifications"
+              description="Receive alerts when someone claims your found item or responds to your claim."
+              checked={claimNotifications}
+              onChange={() => setClaimNotifications(!claimNotifications)}
+              disabled={!emailNotificationsEnabled}
+            />
+            <SettingToggle
+              label="Message Notifications"
+              description="Get notified when you receive a new message in your conversations."
+              checked={messageNotifications}
+              onChange={() => setMessageNotifications(!messageNotifications)}
+              disabled={!emailNotificationsEnabled}
+            />
+            <SettingToggle
+              label="Moderation Updates"
+              description="Receive notifications about the status of your posts (approved, pending, rejected)."
+              checked={moderationNotifications}
+              onChange={() =>
+                setModerationNotifications(!moderationNotifications)
+              }
+              disabled={!emailNotificationsEnabled}
+            />
+          </div>
+
+          <div className="text-right pt-2">
+            <button
+              onClick={handlePreferencesSave}
+              disabled={isSaving}
+              className="px-5 py-2 mt-2 bg-primary-600 text-white font-semibold text-sm rounded-lg hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ml-auto"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Preferences"
+              )}
+            </button>
+          </div>
+        </SectionCard>
+      </div>
 
       {/* Danger Zone Section */}
       <div className="mt-12">

@@ -13,8 +13,174 @@
   }
 }
 
-/* Add to your global CSS file */
+/* Default theme colors (defined in tailwind.config.cjs) */
+:root {
+  --color-primary-50: #f0f0ff;
+  --color-primary-100: #e0e0ff;
+  --color-primary-200: #c2c2ff;
+  --color-primary-300: #a3a3ff;
+  --color-primary-400: #8585ff;
+  --color-primary-500: #674cc4; /* Default purple */
+  --color-primary-600: #583dc2;
+  --color-primary-700: #492ebf;
+  --color-primary-800: #3a20bc;
+  --color-primary-900: #2b11b9;
+}
+
+/* Purple Theme - Deep vibrant purple for Gender and Development awareness */
+.theme-purple {
+  --color-primary-50: #faf5ff;
+  --color-primary-100: #f3e8ff;
+  --color-primary-200: #e9d5ff;
+  --color-primary-300: #d8b4fe;
+  --color-primary-400: #c084fc;
+  --color-primary-500: #a855f7;
+  --color-primary-600: #9333ea;
+  --color-primary-700: #7e22ce;
+  --color-primary-800: #6b21a8;
+  --color-primary-900: #581c87;
+}
+
+/* Pink Theme - Warm pink for breast cancer awareness and femininity */
+.theme-pink {
+  --color-primary-50: #fdf2f8;
+  --color-primary-100: #fce7f3;
+  --color-primary-200: #fbcfe8;
+  --color-primary-300: #f9a8d4;
+  --color-primary-400: #f472b6;
+  --color-primary-500: #ec4899;
+  --color-primary-600: #db2777;
+  --color-primary-700: #be185d;
+  --color-primary-800: #9d174d;
+  --color-primary-900: #831843;
+}
+
+/* Blue Theme - Calming blue for autism awareness and accessibility */
+.theme-blue {
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+}
+
+/* Green Theme - Fresh green for environmental awareness and growth */
+.theme-green {
+  --color-primary-50: #f0fdf4;
+  --color-primary-100: #dcfce7;
+  --color-primary-200: #bbf7d0;
+  --color-primary-300: #86efac;
+  --color-primary-400: #4ade80;
+  --color-primary-500: #22c55e;
+  --color-primary-600: #16a34a;
+  --color-primary-700: #15803d;
+  --color-primary-800: #166534;
+  --color-primary-900: #14532d;
+}
+
+/* Loading skeleton - only affected by light/dark mode, NOT by color mode */
 .dark .react-loading-skeleton {
   --base-color: #2a2a2a;
   --highlight-color: #333333;
+}
+
+/* ============================================
+   ACCESSIBILITY FEATURES
+   ============================================ */
+
+/* Font Size Control */
+:root {
+  --font-base: 16px;
+}
+
+html[data-font-size="small"] {
+  --font-base: 14px;
+}
+
+html[data-font-size="medium"] {
+  --font-base: 16px;
+}
+
+html[data-font-size="large"] {
+  --font-base: 18px;
+}
+
+html[data-font-size="x-large"] {
+  --font-base: 20px;
+}
+
+body {
+  font-size: var(--font-base);
+}
+
+/* High Contrast Mode */
+.theme-high-contrast {
+  --color-bg: #000000;
+  --color-text: #ffffff;
+  --color-primary-500: #00ffff; /* High-contrast cyan */
+  --color-border: #ffffff;
+  
+  background-color: var(--color-bg) !important;
+  color: var(--color-text) !important;
+}
+
+/* Override all components in high-contrast mode */
+.theme-high-contrast *,
+.theme-high-contrast div,
+.theme-high-contrast header,
+.theme-high-contrast aside,
+.theme-high-contrast main,
+.theme-high-contrast section,
+.theme-high-contrast article,
+.theme-high-contrast nav {
+  background-color: var(--color-bg) !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-border) !important;
+}
+
+.theme-high-contrast a,
+.theme-high-contrast button.primary,
+.theme-high-contrast .text-primary-500,
+.theme-high-contrast .bg-primary-500 {
+  color: var(--color-primary-500) !important;
+  background-color: transparent !important;
+}
+
+.theme-high-contrast button,
+.theme-high-contrast input,
+.theme-high-contrast textarea,
+.theme-high-contrast select {
+  background-color: var(--color-bg) !important;
+  color: var(--color-text) !important;
+  border: 2px solid var(--color-border) !important;
+}
+
+.theme-high-contrast button:hover,
+.theme-high-contrast button:focus {
+  background-color: var(--color-text) !important;
+  color: var(--color-bg) !important;
+}
+
+/* Ensure focus indicators are always visible for keyboard navigation */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+.theme-high-contrast button:focus-visible,
+.theme-high-contrast a:focus-visible,
+.theme-high-contrast input:focus-visible,
+.theme-high-contrast select:focus-visible,
+.theme-high-contrast textarea:focus-visible {
+  outline: 3px solid var(--color-primary-500);
+  outline-offset: 2px;
 }

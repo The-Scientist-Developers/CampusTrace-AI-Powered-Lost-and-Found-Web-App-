@@ -22,6 +22,7 @@ import {
   MessageSquare,
   HelpCircle,
   Plus,
+  LayoutGrid,
 } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import Skeleton from "react-loading-skeleton";
@@ -490,6 +491,16 @@ export default function AdminDashboardLayout({ children, user }) {
           </h1>
         </div>
         <div className="flex items-center gap-1 sm:gap-2">
+          <button
+            onClick={() => {
+              navigate("/dashboard");
+              setTimeout(() => window.location.reload(), 100);
+            }}
+            className="p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
+            title="Switch to User View"
+          >
+            <LayoutGrid className="w-5 h-5" />
+          </button>
           <button
             onClick={toggleTheme}
             className="p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"

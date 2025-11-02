@@ -20,19 +20,19 @@ from fastapi.concurrency import run_in_threadpool
 
 from app.config import get_settings
 from app.dependencies import get_current_user_id, supabase
-from app import jina_embedding_util  # <-- UPDATED from clip_util
+from app import jina_embedding_util
 
-# --- Configuration ---
+# Load application settings and initialize global variables
 settings = get_settings()
-model = None
+model = None  # Will hold the Gemini AI model after startup
 
 app = FastAPI(
     title="CampusTrace API",
     description="Lost and Found Platform for Universities",
-    version="2.1.0" # <-- UPDATED version
+    version="2.1.0"
 )
 
-# Configure Resend
+# Configure Resend email service
 if settings.RESEND_API_KEY:
     resend.api_key = settings.RESEND_API_KEY
     print("Resend client configured.")
@@ -44,7 +44,7 @@ async def startup_event():
     """Load AI models on application startup."""
     global model
     
-    # Load Gemini generation/vision model (still used for descriptions/tags)
+    # Initialize Gemini AI for generating descriptions and tags
     if settings.GEMINI_API_KEY:
         try:
             genai.configure(api_key=settings.GEMINI_API_KEY)
@@ -55,7 +55,7 @@ async def startup_event():
     else:
         print("⚠️ WARNING: GEMINI_API_KEY not found. AI generation features disabled.")
     
-    # Test Jina embedding model with comprehensive test
+    # Test Jina embedding model for image and text matching
     if settings.JINA_API_KEY:
         try:
             await jina_embedding_util.test_jina_embedding()
@@ -65,7 +65,7 @@ async def startup_event():
         print("⚠️ WARNING: JINA_API_KEY not found. Embedding features will be disabled.")
         
     print(f"Max image size: {int(os.getenv('MAX_IMAGE_SIZE', '5242880')) / 1024 / 1024:.1f}MB")
-    print("🚀 Running API with Jina embedding pipeline") # <-- UPDATED message
+    print("🚀 Running API with Jina embedding pipeline")
 
 
 @app.on_event("shutdown")
@@ -78,13 +78,13 @@ async def shutdown_event():
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[str(origin) for origin in settings.CORS_ORIGINS], # <-- UPDATED to use settings
+    allow_origins=[str(origin) for origin in settings.CORS_ORIGINS],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Optimize image processing
+# Optimize images for faster processing and storage
 def process_image_efficiently(image_bytes: bytes, max_size=(1920, 1920)):
     """Process images efficiently."""
     with Image.open(io.BytesIO(image_bytes)) as img:
@@ -179,7 +179,10 @@ conversations_router = APIRouter(prefix="/api/conversations", tags=["Conversatio
 
 # ============= Helper Functions =============
 async def get_university_settings(university_id: int):
-    """Fetches and processes site settings for a given university."""
+    """
+    Fetches and processes site settings for a given university.
+    Returns settings like auto-approval status and keyword blacklist for moderation.
+    """
     try:
         settings_res = supabase.table("site_settings").select("setting_key, setting_value").eq("university_id", university_id).execute()
         if not settings_res.data:
@@ -202,6 +205,10 @@ async def get_university_settings(university_id: int):
         }
 
 async def verify_captcha(token: str, client_ip: Optional[str]):
+    """
+    Verify Google reCAPTCHA token to prevent spam and bot submissions.
+    In development mode (no key), it will skip verification.
+    """
     if not settings.RECAPTCHA_SECRET_KEY:
         print("WARNING: RECAPTCHA_SECRET_KEY not set. Skipping verification for development.")
         return True 
@@ -223,6 +230,10 @@ async def verify_captcha(token: str, client_ip: Optional[str]):
         return True
 
 def create_notification(recipient_id: str, university_id: int, message: str, link_to: Optional[str] = None, type: str = 'general'):
+    """
+    Create an in-app notification for a user.
+    Types: 'general', 'claim', 'moderation', 'verification', 'message', etc.
+    """
     try:
         supabase.table("notifications").insert({
             "recipient_id": recipient_id,
@@ -236,11 +247,14 @@ def create_notification(recipient_id: str, university_id: int, message: str, lin
         print(f"Error creating notification: {e}")
 
 async def generate_ai_tags(title: str, description: str) -> Optional[List[str]]:
-    """Generate AI tags using Gemini model."""
+    """
+    Generate AI-powered tags using Gemini model.
+    Supports Taglish (Tagalog-English mix) for Philippine universities.
+    Returns up to 7 relevant keywords.
+    """
     if not model:
         return []
     try:
-        # <-- UPDATED Taglish/Local context prompt -->
         prompt = f"""
         Generate 5-7 relevant, comma-separated keywords (tags) for a lost or found item in a Philippine university.
         Include item type, color, brand, and potential Taglish (Tagalog-English) terms.
@@ -263,12 +277,20 @@ async def generate_ai_tags(title: str, description: str) -> Optional[List[str]]:
         return []
 
 def calculate_simple_match_score(lost_item: dict, found_item: dict) -> int:
-    """Calculate a simple text-based similarity score (0-100)."""
+    """
+    Calculate a simple text-based similarity score (0-100) between lost and found items.
+    Scoring breakdown:
+    - Category match: 40 points
+    - Title keyword overlap: up to 30 points
+    - Description keyword overlap: up to 20 points
+    - Location match: 10 points
+    """
     score = 0
     
+    # Check if categories match
     if lost_item.get("category") == found_item.get("category"):
         score += 40
-    
+    # Check for keyword overlap in titles
     lost_title = lost_item.get("title", "").lower()
     found_title = found_item.get("title", "").lower()
     lost_keywords = set(lost_title.split())
@@ -277,6 +299,7 @@ def calculate_simple_match_score(lost_item: dict, found_item: dict) -> int:
     if keyword_overlap > 0:
         score += min(30, keyword_overlap * 10)
     
+    # Check for keyword overlap in descriptions
     lost_desc = lost_item.get("description", "").lower()
     found_desc = found_item.get("description", "").lower()
     lost_desc_keywords = set(lost_desc.split())
@@ -285,6 +308,7 @@ def calculate_simple_match_score(lost_item: dict, found_item: dict) -> int:
     if desc_overlap > 0:
         score += min(20, desc_overlap * 5)
     
+    # Check if locations match
     if lost_item.get("location") == found_item.get("location"):
         score += 10
     
@@ -293,26 +317,35 @@ def calculate_simple_match_score(lost_item: dict, found_item: dict) -> int:
 # ============= Onboarding Route =============
 @onboarding_router.post("/register-university")
 async def register_university(payload: UniversityRegistrationRequest):
+    """
+    Register a new university and create its first admin user.
+    This is a transactional operation - if any step fails, everything is rolled back.
+    """
     new_university_id = None
     new_user_id = None
     try:
+        # Check if university name already exists
         uni_exists = supabase.table("universities").select("id").eq("name", payload.university_name).execute()
         if uni_exists.data:
             raise HTTPException(status_code=400, detail="A university with this name already exists.")
         
+        # Check if user email already exists
         user_exists_res = supabase.from_("profiles").select("id").eq("email", payload.email).execute()
         if user_exists_res.data:
             raise HTTPException(status_code=400, detail="A user with this email already exists.")
 
+        # Create the new university (initially pending)
         new_university_res = supabase.table("universities").insert({"name": payload.university_name, "status": "pending"}).execute()
         new_university_id = new_university_res.data[0]['id']
 
+        # Add the admin's email domain to allowed domains
         admin_domain = payload.email.split('@')[1]
         supabase.table("allowed_domains").insert({
             "university_id": new_university_id,
             "domain_name": admin_domain
         }).execute()
 
+        # Create the admin user in Supabase Auth
         sign_up_res = supabase.auth.sign_up({
             "email": payload.email,
             "password": payload.password
@@ -323,18 +356,20 @@ async def register_university(payload: UniversityRegistrationRequest):
         new_user = sign_up_res.user
         new_user_id = new_user.id
 
-        # Use update instead of upsert since trigger should create it
+        # Update the profile with admin details (trigger should have created it)
         supabase.table("profiles").update({
             "full_name": payload.full_name,
             "role": "admin",
             "university_id": new_university_id
         }).eq("id", new_user.id).execute()
 
+        # Activate the university
         supabase.table("universities").update({"status": "active"}).eq("id", new_university_id).execute()
 
         return {"message": "University created successfully. Please check your email to verify your account."}
 
     except HTTPException as http_exc:
+        # Rollback: Delete created resources if something went wrong
         if new_user_id:
             try: supabase.auth.admin.delete_user(new_user_id)
             except: pass
@@ -344,6 +379,7 @@ async def register_university(payload: UniversityRegistrationRequest):
         raise http_exc
     except Exception as e:
         traceback.print_exc()
+        # Rollback on any error
         if new_user_id:
             try: supabase.auth.admin.delete_user(new_user_id)
             except: pass
@@ -354,7 +390,6 @@ async def register_university(payload: UniversityRegistrationRequest):
 
 # ============= Auth Routes =============
 
-# <-- ENTIRELY REPLACED signup_manual WITH THE NEW FIXED VERSION -->
 @auth_router.post("/signup-manual")
 async def signup_manual(
     request: Request,
@@ -365,7 +400,10 @@ async def signup_manual(
     captchaToken: str = Form(...),
     id_file: UploadFile = File(...)
 ):
-    """Handles the entire signup and manual verification submission process for users with personal emails."""
+    """
+    Handle signup for users with personal emails (not university domain).
+    Requires manual verification by admin using uploaded ID.
+    """
     await verify_captcha(captchaToken, request.client.host)
     
     user = None
@@ -375,15 +413,15 @@ async def signup_manual(
         if user_exists_res.data:
             raise HTTPException(status_code=400, detail="A user with this email already exists.")
 
-        # Get the redirect URL - handle both list and string
+        # Prepare redirect URL for email confirmation
         redirect_url = None
-        if settings.PENDING_APPROVAL_REDIRECT_URL: # <-- Fixed to match config.py
+        if settings.PENDING_APPROVAL_REDIRECT_URL:
             if isinstance(settings.PENDING_APPROVAL_REDIRECT_URL, list):
                 redirect_url = settings.PENDING_APPROVAL_REDIRECT_URL[0]
             else:
                 redirect_url = settings.PENDING_APPROVAL_REDIRECT_URL
 
-        # Pass metadata (full_name, university_id) in options.data
+        # Create user with metadata (will trigger profile creation)
         signup_options = {
             "email": email,
             "password": password,
@@ -397,7 +435,7 @@ async def signup_manual(
             }
         }
         
-        # Only add redirect_to if we have a valid URL
+        # Add email redirect only if URL is configured
         if redirect_url:
             signup_options["options"]["email_redirect_to"] = redirect_url
         
@@ -408,7 +446,7 @@ async def signup_manual(
         
         user = sign_up_res.user
 
-        # This upsert is now a fallback, as the trigger should handle it.
+        # Fallback: ensure profile exists (trigger should handle this)
         supabase.table("profiles").upsert({
             "id": user.id,
             "full_name": full_name,
@@ -420,15 +458,16 @@ async def signup_manual(
         # Process and upload the ID image
         file_bytes = await id_file.read()
         
-        # Use settings.MAX_ID_IMAGE_SIZE
         max_id_size = settings.MAX_ID_IMAGE_SIZE
         
+        # Resize image if it's too large
         if len(file_bytes) > max_id_size:
             file_bytes = process_image_efficiently(file_bytes)
         
         file_suffix = Path(id_file.filename or "").suffix
         file_path = f"manual_verifications/{user.id}/{uuid4().hex}{file_suffix}"
         
+        # Upload to Supabase storage
         supabase.storage.from_("other_images").upload(
             path=file_path,
             file=file_bytes,
@@ -436,7 +475,7 @@ async def signup_manual(
         )
         id_image_url = supabase.storage.from_("other_images").get_public_url(file_path)
 
-        # Create verification record
+        # Create verification record for admin review
         supabase.table("user_verifications").insert({
             "user_id": user.id,
             "university_id": university_id,
@@ -444,7 +483,7 @@ async def signup_manual(
             "status": "pending"
         }).execute()
 
-        # Notify admins
+        # Notify all admins of the university about new verification request
         admins_res = supabase.table("profiles").select("id").eq("university_id", university_id).eq("role", "admin").execute()
         
         if admins_res.data:
@@ -461,7 +500,7 @@ async def signup_manual(
         return {"message": "Registration successful! Please confirm your email. Your account will be usable after an admin approves your ID."}
 
     except HTTPException as http_exc:
-        # Clean up if user was created
+        # Clean up user if created
         if user:
             try:
                 supabase.auth.admin.delete_user(user.id)
@@ -470,6 +509,7 @@ async def signup_manual(
         raise http_exc
     except Exception as e:
         traceback.print_exc()
+        # Rollback: delete user on any error
         if user:
             try:
                 supabase.auth.admin.delete_user(user.id)
@@ -477,17 +517,22 @@ async def signup_manual(
                 print(f"Failed to clean up user during signup error: {delete_e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# <-- ENTIRELY REPLACED signup_user WITH THE NEW FIXED VERSION -->
 @auth_router.post("/signup")
 async def signup_user(payload: SignupRequest, request: Request):
+    """
+    Handle signup for users with university email domains.
+    Automatically verified if domain is registered.
+    """
     await verify_captcha(payload.captchaToken, request.client.host)
+    
+    # Verify that email domain is registered
     domain = payload.email.split("@")[-1]
     domain_res = supabase.table("allowed_domains").select("university_id").eq("domain_name", domain).single().execute()
     if not domain_res.data:
         raise HTTPException(status_code=400, detail="This email domain is not registered on CampusTrace.")
     
     try:
-        # Get the redirect URL - handle both list and string
+        # Prepare redirect URL for email confirmation
         redirect_url = None
         if settings.EMAIL_CONFIRM_REDIRECT:
             if isinstance(settings.EMAIL_CONFIRM_REDIRECT, list):
@@ -504,13 +549,13 @@ async def signup_user(payload: SignupRequest, request: Request):
                 "data": {
                     "full_name": payload.full_name,
                     "university_id": university_id,
-                    "is_verified": True,  # Verified by domain
+                    "is_verified": True,  # Auto-verified by domain
                     "role": "member"
                 }
             }
         }
         
-        # Only add options if we have a redirect URL
+        # Add email redirect only if configured
         if redirect_url:
             signup_options["options"]["email_redirect_to"] = redirect_url
         
@@ -519,19 +564,21 @@ async def signup_user(payload: SignupRequest, request: Request):
         print(f"Signup result: {result}")
         
         if result.user:
+            # Check if user already confirmed
             if hasattr(result.user, 'confirmed_at') and result.user.confirmed_at:
                 raise HTTPException(
                     status_code=400, 
                     detail="An account with this email already exists. Please sign in instead."
                 )
             
+            # Check if user has no identities (already exists but unconfirmed)
             if hasattr(result.user, 'identities') and not result.user.identities:
                 raise HTTPException(
                     status_code=400,
                     detail="An account with this email already exists. Please check your email to confirm your account."
                 )
             
-            # This upsert is also now a fallback
+            # Fallback: ensure profile exists (trigger should handle this)
             supabase.table("profiles").upsert({
                 "id": result.user.id,
                 "full_name": payload.full_name,
@@ -553,6 +600,7 @@ async def signup_user(payload: SignupRequest, request: Request):
         print(f"Signup failure - Full exception: {exc}")
         error_message = str(exc).lower()
         
+        # Handle common signup errors
         if "user already registered" in error_message:
             raise HTTPException(
                 status_code=400, 
@@ -568,6 +616,10 @@ async def signup_user(payload: SignupRequest, request: Request):
 # ============= Item Routes =============
 @item_router.get("/leaderboard")
 async def get_leaderboard(user_id: str = Depends(get_current_user_id)):
+    """
+    Get the top users leaderboard for the current user's university.
+    Returns top 10 users ranked by successful returns.
+    """
     try:
         profile_res = supabase.table("profiles").select("university_id").eq("id", user_id).single().execute()
         if not profile_res.data:
@@ -587,12 +639,15 @@ async def get_leaderboard(user_id: str = Depends(get_current_user_id)):
 
 @item_router.post("/generate-description")
 async def generate_description(payload: DescriptionRequest):
-    """Rewrites and enhances a user's draft description using the AI model."""
+    """
+    Rewrite and enhance user's draft description using AI.
+    Makes descriptions clearer and more helpful for matching.
+    Supports Taglish for Philippine universities.
+    """
     if not model:
         raise HTTPException(status_code=503, detail="AI features are not available.")
     
     try:
-        # <-- UPDATED Taglish/Local context prompt -->
         prompt = f"""
         A user in a Philippine university provided a draft description for a lost or found item. 
         Rewrite and enhance it to be clear, detailed, and effective.
@@ -616,17 +671,21 @@ async def generate_description(payload: DescriptionRequest):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to generate AI description: {str(e)}")
 
-# <-- ENTIRELY REPLACED create_item WITH THE NEW JINA VERSION -->
 @item_router.post("/create")
 async def create_item(
     item_data: str = Form(...),
     image_file: Optional[UploadFile] = File(None),
     user_id: str = Depends(get_current_user_id)
 ):
+    """
+    Create a new lost or found item post.
+    Generates AI tags and embeddings for smart matching.
+    Applies university moderation settings before publishing.
+    """
     try:
         print("\n🧩 --- [CREATE ITEM] ---")
 
-        # Parse input
+        # Parse the item data from form
         item = ItemCreate.parse_raw(item_data)
 
         # Fetch profile + university
@@ -636,10 +695,10 @@ async def create_item(
         university_id = profile_res.data["university_id"]
         user_full_name = profile_res.data.get("full_name", "A user")
 
-        # Get university settings
+        # Get university moderation settings
         uni_settings = await get_university_settings(university_id)
 
-        # Moderation
+        # Apply moderation rules
         moderation_status = "pending"
         post_content = f"{item.title.lower()} {item.description.lower()}"
         if uni_settings["keyword_blacklist"] and any(keyword in post_content for keyword in uni_settings["keyword_blacklist"]):
@@ -647,10 +706,10 @@ async def create_item(
         elif uni_settings["auto_approve_posts"]:
             moderation_status = "approved"
 
-        # AI tags
+        # Generate AI tags for better searchability
         ai_tags = await generate_ai_tags(item.title, item.description)
 
-        # Prepare text
+        # Prepare text for embedding
         combined_text = f"Title: {item.title}. Description: {item.description}. Location: {item.location}. Category: {item.category}."
 
         image_url = None
@@ -658,47 +717,40 @@ async def create_item(
         image_embedding = None
         text_embedding = None
 
-        # --- Upload + process image ---
+        # Upload and process image if provided
         if image_file:
             image_bytes = await image_file.read()
             max_image_size = int(os.getenv("MAX_IMAGE_SIZE", "5242880"))
 
-            # --- [JINA SPEED FIX: START] ---
-            # ALWAYS resize the image for Jina, not just if it's over the limit.
+            # Optimize image for embedding: resize first if too large
             if len(image_bytes) > max_image_size:
-                # If it's huge, do the efficient resize first
                 image_bytes = await run_in_threadpool(process_image_efficiently, image_bytes)
             
-            # Now, load into PIL and resize to a standard embedding size
+            # Load and resize to optimal size for Jina (800x800 max)
             pil_image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-            
-            # Resize to a max of 800x800 for Jina (fast and effective)
             pil_image.thumbnail((800, 800), Image.Resampling.LANCZOS)
             print(f"📸 Image resized for embedding: {type(pil_image)} Size: {pil_image.size}")
-            # --- [JINA SPEED FIX: END] ---
 
-            # --- [JINA SPEED FIX: Re-save the resized image for storage] ---
-            # We need to get the bytes from our resized pil_image
+            # Re-save the resized image for storage
             output_bytes_io = io.BytesIO()
             pil_image.save(output_bytes_io, format="JPEG", quality=90)
             image_bytes_for_storage = output_bytes_io.getvalue()
-            # --- [END FIX] ---
 
             file_suffix = Path(image_file.filename or ".jpg").suffix
             file_path = f"public/{user_id}/{uuid4().hex}{file_suffix}"
 
             supabase.storage.from_("item_images").upload(
                 path=file_path,
-                file=image_bytes_for_storage, # <-- Use the resized bytes
-                file_options={"content-type": "image/jpeg"} # <-- We know it's a JPEG now
+                file=image_bytes_for_storage,
+                file_options={"content-type": "image/jpeg"}
             )
             image_url = supabase.storage.from_("item_images").get_public_url(file_path)
 
-            # Generate IMAGE embedding (image only, no text)
+            # Generate image embedding (image only, no text)
             print("🔹 Generating image embedding...")
             image_embedding = await jina_embedding_util.get_multimodal_embedding(
                 text=None,
-                image=pil_image # <-- Pass the resized PIL image to Jina
+                image=pil_image
             )
             if image_embedding and not all(v == 0.0 for v in image_embedding):
                 print(f"✅ Image embedding successful (dim={len(image_embedding)})")
@@ -708,7 +760,7 @@ async def create_item(
 
             pil_image.close()
         
-        # Generate TEXT embedding (always, text only)
+        # Generate text embedding (always, text only)
         print("🔹 Generating text embedding...")
         text_embedding = await jina_embedding_util.get_multimodal_embedding(
             text=combined_text,
@@ -720,7 +772,7 @@ async def create_item(
             print("⚠️ Text embedding failed")
             text_embedding = None
 
-        # --- Save to Supabase ---
+        # Save item to database
         post_data = {
             "title": item.title,
             "description": item.description,
@@ -740,7 +792,7 @@ async def create_item(
         insert_response = supabase.table("items").insert(post_data).execute()
         new_item = insert_response.data[0]
 
-        # --- Notify admins if pending ---
+        # Notify admins if post needs moderation
         if moderation_status == "pending":
             admins_res = supabase.table("profiles").select("id").eq("university_id", university_id).eq("role", "admin").execute()
             if admins_res.data:
@@ -761,13 +813,16 @@ async def create_item(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-# <-- ENTIRELY REPLACED image-search WITH THE NEW JINA VERSION -->
 @item_router.post("/image-search")
 async def search_by_image(image_file: UploadFile = File(...), user_id: str = Depends(get_current_user_id)):
+    """
+    Search for similar items using an uploaded image.
+    Uses AI-powered image embeddings for visual matching.
+    """
     try:
         print("\n🔍 --- [IMAGE SEARCH DEBUG] ---")
 
-        # Get university
+        # Get user's university
         profile_res = supabase.table("profiles").select("university_id").eq("id", user_id).single().execute()
         if not profile_res.data:
             raise HTTPException(status_code=404, detail="User profile not found.")
@@ -783,7 +838,7 @@ async def search_by_image(image_file: UploadFile = File(...), user_id: str = Dep
             .execute()
         print(f"📊 Total items with image embeddings in this university: {count_check.count}")
 
-        # Read + convert image
+        # Read and convert uploaded image
         image_bytes = await image_file.read()
         pil_image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         print(f"📸 Search image: {pil_image.size} - {pil_image.mode}")
@@ -794,7 +849,7 @@ async def search_by_image(image_file: UploadFile = File(...), user_id: str = Dep
             pil_image.thumbnail(max_search_size, Image.Resampling.LANCZOS)
             print(f"📐 Resized search image to: {pil_image.size}")
 
-        # Generate IMAGE embedding only (no text)
+        # Generate image embedding (image only, no text)
         print("🔹 Generating Jina image embedding for search...")
         query_embedding = await jina_embedding_util.get_multimodal_embedding(
             text=None,
@@ -813,13 +868,13 @@ async def search_by_image(image_file: UploadFile = File(...), user_id: str = Dep
         print(f"✅ Query embedding generated (dim={len(query_embedding)})")
         print(f"🔢 First 5 values: {query_embedding[:5]}")
 
-        # Only use threshold=0.6, do NOT fallback to lower threshold
+        # Search using RPC with threshold of 0.6
         try:
             print(f"🔍 Calling RPC with threshold=0.6, count=10...")
             matches = supabase.rpc("match_items_by_image_embedding", {
                 "p_university_id": university_id,
                 "p_query_embedding": query_embedding,
-                "p_match_threshold": 0.6,
+                "p_match_threshold": 0.7,
                 "p_match_count": 10
             }).execute()
             
@@ -852,16 +907,15 @@ async def search_by_image(image_file: UploadFile = File(...), user_id: str = Dep
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Image search failed: {str(e)}")
 
-# <-- ENTIRELY REPLACED find-matches WITH THE NEW RPC VERSION -->
 @item_router.get("/find-matches/{item_id}")
 async def find_matches(item_id: int, user_id: str = Depends(get_current_user_id)):
     """
-    Finds AI-powered matches for a specific 'Lost' item owned by the user.
-    It calls a Supabase RPC function that calculates a weighted score
-    based on both text and image similarity.
+    Find AI-powered matches for a specific 'Lost' item.
+    Uses weighted scoring based on both text and image similarity.
+    Returns up to 4 potential matches.
     """
     try:
-        # 1. Security Check: Verify the item belongs to the user and is 'Lost'
+        # Security check: Verify the item belongs to the user and is 'Lost'
         item_res = supabase.table("items").select("university_id, user_id, status") \
             .eq("id", item_id) \
             .eq("user_id", user_id) \
@@ -871,16 +925,14 @@ async def find_matches(item_id: int, user_id: str = Depends(get_current_user_id)
             raise HTTPException(status_code=404, detail="Item not found or you are not the owner.")
         
         if item_res.data['status'] != 'Lost':
-            # Don't return matches for 'Found' items in this UI
             print(f"Match check skipped: Item {item_id} is not a 'Lost' item.")
             return []
 
-        # 2. Call the new RPC function
-        # These weights can be tuned over time
-        TEXT_WEIGHT = 0.6
-        IMAGE_WEIGHT = 0.4
-        MATCH_THRESHOLD = 0.5 # 50% combined score (can be adjusted)
-        MATCH_COUNT = 4       # Frontend is designed to show 4
+        # Call RPC function to find matches
+        TEXT_WEIGHT = 0.6  # Weight for text similarity
+        IMAGE_WEIGHT = 0.4  # Weight for image similarity
+        MATCH_THRESHOLD = 0.7  # Minimum combined score (70%)
+        MATCH_COUNT = 4  # Number of matches to return
 
         print(f"🔍 Finding matches for Lost Item ID: {item_id}...")
         matches_res = supabase.rpc("find_matches_for_lost_item", {
@@ -893,24 +945,22 @@ async def find_matches(item_id: int, user_id: str = Depends(get_current_user_id)
 
         if matches_res.data:
             print(f"✅ Found {len(matches_res.data)} matches for item {item_id}.")
-            # The RPC function returns the data in the exact format needed by the frontend
             return matches_res.data
         else:
             print(f"❌ No matches found for item {item_id} above threshold {MATCH_THRESHOLD}.")
             return []
 
     except HTTPException as http_exc:
-        # Re-raise known exceptions
         raise http_exc
     except Exception as e:
-        # Log and raise a generic error for everything else
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"An error occurred while finding matches: {str(e)}")
 
 @item_router.put("/{item_id}/recover")
 async def mark_as_recovered(item_id: int, user_id: str = Depends(get_current_user_id)):
     """
-    Marks an item as 'recovered' by either the poster or the approved claimant.
+    Mark an item as 'recovered' and close the case.
+    Can only be done by the poster or the approved claimant.
     """
     try:
         # Get item details
@@ -921,16 +971,16 @@ async def mark_as_recovered(item_id: int, user_id: str = Depends(get_current_use
         finder_id = item_res.data['user_id']
         university_id = item_res.data['university_id']
         
-        # Find who the approved claimant is (if any)
+        # Find the approved claimant (if any)
         claim_res = supabase.table("claims").select("claimant_id").eq("item_id", item_id).eq("status", "approved").execute()
         
         approved_claimant_id = claim_res.data[0]['claimant_id'] if claim_res.data else None
 
-        # Security check: Only the poster or the approved claimant can mark as recovered
+        # Security check: Only poster or approved claimant can mark as recovered
         if user_id not in [finder_id, approved_claimant_id]:
             raise HTTPException(status_code=403, detail="You are not authorized to perform this action.")
             
-        # Update the item status
+        # Update the item status to recovered
         supabase.table("items").update({"moderation_status": "recovered"}).eq("id", item_id).execute()
 
         # Notify both parties
@@ -944,11 +994,13 @@ async def mark_as_recovered(item_id: int, user_id: str = Depends(get_current_use
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
 # ============= Conversations Router =============
 @conversations_router.post("/")
 async def get_or_create_conversation(item_id: int = Form(...), user_id: str = Depends(get_current_user_id)):
     """
-    Gets an existing conversation ID or creates a new one for a specific item.
+    Get an existing conversation or create a new one for an item.
+    Prevents users from starting conversations on their own posts.
     """
     try:
         # Get the item details
@@ -959,13 +1011,13 @@ async def get_or_create_conversation(item_id: int = Form(...), user_id: str = De
         poster_id = item_res.data['user_id']
         message_sender_id = user_id
 
-        # Prevent a user from starting a chat on their own post
+        # Prevent self-messaging
         if poster_id == message_sender_id:
             raise HTTPException(status_code=400, detail="You cannot start a conversation on your own item.")
 
         item_status = item_res.data['status']
         
-        # Determine who is the 'finder' and who is the 'claimant'
+        # Determine conversation participants based on item status
         finder_id = poster_id if item_status == 'Found' else message_sender_id
         claimant_id = message_sender_id if item_status == 'Found' else poster_id
         
@@ -977,11 +1029,11 @@ async def get_or_create_conversation(item_id: int = Form(...), user_id: str = De
             .eq("claimant_id", claimant_id) \
             .execute()
 
-        # If it exists, return the existing ID
+        # Return existing conversation ID if found
         if existing_convo_res.data:
             return {"conversation_id": existing_convo_res.data[0]['id']}
 
-        # If not, create a new conversation
+        # Create a new conversation
         new_convo_res = supabase.table("conversations").insert({
             "item_id": item_id,
             "finder_id": finder_id,
@@ -999,11 +1051,14 @@ async def get_or_create_conversation(item_id: int = Form(...), user_id: str = De
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-# ============= Conversations Router =============
 @conversations_router.delete("/{conversation_id}")
 async def delete_conversation(conversation_id: int, user_id: str = Depends(get_current_user_id)):
-    """Deletes a conversation and its associated messages if the user is a participant."""
+    """
+    Delete a conversation and all its messages.
+    Only participants in the conversation can delete it.
+    """
     try:
+        # Verify user is a participant
         convo_res = supabase.table("conversations")\
             .select("id, finder_id, claimant_id")\
             .eq("id", conversation_id)\
@@ -1015,15 +1070,18 @@ async def delete_conversation(conversation_id: int, user_id: str = Depends(get_c
 
         conversation = convo_res.data
 
+        # Check authorization
         if user_id not in [conversation.get("finder_id"), conversation.get("claimant_id")]:
             raise HTTPException(status_code=403, detail="Not authorized to delete this conversation.")
 
+        # Delete all messages in the conversation first
         messages_delete_res = supabase.table("messages")\
             .delete()\
             .eq("conversation_id", conversation_id)\
             .execute()
         print(f"Deleted messages associated with conversation {conversation_id}")
 
+        # Delete the conversation
         convo_delete_res = supabase.table("conversations")\
             .delete()\
             .eq("id", conversation_id)\
@@ -1040,7 +1098,12 @@ async def delete_conversation(conversation_id: int, user_id: str = Depends(get_c
 # ============= Claims Routes =============
 @claims_router.post("/create")
 async def submit_claim(payload: ClaimCreate, claimant_id: str = Depends(get_current_user_id)):
+    """
+    Submit a claim for a 'Found' item.
+    Includes verification message to prove ownership.
+    """
     try:
+        # Get item details and verify it's a 'Found' item
         item_res = supabase.table("items").select("user_id, title, status, university_id").eq("id", payload.item_id).single().execute()
         if not item_res.data:
             raise HTTPException(status_code=404, detail="Item not found.")
@@ -1051,9 +1114,11 @@ async def submit_claim(payload: ClaimCreate, claimant_id: str = Depends(get_curr
         item_title = item_res.data['title']
         item_university_id = item_res.data['university_id']
         
+        # Prevent claiming own items
         if finder_id == claimant_id:
              raise HTTPException(status_code=400, detail="You cannot claim your own item.")
 
+        # Create the claim record
         claim_data = {
             "item_id": payload.item_id,
             "claimant_id": claimant_id,
@@ -1063,9 +1128,11 @@ async def submit_claim(payload: ClaimCreate, claimant_id: str = Depends(get_curr
         }
         supabase.table("claims").insert(claim_data).execute()
         
+        # Get claimant's name for notification
         claimant_profile_res = supabase.table("profiles").select("full_name").eq("id", claimant_id).single().execute()
         claimant_name = claimant_profile_res.data.get('full_name', 'A user') if claimant_profile_res.data else 'A user'
 
+        # Notify the finder
         message = f"{claimant_name} has submitted a claim on your found item: '{item_title}'."
         create_notification(recipient_id=finder_id, university_id=item_university_id, message=message, link_to="/dashboard/my-posts", type='claim')
         
@@ -1076,11 +1143,17 @@ async def submit_claim(payload: ClaimCreate, claimant_id: str = Depends(get_curr
 
 @claims_router.get("/item/{item_id}")
 async def get_claims_for_item(item_id: int, user_id: str = Depends(get_current_user_id)):
+    """
+    Get all pending claims for an item.
+    Only the item owner can view claims.
+    """
     try:
+        # Verify ownership
         item_res = supabase.table("items").select("user_id").eq("id", item_id).eq("user_id", user_id).single().execute()
         if not item_res.data:
             raise HTTPException(status_code=403, detail="You are not the owner of this item.")
             
+        # Get all pending claims with claimant details
         claims_res = supabase.table("claims").select("*, claimant:profiles!claimant_id(full_name, email)").eq("item_id", item_id).eq("status", "pending").execute()
         
         return claims_res.data
@@ -1088,11 +1161,14 @@ async def get_claims_for_item(item_id: int, user_id: str = Depends(get_current_u
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-# app/main.py
-
 @claims_router.put("/{claim_id}/respond")
 async def respond_to_claim(claim_id: int, payload: ClaimRespond, finder_id: str = Depends(get_current_user_id)):
+    """
+    Approve or reject a claim on a found item.
+    If approved, creates a conversation and rejects other pending claims.
+    """
     try:
+        # Get claim details and verify authorization
         claim_res = supabase.table("claims").select("*, item:items(id, title, user_id, university_id)").eq("id", claim_id).single().execute()
         if not claim_res.data or claim_res.data['finder_id'] != finder_id:
             raise HTTPException(status_code=403, detail="You are not authorized to respond to this claim.")
@@ -1105,13 +1181,14 @@ async def respond_to_claim(claim_id: int, payload: ClaimRespond, finder_id: str 
 
         new_status = 'approved' if payload.approved else 'rejected'
         
+        # Update claim status
         supabase.table("claims").update({"status": new_status}).eq("id", claim_id).execute()
         
         if payload.approved:
+            # Change item status to pending return
             supabase.table("items").update({"moderation_status": "pending_return"}).eq("id", claim['item_id']).execute()
             
-            # --- [FIX APPLIED HERE] ---
-            # Check if a conversation already exists before creating one
+            # Check if conversation already exists, otherwise create one
             existing_convo_res = supabase.table("conversations") \
                 .select("id") \
                 .eq("item_id", item_id) \
@@ -1121,11 +1198,11 @@ async def respond_to_claim(claim_id: int, payload: ClaimRespond, finder_id: str 
 
             conversation_id = None
             if existing_convo_res.data:
-                # Use the existing conversation ID
+                # Use existing conversation
                 conversation_id = existing_convo_res.data[0]['id']
                 print(f"Claim approval: Found existing conversation {conversation_id}")
             else:
-                # No conversation exists, so create a new one
+                # Create new conversation
                 print(f"Claim approval: No conversation found, creating new one...")
                 new_convo_res = supabase.table("conversations").insert({
                     "item_id": item_id,
@@ -1136,8 +1213,8 @@ async def respond_to_claim(claim_id: int, payload: ClaimRespond, finder_id: str 
                 if not new_convo_res.data:
                      raise Exception("Failed to create conversation after claim approval.")
                 conversation_id = new_convo_res.data[0]['id']
-            # --- [END FIX] ---
 
+            # Get email addresses for notifications
             finder_profile_res = supabase.table("profiles").select("email").eq("id", finder_id).single().execute()
             claimant_profile_res = supabase.table("profiles").select("email").eq("id", claimant_id).single().execute()
             finder_email = finder_profile_res.data.get('email', 'N/A')
@@ -1148,11 +1225,13 @@ async def respond_to_claim(claim_id: int, payload: ClaimRespond, finder_id: str 
             
             chat_link = f"/dashboard/messages/{conversation_id}"
             create_notification(recipient_id=finder_id, university_id=item_university_id, message=finder_message, link_to=chat_link, type='claim_response')
-            create_notification(recipient_id=claimant_id, university_id=item_university_id, message=claimant_message, link_to=chat_link, type='claim_response')  # Fixed typo
+            create_notification(recipient_id=claimant_id, university_id=item_university_id, message=claimant_message, link_to=chat_link, type='claim_response')
 
+            # Auto-reject other pending claims for this item
             supabase.table("claims").update({"status": "rejected"}).eq("item_id", claim['item_id']).eq("status", "pending").execute()
 
         else:
+            # Notify claimant of rejection
             message = f"Unfortunately, your claim for '{item_title}' was not approved by the finder."
             create_notification(recipient_id=claimant_id, university_id=item_university_id, message=message, type='claim_response')
             
@@ -1164,24 +1243,31 @@ async def respond_to_claim(claim_id: int, payload: ClaimRespond, finder_id: str 
 # ============= Admin Routes =============
 @admin_router.get("/manual-verifications")
 async def get_manual_verifications(admin_id: str = Depends(get_current_user_id)):
-    """Fetches all pending manual verification requests for the admin's university."""
+    """
+    Get all pending manual verification requests for admin's university.
+    Returns user details along with verification information.
+    """
     try:
+        # Get admin's university
         profile_res = supabase.table("profiles").select("university_id").eq("id", admin_id).single().execute()
         if not profile_res.data:
             raise HTTPException(status_code=404, detail="Admin profile not found.")
         university_id = profile_res.data['university_id']
 
+        # Get all pending verifications for this university
         verifications_res = supabase.table("user_verifications").select("*").eq("university_id", university_id).eq("status", "pending").execute()
 
         if not verifications_res.data:
             return []
 
+        # Get user profiles for these verifications
         user_ids = [req['user_id'] for req in verifications_res.data]
 
         profiles_res = supabase.table("profiles").select("id, full_name, email").in_("id", user_ids).execute()
         if not profiles_res.data:
             return verifications_res.data
 
+        # Combine verification data with user profiles
         profiles_map = {profile['id']: profile for profile in profiles_res.data}
 
         combined_data = []
@@ -1201,9 +1287,12 @@ async def respond_to_verification(
     action: VerificationAction,
     admin_id: str = Depends(get_current_user_id)
 ):
-    """Allows an admin to approve or reject a manual verification request."""
+    """
+    Approve or reject a manual verification request.
+    If approved, sends confirmation email and enables user account.
+    """
     try:
-        # Get admin's profile to verify they are an admin
+        # Verify admin authorization
         admin_profile_res = supabase.table("profiles").select("university_id, role").eq("id", admin_id).single().execute()
         if not admin_profile_res.data or admin_profile_res.data.get('role') != 'admin':
              raise HTTPException(status_code=403, detail="User is not an authorized administrator.")
@@ -1214,7 +1303,7 @@ async def respond_to_verification(
         if not verification_res.data:
             raise HTTPException(status_code=404, detail="Verification request not found.")
         
-        # Check if admin is authorized for this university
+        # Check if admin has authority for this university
         if verification_res.data['university_id'] != admin_university_id:
              raise HTTPException(status_code=403, detail="Admin not authorized for this university's request.")
 
@@ -1222,28 +1311,27 @@ async def respond_to_verification(
         if action.user_id != user_id_to_verify:
              raise HTTPException(status_code=400, detail="User ID mismatch between request body and verification record.")
 
-        # --- [THIS IS THE FIX] ---
-        # Use the university ID from the ORIGINAL verification request, not the admin's ID
+        # Use the university ID from the verification request
         university_id_for_user = verification_res.data['university_id']
-        # --- [END FIX] ---
 
         if action.approve:
-            # Update the user's profile with their CHOSEN university ID
+            # Approve: Update user profile
             update_res = supabase.table("profiles").update({
-                "university_id": university_id_for_user, # <-- Use the correct ID
+                "university_id": university_id_for_user,
                 "is_verified": True
             }).eq("id", user_id_to_verify).execute()
 
-            # Update the verification request status
+            # Update verification status
             supabase.table("user_verifications").update({"status": "approved"}).eq("id", verification_id).execute()
 
-            # Get user's email/name for the notification email
+            # Get user details for email
             user_profile_res = supabase.table("profiles").select("email, full_name").eq("id", user_id_to_verify).single().execute()
             user_email, user_name = None, "there"
             if user_profile_res.data:
                 user_email = user_profile_res.data.get('email')
                 user_name = user_profile_res.data.get('full_name', user_name)
 
+            # Send approval email if configured
             if user_email and settings.RESEND_API_KEY:
                 try:
                     login_url = "https://campustrace.site/login" 
@@ -1273,7 +1361,7 @@ async def respond_to_verification(
             # Send in-app notification
             create_notification(
                 recipient_id=user_id_to_verify,
-                university_id=university_id_for_user, # <-- Use the correct ID here too
+                university_id=university_id_for_user,
                 message="Congratulations! Your account has been manually verified. You can now log in.",
                 link_to="/login",
                 type="verification_success"
@@ -1281,12 +1369,12 @@ async def respond_to_verification(
             return {"message": "User approved successfully."}
         
         else:
-            # If the action is 'reject'
+            # Reject the verification request
             supabase.table("user_verifications").update({"status": "rejected"}).eq("id", verification_id).execute()
 
             create_notification(
                 recipient_id=user_id_to_verify,
-                university_id=university_id_for_user, # <-- Use the correct ID here too
+                university_id=university_id_for_user,
                 message="Your manual verification request was not approved. Please ensure your ID image is clear and valid.",
                 link_to=None,
                 type="verification_failure"
@@ -1297,8 +1385,13 @@ async def respond_to_verification(
         raise HTTPException(status_code=500, detail=f"An internal error occurred: {str(e)}")
     
 @admin_router.post("/items/{item_id}/status")
-async def set_item_status(item_id: int, data: StatusUpdate, admin_id: str = Depends(get_current_user_id)): # <-- Fixed item_id type
+async def set_item_status(item_id: int, data: StatusUpdate, admin_id: str = Depends(get_current_user_id)):
+    """
+    Update an item's moderation status (admin only).
+    Notifies the item owner of the status change.
+    """
     try:
+        # Get item details
         item_res = supabase.table("items").select("user_id, title, university_id").eq("id", item_id).single().execute()
         if not item_res.data:
             raise HTTPException(status_code=404, detail="Item not found.")
@@ -1306,8 +1399,11 @@ async def set_item_status(item_id: int, data: StatusUpdate, admin_id: str = Depe
         item_owner_id = item_res.data['user_id']
         item_title = item_res.data['title']
         university_id = item_res.data['university_id']
+        
+        # Update item status
         resp = supabase.table("items").update({"moderation_status": data.moderation_status}).eq("id", item_id).execute()
         
+        # Notify item owner
         message = f"An admin has updated your post '{item_title}' to a status of: {data.moderation_status}."
         create_notification(recipient_id=item_owner_id, university_id=university_id, message=message, link_to="/dashboard/my-posts", type='moderation')
         
@@ -1318,6 +1414,7 @@ async def set_item_status(item_id: int, data: StatusUpdate, admin_id: str = Depe
 
 @admin_router.post("/users/{user_id}/ban")
 async def set_user_ban(user_id: str, data: BanUpdate, admin_id: str = Depends(get_current_user_id)):
+    """Ban or unban a user (admin only)."""
     try:
         resp = supabase.table("profiles").update({"is_banned": data.is_banned}).eq("id", user_id).execute()
         return {"updated": resp.data}
@@ -1327,6 +1424,7 @@ async def set_user_ban(user_id: str, data: BanUpdate, admin_id: str = Depends(ge
 
 @admin_router.post("/users/{user_id}/role")
 async def set_user_role(user_id: str, data: RoleUpdate, admin_id: str = Depends(get_current_user_id)):
+    """Change a user's role (admin only)."""
     try:
         resp = supabase.table("profiles").update({"role": data.role}).eq("id", user_id).execute()
         return {"updated": resp.data}
@@ -1337,6 +1435,10 @@ async def set_user_role(user_id: str, data: RoleUpdate, admin_id: str = Depends(
 # ============= Profile Routes =============
 @profile_router.put("/")
 async def update_profile(full_name: Optional[str] = Form(None), avatar: Optional[UploadFile] = File(None), current_user_id: str = Depends(get_current_user_id)):
+    """
+    Update user profile information (name and/or avatar).
+    Avatar images are automatically resized for efficiency.
+    """
     try:
         updates = {}
         if full_name is not None:
@@ -1346,10 +1448,12 @@ async def update_profile(full_name: Optional[str] = Form(None), avatar: Optional
             filename = f"{current_user_id}/{uuid4().hex}{file_suffix}"
             file_bytes = await avatar.read()
             
+            # Resize avatar if too large
             max_avatar_size = int(os.getenv('MAX_AVATAR_SIZE', '2097152'))
             if len(file_bytes) > max_avatar_size:
                 file_bytes = process_image_efficiently(file_bytes, max_size=(400, 400))
             
+            # Upload with upsert to replace old avatar
             supabase.storage.from_("other_images").upload(
                 path=filename,
                 file=file_bytes,
@@ -1361,6 +1465,7 @@ async def update_profile(full_name: Optional[str] = Form(None), avatar: Optional
         if not updates:
             raise HTTPException(status_code=400, detail="No update information provided.")
         
+        # Apply updates
         supabase.table("profiles").update(updates).eq("id", current_user_id).execute()
         profile_result = supabase.table("profiles").select("id, full_name, email, avatar_url, role, is_banned").eq("id", current_user_id).single().execute()
         return {"profile": profile_result.data}
@@ -1370,7 +1475,10 @@ async def update_profile(full_name: Optional[str] = Form(None), avatar: Optional
 
 @profile_router.get("/preferences")
 async def get_user_preferences(current_user_id: str = Depends(get_current_user_id)):
-    """Get user notification preferences."""
+    """
+    Get user notification preferences.
+    Returns default values if no preferences are set.
+    """
     try:
         profile_result = supabase.table("profiles").select(
             "match_notifications, claim_notifications, message_notifications, "
@@ -1402,7 +1510,10 @@ async def get_user_preferences(current_user_id: str = Depends(get_current_user_i
 
 @profile_router.put("/preferences")
 async def update_user_preferences(preferences: UserPreferences, current_user_id: str = Depends(get_current_user_id)):
-    """Update user notification preferences."""
+    """
+    Update user notification preferences.
+    Controls which types of notifications the user receives.
+    """
     try:
         updates = {
             "match_notifications": preferences.match_notifications,
@@ -1420,6 +1531,7 @@ async def update_user_preferences(preferences: UserPreferences, current_user_id:
         raise HTTPException(status_code=500, detail=f"Failed to update preferences: {str(e)}")
 
 # ============= Include Routers =============
+# Register all API routers with the main app
 app.include_router(auth_router)
 app.include_router(item_router)
 app.include_router(admin_router)
@@ -1432,7 +1544,10 @@ app.include_router(conversations_router)
 # ============= Health Check & Root =============
 @app.get("/health")
 async def health_check():
-    """Railway health check endpoint."""
+    """
+    Health check endpoint for deployment platforms (e.g., Railway).
+    Returns service status and AI availability.
+    """
     return {
         "status": "healthy",
         "service": "campustrace-api",
@@ -1442,8 +1557,9 @@ async def health_check():
 
 @app.get("/")
 def read_root():
+    """Root endpoint with basic API information."""
     return {
-        "status": "Campus Trace backend is running!", # <-- UPDATED message
+        "status": "Campus Trace backend is running!",
         "ai_enabled": model is not None,
         "environment": "production",
         "docs": "/docs",
