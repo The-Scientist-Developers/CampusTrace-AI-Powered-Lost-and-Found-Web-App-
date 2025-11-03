@@ -1,5 +1,8 @@
 import React from "react";
-import { Github, Linkedin } from "lucide-react";
+import { Github, Linkedin, Home, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet";
+import logo from "../../Images/Logo.svg";
 import JohnImage from "../../assets/frank.jpg";
 import WilliamImage from "../../assets/william.jpg";
 import JeromeImage from "../../assets/jerome.jpg";
@@ -79,26 +82,70 @@ export default function AboutUsPage() {
   ];
 
   return (
-    <div className="bg-white dark:bg-[#1a1a1a] text-neutral-700 dark:text-gray-100 min-h-screen pt-28 pb-12 flex flex-col justify-center items-center">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center animate-fade-in-up">
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-neutral-900 dark:text-white mb-6">
-          About Our Team
-        </h1>
-        <p className="text-lg sm:text-xl text-neutral-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed mb-12">
-          We are a dedicated team of student developers from Isabela State
-          University, bringing innovative solutions to campus challenges. Campus
-          Trace is our project, born from a passion for technology and
-          community.
-        </p>
+    <div className="bg-white dark:bg-[#1a1a1a] text-neutral-700 dark:text-gray-100 min-h-screen">
+      <Helmet>
+        <title>About Us - Meet the CampusTrace Team</title>
+        <meta
+          name="description"
+          content="Meet the student developers behind CampusTrace from Isabela State University. Learn about our mission to solve campus lost and found challenges with AI technology."
+        />
+        <meta
+          name="keywords"
+          content="about campustrace, team, student developers, isabela state university, campus innovation, AI lost and found"
+        />
+      </Helmet>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12 mt-12">
-          {teamMembers.map((member, index) => (
-            <TeamMemberCard
-              key={member.name}
-              {...member}
-              style={{ animationDelay: `${index * 100 + 200}ms` }}
-            />
-          ))}
+      {/* Header with Logo and Back Button */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur-lg border-b border-neutral-200/50 dark:border-neutral-800/50">
+        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 sm:h-20">
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
+              <img
+                src={logo}
+                alt="CampusTrace logo"
+                className="h-10 w-10 sm:h-12 sm:w-12 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
+              />
+              <span className="text-lg sm:text-xl font-bold text-neutral-800 dark:text-white">
+                CampusTrace
+              </span>
+            </Link>
+
+            {/* Back to Home Button */}
+            <Link
+              to="/"
+              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg hover:bg-primary-700 transform hover:-translate-y-0.5 transition-all duration-300"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Back to Home</span>
+              <Home className="w-4 h-4 sm:hidden" />
+            </Link>
+          </div>
+        </nav>
+      </header>
+
+      {/* Main Content */}
+      <div className="pt-28 pb-12 flex flex-col justify-center items-center">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center animate-fade-in-up">
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-neutral-900 dark:text-white mb-6">
+            About Our Team
+          </h1>
+          <p className="text-lg sm:text-xl text-neutral-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed mb-12">
+            We are a dedicated team of student developers from Isabela State
+            University, bringing innovative solutions to campus challenges.
+            Campus Trace is our project, born from a passion for technology and
+            community.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12 mt-12">
+            {teamMembers.map((member, index) => (
+              <TeamMemberCard
+                key={member.name}
+                {...member}
+                style={{ animationDelay: `${index * 100 + 200}ms` }}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>

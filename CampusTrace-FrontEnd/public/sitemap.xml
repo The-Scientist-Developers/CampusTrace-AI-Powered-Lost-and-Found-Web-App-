@@ -14,6 +14,13 @@
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>
+
+    <url>
+    <loc>https://www.campustrace.site/#screenshots</loc>
+    <priority>0.8</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+
   <url>
     <loc>https://www.campustrace.site/about</loc>
     <priority>0.7</priority>

@@ -7,6 +7,7 @@ import postNewItem from "../../assets/PostItem.png";
 import logo from "../../Images/Logo.svg";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet";
 import { motion, useAnimation } from "framer-motion";
 import { useInView as useIntersectionObserver } from "react-intersection-observer";
 import { LazyLoadImage } from "react-lazy-load-image-component";
@@ -913,6 +914,18 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1a] text-neutral-800 dark:text-neutral-300 flex flex-col overflow-x-hidden">
+      <Helmet>
+        <title>CampusTrace - AI-Powered Lost and Found for Universities</title>
+        <meta
+          name="description"
+          content="CampusTrace is an intelligent lost and found platform for universities. Report lost items, claim found belongings, and reconnect with what matters using AI-powered matching technology."
+        />
+        <meta
+          name="keywords"
+          content="campustrace, lost and found, university platform, campus lost items, AI matching, student community, campus security, item recovery"
+        />
+      </Helmet>
+
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-[#1a1a1a] border-b border-neutral-200 dark:border-neutral-800">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

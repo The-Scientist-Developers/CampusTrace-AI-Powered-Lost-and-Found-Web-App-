@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../../api/apiClient.js";
 import { toast, Toaster } from "react-hot-toast";
+import { Helmet } from "react-helmet";
 import logo from "../../Images/Logo.svg";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import {
@@ -632,6 +633,26 @@ export default function LoginPage() {
 
   return (
     <>
+      <Helmet>
+        <title>
+          {isLogin
+            ? "Login - CampusTrace Lost and Found"
+            : "Sign Up - Join CampusTrace"}
+        </title>
+        <meta
+          name="description"
+          content={
+            isLogin
+              ? "Log in to CampusTrace to access your university's lost and found platform. Report lost items, claim found items, and help reunite belongings with their owners."
+              : "Create your CampusTrace account using your university email. Join the intelligent lost and found platform and help build a helpful campus community."
+          }
+        />
+        <meta
+          name="keywords"
+          content="campustrace login, sign up, student portal, lost and found login, campus account, university authentication"
+        />
+      </Helmet>
+
       <Toaster
         position="top-center"
         reverseOrder={false}
