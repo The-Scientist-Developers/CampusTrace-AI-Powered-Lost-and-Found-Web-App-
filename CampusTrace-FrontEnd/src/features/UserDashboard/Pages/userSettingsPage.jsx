@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../../../api/apiClient";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2, KeyRound } from "lucide-react";
 import axios from "axios";
 import { useTheme } from "../../../contexts/ThemeContext";
 
@@ -115,6 +116,7 @@ const UserSettingsPageSkeleton = () => (
 );
 
 export default function UserSettingsPage() {
+  const navigate = useNavigate();
   const {
     colorMode,
     setColorMode,
@@ -384,6 +386,35 @@ export default function UserSettingsPage() {
                 "Save Preferences"
               )}
             </button>
+          </div>
+        </SectionCard>
+      </div>
+
+      {/* Security Section */}
+      <div className="mt-8">
+        <SectionCard
+          title="Security"
+          description="Manage your account security and password settings."
+        >
+          <div className="py-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
+                  Password
+                </h3>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  Update your password to keep your account secure. We recommend
+                  changing it regularly.
+                </p>
+              </div>
+              <button
+                onClick={() => navigate("/reset-password")}
+                className="w-full sm:w-auto px-5 py-2.5 sm:py-2 bg-primary-600 text-white font-semibold text-sm rounded-lg hover:bg-primary-700 transition flex items-center justify-center gap-2 flex-shrink-0"
+              >
+                <KeyRound className="w-4 h-4" />
+                Update Password
+              </button>
+            </div>
           </div>
         </SectionCard>
       </div>
