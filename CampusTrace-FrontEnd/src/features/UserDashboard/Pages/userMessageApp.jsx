@@ -262,8 +262,11 @@ const MessagesPage = ({ user }) => {
                     className={`flex items-center p-4 gap-3 cursor-pointer border-b border-neutral-100 dark:border-[#2a2a2a] transition-all relative group ${
                       // Keep relative and group
                       convo.id.toString() === conversationId
-                        ? "bg-primary-50 dark:bg-primary-500/10 border-l-4 border-l-primary-600"
-                        : "hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
+                      ? "bg-neutral-100 dark:bg-[#2a2a2a] border-l-4 border-l-primary-600"
+                      : "hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
+
+                        // ? "bg-primary-50 dark:bg-primary-500/10 border-l-4 border-l-primary-600"
+                        // : "hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
                     }`}
                   >
                     <img
@@ -560,7 +563,8 @@ const ChatWindow = ({ conversation, user }) => {
 
         {/* Item Info Bar */}
         {conversation.item?.status && ( // Check if item status exists
-          <div className="mt-3 p-2 bg-primary-50 dark:bg-primary-500/10 rounded-lg flex items-center gap-2">
+          // <div className="mt-3 p-2 bg-primary-50 dark:bg-primary-500/10 rounded-lg flex items-center gap-2">
+          <div className="mt-3 p-2 bg-neutral-100 dark:bg-[#2a2a2a] rounded-lg flex items-center gap-2 text-neutral-900 dark:text-white">
             <span className="text-lg">
               {conversation.item.status === "lost" ? "🔍" : "📦"}
             </span>
