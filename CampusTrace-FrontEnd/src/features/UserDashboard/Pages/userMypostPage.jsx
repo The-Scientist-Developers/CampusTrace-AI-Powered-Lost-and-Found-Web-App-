@@ -839,8 +839,8 @@ export default function MyPostsPage({ user }) {
                   key={`claim-item-${post.id}`}
                   className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden"
                 >
-                  <div className="p-6 bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/10 dark:to-primary-900/20 border-b border-neutral-200 dark:border-neutral-700">
-                    <div className="flex items-center gap-4">
+                  {/* <div className="p-6 bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/10 dark:to-primary-900/20 border-b border-neutral-200 dark:border-neutral-700"> */}
+<div className="p-6 bg-gradient-to-r from-primary-50 to-primary-100 dark:bg-gradient-to-r dark:from-[#2a2a2a] dark:to-[#2e2e2e] border-b border-neutral-200 dark:border-neutral-700">                    <div className="flex items-center gap-4">
                       {post.image_url ? (
                         <img
                           src={post.image_url}
