@@ -44,6 +44,7 @@ import ManualVerificationAdminPage from "./features/AdminDashboard/Pages/adminVe
 import PendingApprovalPage from "./features/MainPages/pendingApprovalPage.jsx";
 import ForgotPasswordPage from "./features/MainPages/forgotPasswordPage.jsx";
 import ConfirmEmailPage from "./features/MainPages/confirmPage.jsx";
+import AdminBackupPage from "./features/AdminDashboard/Pages/adminBackupPage.jsx";
 
 function PrivateRouter({ children, isLoading, session }) {
   if (isLoading) return <LoadingScreen />;
@@ -324,6 +325,10 @@ function AppContent() {
               <Route
                 path="manual-verifications"
                 element={<ManualVerificationAdminPage />}
+              />
+              <Route
+                path="backup"
+                element={<AdminBackupPage user={session?.user} />}
               />
               <Route path="help" element={<HelpPage user={session?.user} />} />
             </Route>

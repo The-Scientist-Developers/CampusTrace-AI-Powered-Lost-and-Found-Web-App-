@@ -23,6 +23,7 @@ import {
   HelpCircle,
   Plus,
   LayoutGrid,
+  Database,
 } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import Skeleton from "react-loading-skeleton";
@@ -123,6 +124,7 @@ const menuItems = [
   },
   { label: "Notifications", icon: Bell, path: "/admin/notifications" },
   { label: "Profile", icon: User, path: "/admin/profile" },
+  { label: "Backup / Restore", icon: Database, path: "/admin/backup" },
 ];
 
 const bottomItems = [

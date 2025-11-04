@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Form, Req
 from pydantic import BaseModel, EmailStr
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
 from typing import List, Optional
 import traceback
 from PIL import Image
@@ -19,12 +20,27 @@ import asyncio
 from fastapi.concurrency import run_in_threadpool
 
 from app.config import get_settings
-from app.dependencies import get_current_user_id, supabase
+from app.dependencies import get_current_user_id, get_admin_university_id, supabase
 from app import jina_embedding_util
 
 # Load application settings and initialize global variables
 settings = get_settings()
 model = None  # Will hold the Gemini AI model after startup
+
+# List of blacklisted public email domains
+PUBLIC_EMAIL_DOMAINS = {
+    'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com',
+    'icloud.com', 'mail.com', 'protonmail.com', 'zoho.com', 'yandex.com',
+    'gmx.com', 'inbox.com', 'live.com', 'msn.com', 'yahoo.co.uk',
+    'yahoo.co.in', 'yahoo.fr', 'yahoo.de', 'yahoo.es', 'yahoo.it',
+    'googlemail.com', 'me.com', 'mac.com', 'rediffmail.com', 'fastmail.com',
+    'hushmail.com', 'tutanota.com', 'mailfence.com', 'runbox.com'
+}
+
+def is_public_email_domain(email: str) -> bool:
+    """Check if email domain is a public email service."""
+    domain = email.split('@')[1].lower() if '@' in email else ''
+    return domain in PUBLIC_EMAIL_DOMAINS
 
 app = FastAPI(
     title="CampusTrace API",
@@ -176,6 +192,7 @@ onboarding_router = APIRouter(prefix="/api/onboarding", tags=["Onboarding"])
 notification_router = APIRouter(prefix="/api/notifications", tags=["Notifications"])
 claims_router = APIRouter(prefix="/api/claims", tags=["Claims"])
 conversations_router = APIRouter(prefix="/api/conversations", tags=["Conversations"])
+backup_router = APIRouter(prefix="/api/backup", tags=["Backup & Restore"])
 
 # ============= Helper Functions =============
 async def get_university_settings(university_id: int):
@@ -324,6 +341,13 @@ async def register_university(payload: UniversityRegistrationRequest):
     new_university_id = None
     new_user_id = None
     try:
+        # Check if email uses a public domain (not allowed for university registration)
+        if is_public_email_domain(payload.email):
+            raise HTTPException(
+                status_code=400, 
+                detail="Please use your official university email address, not a public email service (Gmail, Yahoo, etc.)."
+            )
+        
         # Check if university name already exists
         uni_exists = supabase.table("universities").select("id").eq("name", payload.university_name).execute()
         if uni_exists.data:
@@ -334,12 +358,21 @@ async def register_university(payload: UniversityRegistrationRequest):
         if user_exists_res.data:
             raise HTTPException(status_code=400, detail="A user with this email already exists.")
 
+        # Check if the email domain is already registered to another university
+        admin_domain = payload.email.split('@')[1]
+        domain_exists = supabase.table("allowed_domains").select("university_id, universities(name)").eq("domain_name", admin_domain).execute()
+        if domain_exists.data:
+            existing_uni_name = domain_exists.data[0].get('universities', {}).get('name', 'another university')
+            raise HTTPException(
+                status_code=400, 
+                detail=f"The email domain '{admin_domain}' is already registered to {existing_uni_name}. Each university domain can only be registered once."
+            )
+
         # Create the new university (initially pending)
         new_university_res = supabase.table("universities").insert({"name": payload.university_name, "status": "pending"}).execute()
         new_university_id = new_university_res.data[0]['id']
 
         # Add the admin's email domain to allowed domains
-        admin_domain = payload.email.split('@')[1]
         supabase.table("allowed_domains").insert({
             "university_id": new_university_id,
             "domain_name": admin_domain
@@ -386,6 +419,17 @@ async def register_university(payload: UniversityRegistrationRequest):
         if new_university_id:
             try: supabase.table("universities").delete().eq("id", new_university_id).execute()
             except: pass
+        
+        # Handle specific database constraint errors
+        error_message = str(e)
+        if "duplicate key value violates unique constraint" in error_message and "allowed_domains_domain_name_key" in error_message:
+            # Extract domain from error if possible
+            admin_domain = payload.email.split('@')[1] if '@' in payload.email else 'this domain'
+            raise HTTPException(
+                status_code=400, 
+                detail=f"The email domain '{admin_domain}' is already registered to another university. Each university domain can only be registered once."
+            )
+        
         raise HTTPException(status_code=500, detail="An internal error occurred during university registration.")
 
 # ============= Auth Routes =============
@@ -1530,6 +1574,175 @@ async def update_user_preferences(preferences: UserPreferences, current_user_id:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to update preferences: {str(e)}")
 
+# ============= Backup & Restore Endpoints =============
+@backup_router.post("/create")
+async def create_backup(university_id: int = Depends(get_admin_university_id)):
+    """
+    Create a complete backup of all data for the admin's university.
+    Only includes data associated with their university_id.
+    """
+    try:
+        backup_data = {}
+        
+        # Tables that have direct university_id foreign key
+        tenant_tables = ["profiles", "items", "allowed_domains", "site_settings", "user_verifications", "notifications"]
+        
+        # Fetch data from all tenant tables
+        for table in tenant_tables:
+            try:
+                result = supabase.table(table).select("*").eq("university_id", university_id).execute()
+                backup_data[table] = result.data if result.data else []
+            except Exception as e:
+                print(f"Error fetching {table}: {e}")
+                backup_data[table] = []
+        
+        # Get all item_ids from this university's items
+        item_ids = [item["id"] for item in backup_data.get("items", []) if "id" in item]
+        
+        # Fetch related claims
+        if item_ids:
+            try:
+                claims_result = supabase.table("claims").select("*").in_("item_id", item_ids).execute()
+                backup_data["claims"] = claims_result.data if claims_result.data else []
+            except Exception as e:
+                print(f"Error fetching claims: {e}")
+                backup_data["claims"] = []
+        else:
+            backup_data["claims"] = []
+        
+        # Fetch related conversations
+        if item_ids:
+            try:
+                conversations_result = supabase.table("conversations").select("*").in_("item_id", item_ids).execute()
+                backup_data["conversations"] = conversations_result.data if conversations_result.data else []
+            except Exception as e:
+                print(f"Error fetching conversations: {e}")
+                backup_data["conversations"] = []
+        else:
+            backup_data["conversations"] = []
+        
+        # Get all conversation_ids from the fetched conversations
+        convo_ids = [convo["id"] for convo in backup_data.get("conversations", []) if "id" in convo]
+        
+        # Fetch related messages
+        if convo_ids:
+            try:
+                messages_result = supabase.table("messages").select("*").in_("conversation_id", convo_ids).execute()
+                backup_data["messages"] = messages_result.data if messages_result.data else []
+            except Exception as e:
+                print(f"Error fetching messages: {e}")
+                backup_data["messages"] = []
+        else:
+            backup_data["messages"] = []
+        
+        # Serialize to JSON
+        json_data = json.dumps(backup_data, indent=2, default=str)
+        
+        # Create in-memory file
+        file_io = io.BytesIO(json_data.encode('utf-8'))
+        
+        # Generate timestamp and storage path
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        storage_path = f"university_{university_id}/backup_{timestamp}.json"
+        
+        # Upload to Supabase storage
+        try:
+            supabase.storage.from_("backups").upload(
+                path=storage_path,
+                file=file_io.getvalue(),
+                file_options={"content-type": "application/json"}
+            )
+        except Exception as e:
+            print(f"Error uploading to storage: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to upload backup: {str(e)}")
+        
+        return {
+            "message": "Backup created successfully",
+            "file_name": f"backup_{timestamp}.json",
+            "storage_path": storage_path,
+            "timestamp": timestamp
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to create backup: {str(e)}")
+
+@backup_router.get("/list")
+async def list_backups(university_id: int = Depends(get_admin_university_id)):
+    """
+    List all available backups for the admin's university.
+    """
+    try:
+        # List files in the university's folder
+        folder_path = f"university_{university_id}"
+        
+        try:
+            result = supabase.storage.from_("backups").list(folder_path)
+        except Exception as e:
+            print(f"Error listing backups: {e}")
+            # If folder doesn't exist yet, return empty list
+            return {"backups": []}
+        
+        # Sort by name (timestamp) in descending order
+        if result:
+            sorted_backups = sorted(result, key=lambda x: x.get("name", ""), reverse=True)
+            return {"backups": sorted_backups}
+        
+        return {"backups": []}
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to list backups: {str(e)}")
+
+@backup_router.get("/download/{file_name}")
+async def download_backup(file_name: str, university_id: int = Depends(get_admin_university_id)):
+    """
+    Download a specific backup file.
+    Includes security check to prevent path traversal attacks.
+    """
+    try:
+        # Construct the storage path
+        storage_path = f"university_{university_id}/{file_name}"
+        
+        # Security check: List files and verify the requested file exists
+        try:
+            folder_path = f"university_{university_id}"
+            file_list = supabase.storage.from_("backups").list(folder_path)
+            
+            # Check if file exists in the list
+            file_exists = any(f.get("name") == file_name for f in file_list)
+            
+            if not file_exists:
+                raise HTTPException(status_code=404, detail="Backup file not found")
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"Error verifying file: {e}")
+            raise HTTPException(status_code=404, detail="Backup file not found")
+        
+        # Download the file
+        try:
+            file_bytes = supabase.storage.from_("backups").download(storage_path)
+        except Exception as e:
+            print(f"Error downloading file: {e}")
+            raise HTTPException(status_code=500, detail="Failed to download backup file")
+        
+        # Return as streaming response
+        return StreamingResponse(
+            io.BytesIO(file_bytes),
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f"attachment; filename={file_name}"
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to download backup: {str(e)}")
+
 # ============= Include Routers =============
 # Register all API routers with the main app
 app.include_router(auth_router)
@@ -1540,6 +1753,7 @@ app.include_router(notification_router)
 app.include_router(onboarding_router)
 app.include_router(claims_router) 
 app.include_router(conversations_router)
+app.include_router(backup_router)
 
 # ============= Health Check & Root =============
 @app.get("/health")

@@ -25,8 +25,54 @@ export default function RegisterUniversityPage() {
   const [error, setError] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  // List of blacklisted public email domains
+  const PUBLIC_EMAIL_DOMAINS = [
+    "gmail.com",
+    "yahoo.com",
+    "hotmail.com",
+    "outlook.com",
+    "aol.com",
+    "icloud.com",
+    "mail.com",
+    "protonmail.com",
+    "zoho.com",
+    "yandex.com",
+    "gmx.com",
+    "inbox.com",
+    "live.com",
+    "msn.com",
+    "yahoo.co.uk",
+    "yahoo.co.in",
+    "yahoo.fr",
+    "yahoo.de",
+    "yahoo.es",
+    "yahoo.it",
+    "googlemail.com",
+    "me.com",
+    "mac.com",
+    "rediffmail.com",
+    "fastmail.com",
+    "hushmail.com",
+    "tutanota.com",
+    "mailfence.com",
+    "runbox.com",
+  ];
+
+  const isPublicEmailDomain = (email) => {
+    const domain = email.split("@")[1]?.toLowerCase();
+    return PUBLIC_EMAIL_DOMAINS.includes(domain);
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    // Validate email domain
+    if (isPublicEmailDomain(email)) {
+      toast.error(
+        "Please use your official university email address, not a public email service (Gmail, Yahoo, etc.)."
+      );
+      return;
+    }
 
     if (password.length < 6) {
       toast.error("Password must be at least 6 characters long.");
@@ -178,6 +224,11 @@ export default function RegisterUniversityPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 -mt-2 ml-1">
+                ⚠️ Use your official university email (e.g.,
+                name@university.edu). Public email services (Gmail, Yahoo, etc.)
+                are not allowed.
+              </p>
               <InputField
                 icon={Lock}
                 type="password"
