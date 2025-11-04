@@ -693,7 +693,7 @@ export default function DashboardLayout({ children, user }) {
           >
             <Bell className="w-5 h-5" />
             {totalNotifications > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[20px] h-5 bg-gradient-to-r from-red-500 to-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-lg animate-pulse">
+              <span className="absolute -top-0.5 -right-0.5 min-w-[20px] h-5 bg-gradient-to-r from-red-500 to-red-600 text-gray text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-lg animate-pulse">
                 {totalNotifications > 9 ? "9+" : totalNotifications}
               </span>
             )}

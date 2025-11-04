@@ -200,7 +200,8 @@ const MessagesPage = ({ user }) => {
               Messages
             </h2>
             {filteredConversations.length > 0 && (
-              <span className="px-2 py-1 text-xs font-medium bg-primary-100 dark:bg-primary-500/20 text-primary-700 dark:text-primary-400 rounded-full">
+              <span className="px-2 py-1 text-xs font-medium bg-primary-100 dark:bg-[#2a2a2a] text-primary-700 dark:text-white rounded-full">
+              {/* // <span className="px-2 py-1 text-xs font-medium bg-primary-100 dark:bg-primary-500/20 text-primary-700 dark:text-primary-400 rounded-full"> */}
                 {filteredConversations.length}
               </span>
             )}
