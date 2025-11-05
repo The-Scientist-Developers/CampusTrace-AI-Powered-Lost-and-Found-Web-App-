@@ -9,7 +9,7 @@ import JeromeImage from "../../assets/jerome.jpg";
 
 const TeamMemberCard = ({ name, role, imageUrl, githubUrl, linkedinUrl }) => (
   <div className="flex flex-col items-center bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl p-6 shadow-sm transition-transform duration-300 hover:scale-105 hover:shadow-lg">
-    <div className="w-28 h-28 rounded-full bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden mb-4 border-2 border-primary-500/50">
+    <div className="w-32 h-32 sm:w-28 sm:h-28 rounded-full bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden mb-4 border-2 border-primary-500/50">
       <img
         src={
           imageUrl ||
@@ -21,10 +21,10 @@ const TeamMemberCard = ({ name, role, imageUrl, githubUrl, linkedinUrl }) => (
         className="w-full h-full object-cover"
       />
     </div>
-    <h3 className="text-xl font-bold text-neutral-800 dark:text-white mt-2">
+    <h3 className="text-xl sm:text-xl font-bold text-neutral-800 dark:text-white mt-2">
       {name}
     </h3>
-    <p className="text-primary-600 dark:text-primary-400 text-sm mb-4 text-center">
+    <p className="text-primary-600 dark:text-primary-400 text-base sm:text-sm mb-4 text-center">
       {role}
     </p>
     <div className="flex justify-center gap-4 mt-2">
@@ -36,7 +36,7 @@ const TeamMemberCard = ({ name, role, imageUrl, githubUrl, linkedinUrl }) => (
           className="text-neutral-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-white transition-colors duration-200"
           aria-label={`${name}'s GitHub`}
         >
-          <Github className="w-6 h-6" />
+          <Github className="w-7 h-7 sm:w-6 sm:h-6" />
         </a>
       )}
       {linkedinUrl && (
@@ -47,7 +47,7 @@ const TeamMemberCard = ({ name, role, imageUrl, githubUrl, linkedinUrl }) => (
           className="text-neutral-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-white transition-colors duration-200"
           aria-label={`${name}'s LinkedIn`}
         >
-          <Linkedin className="w-6 h-6" />
+          <Linkedin className="w-7 h-7 sm:w-6 sm:h-6" />
         </a>
       )}
     </div>
@@ -97,8 +97,8 @@ export default function AboutUsPage() {
 
       {/* Header with Logo and Back Button */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur-lg border-b border-neutral-200/50 dark:border-neutral-800/50">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-20">
+        <nav className="px-6 sm:px-8 md:px-16 py-6">
+          <div className="flex items-center justify-between">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
               <img
@@ -106,19 +106,19 @@ export default function AboutUsPage() {
                 alt="CampusTrace logo"
                 className="h-10 w-10 sm:h-12 sm:w-12 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
               />
-              <span className="text-lg sm:text-xl font-bold text-neutral-800 dark:text-white">
-                CampusTrace
+              <span className="text-xl sm:text-xl md:text-2xl font-light tracking-wider text-neutral-800 dark:text-white">
+                CAMPUSTRACE
               </span>
             </Link>
 
             {/* Back to Home Button */}
             <Link
               to="/"
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg hover:bg-primary-700 transform hover:-translate-y-0.5 transition-all duration-300"
+              className="flex items-center gap-2 px-5 sm:px-4 py-3 sm:py-2 bg-primary-600 text-white text-base sm:text-sm font-semibold rounded-lg shadow-md hover:shadow-lg hover:bg-primary-700 transform hover:-translate-y-0.5 transition-all duration-300"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-5 h-5 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Back to Home</span>
-              <Home className="w-4 h-4 sm:hidden" />
+              <Home className="w-5 h-5 sm:w-4 sm:h-4 sm:hidden" />
             </Link>
           </div>
         </nav>
@@ -127,7 +127,7 @@ export default function AboutUsPage() {
       {/* Main Content */}
       <div className="pt-28 pb-12 flex flex-col justify-center items-center">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center animate-fade-in-up">
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-neutral-900 dark:text-white mb-6">
+          <h1 className="text-5xl sm:text-5xl font-extrabold text-neutral-900 dark:text-white mb-6">
             About Our Team
           </h1>
           <p className="text-lg sm:text-xl text-neutral-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed mb-12">

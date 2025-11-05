@@ -57,14 +57,14 @@ const InputField = ({
 }) => (
   <div className="space-y-2">
     {label && (
-      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+      <label className="block text-base sm:text-sm font-medium text-neutral-700 dark:text-neutral-300">
         {label}
       </label>
     )}
     <div className="relative">
       <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
         <Icon
-          className={`h-4 w-4 transition-colors ${
+          className={`h-5 w-5 sm:h-4 sm:w-4 transition-colors ${
             error && touched
               ? "text-red-500"
               : "text-neutral-400 dark:text-neutral-500"
@@ -74,8 +74,8 @@ const InputField = ({
       <input
         {...props}
         type={isPassword ? (showPassword ? "text" : "password") : props.type}
-        className={`block w-full rounded-lg py-2.5 pl-10 ${
-          isPassword ? "pr-10" : "pr-3"
+        className={`block w-full rounded-lg py-3 sm:py-2.5 pl-11 sm:pl-10 text-base sm:text-sm ${
+          isPassword ? "pr-11 sm:pr-10" : "pr-3"
         } bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white border ${
           error && touched
             ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
@@ -89,9 +89,9 @@ const InputField = ({
           className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors"
         >
           {showPassword ? (
-            <EyeOff className="w-4 h-4" />
+            <EyeOff className="w-5 h-5 sm:w-4 sm:h-4" />
           ) : (
-            <Eye className="w-4 h-4" />
+            <Eye className="w-5 h-5 sm:w-4 sm:h-4" />
           )}
         </button>
       )}
@@ -114,13 +114,15 @@ const InputField = ({
 const FeatureItem = ({ icon: Icon, title, description }) => (
   <div className="flex gap-3">
     <div className="flex-shrink-0">
-      <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-500/10 flex items-center justify-center">
-        <Icon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+      <div className="w-12 h-12 sm:w-10 sm:h-10 rounded-lg bg-primary-100 dark:bg-primary-500/10 flex items-center justify-center">
+        <Icon className="w-6 h-6 sm:w-5 sm:h-5 text-primary-600 dark:text-primary-400" />
       </div>
     </div>
     <div>
-      <h3 className="font-medium text-neutral-900 dark:text-white">{title}</h3>
-      <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+      <h3 className="font-medium text-base sm:text-base text-neutral-900 dark:text-white">
+        {title}
+      </h3>
+      <p className="text-sm sm:text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
         {description}
       </p>
     </div>
@@ -688,21 +690,21 @@ export default function LoginPage() {
               to="/"
               className="flex items-center gap-3 mb-12 w-fit hover:opacity-80 transition-opacity"
             >
-              <img src={logo} alt="CampusTrace logo" className="h-10 w-10" />
-              <span className="text-xl font-bold text-neutral-900 dark:text-white">
-                CampusTrace
+              <img src={logo} alt="CampusTrace logo" className="h-12 w-12" />
+              <span className="text-2xl font-light tracking-wider text-neutral-900 dark:text-white">
+                CAMPUSTRACE
               </span>
             </Link>
             <div className="space-y-8">
               <div>
-                <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-4">
+                <h1 className="text-4xl font-bold text-neutral-900 dark:text-white mb-4">
                   Find what's lost,
                   <span className="text-primary-600 dark:text-primary-400">
                     {" "}
                     return what's found
                   </span>
                 </h1>
-                <p className="text-neutral-600 dark:text-neutral-400">
+                <p className="text-base text-neutral-600 dark:text-neutral-400">
                   Join your university's lost and found community
                 </p>
               </div>
@@ -747,20 +749,20 @@ export default function LoginPage() {
                 <img
                   src={logo}
                   alt="CampusTrace logo"
-                  className="mx-auto h-12 w-12 mb-4"
+                  className="mx-auto h-16 w-16 sm:h-12 sm:w-12 mb-4"
                 />
-                <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
-                  CampusTrace
+                <h1 className="text-3xl sm:text-2xl font-light tracking-wider text-neutral-900 dark:text-white">
+                  CAMPUSTRACE
                 </h1>
               </Link>
             </div>
 
             <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-neutral-200 dark:border-neutral-800 p-8">
               <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">
+                <h2 className="text-3xl sm:text-2xl font-bold text-neutral-900 dark:text-white">
                   {isLogin ? "Welcome back" : "Create your account"}
                 </h2>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
+                <p className="text-base sm:text-sm text-neutral-500 dark:text-neutral-400 mt-2">
                   {isLogin
                     ? "Enter your credentials to access your account"
                     : "Sign up with your university email or ID"}

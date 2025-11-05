@@ -8,7 +8,7 @@ import logo from "../../Images/Logo.svg";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet";
-import { motion, useAnimation } from "framer-motion";
+import { motion, useAnimation, AnimatePresence } from "framer-motion";
 import { useInView as useIntersectionObserver } from "react-intersection-observer";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import "react-lazy-load-image-component/src/effects/blur.css";
@@ -460,7 +460,7 @@ const FeatureSlider = ({ features }) => {
       className="py-12 sm:py-16 overflow-hidden"
     >
       <div className="max-w-7xl mx-auto text-center">
-        <p className="text-xs sm:text-sm font-semibold text-neutral-500 dark:text-neutral-400 tracking-wider mb-6 sm:mb-8 px-4">
+        <p className="text-sm sm:text-sm font-semibold text-neutral-500 dark:text-neutral-400 tracking-wider mb-8 sm:mb-8 px-4">
           KEY FEATURES OF CAMPUSTRACE
         </p>
         <div className="relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_10%,white_90%,transparent)]">
@@ -470,10 +470,10 @@ const FeatureSlider = ({ features }) => {
               return (
                 <div
                   key={index}
-                  className="w-64 sm:w-80 flex-shrink-0 flex items-center justify-center gap-3 sm:gap-4 px-6 sm:px-8 hover:scale-105 transition-transform duration-300"
+                  className="w-72 sm:w-80 flex-shrink-0 flex items-center justify-center gap-4 sm:gap-4 px-8 sm:px-8 hover:scale-105 transition-transform duration-300"
                 >
-                  <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary-500 dark:text-primary-400 flex-shrink-0" />
-                  <span className="font-semibold text-sm sm:text-lg text-neutral-600 dark:text-neutral-300 truncate">
+                  <Icon className="w-6 h-6 sm:w-6 sm:h-6 text-primary-500 dark:text-primary-400 flex-shrink-0" />
+                  <span className="font-semibold text-base sm:text-lg text-neutral-600 dark:text-neutral-300 truncate">
                     {feature.title}
                   </span>
                 </div>
@@ -514,7 +514,7 @@ const FAQItem = ({ question, answer, isOpen, onToggle, index }) => {
         onClick={onToggle}
         className="w-full py-5 sm:py-6 px-4 flex justify-between items-center text-left hover:bg-neutral-100 dark:hover:bg-neutral-800/50 rounded-lg group transition-all duration-300"
       >
-        <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-neutral-900 dark:text-white pr-4 sm:pr-8 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
+        <h3 className="text-base sm:text-base lg:text-lg font-semibold text-neutral-900 dark:text-white pr-4 sm:pr-8 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
           {question}
         </h3>
         <motion.div
@@ -522,7 +522,7 @@ const FAQItem = ({ question, answer, isOpen, onToggle, index }) => {
           transition={{ duration: 0.3 }}
           className="p-1.5 sm:p-2 rounded-full bg-primary-100 dark:bg-primary-500/10 flex-shrink-0"
         >
-          <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600 dark:text-primary-400" />
+          <ChevronDown className="w-5 h-5 sm:w-5 sm:h-5 text-primary-600 dark:text-primary-400" />
         </motion.div>
       </button>
       <motion.div
@@ -532,7 +532,7 @@ const FAQItem = ({ question, answer, isOpen, onToggle, index }) => {
         className="overflow-hidden"
       >
         <div className="pb-5 sm:pb-6 px-4">
-          <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 leading-relaxed">
+          <p className="text-base sm:text-base text-neutral-600 dark:text-neutral-400 leading-relaxed">
             {answer}
           </p>
         </div>
@@ -606,17 +606,17 @@ const FeatureCard = ({ icon: Icon, title, description, index }) => {
           <motion.div
             animate={{ scale: isHovered ? 1.1 : 1, rotate: isHovered ? 6 : 0 }}
             transition={{ type: "spring", stiffness: 400, damping: 15 }}
-            className="flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 bg-primary-100 dark:bg-primary-500/10 rounded-lg"
+            className="flex items-center justify-center h-14 w-14 sm:h-12 sm:w-12 bg-primary-100 dark:bg-primary-500/10 rounded-lg"
           >
-            <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600 dark:text-primary-400" />
+            <Icon className="w-7 h-7 sm:w-6 sm:h-6 text-primary-600 dark:text-primary-400" />
           </motion.div>
         </div>
 
-        <h3 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white mb-2 sm:mb-3 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
+        <h3 className="text-lg sm:text-lg font-bold text-neutral-900 dark:text-white mb-3 sm:mb-3 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
           {title}
         </h3>
 
-        <p className="text-neutral-600 dark:text-neutral-400 text-xs sm:text-sm leading-relaxed">
+        <p className="text-neutral-600 dark:text-neutral-400 text-sm sm:text-sm leading-relaxed">
           {description}
         </p>
 
@@ -656,7 +656,7 @@ const FeatureSection = ({ title, subtitle, features, id, startIndex = 0 }) => {
           }}
           className="text-center mb-10 sm:mb-14 relative"
         >
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4 relative inline-block px-4">
+          <h2 className="text-3xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4 relative inline-block px-4">
             {title}
             <motion.span
               initial={{ width: 0 }}
@@ -669,7 +669,7 @@ const FeatureSection = ({ title, subtitle, features, id, startIndex = 0 }) => {
               className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 bg-primary-500 rounded-full"
             />
           </h2>
-          <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto mt-4 px-4">
+          <p className="text-base sm:text-base text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto mt-4 px-4">
             {subtitle}
           </p>
         </motion.div>
@@ -710,7 +710,7 @@ const ScreenshotSection = ({ screenshots }) => {
           }}
           className="text-center mb-10 sm:mb-14"
         >
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4 relative inline-block px-4">
+          <h2 className="text-3xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4 relative inline-block px-4">
             See CampusTrace in Action
             <motion.span
               initial={{ width: 0 }}
@@ -723,7 +723,7 @@ const ScreenshotSection = ({ screenshots }) => {
               className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 bg-primary-500 rounded-full"
             />
           </h2>
-          <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto mt-4 px-4">
+          <p className="text-base sm:text-base text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto mt-4 px-4">
             Take a visual tour of our key features and user-friendly interface.
             Click any image to view it in full size.
           </p>
@@ -740,6 +740,7 @@ const ScreenshotSection = ({ screenshots }) => {
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFAQ, setOpenFAQ] = useState(0);
+  const [scrolled, setScrolled] = useState(false);
   const heroParallax = useParallax(0.3);
   const gridParallax = useParallax(-0.2);
 
@@ -750,6 +751,14 @@ export default function LandingPage() {
       document.documentElement.style.scrollBehavior = "auto";
       document.body.style.overflowX = "";
     };
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Quick features for the slider
@@ -927,56 +936,98 @@ export default function LandingPage() {
       </Helmet>
 
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-[#1a1a1a] border-b border-neutral-200 dark:border-neutral-800">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+          scrolled
+            ? "bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur-md"
+            : "bg-transparent"
+        }`}
+      >
+        <nav className="px-6 sm:px-8 md:px-16 py-6">
+          <div className="flex justify-between items-center">
             {/* Logo and Brand Name */}
             <Link to="/" className="flex items-center gap-2 group">
               <motion.img
                 src={logo}
                 alt="CampusTrace logo"
                 className="h-8 w-8"
-                whileHover={{ scale: 1.1 }}
+                whileHover={{ scale: 1.05 }}
               />
-              <span className="text-base font-semibold text-neutral-800 dark:text-white">
-                CampusTrace
-              </span>
+              <motion.span
+                whileHover={{ scale: 1.05 }}
+                className="text-xl md:text-2xl font-light tracking-wider text-neutral-800 dark:text-white"
+              >
+                CAMPUSTRACE
+              </motion.span>
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-8">
+            <div className="hidden md:flex items-center space-x-12">
               {[
-                { to: "#how-it-works", label: "How It Works", isAnchor: true },
-                { to: "#features", label: "Features", isAnchor: true },
-                { to: "#screenshots", label: "Showcase", isAnchor: true },
-                { to: "/about", label: "About Us", isAnchor: false },
+                {
+                  to: "#how-it-works",
+                  label: "How It Works",
+                  number: "01",
+                  isAnchor: true,
+                },
+                {
+                  to: "#features",
+                  label: "Features",
+                  number: "02",
+                  isAnchor: true,
+                },
+                {
+                  to: "#screenshots",
+                  label: "Showcase",
+                  number: "03",
+                  isAnchor: true,
+                },
+                {
+                  to: "/about",
+                  label: "About Us",
+                  number: "04",
+                  isAnchor: false,
+                },
                 {
                   to: "/register-university",
                   label: "For Universities",
+                  number: "05",
                   isAnchor: false,
                 },
-              ].map((link, index) =>
+              ].map((link) =>
                 link.isAnchor ? (
-                  <a
-                    key={link.to}
-                    href={link.to}
-                    className="text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors duration-200"
-                  >
-                    {link.label}
+                  <a key={link.to} href={link.to}>
+                    <motion.div
+                      whileHover={{ y: -2 }}
+                      className="relative group"
+                    >
+                      <span className="text-xs text-gray-400 dark:text-gray-500 mr-2">
+                        {link.number}
+                      </span>
+                      <span className="text-sm tracking-wider text-gray-600 dark:text-neutral-400 hover:text-black dark:hover:text-white transition-colors">
+                        {link.label}
+                      </span>
+                    </motion.div>
                   </a>
                 ) : (
-                  <Link
-                    key={link.to}
-                    to={link.to}
-                    className="text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors duration-200"
-                  >
-                    {link.label}
+                  <Link key={link.to} to={link.to}>
+                    <motion.div
+                      whileHover={{ y: -2 }}
+                      className="relative group"
+                    >
+                      <span className="text-xs text-gray-400 dark:text-gray-500 mr-2">
+                        {link.number}
+                      </span>
+                      <span className="text-sm tracking-wider text-gray-600 dark:text-neutral-400 hover:text-black dark:hover:text-white transition-colors">
+                        {link.label}
+                      </span>
+                    </motion.div>
                   </Link>
                 )
               )}
               <Link
                 to="/login"
-                className="px-4 py-1.5 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 transition-colors duration-200"
+                className="ml-4 px-5 py-2 bg-primary-600 text-white text-sm font-medium tracking-wider rounded-md hover:bg-primary-700 transition-colors duration-200"
               >
                 Log In
               </Link>
@@ -985,71 +1036,135 @@ export default function LandingPage() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-md text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors duration-200"
+              className="relative w-10 h-10 md:hidden"
               aria-label="Toggle menu"
             >
-              {mobileMenuOpen ? (
-                <X className="w-5 h-5" />
-              ) : (
-                <Menu className="w-5 h-5" />
-              )}
+              <motion.span
+                animate={{
+                  rotate: mobileMenuOpen ? 45 : 0,
+                  y: mobileMenuOpen ? 0 : -4,
+                }}
+                className="absolute left-0 w-full h-[1px] bg-black dark:bg-white"
+              />
+              <motion.span
+                animate={{ opacity: mobileMenuOpen ? 0 : 1 }}
+                className="absolute left-0 w-full h-[1px] bg-black dark:bg-white"
+              />
+              <motion.span
+                animate={{
+                  rotate: mobileMenuOpen ? -45 : 0,
+                  y: mobileMenuOpen ? 0 : 4,
+                }}
+                className="absolute left-0 w-full h-[1px] bg-black dark:bg-white"
+              />
             </button>
           </div>
-
-          {/* Mobile Menu */}
-          <motion.div
-            initial={false}
-            animate={{ height: mobileMenuOpen ? "auto" : 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="md:hidden overflow-hidden"
-          >
-            <div className="pt-2 pb-4 space-y-1 border-t border-neutral-200 dark:border-neutral-800">
-              {[
-                { to: "#how-it-works", label: "How It Works", isAnchor: true },
-                { to: "#features", label: "Features", isAnchor: true },
-                { to: "#screenshots", label: "Showcase", isAnchor: true },
-                { to: "/about", label: "About Us", isAnchor: false },
-                {
-                  to: "/register-university",
-                  label: "For Universities",
-                  isAnchor: false,
-                },
-              ].map((link, index) =>
-                link.isAnchor ? (
-                  <a
-                    key={link.to}
-                    href={link.to}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md transition-colors duration-200"
-                  >
-                    {link.label}
-                  </a>
-                ) : (
-                  <Link
-                    key={link.to}
-                    to={link.to}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md transition-colors duration-200"
-                  >
-                    {link.label}
-                  </Link>
-                )
-              )}
-              <Link
-                to="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block w-full mt-3 py-2.5 text-center bg-primary-600 text-white text-sm font-medium rounded-md"
-              >
-                Log In
-              </Link>
-            </div>
-          </motion.div>
         </nav>
       </header>
 
-      <main className="flex-grow pt-16 relative z-10">
+      {/* Full Screen Mobile Menu */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{
+              type: "tween",
+              duration: 0.5,
+              ease: [0.76, 0, 0.24, 1],
+            }}
+            className="fixed inset-0 bg-white dark:bg-[#1a1a1a] z-40 md:hidden"
+          >
+            <div className="flex flex-col justify-center items-center h-full">
+              {[
+                {
+                  to: "#how-it-works",
+                  label: "How It Works",
+                  number: "01",
+                  isAnchor: true,
+                },
+                {
+                  to: "#features",
+                  label: "Features",
+                  number: "02",
+                  isAnchor: true,
+                },
+                {
+                  to: "#screenshots",
+                  label: "Showcase",
+                  number: "03",
+                  isAnchor: true,
+                },
+                {
+                  to: "/about",
+                  label: "About Us",
+                  number: "04",
+                  isAnchor: false,
+                },
+                {
+                  to: "/register-university",
+                  label: "For Universities",
+                  number: "05",
+                  isAnchor: false,
+                },
+              ].map((link, index) => (
+                <motion.div
+                  key={link.to}
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 + 0.2 }}
+                >
+                  {link.isAnchor ? (
+                    <a
+                      href={link.to}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block py-4"
+                    >
+                      <span className="text-gray-400 dark:text-gray-500 text-sm mr-4">
+                        {link.number}
+                      </span>
+                      <span className="text-3xl font-light text-neutral-800 dark:text-white">
+                        {link.label}
+                      </span>
+                    </a>
+                  ) : (
+                    <Link
+                      to={link.to}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block py-4"
+                    >
+                      <span className="text-gray-400 dark:text-gray-500 text-sm mr-4">
+                        {link.number}
+                      </span>
+                      <span className="text-3xl font-light text-neutral-800 dark:text-white">
+                        {link.label}
+                      </span>
+                    </Link>
+                  )}
+                </motion.div>
+              ))}
+              <motion.div
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.6 }}
+              >
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block mt-8 px-8 py-3 bg-primary-600 text-white text-lg font-light tracking-wider rounded-md hover:bg-primary-700 transition-colors"
+                >
+                  Log In
+                </Link>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <main className="flex-grow pt-20 md:pt-24 relative z-10">
         {/* Hero Section */}
-        <section className="min-h-[calc(70vh-64px)] flex items-center justify-center text-center relative overflow-hidden px-4">
+        <section className="min-h-[calc(100vh-80px)] md:min-h-[calc(80vh-96px)] flex items-center justify-center text-center relative overflow-hidden px-4">
           <div
             className="absolute inset-0 opacity-20 dark:opacity-5 [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_100%)]"
             style={{ transform: `translateY(${gridParallax}px)` }}
@@ -1108,9 +1223,9 @@ export default function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: [0.25, 1, 0.5, 1] }}
             >
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-neutral-900 dark:text-white leading-tight">
+              <h1 className="text-5xl sm:text-5xl md:text-5xl lg:text-6xl font-bold tracking-tight text-neutral-900 dark:text-white leading-tight">
                 Reconnect What's Lost,{" "}
-                <span className="text-primary-600 dark:text-primary-400 block sm:inline mt-2 sm:mt-0">
+                <span className="text-primary-600 dark:text-primary-400 block sm:inline mt-3 sm:mt-0">
                   Powered by AI
                 </span>
               </h1>
@@ -1120,7 +1235,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-              className="mt-5 sm:mt-6 max-w-2xl mx-auto text-sm sm:text-base md:text-lg text-neutral-600 dark:text-neutral-400"
+              className="mt-7 sm:mt-6 max-w-2xl mx-auto text-lg sm:text-base md:text-lg text-neutral-600 dark:text-neutral-400 leading-relaxed"
             >
               CampusTrace uses smart technology to make finding lost items on
               campus simple and fast. Join your university's secure lost and
@@ -1131,18 +1246,18 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
-              className="mt-8 sm:mt-10 flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-4"
+              className="mt-10 sm:mt-10 flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-4"
             >
               <Link
                 to="/login"
-                className="group px-6 sm:px-7 py-2.5 bg-primary-600 text-white font-medium rounded-md shadow hover:shadow-lg hover:bg-primary-700 transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base w-full sm:w-auto"
+                className="group px-10 sm:px-7 py-4 sm:py-2.5 bg-primary-600 text-white font-medium rounded-lg shadow hover:shadow-lg hover:bg-primary-700 transition-all duration-300 flex items-center justify-center gap-2 text-lg sm:text-base w-full sm:w-auto"
               >
                 <span className="relative z-10">Get Started</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform relative z-10" />
+                <ArrowRight className="w-5 h-5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform relative z-10" />
               </Link>
               <Link
                 to="/learn-more"
-                className="px-6 sm:px-7 py-2.5 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 font-medium rounded-md shadow hover:shadow-lg transition-all duration-300 border border-neutral-200 dark:border-neutral-700 w-full sm:w-auto text-center text-sm sm:text-base"
+                className="px-10 sm:px-7 py-4 sm:py-2.5 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 font-medium rounded-lg shadow hover:shadow-lg transition-all duration-300 border border-neutral-200 dark:border-neutral-700 w-full sm:w-auto text-center text-lg sm:text-base"
               >
                 Learn More
               </Link>
@@ -1168,10 +1283,10 @@ export default function LandingPage() {
               }}
               className="text-center mb-12 sm:mb-16"
             >
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4">
+              <h2 className="text-3xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4 sm:mb-4">
                 How It Works
               </h2>
-              <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 max-w-xl mx-auto">
+              <p className="text-base sm:text-base text-neutral-600 dark:text-neutral-400 max-w-xl mx-auto">
                 Recovering lost items is simple with CampusTrace.
               </p>
             </motion.div>
@@ -1228,17 +1343,17 @@ export default function LandingPage() {
                           stiffness: 300,
                           damping: 10,
                         }}
-                        className="flex items-center justify-center h-16 w-16 sm:h-20 sm:w-20 bg-primary-100 dark:bg-primary-500/10 rounded-full mx-auto ring-4 ring-white dark:ring-[#2a2a2a]"
+                        className="flex items-center justify-center h-20 w-20 sm:h-20 sm:w-20 bg-primary-100 dark:bg-primary-500/10 rounded-full mx-auto ring-4 ring-white dark:ring-[#2a2a2a]"
                       >
-                        <step.icon className="w-7 h-7 sm:w-9 sm:h-9 text-primary-600 dark:text-primary-400" />
+                        <step.icon className="w-9 h-9 sm:w-9 sm:h-9 text-primary-600 dark:text-primary-400" />
                       </motion.div>
                       {/* Animated Ring */}
                       <span className="absolute inset-0 rounded-full ring-2 ring-primary-500/30 animate-ping opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                     </div>
-                    <h3 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white mb-3 sm:mb-4">
+                    <h3 className="text-2xl sm:text-2xl font-bold text-neutral-900 dark:text-white mb-4 sm:mb-4">
                       {step.title}
                     </h3>
-                    <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed text-sm sm:text-base">
+                    <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed text-base sm:text-base">
                       {step.description}
                     </p>
                   </motion.div>
@@ -1276,10 +1391,10 @@ export default function LandingPage() {
         <section className="py-16 sm:py-20 bg-white dark:bg-[#1a1a1a]">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10 sm:mb-14">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4">
+              <h2 className="text-3xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4">
                 Got Questions?
               </h2>
-              <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400">
+              <p className="text-base sm:text-base text-neutral-600 dark:text-neutral-400">
                 Find quick answers to common queries about CampusTrace.
               </p>
             </div>
@@ -1322,24 +1437,24 @@ export default function LandingPage() {
             }}
             className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10"
           >
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">
+            <h2 className="text-3xl sm:text-3xl md:text-4xl font-bold mb-5 sm:mb-6">
               Ready to Simplify Lost & Found?
             </h2>
-            <p className="text-base sm:text-lg md:text-xl mb-8 sm:mb-10 text-white/90 max-w-2xl mx-auto">
+            <p className="text-lg sm:text-lg md:text-xl mb-10 sm:mb-10 text-white/90 max-w-2xl mx-auto">
               Join your campus community on CampusTrace. Sign up with your
               university email or ID today.
             </p>
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-4">
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-4">
               <Link
                 to="/login"
-                className="group px-6 sm:px-8 py-2.5 sm:py-3 bg-white text-primary-600 text-sm sm:text-base font-semibold rounded-md shadow-lg hover:shadow-xl hover:bg-neutral-50 transition-all duration-300 inline-flex items-center justify-center gap-2 w-full sm:w-auto"
+                className="group px-10 sm:px-8 py-4 sm:py-3 bg-white text-primary-600 text-lg sm:text-base font-semibold rounded-lg shadow-lg hover:shadow-xl hover:bg-neutral-50 transition-all duration-300 inline-flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 <span className="relative z-10">Sign Up / Log In</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform relative z-10" />
+                <ArrowRight className="w-5 h-5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform relative z-10" />
               </Link>
               <Link
                 to="/register-university"
-                className="px-6 sm:px-8 py-2.5 sm:py-3 bg-white/10 backdrop-blur-sm border-2 border-white/40 text-white text-sm sm:text-base font-semibold rounded-md hover:bg-white/20 transition-all duration-300 w-full sm:w-auto text-center"
+                className="px-10 sm:px-8 py-4 sm:py-3 bg-white/10 backdrop-blur-sm border-2 border-white/40 text-white text-lg sm:text-base font-semibold rounded-lg hover:bg-white/20 transition-all duration-300 w-full sm:w-auto text-center"
               >
                 For Universities
               </Link>
