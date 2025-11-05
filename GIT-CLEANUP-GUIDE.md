@@ -1,11 +1,13 @@
 # Git Cleanup Guide
 
 ## 🚨 Problem
+
 Too many unnecessary files got committed to Git (node_modules, cache files, logs, etc.)
 
 ## ✅ Solution
 
 ### Step 1: Run the cleanup script
+
 ```powershell
 .\cleanup-git.ps1
 ```
@@ -13,6 +15,7 @@ Too many unnecessary files got committed to Git (node_modules, cache files, logs
 This will remove all unnecessary files from Git tracking (but keep them on your computer).
 
 ### Step 2: Commit the changes
+
 ```bash
 git add .gitignore
 git commit -m "chore: update .gitignore and remove tracked files"
@@ -22,22 +25,26 @@ git push
 ## 📋 What Gets Ignored Now
 
 ### Python
+
 - `__pycache__/` folders
 - `*.pyc`, `*.pyo`, `*.pyd` files
 - `venv/`, `.venv/` virtual environments
 - Build/dist folders
 
 ### Node.js
+
 - `node_modules/` folders (HUGE!)
 - Build outputs (`build/`, `dist/`, `.vite/`)
 - Log files
 - Cache folders
 
 ### Environment Files (IMPORTANT!)
+
 - `.env` files (contain secrets!)
 - `.env.local`, `.env.production`, etc.
 
 ### IDE Files
+
 - `.vscode/` settings
 - `.idea/` (JetBrains IDEs)
 - `*.swp`, `*.swo` (vim)
@@ -47,11 +54,13 @@ git push
 ## 🔍 Check What's Tracked
 
 To see all tracked files:
+
 ```bash
 git ls-files
 ```
 
 To check file sizes in your repo:
+
 ```bash
 git ls-files -z | xargs -0 du -h | sort -h | tail -20
 ```
