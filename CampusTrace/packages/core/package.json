@@ -1,0 +1,19 @@
+{
+  "name": "@campustrace/core",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./api": "./src/api/index.js",
+    "./contexts": "./src/contexts/index.js",
+    "./utils": "./src/utils/index.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.56.1",
+    "axios": "^1.12.2"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0 || ^19.0.0"
+  }
+}
