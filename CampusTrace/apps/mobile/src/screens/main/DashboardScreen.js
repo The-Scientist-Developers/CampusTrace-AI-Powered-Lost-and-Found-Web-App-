@@ -27,11 +27,12 @@ const DashboardScreen = ({ navigation }) => {
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState({
     totalItems: 0,
-    myPosts: 0,
-    foundItems: 0,
     lostItems: 0,
+    foundItems: 0,
+    recoveredItems: 0,
   });
   const [recentActivity, setRecentActivity] = useState([]);
+  const [myRecentPosts, setMyRecentPosts] = useState([]);
 
   useEffect(() => {
     loadDashboardData();
@@ -47,16 +48,75 @@ const DashboardScreen = ({ navigation }) => {
       } = await supabase.auth.getUser();
       setUser(user);
 
-      // Load stats and recent activity
-      // TODO: Implement actual data fetching from your backend
-      setStats({
-        totalItems: 0,
-        myPosts: 0,
-        foundItems: 0,
-        lostItems: 0,
-      });
+      if (!user) {
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
 
-      setRecentActivity([]);
+      // Fetch user profile to get university_id
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("university_id")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError) throw profileError;
+      if (!profile) throw new Error("User profile not found.");
+
+      // Fetch all user's items for stats calculation
+      const { data: allMyItems = [], error: itemsError } = await supabase
+        .from("items")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (itemsError) throw itemsError;
+
+      // Fetch active posts
+      const { data: activePosts = [] } = await supabase
+        .from("items")
+        .select("*")
+        .eq("user_id", user.id)
+        .in("moderation_status", ["approved", "pending", "pending_return"])
+        .order("created_at", { ascending: false })
+        .limit(4);
+
+      setMyRecentPosts(activePosts);
+
+      // Fetch community activity
+      if (profile.university_id) {
+        const { data: communityData = [] } = await supabase
+          .from("items")
+          .select("*, profiles(id, full_name, email)")
+          .eq("university_id", profile.university_id)
+          .eq("moderation_status", "approved")
+          .order("created_at", { ascending: false })
+          .limit(50);
+        setRecentActivity(communityData);
+      } else {
+        setRecentActivity([]);
+        console.warn(
+          "User profile does not have a university_id, community activity cannot be fetched."
+        );
+      }
+
+      // Calculate stats
+      const lostCount = allMyItems.filter(
+        (item) => item.status === "Lost"
+      ).length;
+      const foundCount = allMyItems.filter(
+        (item) => item.status === "Found"
+      ).length;
+      const recoveredCount = allMyItems.filter(
+        (item) => item.moderation_status === "recovered"
+      ).length;
+
+      setStats({
+        totalItems: allMyItems.length,
+        lostItems: lostCount,
+        foundItems: foundCount,
+        recoveredItems: recoveredCount,
+      });
     } catch (error) {
       console.error("Error loading dashboard:", error);
     } finally {
@@ -70,29 +130,9 @@ const DashboardScreen = ({ navigation }) => {
     loadDashboardData();
   };
 
-  const handleLogout = async () => {
-    try {
-      const supabase = getSupabaseClient();
-      await supabase.auth.signOut();
-    } catch (error) {
-      console.error("Error logging out:", error);
-    }
-  };
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1877F2" />
-          <Text style={styles.loadingText}>Loading dashboard...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container}>
-      {/* Instagram-style Header */}
+      {/* Instagram-style Header - Always visible */}
       <View style={styles.header}>
         <View style={styles.logoContainer}>
           <View style={styles.logoCircle}>
@@ -103,117 +143,150 @@ const DashboardScreen = ({ navigation }) => {
         <View style={styles.headerIcons}>
           <TouchableOpacity
             style={styles.headerIconButton}
-            onPress={() => {
-              /* TODO: Navigate to notifications */
-            }}
+            onPress={() => navigation.navigate("Notifications")}
           >
             <Bell size={26} color="#000000" strokeWidth={2} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.headerIconButton}
-            onPress={() => {
-              /* TODO: Navigate to messages - need to add Messages screen to stack */
-            }}
+            onPress={() => navigation.navigate("Messages")}
           >
             <MessageCircle size={26} color="#000000" strokeWidth={2} />
           </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-      >
-        {/* Welcome Section */}
-        <View style={styles.welcomeSection}>
-          <Text style={styles.greeting}>Welcome back,</Text>
-          <Text style={styles.userName}>
-            {user?.user_metadata?.full_name ||
-              user?.email?.split("@")[0] ||
-              "User"}
-          </Text>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#1877F2" />
+          <Text style={styles.loadingText}>Loading dashboard...</Text>
         </View>
-
-        {/* Stats Grid */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statsRow}>
-            <StatCard
-              icon={FileText}
-              label="Total Items"
-              value={stats.totalItems}
-              color="#1877F2"
-            />
-            <StatCard
-              icon={TrendingUp}
-              label="My Posts"
-              value={stats.myPosts}
-              color="#10B981"
-            />
+      ) : (
+        <ScrollView
+          style={styles.scrollView}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+        >
+          {/* Welcome Section */}
+          <View style={styles.welcomeSection}>
+            <Text style={styles.greeting}>Welcome back,</Text>
+            <Text style={styles.userName}>
+              {user?.user_metadata?.full_name ||
+                user?.email?.split("@")[0] ||
+                "User"}
+            </Text>
           </View>
-          <View style={styles.statsRow}>
-            <StatCard
-              icon={CheckCircle}
-              label="Found"
-              value={stats.foundItems}
-              color="#10B981"
-            />
-            <StatCard
-              icon={AlertCircle}
-              label="Lost"
-              value={stats.lostItems}
-              color="#EF4444"
-            />
-          </View>
-        </View>
 
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.actionsContainer}>
-            <ActionButton
-              icon={FileText}
-              label="Report Lost Item"
-              onPress={() => navigation.navigate("PostItem", { type: "lost" })}
-              color="#EF4444"
-            />
-            <ActionButton
-              icon={CheckCircle}
-              label="Report Found Item"
-              onPress={() => navigation.navigate("PostItem", { type: "found" })}
-              color="#10B981"
-            />
-            <ActionButton
-              icon={Search}
-              label="Browse Items"
-              onPress={() => navigation.navigate("Browse")}
-              color="#1877F2"
-            />
+          {/* Stats Grid */}
+          <View style={styles.statsContainer}>
+            <View style={styles.statsRow}>
+              <StatCard
+                icon={FileText}
+                label="Total Items"
+                value={stats.totalItems}
+                color="#1877F2"
+              />
+              <StatCard
+                icon={TrendingUp}
+                label="Lost Items"
+                value={stats.lostItems}
+                color="#EF4444"
+              />
+            </View>
+            <View style={styles.statsRow}>
+              <StatCard
+                icon={CheckCircle}
+                label="Found Items"
+                value={stats.foundItems}
+                color="#10B981"
+              />
+              <StatCard
+                icon={Clock}
+                label="Recovered"
+                value={stats.recoveredItems}
+                color="#3B82F6"
+              />
+            </View>
           </View>
-        </View>
 
-        {/* Recent Activity */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
-          <View style={styles.activityCard}>
+          {/* Recent Activity */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Recent Activity</Text>
+            </View>
+
             {recentActivity.length === 0 ? (
               <View style={styles.emptyState}>
-                <Clock size={48} color="#DFE0E4" />
+                <Clock size={48} color="#D1D5DB" />
                 <Text style={styles.emptyStateText}>No recent activity</Text>
-                <Text style={styles.emptyStateSubtext}>
-                  Your recent posts and updates will appear here
-                </Text>
               </View>
             ) : (
               recentActivity.map((item, index) => (
-                <ActivityItem key={index} item={item} />
+                <ActivityItem key={item.id || index} item={item} />
               ))
             )}
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      )}
     </SafeAreaView>
+  );
+};
+
+// Activity Item Component
+const ActivityItem = ({ item }) => {
+  const statusColor = {
+    Lost: "#EF4444",
+    Found: "#10B981",
+  };
+
+  const statusBgColor = {
+    Lost: "#FEE2E2",
+    Found: "#D1FAE5",
+  };
+
+  const getTimeAgo = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${diffDays}d ago`;
+  };
+
+  const posterName =
+    item.profiles?.full_name ||
+    (item.profiles?.email ? item.profiles.email.split("@")[0] : "Anonymous");
+
+  return (
+    <View style={styles.activityItem}>
+      <View style={styles.activityContent}>
+        <Text style={styles.activityTitle}>{item.title}</Text>
+        <Text style={styles.activityUser}>{posterName}</Text>
+        <Text style={styles.activityTime}>
+          {item.created_at ? getTimeAgo(item.created_at) : "Recently"}
+        </Text>
+      </View>
+      <View
+        style={[
+          styles.statusBadge,
+          { backgroundColor: statusBgColor[item.status] || "#F3F4F6" },
+        ]}
+      >
+        <Text
+          style={[
+            styles.statusText,
+            { color: statusColor[item.status] || "#6B7280" },
+          ]}
+        >
+          {item.status}
+        </Text>
+      </View>
+    </View>
   );
 };
 
@@ -236,16 +309,6 @@ const ActionButton = ({ icon: Icon, label, onPress, color }) => (
     </View>
     <Text style={styles.actionLabel}>{label}</Text>
   </TouchableOpacity>
-);
-
-const ActivityItem = ({ item }) => (
-  <View style={styles.activityItem}>
-    <View style={styles.activityDot} />
-    <View style={styles.activityContent}>
-      <Text style={styles.activityText}>{item.text}</Text>
-      <Text style={styles.activityTime}>{item.time}</Text>
-    </View>
-  </View>
 );
 
 const styles = StyleSheet.create({
@@ -379,11 +442,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     marginTop: 8,
   },
+  sectionHeader: {
+    marginBottom: 12,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#000000",
-    marginBottom: 12,
   },
   actionsContainer: {
     flexDirection: "row",
@@ -412,12 +477,42 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontWeight: "500",
   },
-  activityCard: {
+  activityItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+  },
+  activityContent: {
+    flex: 1,
+  },
+  activityTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#000000",
+    marginBottom: 4,
+  },
+  activityUser: {
+    fontSize: 13,
+    color: "#8E8E93",
+    marginBottom: 2,
+  },
+  activityTime: {
+    fontSize: 12,
+    color: "#8E8E93",
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#EFEFEF",
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
   emptyState: {
     alignItems: "center",
@@ -428,38 +523,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#8E8E93",
     marginTop: 12,
-  },
-  emptyStateSubtext: {
-    fontSize: 14,
-    color: "#8E8E93",
-    marginTop: 4,
-    textAlign: "center",
-  },
-  activityItem: {
-    flexDirection: "row",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#EFEFEF",
-  },
-  activityDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#1877F2",
-    marginTop: 6,
-    marginRight: 12,
-  },
-  activityContent: {
-    flex: 1,
-  },
-  activityText: {
-    fontSize: 14,
-    color: "#000000",
-    marginBottom: 4,
-  },
-  activityTime: {
-    fontSize: 12,
-    color: "#8E8E93",
   },
 });
 

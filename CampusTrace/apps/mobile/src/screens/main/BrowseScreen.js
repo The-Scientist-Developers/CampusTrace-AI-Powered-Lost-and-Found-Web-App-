@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,13 +7,111 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Search, Filter, MapPin, Calendar, User } from "lucide-react-native";
+import { getSupabaseClient } from "@campustrace/core";
 
 const BrowseScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [filter, setFilter] = useState("All"); // All, Lost, Found
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    getCurrentUser();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchItems();
+    }
+  }, [filter, user]);
+
+  const getCurrentUser = async () => {
+    try {
+      const supabase = getSupabaseClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
+    } catch (error) {
+      console.error("Error getting user:", error);
+    }
+  };
+
+  const fetchItems = async () => {
+    try {
+      setLoading(true);
+      const supabase = getSupabaseClient();
+
+      if (!user?.id) {
+        setItems([]);
+        return;
+      }
+
+      // Fetch user's university_id (same as web app)
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("university_id")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError) throw profileError;
+      if (!profile) throw new Error("Could not find user profile.");
+
+      // Build query - EXACT same as web app
+      let query = supabase
+        .from("items")
+        .select("*, profiles(id, full_name, email)")
+        .eq("university_id", profile.university_id)
+        .eq("moderation_status", "approved");
+
+      // Apply status filter (same as web app)
+      if (filter !== "All") {
+        query = query.eq("status", filter);
+      }
+
+      // Order by created_at descending (newest first)
+      query = query.order("created_at", { ascending: false }).limit(50);
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      setItems(data || []);
+    } catch (error) {
+      console.error("Error fetching items:", error);
+      setItems([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchItems();
+  };
+
+  const filteredItems = items.filter((item) =>
+    item.title?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (loading && !refreshing) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#1877F2" />
+          <Text style={styles.loadingText}>Loading items...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -34,76 +132,181 @@ const BrowseScreen = () => {
             onChangeText={setSearchQuery}
           />
         </View>
-        <TouchableOpacity style={styles.filterButton}>
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => {
+            // Cycle through filters
+            if (filter === "All") setFilter("Lost");
+            else if (filter === "Lost") setFilter("Found");
+            else setFilter("All");
+          }}
+        >
           <Filter size={20} color="#000000" />
         </TouchableOpacity>
       </View>
 
+      {/* Filter Chips */}
+      <View style={styles.filterChips}>
+        <TouchableOpacity
+          style={[styles.chip, filter === "All" && styles.chipActive]}
+          onPress={() => setFilter("All")}
+        >
+          <Text
+            style={[styles.chipText, filter === "All" && styles.chipTextActive]}
+          >
+            All
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.chip, filter === "Lost" && styles.chipActive]}
+          onPress={() => setFilter("Lost")}
+        >
+          <Text
+            style={[
+              styles.chipText,
+              filter === "Lost" && styles.chipTextActive,
+            ]}
+          >
+            Lost
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.chip, filter === "Found" && styles.chipActive]}
+          onPress={() => setFilter("Found")}
+        >
+          <Text
+            style={[
+              styles.chipText,
+              filter === "Found" && styles.chipTextActive,
+            ]}
+          >
+            Found
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Feed */}
-      <ScrollView style={styles.feed}>
-        {items.length === 0 ? (
+      <ScrollView
+        style={styles.feed}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
+        {filteredItems.length === 0 ? (
           <View style={styles.emptyState}>
             <Search size={64} color="#DFE0E4" />
-            <Text style={styles.emptyStateText}>No items yet</Text>
+            <Text style={styles.emptyStateText}>No items found</Text>
             <Text style={styles.emptyStateSubtext}>
-              Lost and found items will appear here
+              {searchQuery
+                ? "Try a different search term"
+                : "Lost and found items will appear here"}
             </Text>
           </View>
         ) : (
-          items.map((item, index) => <FeedItem key={index} item={item} />)
+          filteredItems.map((item) => <FeedItem key={item.id} item={item} />)
         )}
       </ScrollView>
     </SafeAreaView>
   );
 };
 
-const FeedItem = ({ item }) => (
-  <View style={styles.feedItem}>
-    {/* Header */}
-    <View style={styles.feedItemHeader}>
-      <View style={styles.feedItemUser}>
-        <View style={styles.avatar}>
-          <User size={20} color="#FFFFFF" />
-        </View>
-        <View>
-          <Text style={styles.userName}>{item.userName}</Text>
-          <View style={styles.locationRow}>
-            <MapPin size={12} color="#8E8E93" />
-            <Text style={styles.location}>{item.location}</Text>
+const FeedItem = ({ item }) => {
+  const posterName =
+    item.profiles?.full_name ||
+    (item.profiles?.email ? item.profiles.email.split("@")[0] : "Anonymous");
+
+  const getTimeAgo = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${diffDays}d ago`;
+  };
+
+  const statusColor = item.status === "Lost" ? "#EF4444" : "#10B981";
+
+  return (
+    <View style={styles.feedItem}>
+      {/* Header */}
+      <View style={styles.feedItemHeader}>
+        <View style={styles.feedItemUser}>
+          <View style={styles.avatar}>
+            {item.profiles?.avatar_url ? (
+              <Image
+                source={{ uri: item.profiles.avatar_url }}
+                style={styles.avatarImage}
+              />
+            ) : (
+              <User size={20} color="#FFFFFF" />
+            )}
+          </View>
+          <View>
+            <Text style={styles.userName}>{posterName}</Text>
+            <View style={styles.locationRow}>
+              <MapPin size={12} color="#8E8E93" />
+              <Text style={styles.location}>
+                {item.location || "Unknown location"}
+              </Text>
+            </View>
           </View>
         </View>
+        <View
+          style={[styles.statusBadge, { backgroundColor: statusColor + "20" }]}
+        >
+          <Text style={[styles.statusText, { color: statusColor }]}>
+            {item.status}
+          </Text>
+        </View>
       </View>
-      <Text style={styles.moreButton}>•••</Text>
-    </View>
 
-    {/* Image */}
-    <View style={styles.imageContainer}>
-      <Image
-        source={{ uri: item.image }}
-        style={styles.itemImage}
-        resizeMode="cover"
-      />
-    </View>
+      {/* Image */}
+      {item.image_url && (
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: item.image_url }}
+            style={styles.itemImage}
+            resizeMode="cover"
+          />
+        </View>
+      )}
 
-    {/* Content */}
-    <View style={styles.feedItemContent}>
-      <Text style={styles.itemTitle}>{item.title}</Text>
-      <Text style={styles.itemDescription}>{item.description}</Text>
-      <View style={styles.metaRow}>
-        <Calendar size={14} color="#8E8E93" />
-        <Text style={styles.metaText}>{item.date}</Text>
+      {/* Content */}
+      <View style={styles.feedItemContent}>
+        <Text style={styles.itemTitle}>{item.title}</Text>
+        <Text style={styles.itemDescription} numberOfLines={3}>
+          {item.description}
+        </Text>
+        <View style={styles.metaRow}>
+          <Calendar size={14} color="#8E8E93" />
+          <Text style={styles.metaText}>
+            {item.created_at ? getTimeAgo(item.created_at) : "Recently"}
+          </Text>
+        </View>
       </View>
-    </View>
 
-    {/* Divider */}
-    <View style={styles.divider} />
-  </View>
-);
+      {/* Divider */}
+      <View style={styles.divider} />
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: "#606770",
   },
   header: {
     paddingHorizontal: 16,
@@ -149,6 +352,32 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  filterChips: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    gap: 8,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#DBDBDB",
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: "#F0F2F5",
+  },
+  chipActive: {
+    backgroundColor: "#1877F2",
+  },
+  chipText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#000000",
+  },
+  chipTextActive: {
+    color: "#FFFFFF",
+  },
   feed: {
     flex: 1,
     backgroundColor: "#FAFAFA",
@@ -193,6 +422,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#1877F2",
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
   },
   userName: {
     fontSize: 14,
@@ -208,6 +442,15 @@ const styles = StyleSheet.create({
   location: {
     fontSize: 12,
     color: "#8E8E93",
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
   moreButton: {
     fontSize: 20,

@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     def _split_comma_separated_list(cls, v):
         """Splits a comma-separated string from .env into a list of strings, or wraps single string in list."""
         if isinstance(v, str):
+            # Handle wildcard for CORS origins
+            if v.strip() == "*":
+                return ["*"]
             if ',' in v:
                 return [x.strip() for x in v.split(",") if x.strip()]
             return [v.strip()] if v.strip() else []

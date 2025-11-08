@@ -92,13 +92,26 @@ async def shutdown_event():
     gc.collect()
     print("Shutting down gracefully...")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[str(origin) for origin in settings.CORS_ORIGINS],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Configure CORS - handle wildcard for development
+cors_origins = settings.CORS_ORIGINS
+if "*" in cors_origins:
+    # For development, allow all origins
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,  # Must be False when allow_origins is ["*"]
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    # For production, use specific origins
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[str(origin) for origin in cors_origins],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # Optimize images for faster processing and storage
 def process_image_efficiently(image_bytes: bytes, max_size=(1920, 1920)):

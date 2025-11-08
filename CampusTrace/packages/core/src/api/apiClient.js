@@ -108,6 +108,52 @@ export const apiClient = {
   },
 
   /**
+   * Get browse items with optional filter
+   * NOTE: This endpoint doesn't exist in backend yet, screens use Supabase directly
+   * @param {string} itemType - Optional filter: 'lost' or 'found'
+   */
+  async getBrowseItems(itemType) {
+    // Backend doesn't have this endpoint yet
+    // Mobile screens fetch directly from Supabase
+    return [];
+  },
+
+  /**
+   * Get user conversations/messages
+   * NOTE: Backend only has POST /api/conversations/, no GET endpoint yet
+   */
+  async getMessages() {
+    // Backend doesn't have this endpoint yet
+    // Mobile screens fetch directly from Supabase
+    return [];
+  },
+
+  /**
+   * Get leaderboard top users
+   * Backend endpoint: /api/items/leaderboard
+   */
+  async getLeaderboard() {
+    const token = await getAccessToken();
+    const response = await fetch(`${API_BASE_URL}/api/items/leaderboard`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!response.ok) throw new Error("Failed to fetch leaderboard.");
+    return response.json();
+  },
+
+  /**
+   * Get user notifications
+   * NOTE: Backend has notification_router but no GET endpoint defined yet
+   */
+  async getNotifications() {
+    // Backend doesn't have this endpoint yet
+    // Mobile screens fetch directly from Supabase
+    return [];
+  },
+
+  /**
    * Ban or unban a user (admin only)
    */
   async banUser(userId, isBanned = true) {

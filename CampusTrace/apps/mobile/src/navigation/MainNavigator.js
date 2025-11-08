@@ -1,5 +1,6 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { View, Image } from "react-native";
 import { Home, Search, PlusSquare, Trophy, User } from "lucide-react-native";
 
@@ -9,8 +10,24 @@ import BrowseScreen from "../screens/main/BrowseScreen";
 import PostItemScreen from "../screens/main/PostItemScreen";
 import LeaderboardScreen from "../screens/main/LeaderboardScreen";
 import ProfileScreen from "../screens/main/ProfileScreen";
+import MessagesScreen from "../screens/main/MessagesScreen";
+import NotificationScreen from "../screens/main/NotificationScreen";
+import ChatScreen from "../screens/main/ChatScreen";
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
+
+// Dashboard Stack Navigator (includes nested screens)
+function DashboardStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="DashboardHome" component={DashboardScreen} />
+      <Stack.Screen name="Messages" component={MessagesScreen} />
+      <Stack.Screen name="Notifications" component={NotificationScreen} />
+      <Stack.Screen name="Chat" component={ChatScreen} />
+    </Stack.Navigator>
+  );
+}
 
 export default function MainNavigator() {
   return (
@@ -61,7 +78,7 @@ export default function MainNavigator() {
         headerShown: false,
       })}
     >
-      <Tab.Screen name="Dashboard" component={DashboardScreen} />
+      <Tab.Screen name="Dashboard" component={DashboardStack} />
       <Tab.Screen name="Browse" component={BrowseScreen} />
       <Tab.Screen name="PostItem" component={PostItemScreen} />
       <Tab.Screen name="Leaderboard" component={LeaderboardScreen} />
