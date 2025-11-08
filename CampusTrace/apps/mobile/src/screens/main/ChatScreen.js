@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, Send, MessageCircle } from "lucide-react-native";
 import { getSupabaseClient } from "@campustrace/core";
+import SimpleLoadingScreen from "../../components/SimpleLoadingScreen";
 
 const ChatScreen = ({ route, navigation }) => {
   const { conversationId } = route.params;
@@ -174,14 +175,7 @@ const ChatScreen = ({ route, navigation }) => {
   };
 
   if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2563eb" />
-          <Text style={styles.loadingText}>Loading chat...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <SimpleLoadingScreen />;
   }
 
   if (!conversation) {

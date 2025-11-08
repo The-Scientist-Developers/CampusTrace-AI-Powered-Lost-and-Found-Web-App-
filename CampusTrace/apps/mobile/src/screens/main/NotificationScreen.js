@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  ScrollView,
+  FlatList, // Use FlatList for better performance
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
@@ -16,9 +16,42 @@ import {
   CheckCircle,
   AlertCircle,
   Info,
+  Package,
 } from "lucide-react-native";
-import { getSupabaseClient } from "@campustrace/core";
+import { getSupabaseClient, BRAND_COLOR } from "@campustrace/core";
+import SimpleLoadingScreen from "../../components/SimpleLoadingScreen";
 
+// ====================
+// Helper Function
+// ====================
+const getTimeAgo = (dateString) => {
+  if (!dateString) return "unknown time";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "invalid date";
+
+  const seconds = Math.floor((new Date() - date) / 1000);
+
+  const intervals = [
+    { label: "year", seconds: 31536000 },
+    { label: "month", seconds: 2592000 },
+    { label: "day", seconds: 86400 },
+    { label: "hour", seconds: 3600 },
+    { label: "minute", seconds: 60 },
+    { label: "second", seconds: 1 },
+  ];
+
+  for (const interval of intervals) {
+    const count = Math.floor(seconds / interval.seconds);
+    if (count >= 1) {
+      return `${count}${interval.label.charAt(0)} ago`; // e.g., "5m ago"
+    }
+  }
+  return "just now";
+};
+
+// ====================
+// Main Component
+// ====================
 const NotificationScreen = ({ navigation }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +82,7 @@ const NotificationScreen = ({ navigation }) => {
 
   const fetchNotifications = async () => {
     try {
-      setLoading(true);
+      if (!refreshing) setLoading(true);
       const supabase = getSupabaseClient();
 
       if (!user?.id) {
@@ -57,7 +90,7 @@ const NotificationScreen = ({ navigation }) => {
         return;
       }
 
-      // EXACT same query as web app
+      // EXACT same query as web app - no joins needed
       const { data, error } = await supabase
         .from("notifications")
         .select("*")
@@ -65,7 +98,10 @@ const NotificationScreen = ({ navigation }) => {
         .order("created_at", { ascending: false })
         .limit(50);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase query error:", error);
+        throw error;
+      }
 
       setNotifications(data || []);
     } catch (error) {
@@ -82,33 +118,44 @@ const NotificationScreen = ({ navigation }) => {
     fetchNotifications();
   };
 
-  const getTimeAgo = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
+  const markAsRead = async (notificationId) => {
+    try {
+      const supabase = getSupabaseClient();
+      // Optimistically update UI
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.id === notificationId ? { ...n, status: "read" } : n
+        )
+      );
 
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+      // Update in Supabase
+      await supabase
+        .from("notifications")
+        .update({ status: "read" })
+        .eq("id", notificationId);
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  };
+
+  const handleNotificationPress = (notification) => {
+    // Mark as read first
+    if (notification.status !== "read") {
+      markAsRead(notification.id);
+    }
+
+    // Navigate based on link_to if provided
+    if (notification.link_to) {
+      // Parse the link and navigate accordingly
+      // For now, just navigate to Messages or Dashboard
+      if (notification.link_to.includes("/messages")) {
+        navigation.navigate("Messages");
+      }
+    }
   };
 
   if (loading && !refreshing) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Notifications</Text>
-        </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1877F2" />
-          <Text style={styles.loadingText}>Loading notifications...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <SimpleLoadingScreen />;
   }
 
   return (
@@ -116,16 +163,26 @@ const NotificationScreen = ({ navigation }) => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Notifications</Text>
+        <Text style={styles.headerSubtitle}>
+          Stay updated with important alerts and messages
+        </Text>
       </View>
 
       {/* Notifications List */}
-      <ScrollView
+      <FlatList
+        data={notifications}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <NotificationItem
+            notification={item}
+            onPress={() => handleNotificationPress(item)}
+          />
+        )}
         style={styles.scrollView}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
-      >
-        {notifications.length === 0 ? (
+        ListEmptyComponent={
           <View style={styles.emptyState}>
             <Bell size={64} color="#DFE0E4" />
             <Text style={styles.emptyStateText}>No notifications</Text>
@@ -133,81 +190,68 @@ const NotificationScreen = ({ navigation }) => {
               We'll notify you when something happens
             </Text>
           </View>
-        ) : (
-          notifications.map((notification) => (
-            <NotificationItem
-              key={notification.id}
-              notification={notification}
-              onPress={() => {
-                // Handle notification press
-                if (notification.type === "message") {
-                  navigation.navigate("Messages");
-                } else if (notification.item_id) {
-                  // Navigate to item detail
-                  navigation.navigate("ItemDetail", {
-                    itemId: notification.item_id,
-                  });
-                }
-              }}
-              getTimeAgo={getTimeAgo}
-            />
-          ))
-        )}
-      </ScrollView>
+        }
+      />
     </SafeAreaView>
   );
 };
 
-const NotificationItem = ({ notification, onPress, getTimeAgo }) => {
-  const getIcon = () => {
-    const iconProps = { size: 24, color: "#FFFFFF" };
-    switch (notification.type) {
-      case "message":
-        return <MessageCircle {...iconProps} />;
-      case "claim":
-        return <UserCheck {...iconProps} />;
-      case "match":
-        return <CheckCircle {...iconProps} />;
-      case "status_update":
-        return <AlertCircle {...iconProps} />;
-      default:
-        return <Info {...iconProps} />;
-    }
-  };
+// ====================
+// NotificationItem Component (simplified like web-app)
+// ====================
+const NotificationItem = ({ notification, onPress }) => {
+  const { type, message, created_at, status } = notification;
+  const is_read = status === "read";
 
-  const getIconBackgroundColor = () => {
-    switch (notification.type) {
-      case "message":
-        return "#1877F2";
-      case "claim":
-        return "#10B981";
-      case "match":
-        return "#3B82F6";
-      case "status_update":
-        return "#F59E0B";
-      default:
-        return "#8E8E93";
-    }
-  };
+  // Dynamically generate icon based on type
+  let Icon, iconColor;
 
-  const isUnread = !notification.is_read;
+  switch (type) {
+    case "message":
+      Icon = MessageCircle;
+      iconColor = BRAND_COLOR;
+      break;
+    case "claim":
+      Icon = UserCheck;
+      iconColor = "#10B981";
+      break;
+    case "match":
+      Icon = CheckCircle;
+      iconColor = "#3B82F6";
+      break;
+    case "status_update":
+    case "moderation":
+      Icon = AlertCircle;
+      iconColor = "#F59E0B";
+      break;
+    case "claim_accepted":
+      Icon = CheckCircle;
+      iconColor = "#10B981";
+      break;
+    case "claim_rejected":
+      Icon = AlertCircle;
+      iconColor = "#EF4444";
+      break;
+    case "item_recovered":
+      Icon = Package;
+      iconColor = BRAND_COLOR;
+      break;
+    default:
+      Icon = Info;
+      iconColor = "#8E8E93";
+  }
 
   return (
     <TouchableOpacity
       style={[
         styles.notificationItem,
-        isUnread && styles.notificationItemUnread,
+        !is_read && styles.notificationItemUnread,
       ]}
       onPress={onPress}
     >
       {/* Icon */}
-      <View
-        style={[
-          styles.iconContainer,
-          { backgroundColor: getIconBackgroundColor() },
-        ]}
-      >
-        {getIcon()}
+      <View style={[styles.iconContainer, { backgroundColor: iconColor }]}>
+        <Icon size={24} color="#FFFFFF" />
       </View>
 
       {/* Content */}
@@ -215,26 +259,26 @@ const NotificationItem = ({ notification, onPress, getTimeAgo }) => {
         <Text
           style={[
             styles.notificationTitle,
-            isUnread && styles.notificationTitleUnread,
+            !is_read && styles.notificationTitleUnread,
           ]}
-          numberOfLines={2}
+          numberOfLines={3}
         >
-          {notification.title}
-        </Text>
-        <Text style={styles.notificationBody} numberOfLines={3}>
-          {notification.body}
+          {message || "New notification"}
         </Text>
         <Text style={styles.timestamp}>
-          {notification.created_at ? getTimeAgo(notification.created_at) : ""}
+          {created_at ? getTimeAgo(created_at) : ""}
         </Text>
       </View>
 
       {/* Unread Indicator */}
-      {isUnread && <View style={styles.unreadIndicator} />}
+      {!is_read && <View style={styles.unreadIndicator} />}
     </TouchableOpacity>
   );
 };
 
+// ====================
+// Styles
+// ====================
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -251,6 +295,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     color: "#000000",
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginTop: 4,
   },
   loadingContainer: {
     flex: 1,
@@ -269,6 +318,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 80,
     paddingHorizontal: 20,
+    flexGrow: 1,
+    backgroundColor: "#FFFFFF",
   },
   emptyStateText: {
     fontSize: 20,
@@ -285,14 +336,14 @@ const styles = StyleSheet.create({
   notificationItem: {
     flexDirection: "row",
     alignItems: "flex-start",
-    paddingVertical: 12,
+    paddingVertical: 16, // Increased padding
     paddingHorizontal: 16,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 0.5,
-    borderBottomColor: "#DBDBDB",
+    borderBottomColor: "#F0F0F0", // Lighter border
   },
   notificationItemUnread: {
-    backgroundColor: "#F0F8FF",
+    backgroundColor: "#F0F8FF", // Light blue for unread
   },
   iconContainer: {
     width: 48,
@@ -301,6 +352,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
+    marginTop: 2, // Align with text
   },
   notificationContent: {
     flex: 1,
@@ -309,28 +361,25 @@ const styles = StyleSheet.create({
   notificationTitle: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#000000",
-    marginBottom: 4,
+    color: "#333333", // Darker text
+    marginBottom: 6,
+    lineHeight: 20,
   },
   notificationTitleUnread: {
     fontWeight: "700",
-  },
-  notificationBody: {
-    fontSize: 14,
-    color: "#606770",
-    marginBottom: 6,
-    lineHeight: 20,
+    color: "#000000",
   },
   timestamp: {
     fontSize: 12,
     color: "#8E8E93",
   },
   unreadIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#1877F2",
+    width: 10, // Made indicator slightly larger
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: BRAND_COLOR,
     marginTop: 6,
+    marginLeft: 4,
   },
 });
 

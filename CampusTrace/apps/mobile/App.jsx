@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import Constants from "expo-constants";
 import { initializeApiConfig, getSupabaseClient } from "@campustrace/core";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 // Import navigators
 import AuthNavigator from "./src/navigation/AuthNavigator";
@@ -75,23 +76,27 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "#fff",
-        }}
-      >
-        <ActivityIndicator size="large" color="#3B82F6" />
-      </View>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: "#fff",
+          }}
+        >
+          <ActivityIndicator size="large" color="#3B82F6" />
+        </View>
+      </GestureHandlerRootView>
     );
   }
 
   return (
-    <NavigationContainer>
-      {session ? <MainNavigator /> : <AuthNavigator />}
-      <StatusBar style="auto" />
-    </NavigationContainer>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <NavigationContainer>
+        {session ? <MainNavigator /> : <AuthNavigator />}
+        <StatusBar style="auto" />
+      </NavigationContainer>
+    </GestureHandlerRootView>
   );
 }

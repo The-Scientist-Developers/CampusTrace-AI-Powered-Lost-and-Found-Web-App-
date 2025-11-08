@@ -7,10 +7,12 @@ import {
   ActivityIndicator,
   Image,
   RefreshControl,
+  FlatList, // Use FlatList for better performance
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Trophy, Award, Star } from "lucide-react-native";
-import { apiClient } from "@campustrace/core";
+import { Trophy, Award, Star, User } from "lucide-react-native";
+import { apiClient, BRAND_COLOR } from "@campustrace/core"; // This will work after you fix packages/core/src/index.js
+import SimpleLoadingScreen from "../../components/SimpleLoadingScreen";
 
 const LeaderboardScreen = () => {
   const [leaderboard, setLeaderboard] = useState([]);
@@ -23,7 +25,7 @@ const LeaderboardScreen = () => {
 
   const fetchLeaderboard = async () => {
     try {
-      setLoading(true);
+      if (!refreshing) setLoading(true);
 
       // Use apiClient to fetch leaderboard
       const data = await apiClient.getLeaderboard();
@@ -43,54 +45,39 @@ const LeaderboardScreen = () => {
   };
 
   if (loading && !refreshing) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1877F2" />
-          <Text style={styles.loadingText}>Loading leaderboard...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <SimpleLoadingScreen />;
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header - Always visible */}
+      {/* Header */}
       <View style={styles.header}>
-        <Trophy size={32} color="#FFD700" />
-        <Text style={styles.headerTitle}>Community Leaderboard</Text>
+        <Text style={styles.headerTitle}>Leaderboard</Text>
         <Text style={styles.headerSubtitle}>
-          Top users who helped return the most items on campus
+          Top users who helped return the most items
         </Text>
       </View>
 
-      {loading && !refreshing ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1877F2" />
-          <Text style={styles.loadingText}>Loading leaderboard...</Text>
-        </View>
-      ) : (
-        <ScrollView
-          style={styles.scrollView}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-        >
-          {leaderboard.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Trophy size={64} color="#DFE0E4" />
-              <Text style={styles.emptyStateText}>No data yet</Text>
-              <Text style={styles.emptyStateSubtext}>
-                Be the first to return an item!
-              </Text>
-            </View>
-          ) : (
-            leaderboard.map((user, index) => (
-              <LeaderboardRow key={user.user_id} user={user} rank={index + 1} />
-            ))
-          )}
-        </ScrollView>
-      )}
+      <FlatList
+        data={leaderboard}
+        keyExtractor={(item) => item.user_id}
+        renderItem={({ item, index }) => (
+          <LeaderboardRow user={item} rank={index + 1} />
+        )}
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Trophy size={64} color="#DFE0E4" />
+            <Text style={styles.emptyStateText}>No data yet</Text>
+            <Text style={styles.emptyStateSubtext}>
+              Be the first to return an item!
+            </Text>
+          </View>
+        }
+      />
     </SafeAreaView>
   );
 };
@@ -121,9 +108,7 @@ const LeaderboardRow = ({ user, rank }) => {
           <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
         ) : (
           <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarText}>
-              {user.full_name?.charAt(0)?.toUpperCase() || "?"}
-            </Text>
+            <User size={24} color="#FFFFFF" />
           </View>
         )}
       </View>
@@ -144,45 +129,47 @@ const LeaderboardRow = ({ user, rank }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: "#FFFFFF", // Changed to white to match other pages
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#FFFFFF",
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
     color: "#606770",
   },
+  // Header
   header: {
-    alignItems: "center",
-    paddingVertical: 24,
     paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 0.5,
     borderBottomColor: "#DBDBDB",
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "bold",
     color: "#000000",
-    marginTop: 8,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: "#8E8E93",
+    color: "#6B7280",
     marginTop: 4,
-    textAlign: "center",
   },
   scrollView: {
     flex: 1,
+    backgroundColor: "#FFFFFF",
   },
   emptyState: {
     alignItems: "center",
     paddingVertical: 80,
     paddingHorizontal: 20,
+    backgroundColor: "#FFFFFF",
+    flexGrow: 1,
   },
   emptyStateText: {
     fontSize: 20,
@@ -203,22 +190,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 0.5,
-    borderBottomColor: "#DBDBDB",
+    borderBottomColor: "#F0F0F0", // Lighter border
   },
   topRankGold: {
     backgroundColor: "#FFFBF0",
-    borderLeftWidth: 4,
-    borderLeftColor: "#FFD700",
   },
   topRankSilver: {
     backgroundColor: "#F8F8F8",
-    borderLeftWidth: 4,
-    borderLeftColor: "#C0C0C0",
   },
   topRankBronze: {
     backgroundColor: "#FFF5F0",
-    borderLeftWidth: 4,
-    borderLeftColor: "#CD7F32",
   },
   rankContainer: {
     width: 40,
@@ -242,7 +223,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#1877F2",
+    backgroundColor: BRAND_COLOR,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -271,7 +252,7 @@ const styles = StyleSheet.create({
   scoreValue: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#1877F2",
+    color: BRAND_COLOR,
   },
   scoreLabel: {
     fontSize: 12,

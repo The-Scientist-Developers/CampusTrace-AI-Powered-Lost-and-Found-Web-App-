@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  Image, // Import Image
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -18,26 +19,88 @@ import {
   ChevronRight,
   Menu,
 } from "lucide-react-native";
+// Remove BRAND_COLOR import
 import { getSupabaseClient } from "@campustrace/core";
 
-const ProfileScreen = () => {
+// Define brand color locally to prevent crash
+const BRAND_COLOR = "#1877F2";
+
+// Add navigation prop
+const ProfileScreen = ({ navigation }) => {
   const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null); // State for the full profile
 
   useEffect(() => {
-    loadUser();
-  }, []);
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
 
-  const loadUser = async () => {
-    try {
-      const supabase = getSupabaseClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setUser(user);
-    } catch (error) {
-      console.error("Error loading user:", error);
-    }
-  };
+    let profileListener = null;
+
+    // Listen for auth events (SIGNED_IN, SIGNED_OUT, INITIAL_SESSION)
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        const currentUser = session?.user || null;
+        setUser(currentUser);
+
+        // Clean up old listener
+        if (profileListener) {
+          supabase.removeChannel(profileListener);
+          profileListener = null;
+        }
+
+        if (event === "SIGNED_OUT") {
+          setProfile(null); // Clear profile on sign out
+          return;
+        }
+
+        const userId = currentUser?.id;
+
+        if (userId) {
+          // 1. Fetch initial profile data
+          (async () => {
+            try {
+              const { data: profileData, error } = await supabase
+                .from("profiles")
+                .select("*") // Select all profile data
+                .eq("id", userId)
+                .single();
+
+              if (error) throw error;
+              setProfile(profileData);
+            } catch (error) {
+              console.error("Error fetching initial profile:", error);
+              setProfile(null);
+            }
+          })();
+
+          // 2. Subscribe to *future* updates
+          profileListener = supabase
+            .channel(`public:profiles:id=eq.${userId}`)
+            .on(
+              "postgres_changes",
+              {
+                event: "UPDATE",
+                schema: "public",
+                table: "profiles",
+                filter: `id=eq.${userId}`,
+              },
+              (payload) => {
+                setProfile((prev) => ({ ...prev, ...payload.new }));
+              }
+            )
+            .subscribe();
+        }
+      }
+    );
+
+    // Cleanup function
+    return () => {
+      authListener?.subscription.unsubscribe();
+      if (profileListener) {
+        supabase.removeChannel(profileListener);
+      }
+    };
+  }, []);
 
   const handleLogout = async () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
@@ -49,6 +112,7 @@ const ProfileScreen = () => {
           try {
             const supabase = getSupabaseClient();
             await supabase.auth.signOut();
+            // The auth listener will handle setting user/profile to null
           } catch (error) {
             console.error("Logout error:", error);
           }
@@ -61,7 +125,12 @@ const ProfileScreen = () => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Profile</Text>
+          <Text style={styles.headerSubtitle}>
+            Manage your account and view your activity
+          </Text>
+        </View>
         <TouchableOpacity style={styles.menuButton}>
           <Menu size={24} color="#000000" />
         </TouchableOpacity>
@@ -71,10 +140,20 @@ const ProfileScreen = () => {
         {/* Profile Info */}
         <View style={styles.profileSection}>
           <View style={styles.avatarLarge}>
-            <User size={48} color="#FFFFFF" />
+            {/* --- UPDATED AVATAR LOGIC --- */}
+            {profile?.avatar_url ? (
+              <Image
+                source={{ uri: profile.avatar_url }}
+                style={styles.avatarImage}
+              />
+            ) : (
+              <User size={48} color="#FFFFFF" />
+            )}
+            {/* --- END OF UPDATE --- */}
           </View>
           <Text style={styles.userName}>
-            {user?.user_metadata?.full_name || "User"}
+            {/* --- UPDATED NAME LOGIC --- */}
+            {profile?.full_name || user?.email?.split("@")[0] || "User"}
           </Text>
           <Text style={styles.userEmail}>{user?.email}</Text>
         </View>
@@ -85,28 +164,22 @@ const ProfileScreen = () => {
             icon={Settings}
             label="Settings"
             onPress={() => {
-              /* TODO: Navigate to Settings */
+              // --- UPDATED NAVIGATION ---
+              navigation.navigate("Settings");
             }}
           />
           <MenuItem
             icon={Bell}
             label="Notifications"
             onPress={() => {
-              /* TODO: Navigate to Notifications */
-            }}
-          />
-          <MenuItem
-            icon={Shield}
-            label="Privacy & Security"
-            onPress={() => {
-              /* TODO: Navigate to Privacy */
+              navigation.navigate("Dashboard", { screen: "Notifications" });
             }}
           />
           <MenuItem
             icon={HelpCircle}
             label="Help & Support"
             onPress={() => {
-              /* TODO: Navigate to Help */
+              navigation.navigate("Help");
             }}
           />
         </View>
@@ -146,10 +219,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: "#DBDBDB",
   },
+  headerContent: {
+    flex: 1,
+  },
   headerTitle: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#000000",
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginTop: 4,
   },
   menuButton: {
     padding: 4,
@@ -168,10 +249,16 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: "#1877F2",
+    backgroundColor: BRAND_COLOR, // Use fixed color
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 16,
+    overflow: "hidden", // Add overflow hidden for image
+  },
+  // --- ADDED AVATAR IMAGE STYLE ---
+  avatarImage: {
+    width: "100%",
+    height: "100%",
   },
   userName: {
     fontSize: 24,

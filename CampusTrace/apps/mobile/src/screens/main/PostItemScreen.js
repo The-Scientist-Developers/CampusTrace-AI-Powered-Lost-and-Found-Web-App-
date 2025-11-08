@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,10 +10,10 @@ import {
   ActivityIndicator,
   Platform,
   StyleSheet,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
-import { Picker } from "@react-native-picker/picker";
 import {
   UploadCloud,
   Image as ImageIcon,
@@ -24,23 +24,56 @@ import {
   Tag,
   Phone,
   FileText,
+  ChevronDown,
+  Check,
 } from "lucide-react-native";
-import { getSupabaseClient } from "@campustrace/core";
+// Import API_BASE_URL from core
+import { getSupabaseClient, API_BASE_URL } from "@campustrace/core";
 
-const API_BASE_URL = "http://10.0.0.40:8000";
+// Define the brand color here since it's not in core
+const BRAND_COLOR = "#1877F2";
 
-export default function PostItemScreen({ navigation }) {
+// Add `route` to props to get navigation params
+export default function PostItemScreen({ navigation, route }) {
+  // Check if an item is being passed in for editing
+  const itemToEdit = route.params?.itemToEdit;
+  const isEditMode = !!itemToEdit;
+
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState("Lost");
   const [category, setCategory] = useState("Electronics");
   const [location, setLocation] = useState("");
   const [contactInfo, setContactInfo] = useState("");
   const [description, setDescription] = useState("");
-  const [imageUri, setImageUri] = useState(null);
+  const [imageUri, setImageUri] = useState(null); // This will hold remote URL or local URI
+  const [newImageUri, setNewImageUri] = useState(null); // This holds a *newly picked* local image
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+
+  const categories = [
+    "Electronics",
+    "Documents",
+    "Clothing",
+    "Accessories",
+    "Other",
+  ];
 
   const supabase = getSupabaseClient();
+
+  // Add this useEffect to pre-fill the form if in edit mode
+  useEffect(() => {
+    if (itemToEdit) {
+      setTitle(itemToEdit.title);
+      setStatus(itemToEdit.status);
+      setCategory(itemToEdit.category);
+      setLocation(itemToEdit.location);
+      setContactInfo(itemToEdit.contact_info || "");
+      setDescription(itemToEdit.description);
+      setImageUri(itemToEdit.image_url || null); // Set existing image URL
+      setNewImageUri(null); // Ensure no new image is set
+    }
+  }, [itemToEdit]);
 
   const pickImage = async () => {
     const permissionResult =
@@ -62,12 +95,15 @@ export default function PostItemScreen({ navigation }) {
     });
 
     if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
+      const uri = result.assets[0].uri;
+      setNewImageUri(uri); // Set the new local URI
+      setImageUri(uri); // Show the new image in preview
     }
   };
 
   const removeImage = () => {
     setImageUri(null);
+    setNewImageUri(null);
   };
 
   const handleImproveDescription = async () => {
@@ -139,14 +175,17 @@ export default function PostItemScreen({ navigation }) {
       const formData = new FormData();
       formData.append("item_data", JSON.stringify(itemData));
 
-      if (imageUri) {
-        const filename = imageUri.split("/").pop();
+      // Only append a *new* image file
+      if (newImageUri) {
+        const filename = newImageUri.split("/").pop();
         const match = /\.(\w+)$/.exec(filename);
         const type = match ? `image/${match[1]}` : `image`;
 
         formData.append("image_file", {
           uri:
-            Platform.OS === "ios" ? imageUri.replace("file://", "") : imageUri,
+            Platform.OS === "ios"
+              ? newImageUri.replace("file://", "")
+              : newImageUri,
           name: filename,
           type,
         });
@@ -158,21 +197,33 @@ export default function PostItemScreen({ navigation }) {
       const token = session?.access_token;
       if (!token) throw new Error("Not authenticated");
 
-      const response = await fetch(`${API_BASE_URL}/api/items/create`, {
-        method: "POST",
+      // --- MODIFIED: Choose URL and Method based on edit mode ---
+      const endpoint = isEditMode
+        ? `${API_BASE_URL}/api/items/update/${itemToEdit.id}`
+        : `${API_BASE_URL}/api/items/create`;
+
+      const method = isEditMode ? "PUT" : "POST";
+
+      const response = await fetch(endpoint, {
+        method: method,
         headers: {
           Authorization: `Bearer ${token}`,
+          // Content-Type is set automatically for FormData
         },
         body: formData,
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || "Failed to post item.");
+        throw new Error(
+          errorData.detail ||
+            `Failed to ${isEditMode ? "update" : "post"} item.`
+        );
       }
 
       const result = await response.json();
-      console.log("✅ Item created:", result);
+      console.log(`✅ Item ${isEditMode ? "updated" : "created"}:`, result);
+      // --- END OF MODIFICATION ---
 
       // Notify admins
       const { data: userProfile, error: profileError } = await supabase
@@ -181,31 +232,40 @@ export default function PostItemScreen({ navigation }) {
         .eq("id", session.user.id)
         .single();
 
-      if (!profileError && userProfile?.university_id) {
-        const itemId = result.id || result.item_id || result.data?.id;
-        // Note: notifyAdminsNewPost would need to be implemented for mobile
+      if (!profileError && userProfile?.university_id && !isEditMode) {
+        // Only notify on create, not edit
         console.log("🔔 Would notify admins about new post");
       }
 
       Alert.alert(
         "Success",
-        "Item posted successfully! It's now pending review.",
+        `Item ${
+          isEditMode ? "updated" : "posted"
+        } successfully! It's now pending review.`,
         [
           {
             text: "OK",
-            onPress: () => navigation.navigate("Dashboard"),
+            // Go to MyPosts if editing, Dashboard if creating
+            onPress: () =>
+              navigation.navigate(isEditMode ? "MyPosts" : "Dashboard"),
           },
         ]
       );
 
       // Reset form
-      setTitle("");
-      setDescription("");
-      setLocation("");
-      setContactInfo("");
-      setImageUri(null);
+      if (!isEditMode) {
+        setTitle("");
+        setDescription("");
+        setLocation("");
+        setContactInfo("");
+        setImageUri(null);
+        setNewImageUri(null);
+      }
     } catch (error) {
-      console.error("Error posting item:", error);
+      console.error(
+        `Error ${isEditMode ? "updating" : "posting"} item:`,
+        error
+      );
       Alert.alert("Error", error.message);
     } finally {
       setTimeout(() => {
@@ -216,21 +276,24 @@ export default function PostItemScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>
+          {isEditMode ? "Edit Item" : "Post Item"}
+        </Text>
+        <Text style={styles.headerSubtitle}>
+          {isEditMode
+            ? "Update your item details"
+            : "Help others find their lost items"}
+        </Text>
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.content}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.iconContainer}>
-              <UploadCloud color="white" size={32} />
-            </View>
-            <Text style={styles.title}>Post New Item</Text>
-            <Text style={styles.subtitle}>
-              Help reunite lost items with their owners
-            </Text>
-          </View>
+          {/* --- REMOVED OLD HEADER --- */}
 
           {/* Status Toggle Pills */}
           <View style={styles.statusContainer}>
@@ -238,8 +301,9 @@ export default function PostItemScreen({ navigation }) {
               onPress={() => setStatus("Lost")}
               style={[
                 styles.statusButton,
-                status === "Lost" && styles.statusButtonActive,
+                status === "Lost" && styles.statusButtonActiveLost,
               ]}
+              disabled={isEditMode} // Disable changing status when editing
             >
               <Text
                 style={[
@@ -254,8 +318,9 @@ export default function PostItemScreen({ navigation }) {
               onPress={() => setStatus("Found")}
               style={[
                 styles.statusButton,
-                status === "Found" && styles.statusButtonActive,
+                status === "Found" && styles.statusButtonActiveFound,
               ]}
+              disabled={isEditMode} // Disable changing status when editing
             >
               <Text
                 style={[
@@ -268,12 +333,18 @@ export default function PostItemScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
+          {isEditMode && (
+            <Text style={styles.editNote}>
+              Item type (Lost/Found) cannot be changed after posting.
+            </Text>
+          )}
+
           {/* Form Card */}
           <View style={styles.formCard}>
             {/* Title */}
             <View style={styles.fieldContainer}>
               <View style={styles.labelContainer}>
-                <Tag color="#3b82f6" size={16} />
+                <Tag color={BRAND_COLOR} size={16} />
                 <Text style={styles.label}>
                   What did you {status.toLowerCase()}? *
                 </Text>
@@ -290,28 +361,22 @@ export default function PostItemScreen({ navigation }) {
             {/* Category */}
             <View style={styles.fieldContainer}>
               <View style={styles.labelContainer}>
-                <FileText color="#3b82f6" size={16} />
+                <FileText color={BRAND_COLOR} size={16} />
                 <Text style={styles.label}>Category</Text>
               </View>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={category}
-                  onValueChange={(itemValue) => setCategory(itemValue)}
-                  style={styles.picker}
-                >
-                  <Picker.Item label="Electronics" value="Electronics" />
-                  <Picker.Item label="Documents" value="Documents" />
-                  <Picker.Item label="Clothing" value="Clothing" />
-                  <Picker.Item label="Accessories" value="Accessories" />
-                  <Picker.Item label="Other" value="Other" />
-                </Picker>
-              </View>
+              <TouchableOpacity
+                style={styles.categoryButton}
+                onPress={() => setShowCategoryModal(true)}
+              >
+                <Text style={styles.categoryButtonText}>{category}</Text>
+                <ChevronDown color="#6b7280" size={20} />
+              </TouchableOpacity>
             </View>
 
             {/* Location */}
             <View style={styles.fieldContainer}>
               <View style={styles.labelContainer}>
-                <MapPin color="#3b82f6" size={16} />
+                <MapPin color={BRAND_COLOR} size={16} />
                 <Text style={styles.label}>Location *</Text>
               </View>
               <TextInput
@@ -326,7 +391,7 @@ export default function PostItemScreen({ navigation }) {
             {/* Contact Info */}
             <View style={styles.fieldContainer}>
               <View style={styles.labelContainer}>
-                <Phone color="#3b82f6" size={16} />
+                <Phone color={BRAND_COLOR} size={16} />
                 <Text style={styles.label}>Contact Info (Optional)</Text>
               </View>
               <TextInput
@@ -342,7 +407,7 @@ export default function PostItemScreen({ navigation }) {
             <View style={styles.fieldContainer}>
               <View style={styles.labelContainerWithButton}>
                 <View style={styles.labelContainer}>
-                  <FileText color="#3b82f6" size={16} />
+                  <FileText color={BRAND_COLOR} size={16} />
                   <Text style={styles.label}>Description *</Text>
                 </View>
                 <TouchableOpacity
@@ -389,7 +454,7 @@ export default function PostItemScreen({ navigation }) {
             {/* Image Upload */}
             <View style={styles.fieldContainer}>
               <View style={styles.labelContainer}>
-                <ImageIcon color="#3b82f6" size={16} />
+                <ImageIcon color={BRAND_COLOR} size={16} />
                 <Text style={styles.label}>Upload Photo (Optional)</Text>
               </View>
               {imageUri ? (
@@ -407,7 +472,11 @@ export default function PostItemScreen({ navigation }) {
                   </TouchableOpacity>
                   <View style={styles.imageOverlay}>
                     <Text style={styles.imageOverlayText}>
-                      Photo uploaded successfully
+                      {newImageUri
+                        ? "New photo selected"
+                        : isEditMode
+                        ? "Current photo"
+                        : "Photo uploaded"}
                     </Text>
                   </View>
                 </View>
@@ -439,12 +508,16 @@ export default function PostItemScreen({ navigation }) {
               {isSubmitting ? (
                 <>
                   <ActivityIndicator color="white" />
-                  <Text style={styles.submitButtonText}>Submitting...</Text>
+                  <Text style={styles.submitButtonText}>
+                    {isEditMode ? "Updating..." : "Submitting..."}
+                  </Text>
                 </>
               ) : (
                 <>
                   <UploadCloud color="white" size={20} />
-                  <Text style={styles.submitButtonText}>Post Item</Text>
+                  <Text style={styles.submitButtonText}>
+                    {isEditMode ? "Update Item" : "Post Item"}
+                  </Text>
                 </>
               )}
             </TouchableOpacity>
@@ -454,6 +527,54 @@ export default function PostItemScreen({ navigation }) {
           </View>
         </View>
       </ScrollView>
+
+      {/* Category Selection Modal */}
+      <Modal
+        visible={showCategoryModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowCategoryModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowCategoryModal(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Category</Text>
+              <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
+                <X color="#6b7280" size={24} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.categoryList}>
+              {categories.map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  style={[
+                    styles.categoryOption,
+                    category === cat && styles.categoryOptionSelected,
+                  ]}
+                  onPress={() => {
+                    setCategory(cat);
+                    setShowCategoryModal(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.categoryOptionText,
+                      category === cat && styles.categoryOptionTextSelected,
+                    ]}
+                  >
+                    {cat}
+                  </Text>
+                  {category === cat && <Check color={BRAND_COLOR} size={20} />}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -463,60 +584,67 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f9fafb",
   },
+  // Header
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#DBDBDB",
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#000000",
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginTop: 4,
+  },
   scrollView: {
     flex: 1,
   },
   content: {
     padding: 16,
   },
-  header: {
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  iconContainer: {
-    width: 64,
-    height: 64,
-    backgroundColor: "#2563eb",
-    borderRadius: 32,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#111827",
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#6b7280",
-    textAlign: "center",
-  },
+  // --- REMOVED OLD HEADER STYLES ---
   statusContainer: {
     flexDirection: "row",
     justifyContent: "center",
     gap: 12,
-    marginBottom: 24,
+    marginBottom: 16, // Reduced margin
   },
   statusButton: {
-    paddingHorizontal: 24,
+    flex: 1, // Make buttons take equal space
     paddingVertical: 12,
     borderRadius: 999,
     backgroundColor: "#ffffff",
     borderWidth: 2,
     borderColor: "#e5e7eb",
+    alignItems: "center", // Center text
   },
-  statusButtonActive: {
-    backgroundColor: "#22c55e",
-    borderColor: "#22c55e",
+  statusButtonActiveLost: {
+    backgroundColor: "#FEE2E2", // Red for Lost
+    borderColor: "#EF4444",
+  },
+  statusButtonActiveFound: {
+    backgroundColor: "#D1FAE5", // Green for Found
+    borderColor: "#10B981",
   },
   statusButtonText: {
     fontWeight: "600",
     color: "#4b5563",
   },
   statusButtonTextActive: {
-    color: "#ffffff",
+    color: "#1f2937", // Darker text for better contrast
+  },
+  editNote: {
+    textAlign: "center",
+    fontSize: 12,
+    color: "#6b7280",
+    marginBottom: 24,
+    marginTop: -8,
   },
   formCard: {
     backgroundColor: "#ffffff",
@@ -559,14 +687,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#111827",
   },
-  pickerContainer: {
+  categoryButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: "#e5e7eb",
-    borderRadius: 12,
-    overflow: "hidden",
+    backgroundColor: "#ffffff",
   },
-  picker: {
+  categoryButtonText: {
+    fontSize: 14,
     color: "#111827",
+    fontWeight: "500",
   },
   textArea: {
     width: "100%",
@@ -664,7 +800,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: "#2563eb",
+    backgroundColor: BRAND_COLOR,
     borderRadius: 12,
   },
   submitButtonDisabled: {
@@ -681,5 +817,56 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#6b7280",
     marginTop: 12,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 32,
+    maxHeight: "70%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  categoryList: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
+  categoryOption: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginVertical: 4,
+  },
+  categoryOptionSelected: {
+    backgroundColor: "#eff6ff",
+  },
+  categoryOptionText: {
+    fontSize: 16,
+    color: "#374151",
+  },
+  categoryOptionTextSelected: {
+    color: BRAND_COLOR,
+    fontWeight: "600",
   },
 });

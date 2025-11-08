@@ -1,23 +1,124 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
-  ScrollView,
   StyleSheet,
   TouchableOpacity,
   Image,
   ActivityIndicator,
   RefreshControl,
+  FlatList, // Use FlatList for better performance
+  Alert, // Import Alert for confirmation
+  Animated, // Import Animated for swipe animation
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { MessageCircle, ChevronRight } from "lucide-react-native";
-import { getSupabaseClient } from "@campustrace/core";
+import { MessageCircle, ChevronRight, User, Trash2 } from "lucide-react-native";
+import { getSupabaseClient, BRAND_COLOR } from "@campustrace/core";
+// --- 1. IMPORT GESTURE HANDLER ---
+import { Swipeable } from "react-native-gesture-handler";
+import SimpleLoadingScreen from "../../components/SimpleLoadingScreen";
 
+// ====================
+// Helper Function
+// ====================
+const getTimeAgo = (dateString) => {
+  if (!dateString) return "unknown time";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "invalid date";
+
+  const seconds = Math.floor((new Date() - date) / 1000);
+
+  const intervals = [
+    { label: "year", seconds: 31536000 },
+    { label: "month", seconds: 2592000 },
+    { label: "day", seconds: 86400 },
+    { label: "hour", seconds: 3600 },
+    { label: "minute", seconds: 60 },
+    { label: "second", seconds: 1 },
+  ];
+
+  for (const interval of intervals) {
+    const count = Math.floor(seconds / interval.seconds);
+    if (count >= 1) {
+      return `${count}${interval.label.charAt(0)} ago`; // e.g., "5m ago", "2h ago"
+    }
+  }
+  return "just now";
+};
+
+// ====================
+// Swipe Actions Component
+// ====================
+const RightSwipeActions = ({ progress, dragX, onPress }) => {
+  const trans = dragX.interpolate({
+    inputRange: [-80, 0],
+    outputRange: [0, 80],
+    extrapolate: "clamp",
+  });
+  return (
+    <TouchableOpacity style={styles.deleteButton} onPress={onPress}>
+      <Animated.View style={{ transform: [{ translateX: trans }] }}>
+        <Trash2 size={24} color="#FFFFFF" />
+      </Animated.View>
+    </TouchableOpacity>
+  );
+};
+
+// ====================
+// Swipeable Conversation Component
+// ====================
+const SwipeableConversation = ({
+  item,
+  navigation,
+  onDelete,
+  onSwipeableOpen,
+}) => {
+  const swipeableRef = useRef(null);
+
+  const handleSwipeableOpen = () => {
+    onSwipeableOpen(swipeableRef.current);
+  };
+
+  return (
+    <Swipeable
+      ref={swipeableRef}
+      renderRightActions={(progress, dragX) => (
+        <RightSwipeActions
+          progress={progress}
+          dragX={dragX}
+          onPress={() => {
+            swipeableRef.current?.close();
+            onDelete(item.id);
+          }}
+        />
+      )}
+      onSwipeableOpen={handleSwipeableOpen}
+    >
+      <ConversationItem
+        conversation={item}
+        onPress={() => {
+          navigation.navigate("Chat", {
+            conversationId: item.id,
+            otherUser: item.other_user,
+            item: item.item,
+          });
+        }}
+      />
+    </Swipeable>
+  );
+};
+
+// ====================
+// Main Component
+// ====================
 const MessagesScreen = ({ navigation }) => {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [user, setUser] = useState(null);
+
+  // Ref to keep track of the currently open swipeable item
+  const openSwipeableRef = useRef(null);
 
   useEffect(() => {
     getCurrentUser();
@@ -43,7 +144,7 @@ const MessagesScreen = ({ navigation }) => {
 
   const fetchMessages = async () => {
     try {
-      setLoading(true);
+      if (!refreshing) setLoading(true);
       const supabase = getSupabaseClient();
 
       if (!user?.id) {
@@ -51,22 +152,44 @@ const MessagesScreen = ({ navigation }) => {
         return;
       }
 
-      // EXACT same query as web app
       const { data, error } = await supabase
         .from("conversations")
         .select(
           `
-            id,
-            item:items(id, title, image_url, status),
-            finder:profiles!conversations_finder_id_fkey(id, full_name, avatar_url),
-            claimant:profiles!conversations_claimant_id_fkey(id, full_name, avatar_url)
-          `
+          id,
+          item:items(id, title, image_url, status),
+          finder:profiles!conversations_finder_id_fkey(id, full_name, avatar_url),
+          claimant:profiles!conversations_claimant_id_fkey(id, full_name, avatar_url),
+          messages(id, content, created_at, sender_id)
+        `
         )
-        .or(`finder_id.eq.${user.id},claimant_id.eq.${user.id}`);
+        .or(`finder_id.eq.${user.id},claimant_id.eq.${user.id}`)
+        .order("created_at", { referencedTable: "messages", ascending: false })
+        .limit(1, { referencedTable: "messages" });
 
       if (error) throw error;
 
-      setConversations(data || []);
+      const processedConversations = (data || []).map((convo) => {
+        const finderId = convo.finder?.id;
+        const claimantId = convo.claimant?.id;
+
+        const otherUser = finderId === user.id ? convo.claimant : convo.finder;
+
+        const lastMessage = convo.messages[0] || null;
+        const unread_count = 0;
+
+        return {
+          ...convo,
+          other_user: otherUser || {
+            full_name: "Unknown User",
+            avatar_url: null,
+          },
+          last_message: lastMessage,
+          unread_count: unread_count,
+        };
+      });
+
+      setConversations(processedConversations);
     } catch (error) {
       console.error("Error fetching messages:", error);
       setConversations([]);
@@ -81,33 +204,76 @@ const MessagesScreen = ({ navigation }) => {
     fetchMessages();
   };
 
-  const getTimeAgo = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
+  // --- 2. ADD DELETE FUNCTION ---
+  const deleteConversation = (conversationId) => {
+    Alert.alert(
+      "Delete Conversation",
+      "Are you sure you want to delete this entire conversation? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // 1. Optimistically remove from UI
+              setConversations((prev) =>
+                prev.filter((convo) => convo.id !== conversationId)
+              );
 
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins}m`;
-    if (diffHours < 24) return `${diffHours}h`;
-    if (diffDays < 7) return `${diffDays}d`;
-    return date.toLocaleDateString();
+              // 2. Attempt to delete from Supabase
+              const supabase = getSupabaseClient();
+              const { error } = await supabase
+                .from("conversations")
+                .delete()
+                .eq("id", conversationId);
+
+              if (error) {
+                // If error, refresh from server
+                Alert.alert(
+                  "Error",
+                  "Could not delete conversation. Please try again."
+                );
+                fetchMessages();
+              }
+            } catch (err) {
+              Alert.alert("Error", "An unexpected error occurred.");
+              fetchMessages();
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // --- 3. CREATE SWIPEABLE ITEM RENDERER ---
+  const renderConversationItem = ({ item }) => {
+    // This makes sure only one swipeable is open at a time
+    const handleSwipeableOpen = (swipeableRef) => {
+      if (
+        openSwipeableRef.current &&
+        openSwipeableRef.current !== swipeableRef
+      ) {
+        openSwipeableRef.current.close();
+      }
+      openSwipeableRef.current = swipeableRef;
+    };
+
+    return (
+      <SwipeableConversation
+        item={item}
+        navigation={navigation}
+        onDelete={deleteConversation}
+        onSwipeableOpen={handleSwipeableOpen}
+      />
+    );
   };
 
   if (loading && !refreshing) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Messages</Text>
-        </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1877F2" />
-          <Text style={styles.loadingText}>Loading messages...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <SimpleLoadingScreen />;
   }
 
   return (
@@ -115,16 +281,21 @@ const MessagesScreen = ({ navigation }) => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Messages</Text>
+        <Text style={styles.headerSubtitle}>
+          Connect with other community members
+        </Text>
       </View>
 
-      {/* Conversations List */}
-      <ScrollView
+      {/* --- 4. UPDATE FLATLIST --- */}
+      <FlatList
+        data={conversations}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderConversationItem} // Use the new renderer
         style={styles.scrollView}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
-      >
-        {conversations.length === 0 ? (
+        ListEmptyComponent={
           <View style={styles.emptyState}>
             <MessageCircle size={64} color="#DFE0E4" />
             <Text style={styles.emptyStateText}>No messages yet</Text>
@@ -132,41 +303,31 @@ const MessagesScreen = ({ navigation }) => {
               Start a conversation about an item
             </Text>
           </View>
-        ) : (
-          conversations.map((conversation) => (
-            <ConversationItem
-              key={conversation.id}
-              conversation={conversation}
-              onPress={() => {
-                navigation.navigate("Chat", {
-                  conversationId: conversation.id,
-                });
-              }}
-              getTimeAgo={getTimeAgo}
-            />
-          ))
-        )}
-      </ScrollView>
+        }
+      />
     </SafeAreaView>
   );
 };
 
-const ConversationItem = ({ conversation, onPress, getTimeAgo }) => {
-  const otherUser = conversation.other_user || {};
-  const lastMessage = conversation.last_message || {};
-  const hasUnread = conversation.unread_count > 0;
+// ====================
+// Sub-Component
+// ====================
+const ConversationItem = ({ conversation, onPress }) => {
+  const { other_user, last_message, unread_count, item } = conversation;
+  const hasUnread = unread_count > 0;
 
   return (
     <TouchableOpacity style={styles.conversationItem} onPress={onPress}>
       {/* Avatar */}
       <View style={styles.avatarContainer}>
-        {otherUser.avatar_url ? (
-          <Image source={{ uri: otherUser.avatar_url }} style={styles.avatar} />
+        {other_user.avatar_url ? (
+          <Image
+            source={{ uri: other_user.avatar_url }}
+            style={styles.avatar}
+          />
         ) : (
           <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarText}>
-              {otherUser.full_name?.charAt(0)?.toUpperCase() || "?"}
-            </Text>
+            <User size={28} color="#FFFFFF" />
           </View>
         )}
         {hasUnread && <View style={styles.unreadDot} />}
@@ -179,33 +340,32 @@ const ConversationItem = ({ conversation, onPress, getTimeAgo }) => {
             style={[styles.userName, hasUnread && styles.userNameUnread]}
             numberOfLines={1}
           >
-            {otherUser.full_name || "Unknown User"}
+            {other_user.full_name || "Unknown User"}
           </Text>
           <Text style={styles.timestamp}>
-            {lastMessage.created_at ? getTimeAgo(lastMessage.created_at) : ""}
+            {last_message?.created_at
+              ? getTimeAgo(last_message.created_at)
+              : ""}
           </Text>
         </View>
 
         <View style={styles.messagePreview}>
           <Text
             style={[styles.lastMessage, hasUnread && styles.lastMessageUnread]}
-            numberOfLines={2}
+            numberOfLines={1}
           >
-            {lastMessage.content || "No messages yet"}
+            {last_message?.content || "No messages yet"}
           </Text>
-          {hasUnread && conversation.unread_count > 0 && (
+          {hasUnread && unread_count > 0 && (
             <View style={styles.unreadBadge}>
-              <Text style={styles.unreadCount}>
-                {conversation.unread_count}
-              </Text>
+              <Text style={styles.unreadCount}>{unread_count}</Text>
             </View>
           )}
         </View>
 
-        {/* Item Reference */}
-        {conversation.item && (
+        {item && (
           <Text style={styles.itemReference} numberOfLines={1}>
-            About: {conversation.item.title}
+            About: {item.title}
           </Text>
         )}
       </View>
@@ -216,6 +376,9 @@ const ConversationItem = ({ conversation, onPress, getTimeAgo }) => {
   );
 };
 
+// ====================
+// Styles
+// ====================
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -232,6 +395,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     color: "#000000",
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginTop: 4,
   },
   loadingContainer: {
     flex: 1,
@@ -250,6 +418,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 80,
     paddingHorizontal: 20,
+    flex: 1,
+    justifyContent: "center",
   },
   emptyStateText: {
     fontSize: 20,
@@ -268,7 +438,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#FFFFFF", // Added background color
     borderBottomWidth: 0.5,
     borderBottomColor: "#DBDBDB",
   },
@@ -285,7 +455,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#1877F2",
+    backgroundColor: BRAND_COLOR,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -301,7 +471,7 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: "#1877F2",
+    backgroundColor: BRAND_COLOR,
     borderWidth: 2,
     borderColor: "#FFFFFF",
   },
@@ -344,7 +514,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   unreadBadge: {
-    backgroundColor: "#1877F2",
+    backgroundColor: BRAND_COLOR,
     borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -361,6 +531,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#8E8E93",
     fontStyle: "italic",
+    marginTop: 2,
+  },
+  // --- 6. ADD DELETE BUTTON STYLE ---
+  deleteButton: {
+    backgroundColor: "#EF4444", // Red color
+    justifyContent: "center",
+    alignItems: "flex-end", // Align icon to the right
+    width: 80, // Fixed width for the swipe action
+    height: "100%",
+    paddingRight: 24,
   },
 });
 

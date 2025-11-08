@@ -22,7 +22,7 @@ import {
   AlertCircle,
   CheckCircle,
 } from "lucide-react-native";
-import { getSupabaseClient } from "@campustrace/core";
+import { getSupabaseClient, BRAND_COLOR } from "@campustrace/core";
 import LoadingScreen from "../../components/LoadingScreen";
 
 const LoginScreen = ({ navigation }) => {
@@ -255,7 +255,7 @@ const LoginScreen = ({ navigation }) => {
         {
           text: "Open Web App",
           onPress: () =>
-            Linking.openURL("https://campustrace.com/forgot-password"),
+            Linking.openURL("https://campustrace.site/forgot-password"),
         },
       ]
     );
@@ -596,7 +596,7 @@ const LoginScreen = ({ navigation }) => {
                   {
                     text: "Open Web App",
                     onPress: () =>
-                      Linking.openURL("https://campustrace.com/register"),
+                      Linking.openURL("https://campustrace.site/register"),
                   },
                 ]
               );
@@ -643,7 +643,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "#1877F2",
+    backgroundColor: BRAND_COLOR,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
@@ -695,7 +695,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#1877F2",
+    backgroundColor: BRAND_COLOR,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
@@ -740,7 +740,7 @@ const styles = StyleSheet.create({
   },
   useAnotherAccountText: {
     fontSize: 15,
-    color: "#1877F2",
+    color: BRAND_COLOR,
     fontWeight: "600",
   },
   formContainer: {
@@ -842,11 +842,11 @@ const styles = StyleSheet.create({
   },
   forgotPasswordText: {
     fontSize: 14,
-    color: "#1877F2",
+    color: BRAND_COLOR,
     fontWeight: "500",
   },
   button: {
-    backgroundColor: "#1877F2",
+    backgroundColor: BRAND_COLOR,
     borderRadius: 6,
     height: 48,
     justifyContent: "center",
@@ -873,7 +873,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#1877F2",
+    borderColor: BRAND_COLOR,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -882,7 +882,7 @@ const styles = StyleSheet.create({
   },
   switchButtonText: {
     fontSize: 15,
-    color: "#1877F2",
+    color: BRAND_COLOR,
     fontWeight: "600",
   },
   universityIdButton: {

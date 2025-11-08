@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,19 +7,33 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  FlatList,
+  Image,
+  Dimensions,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  FileText,
-  Search,
-  Bell,
-  MessageCircle,
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-} from "lucide-react-native";
-import { getSupabaseClient } from "@campustrace/core";
+  Feather,
+  MaterialIcons,
+  FontAwesome,
+  Ionicons,
+  MaterialCommunityIcons,
+  AntDesign,
+} from "@expo/vector-icons";
+// Import the new, correct chart library
+import { BarChart, LineChart } from "react-native-gifted-charts";
+import {
+  getSupabaseClient,
+  getAccessToken,
+  API_BASE_URL,
+  BRAND_COLOR,
+} from "@campustrace/core";
+import SimpleLoadingScreen from "../../components/SimpleLoadingScreen";
+
+const { width } = Dimensions.get("window");
+const CARD_WIDTH = width / 2 - 24;
+const HORIZONTAL_CARD_WIDTH = width * 0.7;
 
 const DashboardScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
@@ -33,6 +47,12 @@ const DashboardScreen = ({ navigation }) => {
   });
   const [recentActivity, setRecentActivity] = useState([]);
   const [myRecentPosts, setMyRecentPosts] = useState([]);
+  const [possibleMatches, setPossibleMatches] = useState([]);
+  const [myLostItem, setMyLostItem] = useState(null);
+  const [chartData, setChartData] = useState({
+    weekly: [],
+    categories: [],
+  });
 
   useEffect(() => {
     loadDashboardData();
@@ -42,7 +62,6 @@ const DashboardScreen = ({ navigation }) => {
     try {
       const supabase = getSupabaseClient();
 
-      // Get current user
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -54,7 +73,6 @@ const DashboardScreen = ({ navigation }) => {
         return;
       }
 
-      // Fetch user profile to get university_id
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("university_id")
@@ -64,7 +82,7 @@ const DashboardScreen = ({ navigation }) => {
       if (profileError) throw profileError;
       if (!profile) throw new Error("User profile not found.");
 
-      // Fetch all user's items for stats calculation
+      // Fetch all user's items
       const { data: allMyItems = [], error: itemsError } = await supabase
         .from("items")
         .select("*")
@@ -95,9 +113,6 @@ const DashboardScreen = ({ navigation }) => {
         setRecentActivity(communityData);
       } else {
         setRecentActivity([]);
-        console.warn(
-          "User profile does not have a university_id, community activity cannot be fetched."
-        );
       }
 
       // Calculate stats
@@ -117,6 +132,27 @@ const DashboardScreen = ({ navigation }) => {
         foundItems: foundCount,
         recoveredItems: recoveredCount,
       });
+
+      // Process data for charts
+      processChartData(allMyItems);
+
+      // Find latest lost item and fetch matches
+      const latestLostItem = allMyItems
+        .filter(
+          (item) =>
+            item.status === "Lost" &&
+            item.moderation_status !== "recovered" &&
+            item.moderation_status !== "rejected"
+        )
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+
+      if (latestLostItem) {
+        setMyLostItem(latestLostItem);
+        await fetchMatches(latestLostItem.id);
+      } else {
+        setMyLostItem(null);
+        setPossibleMatches([]);
+      }
     } catch (error) {
       console.error("Error loading dashboard:", error);
     } finally {
@@ -125,48 +161,124 @@ const DashboardScreen = ({ navigation }) => {
     }
   };
 
+  const fetchMatches = async (itemId) => {
+    try {
+      const token = await getAccessToken();
+      if (!token) {
+        console.warn("No access token found, cannot fetch matches.");
+        return;
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/items/find-matches/${itemId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({
+          detail: "Failed to fetch matches, invalid server response.",
+        }));
+        throw new Error(
+          errorData.detail || `HTTP error! status: ${response.status}`
+        );
+      }
+
+      const matches = await response.json();
+      setPossibleMatches(Array.isArray(matches) ? matches.slice(0, 4) : []);
+    } catch (err) {
+      console.error("Error fetching matches:", err);
+      setPossibleMatches([]);
+    }
+  };
+
+  const processChartData = (items) => {
+    const weeklyData = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dayName = date.toLocaleDateString("en", { weekday: "short" });
+      const dayItems = items.filter((item) => {
+        const itemDate = new Date(item.created_at);
+        itemDate.setHours(0, 0, 0, 0);
+        return itemDate.getTime() === date.getTime();
+      });
+      weeklyData.push({
+        day: dayName,
+        lost: dayItems.filter((item) => item.status === "Lost").length,
+        found: dayItems.filter((item) => item.status === "Found").length,
+      });
+    }
+
+    // Categories
+    const categoryCount = {};
+    items.forEach((item) => {
+      if (item.category && typeof item.category === "string") {
+        categoryCount[item.category] = (categoryCount[item.category] || 0) + 1;
+      }
+    });
+
+    const categories = Object.entries(categoryCount)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+
+    setChartData({ weekly: weeklyData, categories });
+  };
+
   const handleRefresh = () => {
     setRefreshing(true);
     loadDashboardData();
   };
 
+  const renderMyPostItem = ({ item }) => (
+    <ItemCard
+      item={item}
+      onPress={() => navigation.navigate("Browse", { itemId: item.id })}
+    />
+  );
+
+  const renderMatchItem = ({ item }) => (
+    <MatchCard
+      item={item}
+      onPress={() => navigation.navigate("Browse", { itemId: item.id })}
+    />
+  );
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Instagram-style Header - Always visible */}
+      {/* Instagram-style Header */}
       <View style={styles.header}>
-        <View style={styles.logoContainer}>
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoText}>CT</Text>
-          </View>
-          <Text style={styles.appNameHeader}>CampusTrace</Text>
-        </View>
+        <Text style={styles.appName}>CampusTrace</Text>
         <View style={styles.headerIcons}>
           <TouchableOpacity
             style={styles.headerIconButton}
             onPress={() => navigation.navigate("Notifications")}
           >
-            <Bell size={26} color="#000000" strokeWidth={2} />
+            <Feather name="heart" size={26} color={BRAND_COLOR} />
+            {/* Optional notification dot */}
+            {/* <View style={styles.notificationDot} /> */}
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.headerIconButton}
             onPress={() => navigation.navigate("Messages")}
           >
-            <MessageCircle size={26} color="#000000" strokeWidth={2} />
+            <Feather name="send" size={26} color={BRAND_COLOR} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1877F2" />
-          <Text style={styles.loadingText}>Loading dashboard...</Text>
-        </View>
+      {loading && !refreshing ? (
+        <SimpleLoadingScreen />
       ) : (
         <ScrollView
           style={styles.scrollView}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
+          showsVerticalScrollIndicator={false}
         >
           {/* Welcome Section */}
           <View style={styles.welcomeSection}>
@@ -182,13 +294,15 @@ const DashboardScreen = ({ navigation }) => {
           <View style={styles.statsContainer}>
             <View style={styles.statsRow}>
               <StatCard
-                icon={FileText}
+                icon={MaterialIcons}
+                iconName="inventory"
                 label="Total Items"
                 value={stats.totalItems}
-                color="#1877F2"
+                color={BRAND_COLOR}
               />
               <StatCard
-                icon={TrendingUp}
+                icon={MaterialIcons}
+                iconName="error-outline"
                 label="Lost Items"
                 value={stats.lostItems}
                 color="#EF4444"
@@ -196,13 +310,15 @@ const DashboardScreen = ({ navigation }) => {
             </View>
             <View style={styles.statsRow}>
               <StatCard
-                icon={CheckCircle}
+                icon={MaterialIcons}
+                iconName="check-circle-outline"
                 label="Found Items"
                 value={stats.foundItems}
                 color="#10B981"
               />
               <StatCard
-                icon={Clock}
+                icon={MaterialIcons}
+                iconName="show-chart"
                 label="Recovered"
                 value={stats.recoveredItems}
                 color="#3B82F6"
@@ -210,21 +326,184 @@ const DashboardScreen = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Recent Activity */}
+          {/* Charts Section */}
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Recent Activity</Text>
-            </View>
+            <Text style={styles.sectionTitle}>Your Activity</Text>
+            <ChartCard
+              title="Weekly Activity"
+              data={chartData.weekly}
+              type="area"
+            />
+            <ChartCard
+              title="Top Categories"
+              data={chartData.categories}
+              type="bar"
+            />
+          </View>
 
-            {recentActivity.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Clock size={48} color="#D1D5DB" />
-                <Text style={styles.emptyStateText}>No recent activity</Text>
+          {/* AI-Powered Matches */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderRow}>
+              <MaterialCommunityIcons
+                name="auto-fix"
+                size={22}
+                color={BRAND_COLOR}
+              />
+              <Text style={styles.sectionTitle}>AI-Powered Matches</Text>
+            </View>
+            <Text style={styles.sectionSubtitle}>
+              Smart matching for your lost items
+            </Text>
+
+            {myLostItem ? (
+              <View>
+                {/* Your Latest Lost Item Card */}
+                <View style={styles.latestLostItemCard}>
+                  <Text style={styles.latestLostItemTitle}>
+                    Your Latest Lost Item
+                  </Text>
+                  <View style={{ flexDirection: "row" }}>
+                    <ItemImage
+                      imageUrl={myLostItem.image_url}
+                      style={styles.latestLostItemImage}
+                    />
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={styles.latestLostItemName} numberOfLines={1}>
+                        {myLostItem.title}
+                      </Text>
+                      <Text style={styles.latestLostItemDesc} numberOfLines={2}>
+                        {myLostItem.description}
+                      </Text>
+                      <View style={{ flexDirection: "row", marginTop: 8 }}>
+                        <View
+                          style={[
+                            styles.smallBadge,
+                            { backgroundColor: "#F3F4F6" },
+                          ]}
+                        >
+                          <AntDesign name="tag" size={12} color="#6B7280" />
+                          <Text
+                            style={[
+                              styles.smallBadgeText,
+                              { color: "#6B7280" },
+                            ]}
+                          >
+                            {myLostItem.category}
+                          </Text>
+                        </View>
+                        <View
+                          style={[
+                            styles.smallBadge,
+                            { backgroundColor: "#FEE2E2" },
+                          ]}
+                        >
+                          <MaterialIcons
+                            name="error-outline"
+                            size={12}
+                            color="#EF4444"
+                          />
+                          <Text
+                            style={[
+                              styles.smallBadgeText,
+                              { color: "#EF4444" },
+                            ]}
+                          >
+                            Lost
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Matches List */}
+                {possibleMatches.length > 0 ? (
+                  <View>
+                    <Text style={styles.subSectionTitle}>
+                      Possible Matches Found ({possibleMatches.length})
+                    </Text>
+                    <FlatList
+                      data={possibleMatches}
+                      renderItem={renderMatchItem}
+                      keyExtractor={(item) => item.id.toString()}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={{ paddingVertical: 12 }}
+                    />
+                  </View>
+                ) : (
+                  <EmptyState
+                    icon={MaterialIcons}
+                    iconName="help-outline"
+                    title="No matches found yet"
+                    description="Our AI is continuously searching. We'll show potential matches here."
+                  />
+                )}
               </View>
             ) : (
-              recentActivity.map((item, index) => (
-                <ActivityItem key={item.id || index} item={item} />
-              ))
+              <EmptyState
+                icon={MaterialIcons}
+                iconName="inventory"
+                title="No active lost items"
+                description="If you lose something, post it here to enable AI-powered matching."
+                buttonText="Post Lost Item"
+                onButtonClick={() => navigation.navigate("PostItem")}
+              />
+            )}
+          </View>
+
+          {/* My Active Posts */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>My Active Posts</Text>
+              <TouchableOpacity onPress={() => navigation.navigate("MyPosts")}>
+                <Text style={styles.viewAllText}>View all</Text>
+              </TouchableOpacity>
+            </View>
+            {myRecentPosts.length > 0 ? (
+              <FlatList
+                data={myRecentPosts}
+                renderItem={renderMyPostItem}
+                keyExtractor={(item) => item.id.toString()}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingVertical: 12 }}
+              />
+            ) : (
+              <EmptyState
+                icon={Feather}
+                iconName="eye-off"
+                title="No active posts"
+                description="Items you post will appear here. Start by reporting a lost or found item."
+                buttonText="Post New Item"
+                onButtonClick={() => navigation.navigate("PostItem")}
+              />
+            )}
+          </View>
+
+          {/* Recent Activity */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>Recent Community Activity</Text>
+            </View>
+            {recentActivity.length === 0 ? (
+              <EmptyState
+                icon={Feather}
+                iconName="clock"
+                title="No recent activity"
+              />
+            ) : (
+              recentActivity
+                .slice(0, 5)
+                .map((item) => (
+                  <ActivityItem
+                    key={item.id}
+                    item={item}
+                    onPress={() =>
+                      navigation.navigate("Browse", { itemId: item.id })
+                    }
+                  />
+                ))
             )}
           </View>
         </ScrollView>
@@ -233,84 +512,264 @@ const DashboardScreen = ({ navigation }) => {
   );
 };
 
-// Activity Item Component
-const ActivityItem = ({ item }) => {
-  const statusColor = {
-    Lost: "#EF4444",
-    Found: "#10B981",
+// --- Helper Functions ---
+const timeAgo = (dateString) => {
+  if (!dateString) return "unknown time";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "invalid date";
+  const seconds = Math.floor((new Date() - date) / 1000);
+  const intervals = [
+    { label: "year", seconds: 31536000 },
+    { label: "month", seconds: 2592000 },
+    { label: "day", seconds: 86400 },
+    { label: "hour", seconds: 3600 },
+    { label: "minute", seconds: 60 },
+    { label: "second", seconds: 1 },
+  ];
+  for (const interval of intervals) {
+    const count = Math.floor(seconds / interval.seconds);
+    if (count >= 1) {
+      return `${count} ${interval.label}${count > 1 ? "s" : ""} ago`;
+    }
+  }
+  return "just now";
+};
+
+// --- Re-usable Components ---
+const ItemImage = ({ imageUrl, style }) => (
+  <View style={[styles.itemImageContainer, style]}>
+    {imageUrl ? (
+      <Image source={{ uri: imageUrl }} style={styles.itemImage} />
+    ) : (
+      <View style={styles.itemImagePlaceholder}>
+        <Feather name="camera" size={24} color="#D1D5DB" />
+      </View>
+    )}
+  </View>
+);
+
+const StatusBadge = ({ status }) => {
+  const statusConfig = {
+    approved: { bg: "#D1FAE5", text: "#065F46", label: "Active" },
+    pending: { bg: "#FEF3C7", text: "#92400E", label: "Pending" },
+    rejected: { bg: "#FEE2E2", text: "#991B1B", label: "Rejected" },
+    recovered: { bg: "#DBEAFE", text: "#1E40AF", label: "Recovered" },
+    pending_return: { bg: "#CFFAFE", text: "#0E7490", label: "Pending Return" },
   };
-
-  const statusBgColor = {
-    Lost: "#FEE2E2",
-    Found: "#D1FAE5",
+  const config = statusConfig[status?.toLowerCase()] || {
+    bg: "#F3F4F6",
+    text: "#4B5563",
+    label: "Unknown",
   };
+  return (
+    <View style={[styles.statusBadge, { backgroundColor: config.bg }]}>
+      <Text style={[styles.statusText, { color: config.text }]}>
+        {config.label}
+      </Text>
+    </View>
+  );
+};
 
-  const getTimeAgo = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
+const ItemCard = ({ item, onPress }) => (
+  <TouchableOpacity style={styles.itemCard} onPress={onPress}>
+    <ItemImage imageUrl={item.image_url} style={styles.itemCardImage} />
+    <View style={{ padding: 12 }}>
+      <Text style={styles.itemCardTitle} numberOfLines={2}>
+        {item.title}
+      </Text>
+      <View style={styles.itemCardFooter}>
+        <StatusBadge status={item.moderation_status} />
+        <View
+          style={[
+            styles.smallBadge,
+            item.status === "Lost"
+              ? { backgroundColor: "#FEE2E2" }
+              : { backgroundColor: "#D1FAE5" },
+          ]}
+        >
+          <Text
+            style={[
+              styles.smallBadgeText,
+              item.status === "Lost"
+                ? { color: "#EF4444" }
+                : { color: "#10B981" },
+            ]}
+          >
+            {item.status}
+          </Text>
+        </View>
+      </View>
+    </View>
+  </TouchableOpacity>
+);
 
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return `${diffDays}d ago`;
-  };
+const MatchCard = ({ item, onPress }) => (
+  <TouchableOpacity style={styles.itemCard} onPress={onPress}>
+    {item.match_score && (
+      <View style={styles.matchBadge}>
+        <Text style={styles.matchBadgeText}>
+          {Math.round(item.match_score)}% Match
+        </Text>
+      </View>
+    )}
+    <ItemImage imageUrl={item.image_url} style={styles.itemCardImage} />
+    <View style={{ padding: 12 }}>
+      <Text style={styles.itemCardTitle} numberOfLines={1}>
+        {item.title}
+      </Text>
+      <View style={styles.itemCardFooter}>
+        <Text style={styles.itemCardCategory}>{item.category}</Text>
+        <View style={[styles.smallBadge, { backgroundColor: "#D1FAE5" }]}>
+          <Text style={[styles.smallBadgeText, { color: "#10B981" }]}>
+            Found
+          </Text>
+        </View>
+      </View>
+    </View>
+  </TouchableOpacity>
+);
 
+const ActivityItem = ({ item, onPress }) => {
+  const statusColor = item.status === "Lost" ? "#EF4444" : "#10B981";
   const posterName =
     item.profiles?.full_name ||
     (item.profiles?.email ? item.profiles.email.split("@")[0] : "Anonymous");
 
   return (
-    <View style={styles.activityItem}>
+    <TouchableOpacity style={styles.activityItem} onPress={onPress}>
+      <ItemImage imageUrl={item.image_url} style={styles.activityItemImage} />
       <View style={styles.activityContent}>
-        <Text style={styles.activityTitle}>{item.title}</Text>
+        <Text style={styles.activityTitle} numberOfLines={1}>
+          {item.title}
+        </Text>
         <Text style={styles.activityUser}>{posterName}</Text>
         <Text style={styles.activityTime}>
-          {item.created_at ? getTimeAgo(item.created_at) : "Recently"}
+          {timeAgo(item.created_at)}
+          {" · "}
+          <Text style={{ color: statusColor }}>{item.status}</Text>
         </Text>
       </View>
-      <View
-        style={[
-          styles.statusBadge,
-          { backgroundColor: statusBgColor[item.status] || "#F3F4F6" },
-        ]}
-      >
-        <Text
-          style={[
-            styles.statusText,
-            { color: statusColor[item.status] || "#6B7280" },
-          ]}
-        >
-          {item.status}
-        </Text>
-      </View>
-    </View>
+      <Feather name="chevron-right" size={20} color="#9CA3AF" />
+    </TouchableOpacity>
   );
 };
 
-const StatCard = ({ icon: Icon, label, value, color }) => (
+const StatCard = ({ icon: Icon, iconName, label, value, color }) => (
   <View style={styles.statCard}>
     <View style={[styles.statIconContainer, { backgroundColor: color + "15" }]}>
-      <Icon size={24} color={color} />
+      <Icon name={iconName} size={24} color={color} />
     </View>
     <Text style={styles.statValue}>{value}</Text>
     <Text style={styles.statLabel}>{label}</Text>
   </View>
 );
 
-const ActionButton = ({ icon: Icon, label, onPress, color }) => (
-  <TouchableOpacity style={styles.actionButton} onPress={onPress}>
-    <View
-      style={[styles.actionIconContainer, { backgroundColor: color + "15" }]}
-    >
-      <Icon size={28} color={color} />
+const EmptyState = ({
+  icon: Icon,
+  iconName,
+  title,
+  description,
+  buttonText,
+  onButtonClick,
+}) => (
+  <View style={styles.emptyStateContainer}>
+    <View style={styles.emptyStateIconContainer}>
+      <Icon name={iconName} size={32} color="#9CA3AF" />
     </View>
-    <Text style={styles.actionLabel}>{label}</Text>
-  </TouchableOpacity>
+    <Text style={styles.emptyStateTitle}>{title}</Text>
+    {description && (
+      <Text style={styles.emptyStateDescription}>{description}</Text>
+    )}
+    {buttonText && (
+      <TouchableOpacity style={styles.emptyStateButton} onPress={onButtonClick}>
+        <Text style={styles.emptyStateButtonText}>{buttonText}</Text>
+      </TouchableOpacity>
+    )}
+  </View>
 );
 
+const ChartCard = ({ title, data, type }) => {
+  const lostColor = "#EF4444";
+  const foundColor = "#10B981";
+  const primaryColor = BRAND_COLOR;
+  const axisColor = "#6B7280";
+
+  if (data.length === 0) {
+    return (
+      <View style={styles.chartCard}>
+        <Text style={styles.chartTitle}>{title}</Text>
+        <View style={styles.emptyChart}>
+          <Text style={styles.emptyChartText}>No data to display</Text>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.chartCard}>
+      <Text style={styles.chartTitle}>{title}</Text>
+      {type === "area" && (
+        <View style={{ marginLeft: -10, paddingBottom: 20 }}>
+          <LineChart
+            data={data.map((d) => ({ value: d.lost, label: d.day }))}
+            data2={data.map((d) => ({ value: d.found }))}
+            areaChart
+            height={200}
+            color1={lostColor}
+            color2={foundColor}
+            startFillColor1={lostColor}
+            startFillColor2={foundColor}
+            endFillColor1={"#FEE2E2"}
+            endFillColor2={"#D1FAE5"}
+            startOpacity={0.8}
+            endOpacity={0.1}
+            spacing={width / (data.length * 1.5)}
+            xAxisLabelTextStyle={{ color: axisColor, fontSize: 10 }}
+            yAxisTextStyle={{ color: axisColor, fontSize: 10 }}
+            xAxisColor={axisColor}
+            yAxisColor={axisColor}
+            noOfSections={4}
+            initialSpacing={10}
+            rulesType="solid"
+          />
+          <View style={styles.legendContainer}>
+            <View style={styles.legendItem}>
+              <View
+                style={[styles.legendDot, { backgroundColor: lostColor }]}
+              />
+              <Text style={styles.legendText}>Lost</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View
+                style={[styles.legendDot, { backgroundColor: foundColor }]}
+              />
+              <Text style={styles.legendText}>Found</Text>
+            </View>
+          </View>
+        </View>
+      )}
+      {type === "bar" && (
+        <View style={{ paddingBottom: 20, paddingLeft: 10 }}>
+          <BarChart
+            data={data.map((d) => ({ value: d.value, label: d.name }))}
+            height={200}
+            barWidth={20}
+            frontColor={primaryColor}
+            xAxisLabelTextStyle={{ color: axisColor, fontSize: 10, width: 60 }}
+            yAxisTextStyle={{ color: axisColor, fontSize: 10 }}
+            xAxisColor={axisColor}
+            yAxisColor={axisColor}
+            noOfSections={4}
+            rulesType="solid"
+            yAxisSide="right"
+          />
+        </View>
+      )}
+    </View>
+  );
+};
+
+// --- Styles ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -324,43 +783,35 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: "#606770",
+    color: "#8E8E93",
   },
+
+  // Instagram-style Header
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 12,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 0.5,
     borderBottomColor: "#DBDBDB",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
-  logoContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  logoCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#1877F2",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  logoText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    letterSpacing: -0.5,
-  },
-  appNameHeader: {
-    fontSize: 24,
-    fontWeight: "bold",
+  appName: {
+    fontSize: 32,
+    fontWeight: "400", // Script fonts usually look better with normal weight
     color: "#000000",
+    fontFamily: Platform.select({
+      ios: "SnellRoundhand-Bold", // or "SnellRoundhand-Bold", "Bradley Hand"
+      android: "cursive", // or "cursive", "DancingScript-Bold"
+    }),
     letterSpacing: -0.5,
-    fontFamily: "System",
+    lineHeight: 36,
   },
   headerIcons: {
     flexDirection: "row",
@@ -368,6 +819,48 @@ const styles = StyleSheet.create({
   },
   headerIconButton: {
     padding: 4,
+    position: "relative",
+  },
+  notificationDot: {
+    position: "absolute",
+    top: 2,
+    right: 2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#FF3250",
+  },
+
+  // Stories Section (Instagram-like)
+  storiesSection: {
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 10,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#DBDBDB",
+  },
+  storyItem: {
+    alignItems: "center",
+    marginHorizontal: 10,
+  },
+  storyAdd: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2,
+    borderColor: "#DBDBDB",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+  },
+  storyText: {
+    fontSize: 12,
+    color: "#262626",
+    marginTop: 4,
+  },
+
+  scrollView: {
+    flex: 1,
+    backgroundColor: "#FAFAFA",
   },
   welcomeSection: {
     paddingHorizontal: 20,
@@ -385,26 +878,12 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#000000",
   },
-  headerActions: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#F0F2F5",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  scrollView: {
-    flex: 1,
-    backgroundColor: "#FAFAFA",
-  },
   statsContainer: {
     padding: 16,
     gap: 12,
     backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
   },
   statsRow: {
     flexDirection: "row",
@@ -442,68 +921,129 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     marginTop: 8,
   },
-  sectionHeader: {
-    marginBottom: 12,
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: "600",
     color: "#000000",
+    marginLeft: 4,
   },
-  actionsContainer: {
-    flexDirection: "row",
-    gap: 12,
+  sectionSubtitle: {
+    fontSize: 14,
+    color: "#8E8E93",
+    marginBottom: 16,
   },
-  actionButton: {
-    flex: 1,
+  subSectionTitle: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#6B7280",
+    textTransform: "uppercase",
+    marginTop: 16,
+  },
+  viewAllText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: BRAND_COLOR,
+  },
+
+  // Item Card
+  itemCard: {
+    width: HORIZONTAL_CARD_WIDTH,
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
     borderWidth: 1,
     borderColor: "#EFEFEF",
+    marginRight: 12,
+    overflow: "hidden",
   },
-  actionIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
+  itemCardImage: {
+    width: "100%",
+    aspectRatio: 1,
   },
-  actionLabel: {
-    fontSize: 12,
-    color: "#000000",
-    textAlign: "center",
-    fontWeight: "500",
-  },
-  activityItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  activityContent: {
-    flex: 1,
-  },
-  activityTitle: {
+  itemCardTitle: {
     fontSize: 15,
     fontWeight: "600",
     color: "#000000",
-    marginBottom: 4,
+    marginBottom: 8,
+    height: 40,
   },
-  activityUser: {
+  itemCardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  itemCardCategory: {
     fontSize: 13,
     color: "#8E8E93",
-    marginBottom: 2,
   },
-  activityTime: {
+
+  // Match Card
+  matchBadge: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    zIndex: 1,
+  },
+  matchBadgeText: {
+    color: "#FFFFFF",
     fontSize: 12,
+    fontWeight: "bold",
+  },
+
+  // Latest Lost Item
+  latestLostItemCard: {
+    backgroundColor: "#FAFAFA",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#EFEFEF",
+    marginTop: 8,
+  },
+  latestLostItemTitle: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#6B7280",
+    textTransform: "uppercase",
+    marginBottom: 12,
+  },
+  latestLostItemImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+  },
+  latestLostItemName: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#000000",
+  },
+  latestLostItemDesc: {
+    fontSize: 13,
     color: "#8E8E93",
+    marginTop: 4,
+  },
+
+  // Badges
+  smallBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginRight: 6,
+  },
+  smallBadgeText: {
+    fontSize: 11,
+    fontWeight: "600",
+    marginLeft: 4,
   },
   statusBadge: {
     paddingHorizontal: 10,
@@ -514,15 +1054,142 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
   },
-  emptyState: {
+
+  // Image Placeholder
+  itemImageContainer: {
+    backgroundColor: "#F3F4F6",
+    overflow: "hidden",
+  },
+  itemImage: {
+    width: "100%",
+    height: "100%",
+  },
+  itemImagePlaceholder: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  // Activity Item
+  activityItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+  },
+  activityItemImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+  },
+  activityContent: {
+    flex: 1,
+    marginHorizontal: 12,
+  },
+  activityTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#000000",
+  },
+  activityUser: {
+    fontSize: 13,
+    color: "#8E8E93",
+    marginTop: 2,
+  },
+  activityTime: {
+    fontSize: 12,
+    color: "#8E8E93",
+    marginTop: 2,
+  },
+
+  // Empty State
+  emptyStateContainer: {
     alignItems: "center",
     paddingVertical: 32,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 12,
+    marginVertical: 12,
   },
-  emptyStateText: {
+  emptyStateIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  emptyStateTitle: {
     fontSize: 16,
     fontWeight: "600",
+    color: "#1F2937",
+    marginBottom: 4,
+  },
+  emptyStateDescription: {
+    fontSize: 13,
+    color: "#6B7280",
+    textAlign: "center",
+    paddingHorizontal: 24,
+    marginBottom: 16,
+  },
+  emptyStateButton: {
+    backgroundColor: BRAND_COLOR,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  emptyStateButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
+  // Chart Card
+  chartCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: "#EFEFEF",
+    overflow: "hidden",
+  },
+  chartTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#000000",
+    marginBottom: 24,
+  },
+  emptyChart: {
+    height: 200,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyChartText: {
+    fontSize: 14,
     color: "#8E8E93",
-    marginTop: 12,
+  },
+  legendContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 16,
+    gap: 24,
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 6,
+  },
+  legendText: {
+    fontSize: 12,
+    color: "#6B7280",
   },
 });
 

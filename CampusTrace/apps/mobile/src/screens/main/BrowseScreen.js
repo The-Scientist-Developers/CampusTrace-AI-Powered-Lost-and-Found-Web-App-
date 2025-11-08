@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -9,28 +9,731 @@ import {
   Image,
   ActivityIndicator,
   RefreshControl,
+  Modal,
+  FlatList,
+  Dimensions,
+  Alert,
+  Linking,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Search, Filter, MapPin, Calendar, User } from "lucide-react-native";
-import { getSupabaseClient } from "@campustrace/core";
+import {
+  Search,
+  Filter,
+  MapPin,
+  Calendar,
+  User,
+  Camera,
+  X,
+  ChevronDown,
+  Phone,
+  Mail,
+  MessageCircle,
+  Send,
+  Clock,
+  Link2,
+  Facebook,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react-native";
+import { getSupabaseClient, BRAND_COLOR } from "@campustrace/core";
+import * as ImagePicker from "expo-image-picker";
+import SimpleLoadingScreen from "../../components/SimpleLoadingScreen";
+import { useNavigation } from "@react-navigation/native";
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+
+// Replace with your actual API base URL
+const API_BASE_URL = "http://10.0.0.40:8000"; // e.g., "https://api.campustrace.com"
+
+// ==================== Helper Functions ====================
+
+// Debounce hook
+const useDebounce = (value, delay) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
+// Parse contact info helper
+const parseContactInfo = (contactInfo) => {
+  if (!contactInfo) return [];
+
+  const contacts = [];
+  const info = contactInfo.toLowerCase();
+
+  // Phone numbers
+  const phonePattern = /(\+?\d{1,4}[\s-]?)?(\(?\d{1,4}\)?[\s-]?)?[\d\s-]{5,}/g;
+  const phoneMatches = contactInfo.match(phonePattern);
+  if (phoneMatches) {
+    phoneMatches.forEach((phone) => {
+      contacts.push({
+        type: "phone",
+        value: phone.trim(),
+        icon: Phone,
+        link: `tel:${phone.replace(/\D/g, "")}`,
+        label: "Call",
+      });
+    });
+  }
+
+  // Facebook
+  if (info.includes("facebook") || info.includes("fb")) {
+    const fbMatch = contactInfo.match(/(?:facebook|fb)[:\s]*([^\s,]+)/i);
+    if (fbMatch) {
+      contacts.push({
+        type: "facebook",
+        value: fbMatch[1],
+        icon: Facebook,
+        link: `https://facebook.com/${fbMatch[1]}`,
+        label: "Facebook",
+      });
+    }
+  }
+
+  // Messenger
+  if (info.includes("messenger")) {
+    const messengerMatch = contactInfo.match(/messenger[:\s]*([^\s,]+)/i);
+    if (messengerMatch) {
+      contacts.push({
+        type: "messenger",
+        value: messengerMatch[1],
+        icon: MessageCircle,
+        link: `https://m.me/${messengerMatch[1]}`,
+        label: "Messenger",
+      });
+    }
+  }
+
+  // Email
+  const emailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+  const emailMatches = contactInfo.match(emailPattern);
+  if (emailMatches) {
+    emailMatches.forEach((email) => {
+      contacts.push({
+        type: "email",
+        value: email,
+        icon: Mail,
+        link: `mailto:${email}`,
+        label: "Email",
+      });
+    });
+  }
+
+  // Default fallback
+  if (contacts.length === 0 && contactInfo) {
+    contacts.push({
+      type: "text",
+      value: contactInfo,
+      icon: Link2,
+      link: null,
+      label: "Contact Info",
+    });
+  }
+
+  return contacts;
+};
+
+// Format date helper
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+
+const formatTime = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const getTimeAgo = (dateString) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffHours < 1) return "Just now";
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return formatDate(dateString);
+};
+
+// ==================== Component: Filters Modal ====================
+
+const FiltersModal = ({ visible, onClose, filters, onFiltersChange }) => {
+  const [localFilters, setLocalFilters] = useState(filters);
+
+  const categories = [
+    "Electronics",
+    "Documents",
+    "Clothing",
+    "Accessories",
+    "Other",
+  ];
+
+  const handleApply = () => {
+    onFiltersChange(localFilters);
+    onClose();
+  };
+
+  const handleReset = () => {
+    setLocalFilters({
+      status: "All",
+      categories: [],
+      sortBy: "newest",
+      dateFilter: "",
+    });
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Filters</Text>
+            <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
+              <X size={24} color="#000" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={styles.modalBody}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Status Filter */}
+            <View style={styles.filterSection}>
+              <Text style={styles.filterSectionTitle}>Status</Text>
+              {["All", "Lost", "Found"].map((status) => (
+                <TouchableOpacity
+                  key={status}
+                  style={styles.filterOption}
+                  onPress={() => setLocalFilters({ ...localFilters, status })}
+                >
+                  <View
+                    style={[
+                      styles.radio,
+                      localFilters.status === status && styles.radioSelected,
+                    ]}
+                  />
+                  <Text style={styles.filterOptionText}>{status}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Category Filter */}
+            <View style={styles.filterSection}>
+              <Text style={styles.filterSectionTitle}>Categories</Text>
+              {categories.map((category) => (
+                <TouchableOpacity
+                  key={category}
+                  style={styles.filterOption}
+                  onPress={() => {
+                    const cats = localFilters.categories || [];
+                    const newCats = cats.includes(category)
+                      ? cats.filter((c) => c !== category)
+                      : [...cats, category];
+                    setLocalFilters({ ...localFilters, categories: newCats });
+                  }}
+                >
+                  <View
+                    style={[
+                      styles.checkbox,
+                      (localFilters.categories || []).includes(category) &&
+                        styles.checkboxSelected,
+                    ]}
+                  >
+                    {(localFilters.categories || []).includes(category) && (
+                      <Text style={styles.checkmark}>✓</Text>
+                    )}
+                  </View>
+                  <Text style={styles.filterOptionText}>{category}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Sort By */}
+            <View style={styles.filterSection}>
+              <Text style={styles.filterSectionTitle}>Sort By</Text>
+              {[
+                { value: "newest", label: "Newest First" },
+                { value: "oldest", label: "Oldest First" },
+              ].map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={styles.filterOption}
+                  onPress={() =>
+                    setLocalFilters({ ...localFilters, sortBy: option.value })
+                  }
+                >
+                  <View
+                    style={[
+                      styles.radio,
+                      localFilters.sortBy === option.value &&
+                        styles.radioSelected,
+                    ]}
+                  />
+                  <Text style={styles.filterOptionText}>{option.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+
+          <View style={styles.modalFooter}>
+            <TouchableOpacity style={styles.clearButton} onPress={handleReset}>
+              <Text style={styles.clearButtonText}>Reset</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
+              <Text style={styles.applyButtonText}>Apply Filters</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+// ==================== Component: Item Details Modal ====================
+
+const ItemDetailsModal = ({
+  visible,
+  item,
+  onClose,
+  onClaim,
+  user,
+  navigation,
+}) => {
+  if (!item) return null;
+
+  const posterName =
+    item.profiles?.full_name ||
+    (item.profiles?.email ? item.profiles.email.split("@")[0] : "Anonymous");
+  const contactMethods = parseContactInfo(item.contact_info);
+  const isFoundItem = item.status?.toLowerCase() === "found";
+  const isMyOwnItem = item.profiles?.id === user?.id;
+  const showActionButtons = !isMyOwnItem;
+
+  const handleStartConversation = async () => {
+    try {
+      const supabase = getSupabaseClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      if (!token) {
+        Alert.alert("Error", "Authentication required");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("item_id", item.id);
+
+      const response = await fetch(`${API_BASE_URL}/api/conversations/`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail || "Failed to start conversation");
+      }
+
+      const { conversation_id } = await response.json();
+
+      // Navigate to chat
+      if (navigation) {
+        navigation.navigate("Dashboard", {
+          screen: "Chat",
+          params: { conversationId: conversation_id },
+        });
+        onClose();
+      }
+    } catch (error) {
+      Alert.alert("Error", error.message || "Failed to start conversation");
+    }
+  };
+
+  const handleContactPress = (contact) => {
+    if (contact.link) {
+      Linking.openURL(contact.link).catch(() => {
+        Alert.alert("Error", "Cannot open this link");
+      });
+    }
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={false}
+      onRequestClose={onClose}
+    >
+      <SafeAreaView style={styles.detailModalContainer}>
+        {/* Fixed Header */}
+        <View style={styles.detailHeader}>
+          <View style={{ flex: 1 }}>
+            <View style={styles.detailBadges}>
+              <View
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor:
+                      item.status === "Lost" ? "#FEE2E2" : "#D1FAE5",
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.statusText,
+                    { color: item.status === "Lost" ? "#DC2626" : "#059669" },
+                  ]}
+                >
+                  {item.status}
+                </Text>
+              </View>
+              <View style={styles.categoryBadge}>
+                <Text style={styles.categoryText}>{item.category}</Text>
+              </View>
+            </View>
+            <Text style={styles.detailTitle}>{item.title}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={onClose}
+            style={styles.closeButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <X size={24} color="#000" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Fixed Image */}
+        {item.image_url ? (
+          <Image
+            source={{ uri: item.image_url }}
+            style={styles.detailImageFixed}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.noImageContainerFixed}>
+            <Camera size={48} color="#D1D5DB" />
+            <Text style={styles.noImageText}>No Image Available</Text>
+          </View>
+        )}
+
+        {/* Fixed Poster Info */}
+        <View style={styles.posterCardFixed}>
+          <View style={styles.posterInfo}>
+            <View style={styles.posterAvatar}>
+              <User size={24} color={BRAND_COLOR} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.posterLabel}>Posted by</Text>
+              <Text style={styles.posterName}>{posterName}</Text>
+              {item.profiles?.email && (
+                <Text style={styles.posterEmail}>{item.profiles.email}</Text>
+              )}
+            </View>
+          </View>
+
+          {/* Contact Methods */}
+          {contactMethods.length > 0 && (
+            <View style={styles.contactMethods}>
+              {contactMethods.map((contact, index) => {
+                const Icon = contact.icon;
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.contactButton}
+                    onPress={() => handleContactPress(contact)}
+                    disabled={!contact.link}
+                  >
+                    <Icon size={16} color={BRAND_COLOR} />
+                    <Text style={styles.contactButtonText}>
+                      {contact.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+        </View>
+
+        {/* Scrollable Content */}
+        <ScrollView
+          style={styles.detailScrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Details Grid */}
+          <View style={styles.detailsGrid}>
+            <View style={styles.detailItem}>
+              <MapPin size={20} color="#6B7280" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.detailLabel}>Location</Text>
+                <Text style={styles.detailValue}>{item.location || "N/A"}</Text>
+              </View>
+            </View>
+
+            <View style={styles.detailItem}>
+              <Calendar size={20} color="#6B7280" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.detailLabel}>Date Posted</Text>
+                <Text style={styles.detailValue}>
+                  {formatDate(item.created_at)}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.detailItem}>
+              <Clock size={20} color="#6B7280" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.detailLabel}>Time Posted</Text>
+                <Text style={styles.detailValue}>
+                  {formatTime(item.created_at)}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Description */}
+          <View style={styles.descriptionCard}>
+            <Text style={styles.descriptionLabel}>Description</Text>
+            <Text style={styles.descriptionText}>
+              {item.description || "No description provided."}
+            </Text>
+          </View>
+
+          {/* Action Buttons */}
+          {showActionButtons && (
+            <View style={styles.actionButtons}>
+              {isFoundItem && (
+                <TouchableOpacity
+                  style={styles.claimButton}
+                  onPress={() => onClaim(item)}
+                >
+                  <Send size={20} color="#FFF" />
+                  <Text style={styles.claimButtonText}>Claim This Item</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={styles.messageButton}
+                onPress={handleStartConversation}
+              >
+                <MessageCircle size={20} color="#FFF" />
+                <Text style={styles.messageButtonText}>Message Poster</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+};
+
+// ==================== Component: Claim Modal ====================
+
+const ClaimModal = ({ visible, item, onClose, onSubmit }) => {
+  const [verificationMessage, setVerificationMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!verificationMessage.trim()) {
+      Alert.alert("Error", "Please provide a verification detail");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await onSubmit(item.id, verificationMessage);
+      Alert.alert("Success", "Claim submitted! The finder has been notified.");
+      setVerificationMessage("");
+      onClose();
+    } catch (error) {
+      Alert.alert("Error", error.message || "Failed to submit claim");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.claimModalContent}>
+          <Text style={styles.claimModalTitle}>Claim Item: {item?.title}</Text>
+          <Text style={styles.claimModalSubtitle}>
+            To verify ownership, please describe a unique detail only you would
+            know.
+          </Text>
+
+          <TextInput
+            style={styles.claimInput}
+            placeholder="Enter your secret detail here..."
+            placeholderTextColor="#9CA3AF"
+            multiline
+            numberOfLines={5}
+            value={verificationMessage}
+            onChangeText={setVerificationMessage}
+            editable={!isSubmitting}
+            textAlignVertical="top"
+          />
+
+          <View style={styles.claimModalButtons}>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={onClose}
+              disabled={isSubmitting}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.submitButton,
+                isSubmitting && styles.disabledButton,
+              ]}
+              onPress={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <>
+                  <Send size={18} color="#FFF" />
+                  <Text style={styles.submitButtonText}>Submit Claim</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+// ==================== Component: Marketplace Grid Item ====================
+
+const MarketplaceItem = ({ item }) => {
+  const statusColor = item.status === "Lost" ? "#EF4444" : "#10B981";
+
+  return (
+    <View style={styles.marketplaceItem}>
+      {/* Image */}
+      <View style={styles.marketplaceImageContainer}>
+        {item.image_url ? (
+          <Image
+            source={{ uri: item.image_url }}
+            style={styles.marketplaceImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.marketplacePlaceholder}>
+            <Camera size={32} color="#D1D5DB" />
+          </View>
+        )}
+        {/* Status Badge on Image */}
+        <View
+          style={[
+            styles.marketplaceStatusBadge,
+            { backgroundColor: statusColor },
+          ]}
+        >
+          <Text style={styles.marketplaceStatusText}>{item.status}</Text>
+        </View>
+      </View>
+
+      {/* Content */}
+      <View style={styles.marketplaceContent}>
+        <Text style={styles.marketplaceTitle} numberOfLines={2}>
+          {item.title}
+        </Text>
+        <View style={styles.marketplaceMetaRow}>
+          <View style={styles.marketplaceCategoryTag}>
+            <Text style={styles.marketplaceCategoryText} numberOfLines={1}>
+              {item.category}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.marketplaceLocationRow}>
+          <MapPin size={12} color="#8E8E93" />
+          <Text style={styles.marketplaceLocation} numberOfLines={1}>
+            {item.location || "Unknown location"}
+          </Text>
+        </View>
+        <Text style={styles.marketplaceTime}>
+          {item.created_at ? getTimeAgo(item.created_at) : "Recently"}
+        </Text>
+      </View>
+    </View>
+  );
+};
+
+// ==================== Main Component: BrowseScreen ====================
 
 const BrowseScreen = () => {
+  const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState("");
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState("All"); // All, Lost, Found
+  const [isImageSearching, setIsImageSearching] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
   const [user, setUser] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showClaim, setShowClaim] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
 
+  const [filters, setFilters] = useState({
+    status: "All",
+    categories: [],
+    sortBy: "newest",
+    dateFilter: "",
+  });
+
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
+  const rowOptions = [10, 20, 40];
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+
+  // Get current user
   useEffect(() => {
     getCurrentUser();
   }, []);
 
+  // Fetch items when filters or search changes
   useEffect(() => {
-    if (user) {
-      fetchItems();
+    if (user && !imagePreview) {
+      fetchItems(true);
     }
-  }, [filter, user]);
+  }, [filters, debouncedSearchQuery, user]);
 
   const getCurrentUser = async () => {
     try {
@@ -44,7 +747,7 @@ const BrowseScreen = () => {
     }
   };
 
-  const fetchItems = async () => {
+  const fetchItems = async (reset = false, pageOverride = null) => {
     try {
       setLoading(true);
       const supabase = getSupabaseClient();
@@ -54,7 +757,6 @@ const BrowseScreen = () => {
         return;
       }
 
-      // Fetch user's university_id (same as web app)
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("university_id")
@@ -64,236 +766,528 @@ const BrowseScreen = () => {
       if (profileError) throw profileError;
       if (!profile) throw new Error("Could not find user profile.");
 
-      // Build query - EXACT same as web app
       let query = supabase
         .from("items")
-        .select("*, profiles(id, full_name, email)")
+        .select("*, profiles(id, full_name, email)", { count: "exact" })
         .eq("university_id", profile.university_id)
         .eq("moderation_status", "approved");
 
-      // Apply status filter (same as web app)
-      if (filter !== "All") {
-        query = query.eq("status", filter);
+      // Apply filters
+      if (filters.status !== "All") {
+        query = query.eq("status", filters.status);
       }
 
-      // Order by created_at descending (newest first)
-      query = query.order("created_at", { ascending: false }).limit(50);
+      if (filters.categories && filters.categories.length > 0) {
+        query = query.in("category", filters.categories);
+      }
 
-      const { data, error } = await query;
+      if (filters.dateFilter) {
+        query = query.gte("created_at", filters.dateFilter);
+      }
+
+      if (debouncedSearchQuery) {
+        query = query.or(
+          `title.ilike.%${debouncedSearchQuery}%,description.ilike.%${debouncedSearchQuery}%,ai_tags.cs.{${debouncedSearchQuery}}`
+        );
+      }
+
+      // Pagination - use pageOverride if provided, otherwise use currentPage
+      const page =
+        pageOverride !== null ? pageOverride : reset ? 1 : currentPage;
+      const from = (page - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+      query = query.range(from, to);
+
+      // Sorting
+      query = query.order("created_at", {
+        ascending: filters.sortBy === "oldest",
+      });
+
+      const { data, error, count } = await query;
 
       if (error) throw error;
 
+      // Always replace items for pagination, never append
       setItems(data || []);
+      setTotalItems(count || 0);
+      setHasMore((data?.length || 0) === itemsPerPage);
     } catch (error) {
       console.error("Error fetching items:", error);
-      setItems([]);
+      Alert.alert("Error", "Failed to load items");
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchItems();
+  const handleImageSearch = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission needed", "Please allow access to your photos");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.5,
+    });
+
+    if (!result.canceled) {
+      setIsImageSearching(true);
+      setImagePreview(result.assets[0].uri);
+      setSearchQuery("");
+
+      try {
+        const supabase = getSupabaseClient();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        if (!token) throw new Error("Authentication required");
+
+        const formData = new FormData();
+        formData.append("image_file", {
+          uri: result.assets[0].uri,
+          type: "image/jpeg",
+          name: "search.jpg",
+        });
+
+        const response = await fetch(`${API_BASE_URL}/api/items/image-search`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+          body: formData,
+        });
+
+        if (!response.ok) throw new Error("Image search failed");
+
+        const data = await response.json();
+        const results = data.results || data || [];
+
+        setItems(results);
+        setTotalItems(results.length);
+        setCurrentPage(1);
+
+        if (results.length === 0) {
+          Alert.alert(
+            "No Results",
+            "No similar items found. Try a different image."
+          );
+        } else {
+          Alert.alert("Success", `Found ${results.length} similar items!`);
+        }
+      } catch (error) {
+        Alert.alert("Error", "Failed to search by image");
+        clearImageSearch();
+      } finally {
+        setIsImageSearching(false);
+      }
+    }
   };
 
-  const filteredItems = items.filter((item) =>
-    item.title?.toLowerCase().includes(searchQuery.toLowerCase())
+  const clearImageSearch = () => {
+    setImagePreview(null);
+    setSearchQuery("");
+    setCurrentPage(1);
+    fetchItems(true, 1);
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    if (imagePreview) {
+      clearImageSearch();
+    } else {
+      setCurrentPage(1);
+      fetchItems(true, 1);
+    }
+  };
+
+  const handleLoadMore = () => {
+    // Disabled - using manual pagination instead
+    return;
+  };
+
+  const submitClaim = async (itemId, verificationMessage) => {
+    const supabase = getSupabaseClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const token = session?.access_token;
+
+    if (!token) throw new Error("Authentication required");
+
+    const response = await fetch(`${API_BASE_URL}/api/claims/create`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        item_id: itemId,
+        verification_message: verificationMessage,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to submit claim.");
+    }
+
+    return response.json();
+  };
+
+  const renderItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.marketplaceCard}
+      onPress={() => setSelectedItem(item)}
+      activeOpacity={0.7}
+    >
+      <MarketplaceItem item={item} />
+    </TouchableOpacity>
   );
 
-  if (loading && !refreshing) {
+  const renderFooter = () => {
+    if (!loading || !hasMore) return null;
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1877F2" />
-          <Text style={styles.loadingText}>Loading items...</Text>
-        </View>
-      </SafeAreaView>
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="small" color={BRAND_COLOR} />
+      </View>
     );
+  };
+
+  if (loading && items.length === 0 && !refreshing) {
+    return <SimpleLoadingScreen />;
   }
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Browse All</Text>
+        <Text style={styles.headerTitle}>Browse All Items</Text>
+        <Text style={styles.headerSubtitle}>
+          Find lost items or help return found items
+        </Text>
       </View>
 
-      {/* Search Bar */}
+      {/* Enhanced Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Search size={20} color="#8E8E93" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search items..."
+            placeholder={
+              imagePreview ? "Image search active" : "Search by text..."
+            }
             placeholderTextColor="#8E8E93"
             value={searchQuery}
-            onChangeText={setSearchQuery}
+            onChangeText={(text) => {
+              setSearchQuery(text);
+              if (imagePreview) {
+                clearImageSearch();
+              }
+            }}
+            editable={!imagePreview}
           />
+          {imagePreview ? (
+            <View style={styles.imageSearchPreview}>
+              <Image
+                source={{ uri: imagePreview }}
+                style={styles.previewThumbnail}
+              />
+              <TouchableOpacity onPress={clearImageSearch}>
+                <X size={20} color="#EF4444" />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              onPress={handleImageSearch}
+              disabled={isImageSearching}
+              style={styles.cameraButton}
+            >
+              {isImageSearching ? (
+                <ActivityIndicator size="small" color={BRAND_COLOR} />
+              ) : (
+                <Camera size={20} color="#8E8E93" />
+              )}
+            </TouchableOpacity>
+          )}
         </View>
         <TouchableOpacity
           style={styles.filterButton}
-          onPress={() => {
-            // Cycle through filters
-            if (filter === "All") setFilter("Lost");
-            else if (filter === "Lost") setFilter("Found");
-            else setFilter("All");
-          }}
+          onPress={() => setShowFilters(true)}
         >
           <Filter size={20} color="#000000" />
+          {(filters.categories?.length > 0 || filters.status !== "All") && (
+            <View style={styles.filterDot} />
+          )}
         </TouchableOpacity>
       </View>
 
-      {/* Filter Chips */}
-      <View style={styles.filterChips}>
-        <TouchableOpacity
-          style={[styles.chip, filter === "All" && styles.chipActive]}
-          onPress={() => setFilter("All")}
+      {/* Active Filters Display */}
+      {(filters.status !== "All" || filters.categories?.length > 0) && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.activeFilters}
+          contentContainerStyle={styles.activeFiltersContent}
         >
-          <Text
-            style={[styles.chipText, filter === "All" && styles.chipTextActive]}
-          >
-            All
+          {filters.status !== "All" && (
+            <TouchableOpacity
+              style={[styles.chip, styles.chipActive]}
+              onPress={() => setFilters({ ...filters, status: "All" })}
+            >
+              <Text style={styles.chipTextActive}>{filters.status}</Text>
+              <X size={14} color="#FFF" style={{ marginLeft: 4 }} />
+            </TouchableOpacity>
+          )}
+
+          {filters.categories?.map((cat) => (
+            <TouchableOpacity
+              key={cat}
+              style={[styles.chip, styles.chipActive]}
+              onPress={() => {
+                setFilters({
+                  ...filters,
+                  categories: filters.categories.filter((c) => c !== cat),
+                });
+              }}
+            >
+              <Text style={styles.chipTextActive}>{cat}</Text>
+              <X size={14} color="#FFF" style={{ marginLeft: 4 }} />
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+
+      {/* Results count & Row options */}
+      <View style={styles.resultsCountRow}>
+        <View style={styles.resultsCount}>
+          <Text style={styles.resultsCountText}>
+            {imagePreview ? "Image search: " : ""}
+            {totalItems} item{totalItems !== 1 ? "s" : ""} found
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.chip, filter === "Lost" && styles.chipActive]}
-          onPress={() => setFilter("Lost")}
-        >
-          <Text
-            style={[
-              styles.chipText,
-              filter === "Lost" && styles.chipTextActive,
-            ]}
-          >
-            Lost
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.chip, filter === "Found" && styles.chipActive]}
-          onPress={() => setFilter("Found")}
-        >
-          <Text
-            style={[
-              styles.chipText,
-              filter === "Found" && styles.chipTextActive,
-            ]}
-          >
-            Found
-          </Text>
-        </TouchableOpacity>
+        </View>
+        <View style={styles.rowOptions}>
+          <Text style={styles.rowOptionsLabel}>Rows:</Text>
+          {rowOptions.map((opt) => (
+            <TouchableOpacity
+              key={opt}
+              style={[
+                styles.rowOptionButton,
+                itemsPerPage === opt && styles.rowOptionActive,
+              ]}
+              onPress={() => {
+                setItemsPerPage(opt);
+                setCurrentPage(1);
+                fetchItems(true, 1);
+              }}
+            >
+              <Text
+                style={[
+                  styles.rowOptionText,
+                  itemsPerPage === opt && styles.rowOptionTextActive,
+                ]}
+              >
+                {opt}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
-      {/* Feed */}
-      <ScrollView
-        style={styles.feed}
+      {/* Items Grid */}
+      <FlatList
+        key={`marketplace-grid-${itemsPerPage}`}
+        data={items}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={2}
+        columnWrapperStyle={styles.gridRow}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
-      >
-        {filteredItems.length === 0 ? (
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.1}
+        ListFooterComponent={renderFooter}
+        contentContainerStyle={
+          items.length === 0 ? styles.emptyListContainer : styles.gridContainer
+        }
+        ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Search size={64} color="#DFE0E4" />
+            {imagePreview ? (
+              <Camera size={64} color="#DFE0E4" />
+            ) : (
+              <Search size={64} color="#DFE0E4" />
+            )}
             <Text style={styles.emptyStateText}>No items found</Text>
             <Text style={styles.emptyStateSubtext}>
-              {searchQuery
-                ? "Try a different search term"
+              {searchQuery || imagePreview
+                ? "Try different search criteria"
                 : "Lost and found items will appear here"}
             </Text>
+            {(searchQuery || imagePreview) && (
+              <TouchableOpacity
+                style={styles.resetButton}
+                onPress={() => {
+                  setSearchQuery("");
+                  clearImageSearch();
+                }}
+              >
+                <Text style={styles.resetButtonText}>Clear Search</Text>
+              </TouchableOpacity>
+            )}
           </View>
-        ) : (
-          filteredItems.map((item) => <FeedItem key={item.id} item={item} />)
-        )}
-      </ScrollView>
+        }
+      />
+
+      {/* Pagination Controls */}
+      {totalItems > 0 && (
+        <View style={styles.paginationRow}>
+          <TouchableOpacity
+            style={[
+              styles.paginationButton,
+              currentPage === 1 && styles.paginationDisabled,
+            ]}
+            onPress={() => {
+              if (currentPage > 1) {
+                const newPage = currentPage - 1;
+                setCurrentPage(newPage);
+                fetchItems(false, newPage);
+              }
+            }}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft
+              size={20}
+              color={currentPage === 1 ? "#A1A1AA" : BRAND_COLOR}
+            />
+          </TouchableOpacity>
+          <Text style={styles.paginationText}>
+            Page {currentPage} of{" "}
+            {Math.max(1, Math.ceil(totalItems / itemsPerPage))}
+          </Text>
+          <TouchableOpacity
+            style={[
+              styles.paginationButton,
+              currentPage >= Math.ceil(totalItems / itemsPerPage) &&
+                styles.paginationDisabled,
+            ]}
+            onPress={() => {
+              if (currentPage < Math.ceil(totalItems / itemsPerPage)) {
+                const newPage = currentPage + 1;
+                setCurrentPage(newPage);
+                fetchItems(false, newPage);
+              }
+            }}
+            disabled={currentPage >= Math.ceil(totalItems / itemsPerPage)}
+          >
+            <ChevronRight
+              size={20}
+              color={
+                currentPage >= Math.ceil(totalItems / itemsPerPage)
+                  ? "#A1A1AA"
+                  : BRAND_COLOR
+              }
+            />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Modals */}
+      <FiltersModal
+        visible={showFilters}
+        onClose={() => setShowFilters(false)}
+        filters={filters}
+        onFiltersChange={setFilters}
+      />
+
+      <ItemDetailsModal
+        visible={!!selectedItem}
+        item={selectedItem}
+        onClose={() => setSelectedItem(null)}
+        onClaim={(item) => {
+          setShowClaim(true);
+        }}
+        user={user}
+        navigation={navigation}
+      />
+
+      <ClaimModal
+        visible={showClaim}
+        item={selectedItem}
+        onClose={() => setShowClaim(false)}
+        onSubmit={submitClaim}
+      />
     </SafeAreaView>
   );
 };
 
-const FeedItem = ({ item }) => {
-  const posterName =
-    item.profiles?.full_name ||
-    (item.profiles?.email ? item.profiles.email.split("@")[0] : "Anonymous");
-
-  const getTimeAgo = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return `${diffDays}d ago`;
-  };
-
-  const statusColor = item.status === "Lost" ? "#EF4444" : "#10B981";
-
-  return (
-    <View style={styles.feedItem}>
-      {/* Header */}
-      <View style={styles.feedItemHeader}>
-        <View style={styles.feedItemUser}>
-          <View style={styles.avatar}>
-            {item.profiles?.avatar_url ? (
-              <Image
-                source={{ uri: item.profiles.avatar_url }}
-                style={styles.avatarImage}
-              />
-            ) : (
-              <User size={20} color="#FFFFFF" />
-            )}
-          </View>
-          <View>
-            <Text style={styles.userName}>{posterName}</Text>
-            <View style={styles.locationRow}>
-              <MapPin size={12} color="#8E8E93" />
-              <Text style={styles.location}>
-                {item.location || "Unknown location"}
-              </Text>
-            </View>
-          </View>
-        </View>
-        <View
-          style={[styles.statusBadge, { backgroundColor: statusColor + "20" }]}
-        >
-          <Text style={[styles.statusText, { color: statusColor }]}>
-            {item.status}
-          </Text>
-        </View>
-      </View>
-
-      {/* Image */}
-      {item.image_url && (
-        <View style={styles.imageContainer}>
-          <Image
-            source={{ uri: item.image_url }}
-            style={styles.itemImage}
-            resizeMode="cover"
-          />
-        </View>
-      )}
-
-      {/* Content */}
-      <View style={styles.feedItemContent}>
-        <Text style={styles.itemTitle}>{item.title}</Text>
-        <Text style={styles.itemDescription} numberOfLines={3}>
-          {item.description}
-        </Text>
-        <View style={styles.metaRow}>
-          <Calendar size={14} color="#8E8E93" />
-          <Text style={styles.metaText}>
-            {item.created_at ? getTimeAgo(item.created_at) : "Recently"}
-          </Text>
-        </View>
-      </View>
-
-      {/* Divider */}
-      <View style={styles.divider} />
-    </View>
-  );
-};
+// ==================== Styles ====================
 
 const styles = StyleSheet.create({
+  resultsCountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: "#F9FAFB",
+  },
+  rowOptions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  rowOptionsLabel: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginRight: 4,
+  },
+  rowOptionButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: "#F0F2F5",
+    marginHorizontal: 2,
+  },
+  rowOptionActive: {
+    backgroundColor: BRAND_COLOR,
+  },
+  rowOptionText: {
+    fontSize: 13,
+    color: "#374151",
+    fontWeight: "500",
+  },
+  rowOptionTextActive: {
+    color: "#FFF",
+  },
+  paginationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+  },
+  paginationButton: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: "#F0F2F5",
+    marginHorizontal: 2,
+  },
+  paginationDisabled: {
+    backgroundColor: "#E5E7EB",
+  },
+  paginationText: {
+    fontSize: 14,
+    color: "#374151",
+    fontWeight: "500",
+    marginHorizontal: 8,
+  },
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
@@ -320,6 +1314,11 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#000000",
   },
+  headerSubtitle: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginTop: 4,
+  },
   searchContainer: {
     flexDirection: "row",
     paddingHorizontal: 16,
@@ -344,6 +1343,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#000000",
   },
+  cameraButton: {
+    padding: 4,
+  },
   filterButton: {
     width: 40,
     height: 40,
@@ -351,24 +1353,60 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0F2F5",
     justifyContent: "center",
     alignItems: "center",
+    position: "relative",
   },
-  filterChips: {
+  filterDot: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#EF4444",
+  },
+  imageSearchPreview: {
     flexDirection: "row",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    alignItems: "center",
     gap: 8,
+  },
+  previewThumbnail: {
+    width: 30,
+    height: 30,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#DBDBDB",
+  },
+  activeFilters: {
+    paddingVertical: 8,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 0.5,
     borderBottomColor: "#DBDBDB",
+  },
+  activeFiltersContent: {
+    paddingHorizontal: 16,
+    gap: 8,
+    flexDirection: "row",
+  },
+  resultsCount: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: "#F9FAFB",
+  },
+  resultsCountText: {
+    fontSize: 13,
+    color: "#6B7280",
+    fontWeight: "500",
   },
   chip: {
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 16,
     backgroundColor: "#F0F2F5",
+    flexDirection: "row",
+    alignItems: "center",
   },
   chipActive: {
-    backgroundColor: "#1877F2",
+    backgroundColor: BRAND_COLOR,
   },
   chipText: {
     fontSize: 14,
@@ -378,11 +1416,22 @@ const styles = StyleSheet.create({
   chipTextActive: {
     color: "#FFFFFF",
   },
-  feed: {
+  card: {
+    marginBottom: 1,
+  },
+  gridContainer: {
+    paddingHorizontal: 8,
+    paddingBottom: 8,
+  },
+  gridRow: {
+    justifyContent: "space-between",
+    paddingHorizontal: 8,
+  },
+  emptyListContainer: {
     flex: 1,
-    backgroundColor: "#FAFAFA",
   },
   emptyState: {
+    flex: 1,
     alignItems: "center",
     paddingVertical: 80,
     paddingHorizontal: 20,
@@ -399,100 +1448,479 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: "center",
   },
-  feedItem: {
-    backgroundColor: "#FFFFFF",
-    marginBottom: 8,
+  resetButton: {
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: BRAND_COLOR,
+    borderRadius: 8,
   },
-  feedItemHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  feedItemUser: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#1877F2",
-    justifyContent: "center",
-    alignItems: "center",
-    overflow: "hidden",
-  },
-  avatarImage: {
-    width: "100%",
-    height: "100%",
-  },
-  userName: {
+  resetButtonText: {
+    color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "600",
-    color: "#000000",
   },
-  locationRow: {
-    flexDirection: "row",
+  footerLoader: {
+    paddingVertical: 20,
     alignItems: "center",
-    gap: 4,
-    marginTop: 2,
   },
-  location: {
-    fontSize: 12,
-    color: "#8E8E93",
+
+  // Marketplace Grid Styles
+  marketplaceCard: {
+    width: (screenWidth - 32) / 2,
+    marginBottom: 12,
   },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
+  marketplaceItem: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  moreButton: {
-    fontSize: 20,
-    color: "#000000",
-    fontWeight: "bold",
-  },
-  imageContainer: {
+  marketplaceImageContainer: {
     width: "100%",
     aspectRatio: 1,
     backgroundColor: "#F0F2F5",
+    position: "relative",
   },
-  itemImage: {
+  marketplaceImage: {
     width: "100%",
     height: "100%",
   },
-  feedItemContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  marketplacePlaceholder: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F3F4F6",
   },
-  itemTitle: {
-    fontSize: 16,
+  marketplaceStatusBadge: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  marketplaceStatusText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  marketplaceContent: {
+    padding: 8,
+  },
+  marketplaceTitle: {
+    fontSize: 14,
     fontWeight: "600",
     color: "#000000",
     marginBottom: 4,
+    lineHeight: 18,
   },
-  itemDescription: {
-    fontSize: 14,
+  marketplaceCategoryTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    backgroundColor: "#F0F2F5",
+    borderRadius: 4,
+    alignSelf: "flex-start",
+    marginBottom: 4,
+  },
+  marketplaceCategoryText: {
+    fontSize: 10,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  marketplaceLocationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: 2,
+  },
+  marketplaceLocation: {
+    fontSize: 11,
+    color: "#8E8E93",
+  },
+  marketplaceTime: {
+    fontSize: 11,
+    color: "#8E8E93",
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+    padding: 0,
+  },
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: screenHeight * 0.8,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "600",
     color: "#000000",
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  modalBody: {
+    padding: 20,
+  },
+  modalFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+    gap: 12,
+  },
+  filterSection: {
+    marginBottom: 24,
+  },
+  filterSectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 12,
+    color: "#000000",
+  },
+  filterOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+  },
+  filterOptionText: {
+    fontSize: 15,
+    marginLeft: 12,
+    color: "#374151",
+  },
+  radio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "#D1D5DB",
+  },
+  radioSelected: {
+    borderColor: BRAND_COLOR,
+    backgroundColor: BRAND_COLOR,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: "#D1D5DB",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkboxSelected: {
+    borderColor: BRAND_COLOR,
+    backgroundColor: BRAND_COLOR,
+  },
+  checkmark: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  clearButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  clearButtonText: {
+    color: "#6B7280",
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  applyButton: {
+    flex: 1,
+    backgroundColor: BRAND_COLOR,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  applyButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+
+  // Detail Modal Styles
+  detailModalContainer: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  detailHeader: {
+    flexDirection: "row",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  detailScrollContent: {
+    flex: 1,
+  },
+  detailBadges: {
+    flexDirection: "row",
+    gap: 8,
     marginBottom: 8,
   },
-  metaRow: {
+  detailTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#000000",
+  },
+  closeButton: {
+    padding: 8,
+  },
+  detailImageFixed: {
+    width: screenWidth,
+    height: screenWidth * 0.75,
+    resizeMode: "cover",
+  },
+  noImageContainerFixed: {
+    width: screenWidth,
+    height: screenWidth * 0.75,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  detailImage: {
+    width: screenWidth,
+    height: screenWidth,
+    resizeMode: "cover",
+  },
+  noImageContainer: {
+    width: screenWidth,
+    height: screenWidth * 0.6,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  noImageText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#9CA3AF",
+  },
+  posterCardFixed: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#F9FAFB",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  posterCard: {
+    margin: 16,
+    padding: 16,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+  },
+  posterInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  posterAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#E0F2FE",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  posterLabel: {
+    fontSize: 12,
+    color: "#6B7280",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  posterName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#000000",
+  },
+  posterEmail: {
+    fontSize: 14,
+    color: "#6B7280",
+  },
+  contactMethods: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 12,
+  },
+  contactButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 8,
   },
-  metaText: {
+  contactButtonText: {
+    fontSize: 14,
+    color: BRAND_COLOR,
+    fontWeight: "500",
+  },
+  detailsGrid: {
+    paddingHorizontal: 16,
+  },
+  detailItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  detailLabel: {
     fontSize: 12,
-    color: "#8E8E93",
+    color: "#6B7280",
   },
-  divider: {
-    height: 0.5,
-    backgroundColor: "#DBDBDB",
+  detailValue: {
+    fontSize: 14,
+    color: "#000000",
+    fontWeight: "500",
+  },
+  descriptionCard: {
+    margin: 16,
+    padding: 16,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+  },
+  descriptionLabel: {
+    fontSize: 12,
+    color: "#6B7280",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  descriptionText: {
+    fontSize: 14,
+    color: "#374151",
+    lineHeight: 20,
+  },
+  actionButtons: {
+    padding: 16,
+    gap: 12,
+  },
+  claimButton: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: BRAND_COLOR,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  claimButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  messageButton: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#374151",
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  messageButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  categoryBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: "#F3F4F6",
+    borderRadius: 12,
+  },
+  categoryText: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#6B7280",
+  },
+
+  // Claim Modal Styles
+  claimModalContent: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    width: "90%",
+    maxWidth: 400,
+  },
+  claimModalTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#000000",
+    marginBottom: 8,
+  },
+  claimModalSubtitle: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  claimInput: {
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    minHeight: 120,
+    marginBottom: 20,
+    color: "#000000",
+  },
+  claimModalButtons: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 8,
+  },
+  cancelButtonText: {
+    fontSize: 15,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  submitButton: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: BRAND_COLOR,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  submitButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });
 
