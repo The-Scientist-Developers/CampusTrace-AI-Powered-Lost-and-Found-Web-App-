@@ -955,9 +955,14 @@ export default function LandingPage() {
               />
               <motion.span
                 whileHover={{ scale: 1.05 }}
-                className="text-xl md:text-2xl font-light tracking-wider text-neutral-800 dark:text-white"
+                className="text-xl md:text-2xl font-bold text-neutral-800 dark:text-white"
+                style={{
+                  fontFamily: '"Inter", sans-serif',
+                  fontWeight: 700,
+                  letterSpacing: "-0.02em",
+                }}
               >
-                CAMPUSTRACE
+                CampusTrace
               </motion.span>
             </Link>
 
@@ -1121,10 +1126,17 @@ export default function LandingPage() {
                       onClick={() => setMobileMenuOpen(false)}
                       className="block py-4"
                     >
-                      <span className="text-gray-400 dark:text-gray-500 text-sm mr-4">
+                      <span className="text-gray-400 dark:text-gray-500 text-xs mr-3">
                         {link.number}
                       </span>
-                      <span className="text-3xl font-light text-neutral-800 dark:text-white">
+                      <span
+                        className="text-2xl font-semibold text-neutral-800 dark:text-white"
+                        style={{
+                          fontFamily: '"Inter", sans-serif',
+                          fontWeight: 600,
+                          letterSpacing: "-0.02em",
+                        }}
+                      >
                         {link.label}
                       </span>
                     </a>
@@ -1134,10 +1146,17 @@ export default function LandingPage() {
                       onClick={() => setMobileMenuOpen(false)}
                       className="block py-4"
                     >
-                      <span className="text-gray-400 dark:text-gray-500 text-sm mr-4">
+                      <span className="text-gray-400 dark:text-gray-500 text-xs mr-3">
                         {link.number}
                       </span>
-                      <span className="text-3xl font-light text-neutral-800 dark:text-white">
+                      <span
+                        className="text-2xl font-semibold text-neutral-800 dark:text-white"
+                        style={{
+                          fontFamily: '"Inter", sans-serif',
+                          fontWeight: 600,
+                          letterSpacing: "-0.02em",
+                        }}
+                      >
                         {link.label}
                       </span>
                     </Link>
@@ -1152,7 +1171,12 @@ export default function LandingPage() {
                 <Link
                   to="/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block mt-8 px-8 py-3 bg-primary-600 text-white text-lg font-light tracking-wider rounded-md hover:bg-primary-700 transition-colors"
+                  className="block mt-8 px-8 py-3 bg-primary-600 text-white text-base font-medium rounded-md hover:bg-primary-700 transition-colors"
+                  style={{
+                    fontFamily: '"Inter", sans-serif',
+                    fontWeight: 500,
+                    letterSpacing: "-0.01em",
+                  }}
                 >
                   Log In
                 </Link>
@@ -1223,9 +1247,9 @@ export default function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: [0.25, 1, 0.5, 1] }}
             >
-              <h1 className="text-5xl sm:text-5xl md:text-5xl lg:text-6xl font-bold tracking-tight text-neutral-900 dark:text-white leading-tight">
+              <h1 className="text-4xl sm:text-5xl md:text-5xl lg:text-6xl font-bold tracking-tight text-neutral-900 dark:text-white leading-tight">
                 Reconnect What's Lost,{" "}
-                <span className="text-primary-600 dark:text-primary-400 block sm:inline mt-3 sm:mt-0">
+                <span className="text-primary-600 dark:text-primary-400 block sm:inline mt-2 sm:mt-0">
                   Powered by AI
                 </span>
               </h1>
@@ -1235,7 +1259,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-              className="mt-7 sm:mt-6 max-w-2xl mx-auto text-lg sm:text-base md:text-lg text-neutral-600 dark:text-neutral-400 leading-relaxed"
+              className="mt-6 sm:mt-6 max-w-2xl mx-auto text-base sm:text-base md:text-lg text-neutral-600 dark:text-neutral-400 leading-relaxed"
             >
               CampusTrace uses smart technology to make finding lost items on
               campus simple and fast. Join your university's secure lost and
@@ -1246,18 +1270,18 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
-              className="mt-10 sm:mt-10 flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-4"
+              className="mt-8 sm:mt-10 flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-4"
             >
               <Link
                 to="/login"
-                className="group px-10 sm:px-7 py-4 sm:py-2.5 bg-primary-600 text-white font-medium rounded-lg shadow hover:shadow-lg hover:bg-primary-700 transition-all duration-300 flex items-center justify-center gap-2 text-lg sm:text-base w-full sm:w-auto"
+                className="group px-8 sm:px-7 py-3 sm:py-2.5 bg-primary-600 text-white font-medium rounded-lg shadow hover:shadow-lg hover:bg-primary-700 transition-all duration-300 flex items-center justify-center gap-2 text-base sm:text-base w-full sm:w-auto"
               >
                 <span className="relative z-10">Get Started</span>
-                <ArrowRight className="w-5 h-5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform relative z-10" />
+                <ArrowRight className="w-4 h-4 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform relative z-10" />
               </Link>
               <Link
                 to="/learn-more"
-                className="px-10 sm:px-7 py-4 sm:py-2.5 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 font-medium rounded-lg shadow hover:shadow-lg transition-all duration-300 border border-neutral-200 dark:border-neutral-700 w-full sm:w-auto text-center text-lg sm:text-base"
+                className="px-8 sm:px-7 py-3 sm:py-2.5 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 font-medium rounded-lg shadow hover:shadow-lg transition-all duration-300 border border-neutral-200 dark:border-neutral-700 w-full sm:w-auto text-center text-base sm:text-base"
               >
                 Learn More
               </Link>
@@ -1283,10 +1307,10 @@ export default function LandingPage() {
               }}
               className="text-center mb-12 sm:mb-16"
             >
-              <h2 className="text-3xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4 sm:mb-4">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-3 sm:mb-4">
                 How It Works
               </h2>
-              <p className="text-base sm:text-base text-neutral-600 dark:text-neutral-400 max-w-xl mx-auto">
+              <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 max-w-xl mx-auto">
                 Recovering lost items is simple with CampusTrace.
               </p>
             </motion.div>
@@ -1391,10 +1415,10 @@ export default function LandingPage() {
         <section className="py-16 sm:py-20 bg-white dark:bg-[#1a1a1a]">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10 sm:mb-14">
-              <h2 className="text-3xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-3">
                 Got Questions?
               </h2>
-              <p className="text-base sm:text-base text-neutral-600 dark:text-neutral-400">
+              <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400">
                 Find quick answers to common queries about CampusTrace.
               </p>
             </div>
@@ -1437,24 +1461,24 @@ export default function LandingPage() {
             }}
             className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10"
           >
-            <h2 className="text-3xl sm:text-3xl md:text-4xl font-bold mb-5 sm:mb-6">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">
               Ready to Simplify Lost & Found?
             </h2>
-            <p className="text-lg sm:text-lg md:text-xl mb-10 sm:mb-10 text-white/90 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl mb-8 sm:mb-10 text-white/90 max-w-2xl mx-auto">
               Join your campus community on CampusTrace. Sign up with your
               university email or ID today.
             </p>
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-4">
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-4">
               <Link
                 to="/login"
-                className="group px-10 sm:px-8 py-4 sm:py-3 bg-white text-primary-600 text-lg sm:text-base font-semibold rounded-lg shadow-lg hover:shadow-xl hover:bg-neutral-50 transition-all duration-300 inline-flex items-center justify-center gap-2 w-full sm:w-auto"
+                className="group px-8 sm:px-8 py-3 sm:py-3 bg-white text-primary-600 text-base sm:text-base font-semibold rounded-lg shadow-lg hover:shadow-xl hover:bg-neutral-50 transition-all duration-300 inline-flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 <span className="relative z-10">Sign Up / Log In</span>
-                <ArrowRight className="w-5 h-5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform relative z-10" />
+                <ArrowRight className="w-4 h-4 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform relative z-10" />
               </Link>
               <Link
                 to="/register-university"
-                className="px-10 sm:px-8 py-4 sm:py-3 bg-white/10 backdrop-blur-sm border-2 border-white/40 text-white text-lg sm:text-base font-semibold rounded-lg hover:bg-white/20 transition-all duration-300 w-full sm:w-auto text-center"
+                className="px-8 sm:px-8 py-3 sm:py-3 bg-white/10 backdrop-blur-sm border-2 border-white/40 text-white text-base sm:text-base font-semibold rounded-lg hover:bg-white/20 transition-all duration-300 w-full sm:w-auto text-center"
               >
                 For Universities
               </Link>
@@ -1479,7 +1503,15 @@ export default function LandingPage() {
                   className="h-8 w-8"
                   whileHover={{ rotate: 15 }}
                 />
-                <span>CampusTrace</span>
+                <span
+                  style={{
+                    fontFamily: '"Inter", sans-serif',
+                    fontWeight: 700,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  CampusTrace
+                </span>
               </Link>
               <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6 max-w-sm leading-relaxed">
                 Simplifying lost and found on campus with AI-powered matching

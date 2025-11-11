@@ -11,10 +11,10 @@ export const ThemeProvider = ({ children }) => {
     return savedTheme || "light";
   });
 
-  // Color mode state (default, purple, pink, blue, green)
+  // Color mode state (default is now blue to match mobile app)
   const [colorMode, setColorMode] = useState(() => {
     const savedColorMode = localStorage.getItem("color-mode");
-    return savedColorMode || "default";
+    return savedColorMode || "blue";
   });
 
   // Accessibility: Font Size

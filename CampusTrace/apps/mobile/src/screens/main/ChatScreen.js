@@ -15,8 +15,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, Send, MessageCircle } from "lucide-react-native";
 import { getSupabaseClient } from "@campustrace/core";
 import SimpleLoadingScreen from "../../components/SimpleLoadingScreen";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const ChatScreen = ({ route, navigation }) => {
+  const { colors } = useTheme();
   const { conversationId } = route.params;
   const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -180,9 +182,13 @@ const ChatScreen = ({ route, navigation }) => {
 
   if (!conversation) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+      >
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Conversation not found</Text>
+          <Text style={[styles.errorText, { color: colors.error }]}>
+            Conversation not found
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -194,19 +200,30 @@ const ChatScreen = ({ route, navigation }) => {
       : conversation.finder;
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={["top"]}
+    >
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
         {/* Header */}
-        <View style={styles.header}>
+        <View
+          style={[
+            styles.header,
+            {
+              backgroundColor: colors.surface,
+              borderBottomColor: colors.border,
+            },
+          ]}
+        >
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
-            <ArrowLeft color="#111827" size={24} />
+            <ArrowLeft color={colors.text} size={24} />
           </TouchableOpacity>
 
           <Image
@@ -221,10 +238,16 @@ const ChatScreen = ({ route, navigation }) => {
           />
 
           <View style={styles.headerInfo}>
-            <Text style={styles.headerName} numberOfLines={1}>
+            <Text
+              style={[styles.headerName, { color: colors.text }]}
+              numberOfLines={1}
+            >
               {otherUser?.full_name || "Unknown User"}
             </Text>
-            <Text style={styles.headerSubtext} numberOfLines={1}>
+            <Text
+              style={[styles.headerSubtext, { color: colors.textSecondary }]}
+              numberOfLines={1}
+            >
               Regarding: {conversation.item?.title || "Unknown Item"}
             </Text>
           </View>
@@ -232,11 +255,22 @@ const ChatScreen = ({ route, navigation }) => {
 
         {/* Item Info Bar */}
         {conversation.item?.status && (
-          <View style={styles.itemInfoBar}>
+          <View
+            style={[
+              styles.itemInfoBar,
+              {
+                backgroundColor: colors.surface,
+                borderBottomColor: colors.border,
+              },
+            ]}
+          >
             <Text style={styles.itemEmoji}>
               {conversation.item.status === "lost" ? "🔍" : "📦"}
             </Text>
-            <Text style={styles.itemInfoText} numberOfLines={1}>
+            <Text
+              style={[styles.itemInfoText, { color: colors.textSecondary }]}
+              numberOfLines={1}
+            >
               {conversation.item.status === "lost" ? "Lost" : "Found"} Item:{" "}
               {conversation.item.title}
             </Text>
@@ -246,7 +280,10 @@ const ChatScreen = ({ route, navigation }) => {
         {/* Messages */}
         <ScrollView
           ref={scrollViewRef}
-          style={styles.messagesContainer}
+          style={[
+            styles.messagesContainer,
+            { backgroundColor: colors.background },
+          ]}
           contentContainerStyle={styles.messagesContent}
           onContentSizeChange={() =>
             scrollViewRef.current?.scrollToEnd({ animated: true })
@@ -254,9 +291,16 @@ const ChatScreen = ({ route, navigation }) => {
         >
           {messages.length === 0 ? (
             <View style={styles.emptyState}>
-              <MessageCircle size={64} color="#d1d5db" />
-              <Text style={styles.emptyStateText}>No messages yet</Text>
-              <Text style={styles.emptyStateSubtext}>
+              <MessageCircle size={64} color={colors.border} />
+              <Text style={[styles.emptyStateText, { color: colors.text }]}>
+                No messages yet
+              </Text>
+              <Text
+                style={[
+                  styles.emptyStateSubtext,
+                  { color: colors.textSecondary },
+                ]}
+              >
                 Start the conversation!
               </Text>
             </View>
@@ -275,8 +319,15 @@ const ChatScreen = ({ route, navigation }) => {
                   style={[
                     styles.messageBubble,
                     msg.sender_id === user.id
-                      ? styles.messageBubbleSent
-                      : styles.messageBubbleReceived,
+                      ? {
+                          ...styles.messageBubbleSent,
+                          backgroundColor: colors.primary,
+                        }
+                      : {
+                          ...styles.messageBubbleReceived,
+                          backgroundColor: colors.card,
+                          borderColor: colors.border,
+                        },
                   ]}
                 >
                   <Text
@@ -284,7 +335,7 @@ const ChatScreen = ({ route, navigation }) => {
                       styles.messageText,
                       msg.sender_id === user.id
                         ? styles.messageTextSent
-                        : styles.messageTextReceived,
+                        : { ...styles.messageTextReceived, color: colors.text },
                     ]}
                   >
                     {msg.content}
@@ -294,7 +345,10 @@ const ChatScreen = ({ route, navigation }) => {
                       styles.messageTime,
                       msg.sender_id === user.id
                         ? styles.messageTimeSent
-                        : styles.messageTimeReceived,
+                        : {
+                            ...styles.messageTimeReceived,
+                            color: colors.textSecondary,
+                          },
                     ]}
                   >
                     {formatTime(msg.created_at)}
@@ -306,13 +360,25 @@ const ChatScreen = ({ route, navigation }) => {
         </ScrollView>
 
         {/* Input Footer */}
-        <View style={styles.footer}>
+        <View
+          style={[
+            styles.footer,
+            { backgroundColor: colors.surface, borderTopColor: colors.border },
+          ]}
+        >
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.background,
+                borderColor: colors.border,
+                color: colors.text,
+              },
+            ]}
             value={newMessage}
             onChangeText={setNewMessage}
             placeholder="Type a message..."
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={colors.textTertiary}
             multiline
             maxLength={1000}
             editable={!sending}
@@ -322,7 +388,11 @@ const ChatScreen = ({ route, navigation }) => {
             disabled={!newMessage.trim() || sending}
             style={[
               styles.sendButton,
-              (!newMessage.trim() || sending) && styles.sendButtonDisabled,
+              { backgroundColor: colors.primary },
+              (!newMessage.trim() || sending) && {
+                ...styles.sendButtonDisabled,
+                opacity: 0.5,
+              },
             ]}
           >
             {sending ? (

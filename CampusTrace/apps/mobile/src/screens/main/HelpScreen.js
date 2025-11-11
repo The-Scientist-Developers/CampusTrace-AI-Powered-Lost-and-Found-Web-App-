@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft, ChevronDown, HelpCircle } from "lucide-react-native";
+import { useTheme } from "../../contexts/ThemeContext";
 
 // Define brand color locally
 const BRAND_COLOR = "#1877F2";
@@ -51,7 +52,7 @@ const FAQ_DATA = [
   },
 ];
 
-const FaqItem = ({ item }) => {
+const FaqItem = ({ item, colors }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleOpen = () => {
@@ -60,18 +61,27 @@ const FaqItem = ({ item }) => {
   };
 
   return (
-    <View style={styles.faqItem}>
+    <View
+      style={[
+        styles.faqItem,
+        { backgroundColor: colors.card, borderColor: colors.border },
+      ]}
+    >
       <TouchableOpacity style={styles.faqQuestionRow} onPress={toggleOpen}>
-        <Text style={styles.faqQuestion}>{item.question}</Text>
+        <Text style={[styles.faqQuestion, { color: colors.text }]}>
+          {item.question}
+        </Text>
         <ChevronDown
           size={20}
-          color={BRAND_COLOR}
+          color={colors.primary}
           style={{ transform: [{ rotate: isOpen ? "180deg" : "0deg" }] }}
         />
       </TouchableOpacity>
       {isOpen && (
         <View style={styles.faqAnswerContainer}>
-          <Text style={styles.faqAnswer}>{item.answer}</Text>
+          <Text style={[styles.faqAnswer, { color: colors.textSecondary }]}>
+            {item.answer}
+          </Text>
         </View>
       )}
     </View>
@@ -79,29 +89,42 @@ const FaqItem = ({ item }) => {
 };
 
 const HelpScreen = ({ navigation }) => {
+  const { colors } = useTheme();
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       {/* Standard Header */}
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+        ]}
+      >
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <ChevronLeft size={24} color="#000000" />
+          <ChevronLeft size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Help & Support</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          Help & Support
+        </Text>
         <View style={{ width: 40 }} /> {/* Spacer */}
       </View>
 
       <ScrollView style={styles.scrollView}>
         <View style={styles.subHeader}>
-          <HelpCircle size={32} color={BRAND_COLOR} />
-          <Text style={styles.subHeaderTitle}>Frequently Asked Questions</Text>
+          <HelpCircle size={32} color={colors.primary} />
+          <Text style={[styles.subHeaderTitle, { color: colors.text }]}>
+            Frequently Asked Questions
+          </Text>
         </View>
 
         <View style={styles.faqList}>
           {FAQ_DATA.map((item, index) => (
-            <FaqItem item={item} key={index} />
+            <FaqItem item={item} key={index} colors={colors} />
           ))}
         </View>
       </ScrollView>

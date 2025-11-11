@@ -691,8 +691,15 @@ export default function LoginPage() {
               className="flex items-center gap-3 mb-12 w-fit hover:opacity-80 transition-opacity"
             >
               <img src={logo} alt="CampusTrace logo" className="h-12 w-12" />
-              <span className="text-2xl font-light tracking-wider text-neutral-900 dark:text-white">
-                CAMPUSTRACE
+              <span
+                className="text-2xl font-bold text-neutral-900 dark:text-white"
+                style={{
+                  fontFamily: '"Inter", sans-serif',
+                  fontWeight: 700,
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                CampusTrace
               </span>
             </Link>
             <div className="space-y-8">
@@ -751,8 +758,15 @@ export default function LoginPage() {
                   alt="CampusTrace logo"
                   className="mx-auto h-16 w-16 sm:h-12 sm:w-12 mb-4"
                 />
-                <h1 className="text-3xl sm:text-2xl font-light tracking-wider text-neutral-900 dark:text-white">
-                  CAMPUSTRACE
+                <h1
+                  className="text-3xl sm:text-2xl font-bold text-neutral-900 dark:text-white"
+                  style={{
+                    fontFamily: '"Inter", sans-serif',
+                    fontWeight: 700,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  CampusTrace
                 </h1>
               </Link>
             </div>

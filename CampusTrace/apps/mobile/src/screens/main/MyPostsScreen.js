@@ -10,6 +10,8 @@ import {
   Image,
   Alert,
   Animated,
+  Dimensions,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -28,10 +30,21 @@ import {
   Camera,
   RotateCcw,
 } from "lucide-react-native";
-import { getSupabaseClient, BRAND_COLOR } from "@campustrace/core";
+import { getSupabaseClient } from "@campustrace/core";
 import { Swipeable } from "react-native-gesture-handler";
 import { useFocusEffect } from "@react-navigation/native";
 import SimpleLoadingScreen from "../../components/SimpleLoadingScreen";
+import { useTheme } from "../../contexts/ThemeContext";
+
+const { width } = Dimensions.get("window");
+const CARD_MARGIN = 16;
+const CARD_WIDTH = width - CARD_MARGIN * 2;
+const BRAND_COLOR = "#1877F2";
+
+// Small screens (phones)
+const isSmallScreen = width < 375;
+const isMediumScreen = width >= 375 && width < 768;
+const isLargeScreen = width >= 768;
 
 // ====================
 // Helper Function
@@ -65,11 +78,19 @@ const getTimeAgo = (dateString) => {
 // Main Component
 // ====================
 const MyPostsScreen = ({ navigation }) => {
+  const { colors, fontSizes } = useTheme();
+
+  // Create styles with current theme colors
+  const styles = React.useMemo(
+    () => createStyles(colors, fontSizes),
+    [colors, fontSizes]
+  );
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [user, setUser] = useState(null);
 
-  const [activeTab, setActiveTab] = useState("My Posts"); // 'My Posts', 'My Claims', 'Received'
+  const [activeTab, setActiveTab] = useState("My Posts");
   const [myPosts, setMyPosts] = useState([]);
   const [myClaims, setMyClaims] = useState([]);
   const [receivedClaims, setReceivedClaims] = useState([]);
@@ -149,7 +170,6 @@ const MyPostsScreen = ({ navigation }) => {
   };
 
   // --- Action Handlers ---
-
   const handleDeletePost = (item) => {
     Alert.alert(
       "Delete Post",
@@ -285,7 +305,6 @@ const MyPostsScreen = ({ navigation }) => {
   };
 
   // --- Render Functions ---
-
   const renderItemCard = ({ item }) => {
     if (activeTab === "My Posts") {
       return (
@@ -295,13 +314,22 @@ const MyPostsScreen = ({ navigation }) => {
           onEdit={handleEditPost}
           onMarkRecovered={handleMarkRecovered}
           openSwipeableRef={openSwipeableRef}
+          colors={colors}
+          fontSizes={fontSizes}
+          styles={styles}
         />
       );
     }
 
     if (activeTab === "My Claims") {
       return (
-        <ClaimCard claim={item} onCancel={() => handleCancelClaim(item)} />
+        <ClaimCard
+          claim={item}
+          onCancel={() => handleCancelClaim(item)}
+          colors={colors}
+          fontSizes={fontSizes}
+          styles={styles}
+        />
       );
     }
 
@@ -311,6 +339,9 @@ const MyPostsScreen = ({ navigation }) => {
           claim={item}
           onAccept={() => handleUpdateClaimStatus(item, "accepted")}
           onReject={() => handleUpdateClaimStatus(item, "rejected")}
+          colors={colors}
+          fontSizes={fontSizes}
+          styles={styles}
         />
       );
     }
@@ -333,9 +364,11 @@ const MyPostsScreen = ({ navigation }) => {
 
   const renderEmptyComponent = () => (
     <View style={styles.emptyState}>
-      {activeTab === "My Posts" && <Package size={64} color="#DFE0E4" />}
-      {activeTab === "My Claims" && <FileText size={64} color="#DFE0E4" />}
-      {activeTab === "Received" && <Users size={64} color="#DFE0E4" />}
+      {activeTab === "My Posts" && <Package size={64} color={colors.border} />}
+      {activeTab === "My Claims" && (
+        <FileText size={64} color={colors.border} />
+      )}
+      {activeTab === "Received" && <Users size={64} color={colors.border} />}
       <Text style={styles.emptyStateText}>No {activeTab} Found</Text>
       <Text style={styles.emptyStateSubtext}>
         {activeTab === "My Posts" && "Items you post will appear here."}
@@ -347,19 +380,86 @@ const MyPostsScreen = ({ navigation }) => {
     </View>
   );
 
+  // Calculate stats
+  const activeCount = myPosts.filter((p) =>
+    ["approved", "pending_return"].includes(p.moderation_status)
+  ).length;
+  const pendingCount = myPosts.filter(
+    (p) => p.moderation_status === "pending"
+  ).length;
+  const resolvedCount = myPosts.filter((p) =>
+    ["recovered", "rejected"].includes(p.moderation_status)
+  ).length;
+  const claimsCount = receivedClaims.length;
+
   if (loading) {
     return <SimpleLoadingScreen />;
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Activity</Text>
-        <Text style={styles.headerSubtitle}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+        ]}
+      >
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          My Activity
+        </Text>
+        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
           View your posts, claims, and activity history
         </Text>
       </View>
+
+      {/* Stats Cards */}
+      {activeTab === "My Posts" && (
+        <View style={styles.statsRow}>
+          <View
+            style={[
+              styles.statBox,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <CheckCircle size={20} color="#10B981" />
+            <Text style={styles.statValue}>{activeCount}</Text>
+            <Text style={styles.statLabel}>Active</Text>
+          </View>
+          <View
+            style={[
+              styles.statBox,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <Clock size={20} color="#EAB308" />
+            <Text style={styles.statValue}>{pendingCount}</Text>
+            <Text style={styles.statLabel}>Pending</Text>
+          </View>
+          <View
+            style={[
+              styles.statBox,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <Package size={20} color="#3B82F6" />
+            <Text style={styles.statValue}>{resolvedCount}</Text>
+            <Text style={styles.statLabel}>Resolved</Text>
+          </View>
+          <View
+            style={[
+              styles.statBox,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <AlertCircle size={20} color={colors.primary} />
+            <Text style={styles.statValue}>{claimsCount}</Text>
+            <Text style={styles.statLabel}>Claims</Text>
+          </View>
+        </View>
+      )}
 
       {/* Segmented Control */}
       <View style={styles.segmentContainer}>
@@ -368,18 +468,27 @@ const MyPostsScreen = ({ navigation }) => {
           icon={Package}
           isActive={activeTab === "My Posts"}
           onPress={() => setActiveTab("My Posts")}
+          colors={colors}
+          fontSizes={fontSizes}
+          styles={styles}
         />
         <TabButton
           title="My Claims"
           icon={FileText}
           isActive={activeTab === "My Claims"}
           onPress={() => setActiveTab("My Claims")}
+          colors={colors}
+          fontSizes={fontSizes}
+          styles={styles}
         />
         <TabButton
           title="Received"
           icon={Users}
           isActive={activeTab === "Received"}
           onPress={() => setActiveTab("Received")}
+          colors={colors}
+          fontSizes={fontSizes}
+          styles={styles}
         />
       </View>
 
@@ -393,7 +502,11 @@ const MyPostsScreen = ({ navigation }) => {
           getListData().length === 0 ? styles.listEmpty : null
         }
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+          />
         }
         ListEmptyComponent={renderEmptyComponent}
       />
@@ -411,6 +524,9 @@ const SwipeablePostCard = ({
   onEdit,
   onMarkRecovered,
   openSwipeableRef,
+  colors,
+  fontSizes,
+  styles,
 }) => {
   const ref = useRef(null);
   const onSwipeableOpen = () => {
@@ -437,49 +553,93 @@ const SwipeablePostCard = ({
             ref.current?.close();
             onEdit(item);
           }}
+          styles={styles}
         />
       )}
     >
-      <PostCard item={item} onMarkRecovered={() => onMarkRecovered(item)} />
+      <PostCard
+        item={item}
+        onMarkRecovered={() => onMarkRecovered(item)}
+        colors={colors}
+        fontSizes={fontSizes}
+        styles={styles}
+      />
     </Swipeable>
   );
 };
 
-const TabButton = ({ title, icon: Icon, isActive, onPress }) => (
+const TabButton = ({
+  title,
+  icon: Icon,
+  isActive,
+  onPress,
+  colors,
+  fontSizes,
+  styles,
+}) => (
   <TouchableOpacity
-    style={[styles.segmentButton, isActive && styles.segmentButtonActive]}
+    style={[
+      styles.segmentButton,
+      { backgroundColor: colors.surface, borderColor: colors.border },
+      isActive && {
+        backgroundColor: colors.primary + "10",
+        borderColor: colors.primary,
+      },
+    ]}
     onPress={onPress}
   >
-    <Icon size={18} color={isActive ? BRAND_COLOR : "#6B7280"} />
-    <Text style={[styles.segmentText, isActive && styles.segmentTextActive]}>
+    <Icon
+      size={isSmallScreen ? 16 : 18}
+      color={isActive ? colors.primary : colors.textSecondary}
+    />
+    <Text
+      style={[
+        styles.segmentText,
+        isActive && { color: colors.primary, fontWeight: "600" },
+      ]}
+    >
       {title}
     </Text>
   </TouchableOpacity>
 );
 
-const PostCard = ({ item, onMarkRecovered }) => (
-  <View style={styles.card}>
+const PostCard = ({ item, onMarkRecovered, colors, fontSizes, styles }) => (
+  <View
+    style={[
+      styles.card,
+      { backgroundColor: colors.surface, borderColor: colors.border },
+    ]}
+  >
     <View style={styles.cardHeader}>
-      <ItemImage imageUrl={item.image_url} />
+      <ItemImage imageUrl={item.image_url} colors={colors} styles={styles} />
       <View style={styles.cardContent}>
         <Text style={styles.cardTitle} numberOfLines={2}>
           {item.title}
         </Text>
         <View style={styles.badgeRow}>
-          <StatusBadge status={item.moderation_status} />
-          <TypeBadge type={item.status} />
+          <StatusBadge status={item.moderation_status} styles={styles} />
+          <TypeBadge type={item.status} styles={styles} />
         </View>
         <Text style={styles.cardTimestamp}>{getTimeAgo(item.created_at)}</Text>
       </View>
     </View>
     {item.moderation_status === "approved" && item.status === "Lost" && (
-      <TouchableOpacity style={styles.recoverButton} onPress={onMarkRecovered}>
-        <PackageCheck size={16} color={BRAND_COLOR} />
+      <TouchableOpacity
+        style={[
+          styles.recoverButton,
+          {
+            backgroundColor: colors.primary + "10",
+            borderColor: colors.border,
+          },
+        ]}
+        onPress={onMarkRecovered}
+      >
+        <PackageCheck size={16} color={colors.primary} />
         <Text style={styles.recoverButtonText}>Mark as Recovered</Text>
       </TouchableOpacity>
     )}
     {item.moderation_status === "recovered" && (
-      <View style={styles.recoveredBanner}>
+      <View style={[styles.recoveredBanner, { backgroundColor: "#10B98110" }]}>
         <CheckCircle size={16} color="#10B981" />
         <Text style={styles.recoveredBannerText}>Recovered!</Text>
       </View>
@@ -487,23 +647,38 @@ const PostCard = ({ item, onMarkRecovered }) => (
   </View>
 );
 
-const ClaimCard = ({ claim, onCancel }) => (
-  <View style={styles.card}>
+const ClaimCard = ({ claim, onCancel, colors, fontSizes, styles }) => (
+  <View
+    style={[
+      styles.card,
+      { backgroundColor: colors.surface, borderColor: colors.border },
+    ]}
+  >
     <View style={styles.cardHeader}>
-      <ItemImage imageUrl={claim.item.image_url} />
+      <ItemImage
+        imageUrl={claim.item.image_url}
+        colors={colors}
+        styles={styles}
+      />
       <View style={styles.cardContent}>
         <Text style={styles.cardSubtitle}>Your claim for:</Text>
         <Text style={styles.cardTitle} numberOfLines={1}>
           {claim.item.title}
         </Text>
         <View style={styles.badgeRow}>
-          <ClaimStatusBadge status={claim.status} />
+          <ClaimStatusBadge status={claim.status} styles={styles} />
         </View>
         <Text style={styles.cardTimestamp}>{getTimeAgo(claim.created_at)}</Text>
       </View>
     </View>
     {claim.status === "pending" && (
-      <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
+      <TouchableOpacity
+        style={[
+          styles.cancelButton,
+          { backgroundColor: "#EF444410", borderColor: colors.border },
+        ]}
+        onPress={onCancel}
+      >
         <XCircle size={16} color="#EF4444" />
         <Text style={styles.cancelButtonText}>Cancel Claim</Text>
       </TouchableOpacity>
@@ -511,14 +686,30 @@ const ClaimCard = ({ claim, onCancel }) => (
   </View>
 );
 
-const ReceivedClaimCard = ({ claim, onAccept, onReject }) => (
-  <View style={styles.card}>
+const ReceivedClaimCard = ({
+  claim,
+  onAccept,
+  onReject,
+  colors,
+  fontSizes,
+  styles,
+}) => (
+  <View
+    style={[
+      styles.card,
+      { backgroundColor: colors.surface, borderColor: colors.border },
+    ]}
+  >
     <View style={styles.cardHeader}>
-      <ItemImage imageUrl={claim.item.image_url} />
+      <ItemImage
+        imageUrl={claim.item.image_url}
+        colors={colors}
+        styles={styles}
+      />
       <View style={styles.cardContent}>
         <Text style={styles.cardSubtitle}>
           Claim from{" "}
-          <Text style={{ fontWeight: "bold" }}>
+          <Text style={{ fontWeight: "bold", color: colors.text }}>
             {claim.claimant.full_name || "Anonymous"}
           </Text>
         </Text>
@@ -526,21 +717,38 @@ const ReceivedClaimCard = ({ claim, onAccept, onReject }) => (
           {claim.item.title}
         </Text>
         <View style={styles.badgeRow}>
-          <ClaimStatusBadge status={claim.status} />
+          <ClaimStatusBadge status={claim.status} styles={styles} />
         </View>
       </View>
     </View>
-    <View style={styles.verificationBox}>
+    <View
+      style={[
+        styles.verificationBox,
+        {
+          backgroundColor: colors.background,
+          borderColor: colors.border,
+        },
+      ]}
+    >
       <Text style={styles.verificationTitle}>Verification Message:</Text>
       <Text style={styles.verificationBody}>{claim.verification_message}</Text>
     </View>
     {claim.status === "pending" && (
       <View style={styles.actionButtonRow}>
-        <TouchableOpacity style={styles.rejectButton} onPress={onReject}>
+        <TouchableOpacity
+          style={[
+            styles.rejectButton,
+            { backgroundColor: "#EF444410", borderColor: colors.border },
+          ]}
+          onPress={onReject}
+        >
           <X size={16} color="#EF4444" />
           <Text style={styles.rejectButtonText}>Reject</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.acceptButton} onPress={onAccept}>
+        <TouchableOpacity
+          style={[styles.acceptButton, { backgroundColor: colors.primary }]}
+          onPress={onAccept}
+        >
           <Check size={16} color="#FFFFFF" />
           <Text style={styles.acceptButtonText}>Accept</Text>
         </TouchableOpacity>
@@ -549,7 +757,14 @@ const ReceivedClaimCard = ({ claim, onAccept, onReject }) => (
   </View>
 );
 
-const PostSwipeActions = ({ progress, dragX, onDelete, onEdit, item }) => {
+const PostSwipeActions = ({
+  progress,
+  dragX,
+  onDelete,
+  onEdit,
+  item,
+  styles,
+}) => {
   const isRecovered = item.moderation_status === "recovered";
   return (
     <View style={styles.swipeActionContainer}>
@@ -578,19 +793,29 @@ const PostSwipeActions = ({ progress, dragX, onDelete, onEdit, item }) => {
   );
 };
 
-const ItemImage = ({ imageUrl }) => (
-  <View style={styles.itemImageContainer}>
+const ItemImage = ({ imageUrl, colors, styles }) => (
+  <View
+    style={[
+      styles.itemImageContainer,
+      { backgroundColor: colors.surfaceSecondary, borderColor: colors.border },
+    ]}
+  >
     {imageUrl ? (
       <Image source={{ uri: imageUrl }} style={styles.itemImage} />
     ) : (
-      <View style={styles.itemImagePlaceholder}>
-        <Camera size={24} color="#9CA3AF" />
+      <View
+        style={[
+          styles.itemImagePlaceholder,
+          { backgroundColor: colors.surfaceSecondary },
+        ]}
+      >
+        <Camera size={24} color={colors.textSecondary} />
       </View>
     )}
   </View>
 );
 
-const StatusBadge = ({ status }) => {
+const StatusBadge = ({ status, styles }) => {
   const config = {
     pending: { bg: "#FEF3C7", text: "#D97706", label: "Pending", icon: Clock },
     approved: {
@@ -635,7 +860,7 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const ClaimStatusBadge = ({ status }) => {
+const ClaimStatusBadge = ({ status, styles }) => {
   const config = {
     pending: { bg: "#FEF3C7", text: "#D97706", label: "Pending", icon: Clock },
     accepted: {
@@ -668,7 +893,7 @@ const ClaimStatusBadge = ({ status }) => {
   );
 };
 
-const TypeBadge = ({ type }) => {
+const TypeBadge = ({ type, styles }) => {
   const isLost = type === "Lost";
   const color = isLost ? "#DC2626" : "#059669";
   const bg = isLost ? "#FEE2E2" : "#D1FAE5";
@@ -682,280 +907,340 @@ const TypeBadge = ({ type }) => {
 // ====================
 // Styles
 // ====================
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F9FAFB", // Use a light gray background
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#606770",
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#DBDBDB",
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#000000",
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginTop: 4,
-  },
-  segmentContainer: {
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-    gap: 8,
-  },
-  segmentButton: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 10,
-    backgroundColor: "#F3F4F6",
-    borderRadius: 8,
-    gap: 6,
-  },
-  segmentButtonActive: {
-    backgroundColor: "#E0F2FE",
-  },
-  segmentText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#6B7280",
-  },
-  segmentTextActive: {
-    color: BRAND_COLOR,
-  },
-  list: {
-    flex: 1,
-  },
-  listEmpty: {
-    flexGrow: 1,
-  },
-  emptyState: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    backgroundColor: "#FFFFFF",
-  },
-  emptyStateText: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#9CA3AF",
-    marginTop: 16,
-  },
-  emptyStateSubtext: {
-    fontSize: 14,
-    color: "#9CA3AF",
-    marginTop: 8,
-    textAlign: "center",
-  },
-  // Card Styles
-  card: {
-    backgroundColor: "#FFFFFF",
-    marginHorizontal: 16,
-    marginTop: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    overflow: "hidden",
-  },
-  cardHeader: {
-    flexDirection: "row",
-    padding: 12,
-  },
-  itemImageContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    backgroundColor: "#F3F4F6",
-    overflow: "hidden",
-  },
-  itemImage: {
-    width: "100%",
-    height: "100%",
-  },
-  itemImagePlaceholder: {
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  cardContent: {
-    flex: 1,
-    marginLeft: 12,
-    justifyContent: "center",
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1F2937",
-    marginBottom: 6,
-  },
-  cardSubtitle: {
-    fontSize: 13,
-    color: "#6B7280",
-    marginBottom: 2,
-  },
-  cardTimestamp: {
-    fontSize: 12,
-    color: "#9CA3AF",
-    marginTop: 6,
-  },
-  badgeRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-  },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: "600",
-    marginLeft: 4,
-  },
-  // Action Buttons
-  recoverButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#E0F2FE",
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
-  },
-  recoverButtonText: {
-    color: BRAND_COLOR,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  recoveredBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#D1FAE5",
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
-  },
-  recoveredBannerText: {
-    color: "#059669",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  cancelButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#FEE2E2",
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
-  },
-  cancelButtonText: {
-    color: "#DC2626",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  verificationBox: {
-    backgroundColor: "#F9FAFB",
-    padding: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
-  },
-  verificationTitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#6B7280",
-    marginBottom: 4,
-  },
-  verificationBody: {
-    fontSize: 14,
-    color: "#374151",
-    lineHeight: 20,
-  },
-  actionButtonRow: {
-    flexDirection: "row",
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
-  },
-  rejectButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 12,
-    backgroundColor: "#FFFFFF",
-    borderRightWidth: 1,
-    borderRightColor: "#E5E7EB",
-  },
-  rejectButtonText: {
-    color: "#EF4444",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  acceptButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 12,
-    backgroundColor: "#10B981",
-  },
-  acceptButtonText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  // Swipe Actions
-  swipeActionContainer: {
-    flexDirection: "row",
-    width: 160,
-  },
-  swipeButton: {
-    justifyContent: "center",
-    alignItems: "center",
-    width: 80,
-  },
-  editButton: {
-    backgroundColor: "#3B82F6",
-  },
-  deleteButton: {
-    backgroundColor: "#EF4444",
-  },
-  disabledButton: {
-    backgroundColor: "#D1D5DB",
-  },
-});
+const createStyles = (colors, fontSizes) => {
+  const shadowStyle = Platform.select({
+    ios: {
+      shadowColor: colors.shadow || "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+    },
+    android: {
+      elevation: 2,
+    },
+    web: {
+      boxShadow: "0px 1px 2px rgba(0, 0, 0, 0.05)",
+    },
+  });
+
+  // Responsive image sizes
+  const imageSize = isSmallScreen ? 70 : isMediumScreen ? 80 : 100;
+
+  // Responsive paddings
+  const cardPadding = isSmallScreen ? 10 : 12;
+  const headerPadding = isSmallScreen ? 12 : 16;
+
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: colors.surface,
+    },
+    loadingText: {
+      marginTop: 12,
+      fontSize: fontSizes.base,
+      color: colors.textSecondary,
+    },
+    header: {
+      paddingHorizontal: headerPadding,
+      paddingVertical: cardPadding,
+      backgroundColor: colors.surface,
+      borderBottomWidth: 0.5,
+      borderBottomColor: colors.border,
+    },
+    headerTitle: {
+      fontSize: isSmallScreen ? fontSizes.large : fontSizes.xlarge,
+      fontWeight: "bold",
+      color: colors.text,
+    },
+    headerSubtitle: {
+      fontSize: fontSizes.small,
+      color: colors.textSecondary,
+      marginTop: 4,
+    },
+    segmentContainer: {
+      flexDirection: "row",
+      backgroundColor: colors.surface,
+      paddingHorizontal: headerPadding,
+      paddingVertical: cardPadding,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+      gap: 8,
+    },
+    segmentButton: {
+      flex: 1,
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      paddingVertical: isSmallScreen ? 8 : 10,
+      backgroundColor: colors.background,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: isSmallScreen ? 4 : 6,
+    },
+    segmentButtonActive: {
+      backgroundColor: colors.primary + "10",
+      borderColor: colors.primary,
+    },
+    segmentText: {
+      fontSize: isSmallScreen ? fontSizes.tiny : fontSizes.small,
+      fontWeight: "600",
+      color: colors.textSecondary,
+    },
+    segmentTextActive: {
+      color: colors.primary,
+    },
+    list: {
+      flex: 1,
+    },
+    listEmpty: {
+      flexGrow: 1,
+    },
+    emptyState: {
+      flexGrow: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: 20,
+      backgroundColor: colors.surface,
+    },
+    emptyStateText: {
+      fontSize: fontSizes.large,
+      fontWeight: "600",
+      color: colors.textSecondary,
+      marginTop: 16,
+    },
+    emptyStateSubtext: {
+      fontSize: fontSizes.small,
+      color: colors.textSecondary,
+      marginTop: 8,
+      textAlign: "center",
+    },
+    // Card Styles
+    card: {
+      backgroundColor: colors.surface,
+      marginHorizontal: CARD_MARGIN,
+      marginTop: 12,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: "hidden",
+      ...shadowStyle,
+    },
+    cardHeader: {
+      flexDirection: "row",
+      padding: cardPadding,
+    },
+    itemImageContainer: {
+      width: imageSize,
+      height: imageSize,
+      borderRadius: 8,
+      backgroundColor: colors.background,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    itemImage: {
+      width: "100%",
+      height: "100%",
+    },
+    itemImagePlaceholder: {
+      width: "100%",
+      height: "100%",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    cardContent: {
+      flex: 1,
+      marginLeft: cardPadding,
+      justifyContent: "center",
+    },
+    cardTitle: {
+      fontSize: fontSizes.base,
+      fontWeight: "600",
+      color: colors.text,
+      marginBottom: 6,
+    },
+    cardSubtitle: {
+      fontSize: fontSizes.small,
+      color: colors.textSecondary,
+      marginBottom: 2,
+    },
+    cardTimestamp: {
+      fontSize: fontSizes.tiny,
+      color: colors.textSecondary,
+      marginTop: 6,
+    },
+    badgeRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 6,
+    },
+    badge: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: isSmallScreen ? 6 : 8,
+      paddingVertical: 3,
+      borderRadius: 12,
+    },
+    badgeText: {
+      fontSize: fontSizes.tiny,
+      fontWeight: "600",
+      marginLeft: 4,
+    },
+    // Action Buttons
+    recoverButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      backgroundColor: colors.primary + "10",
+      paddingVertical: cardPadding,
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+    },
+    recoverButtonText: {
+      color: colors.primary,
+      fontSize: fontSizes.small,
+      fontWeight: "600",
+    },
+    recoveredBanner: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      backgroundColor: "#10B98110",
+      paddingVertical: cardPadding,
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+    },
+    recoveredBannerText: {
+      color: "#059669",
+      fontSize: fontSizes.small,
+      fontWeight: "600",
+    },
+    cancelButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      backgroundColor: "#FEE2E2",
+      paddingVertical: cardPadding,
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+    },
+    cancelButtonText: {
+      color: "#DC2626",
+      fontSize: fontSizes.small,
+      fontWeight: "600",
+    },
+    verificationBox: {
+      backgroundColor: colors.background,
+      padding: cardPadding,
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+    },
+    verificationTitle: {
+      fontSize: fontSizes.tiny,
+      fontWeight: "600",
+      color: colors.textSecondary,
+      marginBottom: 4,
+    },
+    verificationBody: {
+      fontSize: fontSizes.small,
+      color: colors.text,
+      lineHeight: 20,
+    },
+    actionButtonRow: {
+      flexDirection: "row",
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+    },
+    rejectButton: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      paddingVertical: cardPadding,
+      backgroundColor: colors.surface,
+      borderRightWidth: 1,
+      borderRightColor: colors.divider,
+    },
+    rejectButtonText: {
+      color: "#EF4444",
+      fontSize: fontSizes.small,
+      fontWeight: "600",
+    },
+    acceptButton: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      paddingVertical: cardPadding,
+      backgroundColor: "#10B981",
+    },
+    acceptButtonText: {
+      color: "#FFFFFF",
+      fontSize: fontSizes.small,
+      fontWeight: "600",
+    },
+    // Swipe Actions
+    swipeActionContainer: {
+      flexDirection: "row",
+      width: 160,
+    },
+    swipeButton: {
+      justifyContent: "center",
+      alignItems: "center",
+      width: 80,
+    },
+    editButton: {
+      backgroundColor: "#3B82F6",
+    },
+    deleteButton: {
+      backgroundColor: "#EF4444",
+    },
+    disabledButton: {
+      backgroundColor: colors.border,
+    },
+    // Stats Row
+    statsRow: {
+      flexDirection: "row",
+      paddingHorizontal: headerPadding,
+      paddingVertical: cardPadding,
+      gap: 8,
+      backgroundColor: colors.background,
+    },
+    statBox: {
+      flex: 1,
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: isSmallScreen ? 10 : 12,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...shadowStyle,
+    },
+    statValue: {
+      fontSize: isSmallScreen ? fontSizes.base : fontSizes.large,
+      fontWeight: "bold",
+      color: colors.text,
+      marginTop: 6,
+    },
+    statLabel: {
+      fontSize: fontSizes.tiny,
+      color: colors.textSecondary,
+      marginTop: 2,
+      textAlign: "center",
+    },
+  });
+};
 
 export default MyPostsScreen;

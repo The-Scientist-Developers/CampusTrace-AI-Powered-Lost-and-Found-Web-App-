@@ -27,15 +27,20 @@ import {
   getSupabaseClient,
   getAccessToken,
   API_BASE_URL,
-  BRAND_COLOR,
 } from "@campustrace/core";
 import SimpleLoadingScreen from "../../components/SimpleLoadingScreen";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = width / 2 - 24;
 const HORIZONTAL_CARD_WIDTH = width * 0.7;
 
 const DashboardScreen = ({ navigation }) => {
+  const { colors, fontSizes } = useTheme();
+
+  // Create styles with current theme colors
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [user, setUser] = useState(null);
@@ -237,6 +242,8 @@ const DashboardScreen = ({ navigation }) => {
     <ItemCard
       item={item}
       onPress={() => navigation.navigate("Browse", { itemId: item.id })}
+      styles={styles}
+      colors={colors}
     />
   );
 
@@ -244,20 +251,31 @@ const DashboardScreen = ({ navigation }) => {
     <MatchCard
       item={item}
       onPress={() => navigation.navigate("Browse", { itemId: item.id })}
+      styles={styles}
+      colors={colors}
     />
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       {/* Instagram-style Header */}
-      <View style={styles.header}>
-        <Text style={styles.appName}>CampusTrace</Text>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+        ]}
+      >
+        <Text style={[styles.appName, { color: colors.text }]}>
+          CampusTrace
+        </Text>
         <View style={styles.headerIcons}>
           <TouchableOpacity
             style={styles.headerIconButton}
             onPress={() => navigation.navigate("Notifications")}
           >
-            <Feather name="heart" size={26} color={BRAND_COLOR} />
+            <Feather name="heart" size={24} color={colors.primary} />
             {/* Optional notification dot */}
             {/* <View style={styles.notificationDot} /> */}
           </TouchableOpacity>
@@ -265,7 +283,7 @@ const DashboardScreen = ({ navigation }) => {
             style={styles.headerIconButton}
             onPress={() => navigation.navigate("Messages")}
           >
-            <Feather name="send" size={26} color={BRAND_COLOR} />
+            <Feather name="send" size={24} color={colors.primary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -282,12 +300,7 @@ const DashboardScreen = ({ navigation }) => {
         >
           {/* Welcome Section */}
           <View style={styles.welcomeSection}>
-            <Text style={styles.greeting}>Welcome back,</Text>
-            <Text style={styles.userName}>
-              {user?.user_metadata?.full_name ||
-                user?.email?.split("@")[0] ||
-                "User"}
-            </Text>
+            <Text style={styles.greeting}>Welcome back!</Text>
           </View>
 
           {/* Stats Grid */}
@@ -298,7 +311,9 @@ const DashboardScreen = ({ navigation }) => {
                 iconName="inventory"
                 label="Total Items"
                 value={stats.totalItems}
-                color={BRAND_COLOR}
+                color={colors.primary}
+                styles={styles}
+                colors={colors}
               />
               <StatCard
                 icon={MaterialIcons}
@@ -306,6 +321,8 @@ const DashboardScreen = ({ navigation }) => {
                 label="Lost Items"
                 value={stats.lostItems}
                 color="#EF4444"
+                styles={styles}
+                colors={colors}
               />
             </View>
             <View style={styles.statsRow}>
@@ -315,6 +332,8 @@ const DashboardScreen = ({ navigation }) => {
                 label="Found Items"
                 value={stats.foundItems}
                 color="#10B981"
+                styles={styles}
+                colors={colors}
               />
               <StatCard
                 icon={MaterialIcons}
@@ -322,6 +341,8 @@ const DashboardScreen = ({ navigation }) => {
                 label="Recovered"
                 value={stats.recoveredItems}
                 color="#3B82F6"
+                styles={styles}
+                colors={colors}
               />
             </View>
           </View>
@@ -333,11 +354,15 @@ const DashboardScreen = ({ navigation }) => {
               title="Weekly Activity"
               data={chartData.weekly}
               type="area"
+              styles={styles}
+              colors={colors}
             />
             <ChartCard
               title="Top Categories"
               data={chartData.categories}
               type="bar"
+              styles={styles}
+              colors={colors}
             />
           </View>
 
@@ -347,7 +372,7 @@ const DashboardScreen = ({ navigation }) => {
               <MaterialCommunityIcons
                 name="auto-fix"
                 size={22}
-                color={BRAND_COLOR}
+                color={colors.primary}
               />
               <Text style={styles.sectionTitle}>AI-Powered Matches</Text>
             </View>
@@ -366,6 +391,7 @@ const DashboardScreen = ({ navigation }) => {
                     <ItemImage
                       imageUrl={myLostItem.image_url}
                       style={styles.latestLostItemImage}
+                      styles={styles}
                     />
                     <View style={{ flex: 1, marginLeft: 12 }}>
                       <Text style={styles.latestLostItemName} numberOfLines={1}>
@@ -385,7 +411,7 @@ const DashboardScreen = ({ navigation }) => {
                           <Text
                             style={[
                               styles.smallBadgeText,
-                              { color: "#6B7280" },
+                              { color: colors.textSecondary },
                             ]}
                           >
                             {myLostItem.category}
@@ -437,6 +463,8 @@ const DashboardScreen = ({ navigation }) => {
                     iconName="help-outline"
                     title="No matches found yet"
                     description="Our AI is continuously searching. We'll show potential matches here."
+                    colors={colors}
+                    styles={styles}
                   />
                 )}
               </View>
@@ -448,6 +476,8 @@ const DashboardScreen = ({ navigation }) => {
                 description="If you lose something, post it here to enable AI-powered matching."
                 buttonText="Post Lost Item"
                 onButtonClick={() => navigation.navigate("PostItem")}
+                colors={colors}
+                styles={styles}
               />
             )}
           </View>
@@ -477,6 +507,8 @@ const DashboardScreen = ({ navigation }) => {
                 description="Items you post will appear here. Start by reporting a lost or found item."
                 buttonText="Post New Item"
                 onButtonClick={() => navigation.navigate("PostItem")}
+                colors={colors}
+                styles={styles}
               />
             )}
           </View>
@@ -491,6 +523,8 @@ const DashboardScreen = ({ navigation }) => {
                 icon={Feather}
                 iconName="clock"
                 title="No recent activity"
+                colors={colors}
+                styles={styles}
               />
             ) : (
               recentActivity
@@ -502,6 +536,8 @@ const DashboardScreen = ({ navigation }) => {
                     onPress={() =>
                       navigation.navigate("Browse", { itemId: item.id })
                     }
+                    styles={styles}
+                    colors={colors}
                   />
                 ))
             )}
@@ -536,7 +572,7 @@ const timeAgo = (dateString) => {
 };
 
 // --- Re-usable Components ---
-const ItemImage = ({ imageUrl, style }) => (
+const ItemImage = ({ imageUrl, style, styles }) => (
   <View style={[styles.itemImageContainer, style]}>
     {imageUrl ? (
       <Image source={{ uri: imageUrl }} style={styles.itemImage} />
@@ -548,7 +584,7 @@ const ItemImage = ({ imageUrl, style }) => (
   </View>
 );
 
-const StatusBadge = ({ status }) => {
+const StatusBadge = ({ status, styles }) => {
   const statusConfig = {
     approved: { bg: "#D1FAE5", text: "#065F46", label: "Active" },
     pending: { bg: "#FEF3C7", text: "#92400E", label: "Pending" },
@@ -570,15 +606,19 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const ItemCard = ({ item, onPress }) => (
+const ItemCard = ({ item, onPress, styles, colors }) => (
   <TouchableOpacity style={styles.itemCard} onPress={onPress}>
-    <ItemImage imageUrl={item.image_url} style={styles.itemCardImage} />
+    <ItemImage
+      imageUrl={item.image_url}
+      style={styles.itemCardImage}
+      styles={styles}
+    />
     <View style={{ padding: 12 }}>
       <Text style={styles.itemCardTitle} numberOfLines={2}>
         {item.title}
       </Text>
       <View style={styles.itemCardFooter}>
-        <StatusBadge status={item.moderation_status} />
+        <StatusBadge status={item.moderation_status} styles={styles} />
         <View
           style={[
             styles.smallBadge,
@@ -603,7 +643,7 @@ const ItemCard = ({ item, onPress }) => (
   </TouchableOpacity>
 );
 
-const MatchCard = ({ item, onPress }) => (
+const MatchCard = ({ item, onPress, styles, colors }) => (
   <TouchableOpacity style={styles.itemCard} onPress={onPress}>
     {item.match_score && (
       <View style={styles.matchBadge}>
@@ -612,7 +652,11 @@ const MatchCard = ({ item, onPress }) => (
         </Text>
       </View>
     )}
-    <ItemImage imageUrl={item.image_url} style={styles.itemCardImage} />
+    <ItemImage
+      imageUrl={item.image_url}
+      style={styles.itemCardImage}
+      styles={styles}
+    />
     <View style={{ padding: 12 }}>
       <Text style={styles.itemCardTitle} numberOfLines={1}>
         {item.title}
@@ -629,7 +673,7 @@ const MatchCard = ({ item, onPress }) => (
   </TouchableOpacity>
 );
 
-const ActivityItem = ({ item, onPress }) => {
+const ActivityItem = ({ item, onPress, styles, colors }) => {
   const statusColor = item.status === "Lost" ? "#EF4444" : "#10B981";
   const posterName =
     item.profiles?.full_name ||
@@ -637,7 +681,11 @@ const ActivityItem = ({ item, onPress }) => {
 
   return (
     <TouchableOpacity style={styles.activityItem} onPress={onPress}>
-      <ItemImage imageUrl={item.image_url} style={styles.activityItemImage} />
+      <ItemImage
+        imageUrl={item.image_url}
+        style={styles.activityItemImage}
+        styles={styles}
+      />
       <View style={styles.activityContent}>
         <Text style={styles.activityTitle} numberOfLines={1}>
           {item.title}
@@ -654,7 +702,15 @@ const ActivityItem = ({ item, onPress }) => {
   );
 };
 
-const StatCard = ({ icon: Icon, iconName, label, value, color }) => (
+const StatCard = ({
+  icon: Icon,
+  iconName,
+  label,
+  value,
+  color,
+  styles,
+  colors,
+}) => (
   <View style={styles.statCard}>
     <View style={[styles.statIconContainer, { backgroundColor: color + "15" }]}>
       <Icon name={iconName} size={24} color={color} />
@@ -671,28 +727,61 @@ const EmptyState = ({
   description,
   buttonText,
   onButtonClick,
+  colors,
+  styles,
 }) => (
-  <View style={styles.emptyStateContainer}>
-    <View style={styles.emptyStateIconContainer}>
-      <Icon name={iconName} size={32} color="#9CA3AF" />
+  <View
+    style={[
+      styles.emptyStateContainer,
+      {
+        backgroundColor:
+          colors.card || styles.emptyStateContainer.backgroundColor,
+      },
+    ]}
+  >
+    <View
+      style={[
+        styles.emptyStateIconContainer,
+        {
+          backgroundColor:
+            colors.surface || styles.emptyStateIconContainer.backgroundColor,
+        },
+      ]}
+    >
+      <Icon
+        name={iconName}
+        size={32}
+        color={colors.textSecondary || "#9CA3AF"}
+      />
     </View>
-    <Text style={styles.emptyStateTitle}>{title}</Text>
+    <Text style={[styles.emptyStateTitle, { color: colors.text }]}>
+      {title}
+    </Text>
     {description && (
-      <Text style={styles.emptyStateDescription}>{description}</Text>
+      <Text
+        style={[styles.emptyStateDescription, { color: colors.textSecondary }]}
+      >
+        {description}
+      </Text>
     )}
     {buttonText && (
-      <TouchableOpacity style={styles.emptyStateButton} onPress={onButtonClick}>
-        <Text style={styles.emptyStateButtonText}>{buttonText}</Text>
+      <TouchableOpacity
+        style={[styles.emptyStateButton, { backgroundColor: colors.primary }]}
+        onPress={onButtonClick}
+      >
+        <Text style={[styles.emptyStateButtonText, { color: "#FFFFFF" }]}>
+          {buttonText}
+        </Text>
       </TouchableOpacity>
     )}
   </View>
 );
 
-const ChartCard = ({ title, data, type }) => {
+const ChartCard = ({ title, data, type, styles, colors }) => {
   const lostColor = "#EF4444";
   const foundColor = "#10B981";
-  const primaryColor = BRAND_COLOR;
-  const axisColor = "#6B7280";
+  const primaryColor = colors.primary;
+  const axisColor = colors.textSecondary;
 
   if (data.length === 0) {
     return (
@@ -770,427 +859,414 @@ const ChartCard = ({ title, data, type }) => {
 };
 
 // --- Styles ---
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#8E8E93",
-  },
+const createStyles = (colors) => {
+  const shadowStyle = Platform.select({
+    ios: {
+      shadowColor: colors.shadow || "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+    },
+    android: {
+      elevation: 3,
+    },
+    web: {
+      boxShadow: "0px 2px 3px rgba(0, 0, 0, 0.1)",
+    },
+  });
 
-  // Instagram-style Header
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#DBDBDB",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-  },
-  appName: {
-    fontSize: 32,
-    fontWeight: "400", // Script fonts usually look better with normal weight
-    color: "#000000",
-    fontFamily: Platform.select({
-      ios: "SnellRoundhand-Bold", // or "SnellRoundhand-Bold", "Bradley Hand"
-      android: "cursive", // or "cursive", "DancingScript-Bold"
-    }),
-    letterSpacing: -0.5,
-    lineHeight: 36,
-  },
-  headerIcons: {
-    flexDirection: "row",
-    gap: 20,
-  },
-  headerIconButton: {
-    padding: 4,
-    position: "relative",
-  },
-  notificationDot: {
-    position: "absolute",
-    top: 2,
-    right: 2,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#FF3250",
-  },
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    loadingText: {
+      marginTop: 12,
+      fontSize: 16,
+      color: colors.textSecondary,
+    },
 
-  // Stories Section (Instagram-like)
-  storiesSection: {
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 10,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#DBDBDB",
-  },
-  storyItem: {
-    alignItems: "center",
-    marginHorizontal: 10,
-  },
-  storyAdd: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 2,
-    borderColor: "#DBDBDB",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-  },
-  storyText: {
-    fontSize: 12,
-    color: "#262626",
-    marginTop: 4,
-  },
+    // Instagram-style Header
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      backgroundColor: colors.surface,
+      borderBottomWidth: 0.5,
+      borderBottomColor: colors.border,
+      ...shadowStyle,
+    },
+    appName: {
+      fontSize: 28,
+      fontWeight: "400",
+      color: colors.text,
+      fontFamily: Platform.select({
+        ios: "SnellRoundhand-Bold",
+        android: "cursive",
+        web: "cursive",
+      }),
+      letterSpacing: -0.5,
+      lineHeight: 32,
+    },
+    headerIcons: {
+      flexDirection: "row",
+      gap: 16,
+    },
+    headerIconButton: {
+      padding: 4,
+      position: "relative",
+    },
+    notificationDot: {
+      position: "absolute",
+      top: 2,
+      right: 2,
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: "#FF3250",
+    },
 
-  scrollView: {
-    flex: 1,
-    backgroundColor: "#FAFAFA",
-  },
-  welcomeSection: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
-    backgroundColor: "#FFFFFF",
-  },
-  greeting: {
-    fontSize: 16,
-    color: "#8E8E93",
-    marginBottom: 4,
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#000000",
-  },
-  statsContainer: {
-    padding: 16,
-    gap: 12,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  statsRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#EFEFEF",
-  },
-  statIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  statValue: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#000000",
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 13,
-    color: "#8E8E93",
-  },
-  section: {
-    padding: 16,
-    backgroundColor: "#FFFFFF",
-    marginTop: 8,
-  },
-  sectionHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 4,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#000000",
-    marginLeft: 4,
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: "#8E8E93",
-    marginBottom: 16,
-  },
-  subSectionTitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#6B7280",
-    textTransform: "uppercase",
-    marginTop: 16,
-  },
-  viewAllText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: BRAND_COLOR,
-  },
+    scrollView: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    welcomeSection: {
+      paddingHorizontal: 20,
+      paddingTop: 20,
+      paddingBottom: 12,
+      backgroundColor: colors.surface,
+    },
+    greeting: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      marginBottom: 4,
+    },
+    userName: {
+      fontSize: 24,
+      fontWeight: "bold",
+      color: colors.text,
+    },
+    statsContainer: {
+      padding: 16,
+      gap: 12,
+      backgroundColor: colors.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+    },
+    statsRow: {
+      flexDirection: "row",
+      gap: 12,
+    },
+    statCard: {
+      flex: 1,
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 16,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    statIconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    statValue: {
+      fontSize: 28,
+      fontWeight: "bold",
+      color: colors.text,
+      marginBottom: 4,
+    },
+    statLabel: {
+      fontSize: 13,
+      color: colors.textSecondary,
+    },
+    section: {
+      padding: 16,
+      backgroundColor: colors.surface,
+      marginTop: 8,
+    },
+    sectionHeaderRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 4,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: "600",
+      color: colors.text,
+      marginLeft: 4,
+    },
+    sectionSubtitle: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      marginBottom: 16,
+    },
+    subSectionTitle: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: colors.textSecondary,
+      textTransform: "uppercase",
+      marginTop: 16,
+    },
+    viewAllText: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: colors.primary,
+    },
 
-  // Item Card
-  itemCard: {
-    width: HORIZONTAL_CARD_WIDTH,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#EFEFEF",
-    marginRight: 12,
-    overflow: "hidden",
-  },
-  itemCardImage: {
-    width: "100%",
-    aspectRatio: 1,
-  },
-  itemCardTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#000000",
-    marginBottom: 8,
-    height: 40,
-  },
-  itemCardFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  itemCardCategory: {
-    fontSize: 13,
-    color: "#8E8E93",
-  },
+    // Item Card
+    itemCard: {
+      width: HORIZONTAL_CARD_WIDTH,
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginRight: 12,
+      overflow: "hidden",
+    },
+    itemCardImage: {
+      width: "100%",
+      aspectRatio: 1,
+    },
+    itemCardTitle: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: colors.text,
+      marginBottom: 8,
+      height: 40,
+    },
+    itemCardFooter: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    itemCardCategory: {
+      fontSize: 13,
+      color: colors.textSecondary,
+    },
 
-  // Match Card
-  matchBadge: {
-    position: "absolute",
-    top: 8,
-    left: 8,
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    zIndex: 1,
-  },
-  matchBadgeText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "bold",
-  },
+    // Match Card
+    matchBadge: {
+      position: "absolute",
+      top: 8,
+      left: 8,
+      backgroundColor: "rgba(0, 0, 0, 0.8)",
+      borderRadius: 12,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      zIndex: 1,
+    },
+    matchBadgeText: {
+      color: "#FFFFFF",
+      fontSize: 12,
+      fontWeight: "bold",
+    },
 
-  // Latest Lost Item
-  latestLostItemCard: {
-    backgroundColor: "#FAFAFA",
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#EFEFEF",
-    marginTop: 8,
-  },
-  latestLostItemTitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#6B7280",
-    textTransform: "uppercase",
-    marginBottom: 12,
-  },
-  latestLostItemImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-  },
-  latestLostItemName: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#000000",
-  },
-  latestLostItemDesc: {
-    fontSize: 13,
-    color: "#8E8E93",
-    marginTop: 4,
-  },
+    // Latest Lost Item
+    latestLostItemCard: {
+      backgroundColor: colors.background,
+      borderRadius: 12,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginTop: 8,
+    },
+    latestLostItemTitle: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: colors.textSecondary,
+      textTransform: "uppercase",
+      marginBottom: 12,
+    },
+    latestLostItemImage: {
+      width: 80,
+      height: 80,
+      borderRadius: 8,
+    },
+    latestLostItemName: {
+      fontSize: 16,
+      fontWeight: "bold",
+      color: colors.text,
+    },
+    latestLostItemDesc: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginTop: 4,
+    },
 
-  // Badges
-  smallBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginRight: 6,
-  },
-  smallBadgeText: {
-    fontSize: 11,
-    fontWeight: "600",
-    marginLeft: 4,
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
+    // Badges
+    smallBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      borderRadius: 12,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      marginRight: 6,
+    },
+    smallBadgeText: {
+      fontSize: 11,
+      fontWeight: "600",
+      marginLeft: 4,
+    },
+    statusBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 12,
+    },
+    statusText: {
+      fontSize: 12,
+      fontWeight: "600",
+    },
 
-  // Image Placeholder
-  itemImageContainer: {
-    backgroundColor: "#F3F4F6",
-    overflow: "hidden",
-  },
-  itemImage: {
-    width: "100%",
-    height: "100%",
-  },
-  itemImagePlaceholder: {
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-  },
+    // Image Placeholder
+    itemImageContainer: {
+      backgroundColor: "#F3F4F6",
+      overflow: "hidden",
+    },
+    itemImage: {
+      width: "100%",
+      height: "100%",
+    },
+    itemImagePlaceholder: {
+      width: "100%",
+      height: "100%",
+      justifyContent: "center",
+      alignItems: "center",
+    },
 
-  // Activity Item
-  activityItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  activityItemImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-  },
-  activityContent: {
-    flex: 1,
-    marginHorizontal: 12,
-  },
-  activityTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#000000",
-  },
-  activityUser: {
-    fontSize: 13,
-    color: "#8E8E93",
-    marginTop: 2,
-  },
-  activityTime: {
-    fontSize: 12,
-    color: "#8E8E93",
-    marginTop: 2,
-  },
+    // Activity Item
+    activityItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+    },
+    activityItemImage: {
+      width: 48,
+      height: 48,
+      borderRadius: 8,
+    },
+    activityContent: {
+      flex: 1,
+      marginHorizontal: 12,
+    },
+    activityTitle: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: colors.text,
+    },
+    activityUser: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    activityTime: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
 
-  // Empty State
-  emptyStateContainer: {
-    alignItems: "center",
-    paddingVertical: 32,
-    backgroundColor: "#FAFAFA",
-    borderRadius: 12,
-    marginVertical: 12,
-  },
-  emptyStateIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#F3F4F6",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  emptyStateTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1F2937",
-    marginBottom: 4,
-  },
-  emptyStateDescription: {
-    fontSize: 13,
-    color: "#6B7280",
-    textAlign: "center",
-    paddingHorizontal: 24,
-    marginBottom: 16,
-  },
-  emptyStateButton: {
-    backgroundColor: BRAND_COLOR,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  emptyStateButtonText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "600",
-  },
+    // Empty State
+    emptyStateContainer: {
+      alignItems: "center",
+      paddingVertical: 32,
+      backgroundColor: colors.background,
+      borderRadius: 12,
+      marginVertical: 12,
+    },
+    emptyStateIconContainer: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: "#F3F4F6",
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: 16,
+    },
+    emptyStateTitle: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: "#1F2937",
+      marginBottom: 4,
+    },
+    emptyStateDescription: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      textAlign: "center",
+      paddingHorizontal: 24,
+      marginBottom: 16,
+    },
+    emptyStateButton: {
+      backgroundColor: colors.primary,
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderRadius: 8,
+    },
+    emptyStateButtonText: {
+      color: "#FFFFFF",
+      fontSize: 14,
+      fontWeight: "600",
+    },
 
-  // Chart Card
-  chartCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    marginVertical: 8,
-    borderWidth: 1,
-    borderColor: "#EFEFEF",
-    overflow: "hidden",
-  },
-  chartTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#000000",
-    marginBottom: 24,
-  },
-  emptyChart: {
-    height: 200,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emptyChartText: {
-    fontSize: 14,
-    color: "#8E8E93",
-  },
-  legendContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 16,
-    gap: 24,
-  },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 6,
-  },
-  legendText: {
-    fontSize: 12,
-    color: "#6B7280",
-  },
-});
+    // Chart Card
+    chartCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 16,
+      marginVertical: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: "hidden",
+    },
+    chartTitle: {
+      fontSize: 16,
+      fontWeight: "bold",
+      color: colors.text,
+      marginBottom: 24,
+    },
+    emptyChart: {
+      height: 200,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    emptyChartText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    legendContainer: {
+      flexDirection: "row",
+      justifyContent: "center",
+      marginTop: 16,
+      gap: 24,
+    },
+    legendItem: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    legendDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      marginRight: 6,
+    },
+    legendText: {
+      fontSize: 12,
+      color: colors.textSecondary,
+    },
+  });
+};
 
 export default DashboardScreen;

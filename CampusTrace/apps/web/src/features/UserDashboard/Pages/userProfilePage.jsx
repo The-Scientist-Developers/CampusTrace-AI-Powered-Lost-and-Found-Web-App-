@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { supabase, apiClient } from "../../../api/apiClient";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import {
   User,
@@ -11,6 +12,9 @@ import {
   CheckCircle,
   HelpCircle,
   Camera,
+  Settings,
+  Bell,
+  ChevronRight,
 } from "lucide-react";
 import { FaceDetector, FilesetResolver } from "@mediapipe/tasks-vision";
 
@@ -29,6 +33,21 @@ const StatCard = ({ label, value, icon: Icon }) => (
       </p>
     </div>
   </div>
+);
+
+const MenuItem = ({ icon: Icon, label, onClick }) => (
+  <button
+    onClick={onClick}
+    className="flex items-center justify-between w-full px-4 py-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors group"
+  >
+    <div className="flex items-center gap-3">
+      <Icon className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+      <span className="font-medium text-neutral-800 dark:text-white">
+        {label}
+      </span>
+    </div>
+    <ChevronRight className="w-5 h-5 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-200 transition-colors" />
+  </button>
 );
 
 const StatCardSkeleton = () => (
@@ -250,6 +269,7 @@ const CameraModal = ({
 };
 
 export default function UserProfilePage({ user }) {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -579,6 +599,25 @@ export default function UserProfilePage({ user }) {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Menu Items - Only visible on mobile */}
+      <div className="md:hidden bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm divide-y divide-neutral-200 dark:divide-[#3a3a3a] overflow-hidden">
+        <MenuItem
+          icon={Settings}
+          label="Settings"
+          onClick={() => navigate("/dashboard/settings")}
+        />
+        <MenuItem
+          icon={Bell}
+          label="Notifications"
+          onClick={() => navigate("/dashboard/notifications")}
+        />
+        <MenuItem
+          icon={HelpCircle}
+          label="Help & Support"
+          onClick={() => navigate("/dashboard/help")}
+        />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">

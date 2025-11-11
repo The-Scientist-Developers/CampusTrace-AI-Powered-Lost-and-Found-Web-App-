@@ -578,6 +578,7 @@ export default function BrowseAllPage({ user }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPosts, setTotalPosts] = useState(0);
   const postsPerPage = 12;
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [imagePreview, setImagePreview] = useState(null);
 
@@ -811,79 +812,38 @@ export default function BrowseAllPage({ user }) {
             Find lost items or help return found items to their owners
           </p>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <aside className="lg:col-span-1">
-            <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-6 sticky top-4">
-              <h2 className="text-xl font-semibold text-neutral-800 dark:text-white mb-4 flex items-center gap-2">
-                <Filter className="w-5 h-5 text-primary-600" />
-                Filters
-              </h2>
-              <FilterSection title="Status">
-                {["All", "Lost", "Found"].map((status) => (
-                  <label key={status} className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="status"
-                      value={status}
-                      checked={statusFilter === status}
-                      onChange={(e) => handleStatusFilterChange(e.target.value)}
-                      className="form-radio text-primary-600 dark:bg-[#2a2a2a] dark:border-neutral-700"
-                    />
-                    <span>{status}</span>
-                  </label>
-                ))}
-              </FilterSection>
-              <FilterSection title="Category">
-                {[
-                  "Electronics",
-                  "Documents",
-                  "Clothing",
-                  "Accessories",
-                  "Other",
-                ].map((cat) => (
-                  <label key={cat} className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={categoryFilters.includes(cat)}
-                      onChange={() => handleCategoryChange(cat)}
-                      className="form-checkbox text-primary-600 dark:bg-[#2a2a2a] dark:border-neutral-700"
-                    />
-                    <span>{cat}</span>
-                  </label>
-                ))}
-              </FilterSection>
-              <FilterSection title="Date Posted After">
-                <input
-                  type="date"
-                  value={dateFilter}
-                  onChange={(e) => handleDateFilterChange(e.target.value)}
-                  className="form-input w-full text-sm dark:bg-[#1a1a1a] dark:border-neutral-700 dark:text-white"
-                />
-              </FilterSection>
-              <FilterSection title="Sort By">
-                {[
-                  { value: "newest", label: "Newest First" },
-                  { value: "oldest", label: "Oldest First" },
-                ].map((option) => (
-                  <label key={option.value} className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="sortBy"
-                      value={option.value}
-                      checked={sortBy === option.value}
-                      onChange={(e) => handleSortByChange(e.target.value)}
-                      className="form-radio text-primary-600 dark:bg-[#2a2a2a] dark:border-neutral-700"
-                    />
-                    <span>{option.label}</span>
-                  </label>
-                ))}
-              </FilterSection>
-            </div>
-          </aside>
-          <div className="lg:col-span-3">
-            {/* --- ENHANCED SEARCH BAR --- */}
-            <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-4 mb-6">
-              <div className="relative">
+        <div className="max-w-screen-2xl mx-auto">
+          {/* --- ENHANCED SEARCH BAR WITH COLLAPSIBLE FILTERS --- */}
+          <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-4 mb-6">
+            <div className="flex gap-3">
+              {/* Filter Toggle Button */}
+              <button
+                onClick={() => setFiltersOpen(!filtersOpen)}
+                className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
+                  filtersOpen
+                    ? "bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800 text-primary-700 dark:text-primary-300"
+                    : "border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                }`}
+              >
+                <Filter className="w-5 h-5" />
+                <span className="font-medium hidden sm:inline">Filters</span>
+                {(statusFilter !== "All" ||
+                  categoryFilters.length > 0 ||
+                  dateFilter ||
+                  sortBy !== "newest") && (
+                  <span className="ml-1 px-2 py-0.5 bg-primary-600 text-white text-xs font-semibold rounded-full">
+                    {[
+                      statusFilter !== "All" ? 1 : 0,
+                      categoryFilters.length,
+                      dateFilter ? 1 : 0,
+                      sortBy !== "newest" ? 1 : 0,
+                    ].reduce((a, b) => a + b, 0)}
+                  </span>
+                )}
+              </button>
+
+              {/* Search Input */}
+              <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400 z-10" />
                 <input
                   type="text"
@@ -942,8 +902,101 @@ export default function BrowseAllPage({ user }) {
                 </div>
               </div>
             </div>
-            {/* --- END ENHANCED SEARCH BAR --- */}
 
+            {/* Collapsible Filters Panel */}
+            <div
+              className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                filtersOpen ? "max-h-[600px] mt-4" : "max-h-0"
+              }`}
+            >
+              <div className="pt-4 border-t border-neutral-200 dark:border-neutral-700">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {/* Status Filter */}
+                  <FilterSection title="Status">
+                    {["All", "Lost", "Found"].map((status) => (
+                      <label key={status} className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name="status"
+                          value={status}
+                          checked={statusFilter === status}
+                          onChange={(e) =>
+                            handleStatusFilterChange(e.target.value)
+                          }
+                          className="form-radio text-primary-600 dark:bg-[#2a2a2a] dark:border-neutral-700"
+                        />
+                        <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                          {status}
+                        </span>
+                      </label>
+                    ))}
+                  </FilterSection>
+
+                  {/* Category Filter */}
+                  <FilterSection title="Category">
+                    {[
+                      "Electronics",
+                      "Documents",
+                      "Clothing",
+                      "Accessories",
+                      "Other",
+                    ].map((cat) => (
+                      <label key={cat} className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={categoryFilters.includes(cat)}
+                          onChange={() => handleCategoryChange(cat)}
+                          className="form-checkbox text-primary-600 dark:bg-[#2a2a2a] dark:border-neutral-700"
+                        />
+                        <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                          {cat}
+                        </span>
+                      </label>
+                    ))}
+                  </FilterSection>
+
+                  {/* Date Filter */}
+                  <FilterSection title="Date Posted After">
+                    <input
+                      type="date"
+                      value={dateFilter}
+                      onChange={(e) => handleDateFilterChange(e.target.value)}
+                      className="form-input w-full text-sm dark:bg-[#1a1a1a] dark:border-neutral-700 dark:text-white"
+                    />
+                  </FilterSection>
+
+                  {/* Sort By Filter */}
+                  <FilterSection title="Sort By">
+                    {[
+                      { value: "newest", label: "Newest First" },
+                      { value: "oldest", label: "Oldest First" },
+                    ].map((option) => (
+                      <label
+                        key={option.value}
+                        className="flex items-center gap-3"
+                      >
+                        <input
+                          type="radio"
+                          name="sortBy"
+                          value={option.value}
+                          checked={sortBy === option.value}
+                          onChange={(e) => handleSortByChange(e.target.value)}
+                          className="form-radio text-primary-600 dark:bg-[#2a2a2a] dark:border-neutral-700"
+                        />
+                        <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                          {option.label}
+                        </span>
+                      </label>
+                    ))}
+                  </FilterSection>
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* --- END ENHANCED SEARCH BAR WITH COLLAPSIBLE FILTERS --- */}
+
+          {/* Main Content Area */}
+          <div>
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                 {[...Array(postsPerPage)].map((_, i) => (

@@ -5,14 +5,17 @@ import { NavigationContainer } from "@react-navigation/native";
 import Constants from "expo-constants";
 import { initializeApiConfig, getSupabaseClient } from "@campustrace/core";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { ThemeProvider, useTheme } from "./src/contexts/ThemeContext";
+import { supabaseStorage } from "./src/utils/supabaseStorage";
 
 // Import navigators
 import AuthNavigator from "./src/navigation/AuthNavigator";
 import MainNavigator from "./src/navigation/MainNavigator";
 
-export default function App() {
+function AppContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [session, setSession] = useState(null);
+  const { colors, isDark } = useTheme();
 
   useEffect(() => {
     // Initialize Supabase client
@@ -37,6 +40,7 @@ export default function App() {
         apiBaseUrl: apiUrl,
         supabaseUrl,
         supabaseAnonKey,
+        storage: supabaseStorage, // Add AsyncStorage for session persistence
       });
 
       // Get the initialized Supabase client
@@ -82,10 +86,10 @@ export default function App() {
             flex: 1,
             justifyContent: "center",
             alignItems: "center",
-            backgroundColor: "#fff",
+            backgroundColor: colors.background,
           }}
         >
-          <ActivityIndicator size="large" color="#3B82F6" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </GestureHandlerRootView>
     );
@@ -95,8 +99,16 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <NavigationContainer>
         {session ? <MainNavigator /> : <AuthNavigator />}
-        <StatusBar style="auto" />
+        <StatusBar style={isDark ? "light" : "dark"} />
       </NavigationContainer>
     </GestureHandlerRootView>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }

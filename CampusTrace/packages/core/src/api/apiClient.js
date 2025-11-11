@@ -10,6 +10,11 @@ let supabaseClient = null;
 /**
  * Initialize the API configuration
  * Call this from your platform-specific entry point (web or mobile)
+ * @param {Object} config - Configuration object
+ * @param {string} config.apiBaseUrl - Base URL for the API
+ * @param {string} config.supabaseUrl - Supabase project URL
+ * @param {string} config.supabaseAnonKey - Supabase anonymous key
+ * @param {Object} config.storage - Optional storage adapter (AsyncStorage for React Native)
  */
 export function initializeApiConfig(config) {
   API_BASE_URL = config.apiBaseUrl || API_BASE_URL;
@@ -21,7 +26,22 @@ export function initializeApiConfig(config) {
   // where values may be placeholders or undefined.
   if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     try {
-      supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const supabaseOptions = {
+        auth: {
+          // Enable session persistence
+          storage: config.storage || undefined, // Use provided storage (AsyncStorage for RN) or default
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: false, // Disable for React Native
+        },
+      };
+
+      supabaseClient = createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
+        supabaseOptions
+      );
+      console.log("[Supabase] Client initialized with persistent storage");
     } catch (e) {
       console.warn("Supabase client initialization failed:", e?.message || e);
       supabaseClient = null;

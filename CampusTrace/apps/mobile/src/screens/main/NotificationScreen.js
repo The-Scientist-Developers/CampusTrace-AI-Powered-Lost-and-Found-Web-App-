@@ -18,7 +18,10 @@ import {
   Info,
   Package,
 } from "lucide-react-native";
-import { getSupabaseClient, BRAND_COLOR } from "@campustrace/core";
+import { getSupabaseClient } from "@campustrace/core";
+import { useTheme } from "../../contexts/ThemeContext";
+
+const BRAND_COLOR = "#1877F2";
 import SimpleLoadingScreen from "../../components/SimpleLoadingScreen";
 
 // ====================
@@ -53,6 +56,7 @@ const getTimeAgo = (dateString) => {
 // Main Component
 // ====================
 const NotificationScreen = ({ navigation }) => {
+  const { colors } = useTheme();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -159,11 +163,20 @@ const NotificationScreen = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Notifications</Text>
-        <Text style={styles.headerSubtitle}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+        ]}
+      >
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          Notifications
+        </Text>
+        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
           Stay updated with important alerts and messages
         </Text>
       </View>
@@ -176,17 +189,30 @@ const NotificationScreen = ({ navigation }) => {
           <NotificationItem
             notification={item}
             onPress={() => handleNotificationPress(item)}
+            colors={colors}
           />
         )}
         style={styles.scrollView}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Bell size={64} color="#DFE0E4" />
-            <Text style={styles.emptyStateText}>No notifications</Text>
-            <Text style={styles.emptyStateSubtext}>
+            <Bell size={64} color={colors.border} />
+            <Text style={[styles.emptyStateText, { color: colors.text }]}>
+              No notifications
+            </Text>
+            <Text
+              style={[
+                styles.emptyStateSubtext,
+                { color: colors.textSecondary },
+              ]}
+            >
               We'll notify you when something happens
             </Text>
           </View>
@@ -199,7 +225,7 @@ const NotificationScreen = ({ navigation }) => {
 // ====================
 // NotificationItem Component (simplified like web-app)
 // ====================
-const NotificationItem = ({ notification, onPress }) => {
+const NotificationItem = ({ notification, onPress, colors }) => {
   const { type, message, created_at, status } = notification;
   const is_read = status === "read";
 
@@ -209,43 +235,44 @@ const NotificationItem = ({ notification, onPress }) => {
   switch (type) {
     case "message":
       Icon = MessageCircle;
-      iconColor = BRAND_COLOR;
+      iconColor = colors.primary;
       break;
     case "claim":
       Icon = UserCheck;
-      iconColor = "#10B981";
+      iconColor = colors.success;
       break;
     case "match":
       Icon = CheckCircle;
-      iconColor = "#3B82F6";
+      iconColor = colors.info;
       break;
     case "status_update":
     case "moderation":
       Icon = AlertCircle;
-      iconColor = "#F59E0B";
+      iconColor = colors.warning;
       break;
     case "claim_accepted":
       Icon = CheckCircle;
-      iconColor = "#10B981";
+      iconColor = colors.success;
       break;
     case "claim_rejected":
       Icon = AlertCircle;
-      iconColor = "#EF4444";
+      iconColor = colors.error;
       break;
     case "item_recovered":
       Icon = Package;
-      iconColor = BRAND_COLOR;
+      iconColor = colors.primary;
       break;
     default:
       Icon = Info;
-      iconColor = "#8E8E93";
+      iconColor = colors.textSecondary;
   }
 
   return (
     <TouchableOpacity
       style={[
         styles.notificationItem,
-        !is_read && styles.notificationItemUnread,
+        { backgroundColor: colors.card, borderBottomColor: colors.border },
+        !is_read && { backgroundColor: colors.surface },
       ]}
       onPress={onPress}
     >
@@ -259,19 +286,24 @@ const NotificationItem = ({ notification, onPress }) => {
         <Text
           style={[
             styles.notificationTitle,
-            !is_read && styles.notificationTitleUnread,
+            { color: colors.text },
+            !is_read && { fontWeight: "700" },
           ]}
           numberOfLines={3}
         >
           {message || "New notification"}
         </Text>
-        <Text style={styles.timestamp}>
+        <Text style={[styles.timestamp, { color: colors.textSecondary }]}>
           {created_at ? getTimeAgo(created_at) : ""}
         </Text>
       </View>
 
       {/* Unread Indicator */}
-      {!is_read && <View style={styles.unreadIndicator} />}
+      {!is_read && (
+        <View
+          style={[styles.unreadIndicator, { backgroundColor: colors.primary }]}
+        />
+      )}
     </TouchableOpacity>
   );
 };

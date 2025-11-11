@@ -29,12 +29,15 @@ import {
 } from "lucide-react-native";
 // Import API_BASE_URL from core
 import { getSupabaseClient, API_BASE_URL } from "@campustrace/core";
+import { useTheme } from "../../contexts/ThemeContext";
 
 // Define the brand color here since it's not in core
 const BRAND_COLOR = "#1877F2";
 
 // Add `route` to props to get navigation params
 export default function PostItemScreen({ navigation, route }) {
+  const { colors, isDark } = useTheme();
+
   // Check if an item is being passed in for editing
   const itemToEdit = route.params?.itemToEdit;
   const isEditMode = !!itemToEdit;
@@ -275,13 +278,20 @@ export default function PostItemScreen({ navigation, route }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+        ]}
+      >
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
           {isEditMode ? "Edit Item" : "Post Item"}
         </Text>
-        <Text style={styles.headerSubtitle}>
+        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
           {isEditMode
             ? "Update your item details"
             : "Help others find their lost items"}
@@ -289,7 +299,7 @@ export default function PostItemScreen({ navigation, route }) {
       </View>
 
       <ScrollView
-        style={styles.scrollView}
+        style={[styles.scrollView, { backgroundColor: colors.background }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.content}>
@@ -301,13 +311,15 @@ export default function PostItemScreen({ navigation, route }) {
               onPress={() => setStatus("Lost")}
               style={[
                 styles.statusButton,
-                status === "Lost" && styles.statusButtonActiveLost,
+                { borderColor: colors.border, backgroundColor: colors.surface },
+                status === "Lost" && { backgroundColor: colors.primary },
               ]}
               disabled={isEditMode} // Disable changing status when editing
             >
               <Text
                 style={[
                   styles.statusButtonText,
+                  { color: colors.text },
                   status === "Lost" && styles.statusButtonTextActive,
                 ]}
               >
@@ -318,13 +330,15 @@ export default function PostItemScreen({ navigation, route }) {
               onPress={() => setStatus("Found")}
               style={[
                 styles.statusButton,
-                status === "Found" && styles.statusButtonActiveFound,
+                { borderColor: colors.border, backgroundColor: colors.surface },
+                status === "Found" && { backgroundColor: colors.primary },
               ]}
               disabled={isEditMode} // Disable changing status when editing
             >
               <Text
                 style={[
                   styles.statusButtonText,
+                  { color: colors.text },
                   status === "Found" && styles.statusButtonTextActive,
                 ]}
               >
@@ -334,18 +348,23 @@ export default function PostItemScreen({ navigation, route }) {
           </View>
 
           {isEditMode && (
-            <Text style={styles.editNote}>
+            <Text style={[styles.editNote, { color: colors.textSecondary }]}>
               Item type (Lost/Found) cannot be changed after posting.
             </Text>
           )}
 
           {/* Form Card */}
-          <View style={styles.formCard}>
+          <View
+            style={[
+              styles.formCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
             {/* Title */}
             <View style={styles.fieldContainer}>
               <View style={styles.labelContainer}>
-                <Tag color={BRAND_COLOR} size={16} />
-                <Text style={styles.label}>
+                <Tag color={colors.primary} size={16} />
+                <Text style={[styles.label, { color: colors.text }]}>
                   What did you {status.toLowerCase()}? *
                 </Text>
               </View>
@@ -353,53 +372,90 @@ export default function PostItemScreen({ navigation, route }) {
                 value={title}
                 onChangeText={setTitle}
                 placeholder="e.g., Black Backpack, iPhone 13"
-                placeholderTextColor="#9ca3af"
-                style={styles.input}
+                placeholderTextColor={colors.textTertiary}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.surface,
+                    color: colors.text,
+                    borderColor: colors.border,
+                  },
+                ]}
               />
             </View>
 
             {/* Category */}
             <View style={styles.fieldContainer}>
               <View style={styles.labelContainer}>
-                <FileText color={BRAND_COLOR} size={16} />
-                <Text style={styles.label}>Category</Text>
+                <FileText color={colors.primary} size={16} />
+                <Text style={[styles.label, { color: colors.text }]}>
+                  Category
+                </Text>
               </View>
               <TouchableOpacity
-                style={styles.categoryButton}
+                style={[
+                  styles.categoryButton,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                  },
+                ]}
                 onPress={() => setShowCategoryModal(true)}
               >
-                <Text style={styles.categoryButtonText}>{category}</Text>
-                <ChevronDown color="#6b7280" size={20} />
+                <Text
+                  style={[styles.categoryButtonText, { color: colors.text }]}
+                >
+                  {category}
+                </Text>
+                <ChevronDown color={colors.textSecondary} size={20} />
               </TouchableOpacity>
             </View>
 
             {/* Location */}
             <View style={styles.fieldContainer}>
               <View style={styles.labelContainer}>
-                <MapPin color={BRAND_COLOR} size={16} />
-                <Text style={styles.label}>Location *</Text>
+                <MapPin color={colors.primary} size={16} />
+                <Text style={[styles.label, { color: colors.text }]}>
+                  Location *
+                </Text>
               </View>
               <TextInput
                 value={location}
                 onChangeText={setLocation}
                 placeholder="e.g., CCSICT building, 2nd floor"
-                placeholderTextColor="#9ca3af"
-                style={styles.input}
+                placeholderTextColor={colors.textTertiary}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.surface,
+                    color: colors.text,
+                    borderColor: colors.border,
+                  },
+                ]}
               />
             </View>
 
             {/* Contact Info */}
             <View style={styles.fieldContainer}>
               <View style={styles.labelContainer}>
-                <Phone color={BRAND_COLOR} size={16} />
-                <Text style={styles.label}>Contact Info (Optional)</Text>
+                <Phone color={colors.primary} size={16} />
+                <Text style={[styles.label, { color: colors.text }]}>
+                  Contact Info (Optional)
+                </Text>
               </View>
               <TextInput
                 value={contactInfo}
                 onChangeText={setContactInfo}
                 placeholder="How can someone reach you?"
-                placeholderTextColor="#9ca3af"
-                style={styles.input}
+                placeholderTextColor={colors.textTertiary}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.surface,
+                    color: colors.text,
+                    borderColor: colors.border,
+                  },
+                ]}
               />
             </View>
 
@@ -407,32 +463,47 @@ export default function PostItemScreen({ navigation, route }) {
             <View style={styles.fieldContainer}>
               <View style={styles.labelContainerWithButton}>
                 <View style={styles.labelContainer}>
-                  <FileText color={BRAND_COLOR} size={16} />
-                  <Text style={styles.label}>Description *</Text>
+                  <FileText color={colors.primary} size={16} />
+                  <Text style={[styles.label, { color: colors.text }]}>
+                    Description *
+                  </Text>
                 </View>
                 <TouchableOpacity
                   onPress={handleImproveDescription}
                   disabled={isGenerating || !description.trim()}
                   style={[
                     styles.aiButton,
-                    description.trim() && styles.aiButtonActive,
+                    {
+                      backgroundColor: description.trim()
+                        ? colors.primary
+                        : colors.surface,
+                      borderColor: colors.border,
+                    },
                   ]}
                 >
                   {isGenerating ? (
                     <Loader2
-                      color={description.trim() ? "white" : "#9ca3af"}
+                      color={
+                        description.trim() ? "white" : colors.textSecondary
+                      }
                       size={14}
                     />
                   ) : (
                     <Sparkles
-                      color={description.trim() ? "white" : "#9ca3af"}
+                      color={
+                        description.trim() ? "white" : colors.textSecondary
+                      }
                       size={14}
                     />
                   )}
                   <Text
                     style={[
                       styles.aiButtonText,
-                      description.trim() && styles.aiButtonTextActive,
+                      {
+                        color: description.trim()
+                          ? "white"
+                          : colors.textSecondary,
+                      },
                     ]}
                   >
                     Enhance
@@ -442,20 +513,29 @@ export default function PostItemScreen({ navigation, route }) {
               <TextInput
                 value={description}
                 onChangeText={setDescription}
-                placeholder="Describe the item in detail... (color, brand, features, etc.)"
-                placeholderTextColor="#9ca3af"
+                placeholder="Describe the item in detail..."
+                placeholderTextColor={colors.textTertiary}
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
-                style={styles.textArea}
+                style={[
+                  styles.textArea,
+                  {
+                    backgroundColor: colors.surface,
+                    color: colors.text,
+                    borderColor: colors.border,
+                  },
+                ]}
               />
             </View>
 
             {/* Image Upload */}
             <View style={styles.fieldContainer}>
               <View style={styles.labelContainer}>
-                <ImageIcon color={BRAND_COLOR} size={16} />
-                <Text style={styles.label}>Upload Photo (Optional)</Text>
+                <ImageIcon color={colors.primary} size={16} />
+                <Text style={[styles.label, { color: colors.text }]}>
+                  Upload Photo (Optional)
+                </Text>
               </View>
               {imageUri ? (
                 <View style={styles.imagePreviewContainer}>
@@ -483,11 +563,26 @@ export default function PostItemScreen({ navigation, route }) {
               ) : (
                 <TouchableOpacity
                   onPress={pickImage}
-                  style={styles.uploadButton}
+                  style={[
+                    styles.uploadButton,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    },
+                  ]}
                 >
-                  <UploadCloud color="#9ca3af" size={40} />
-                  <Text style={styles.uploadButtonText}>Tap to upload</Text>
-                  <Text style={styles.uploadButtonSubtext}>
+                  <UploadCloud color={colors.textSecondary} size={40} />
+                  <Text
+                    style={[styles.uploadButtonText, { color: colors.text }]}
+                  >
+                    Tap to upload
+                  </Text>
+                  <Text
+                    style={[
+                      styles.uploadButtonSubtext,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
                     PNG, JPG, GIF up to 10MB
                   </Text>
                 </TouchableOpacity>
@@ -502,6 +597,7 @@ export default function PostItemScreen({ navigation, route }) {
               disabled={isSubmitting}
               style={[
                 styles.submitButton,
+                { backgroundColor: colors.primary },
                 isSubmitting && styles.submitButtonDisabled,
               ]}
             >
@@ -521,7 +617,7 @@ export default function PostItemScreen({ navigation, route }) {
                 </>
               )}
             </TouchableOpacity>
-            <Text style={styles.submitNote}>
+            <Text style={[styles.submitNote, { color: colors.textSecondary }]}>
               Your post will be reviewed before appearing publicly
             </Text>
           </View>
@@ -540,11 +636,15 @@ export default function PostItemScreen({ navigation, route }) {
           activeOpacity={1}
           onPress={() => setShowCategoryModal(false)}
         >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Category</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View
+              style={[styles.modalHeader, { borderBottomColor: colors.border }]}
+            >
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Select Category
+              </Text>
               <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
-                <X color="#6b7280" size={24} />
+                <X color={colors.textSecondary} size={24} />
               </TouchableOpacity>
             </View>
             <View style={styles.categoryList}>
@@ -553,7 +653,11 @@ export default function PostItemScreen({ navigation, route }) {
                   key={cat}
                   style={[
                     styles.categoryOption,
-                    category === cat && styles.categoryOptionSelected,
+                    { borderColor: colors.border },
+                    category === cat && {
+                      backgroundColor: colors.primary + "20",
+                      borderColor: colors.primary,
+                    },
                   ]}
                   onPress={() => {
                     setCategory(cat);
@@ -563,12 +667,15 @@ export default function PostItemScreen({ navigation, route }) {
                   <Text
                     style={[
                       styles.categoryOptionText,
-                      category === cat && styles.categoryOptionTextSelected,
+                      { color: colors.text },
+                      category === cat && { color: colors.primary },
                     ]}
                   >
                     {cat}
                   </Text>
-                  {category === cat && <Check color={BRAND_COLOR} size={20} />}
+                  {category === cat && (
+                    <Check color={colors.primary} size={20} />
+                  )}
                 </TouchableOpacity>
               ))}
             </View>

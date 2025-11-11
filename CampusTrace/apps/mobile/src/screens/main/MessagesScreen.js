@@ -13,7 +13,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MessageCircle, ChevronRight, User, Trash2 } from "lucide-react-native";
-import { getSupabaseClient, BRAND_COLOR } from "@campustrace/core";
+import { getSupabaseClient } from "@campustrace/core";
+import { useTheme } from "../../contexts/ThemeContext";
+
+const BRAND_COLOR = "#1877F2";
 // --- 1. IMPORT GESTURE HANDLER ---
 import { Swipeable } from "react-native-gesture-handler";
 import SimpleLoadingScreen from "../../components/SimpleLoadingScreen";
@@ -49,14 +52,20 @@ const getTimeAgo = (dateString) => {
 // ====================
 // Swipe Actions Component
 // ====================
-const RightSwipeActions = ({ progress, dragX, onPress }) => {
+const RightSwipeActions = ({ progress, dragX, onPress, colors }) => {
   const trans = dragX.interpolate({
     inputRange: [-80, 0],
     outputRange: [0, 80],
     extrapolate: "clamp",
   });
   return (
-    <TouchableOpacity style={styles.deleteButton} onPress={onPress}>
+    <TouchableOpacity
+      style={[
+        styles.deleteButton,
+        { backgroundColor: colors?.error || "#EF4444" },
+      ]}
+      onPress={onPress}
+    >
       <Animated.View style={{ transform: [{ translateX: trans }] }}>
         <Trash2 size={24} color="#FFFFFF" />
       </Animated.View>
@@ -72,6 +81,7 @@ const SwipeableConversation = ({
   navigation,
   onDelete,
   onSwipeableOpen,
+  colors,
 }) => {
   const swipeableRef = useRef(null);
 
@@ -90,6 +100,7 @@ const SwipeableConversation = ({
             swipeableRef.current?.close();
             onDelete(item.id);
           }}
+          colors={colors}
         />
       )}
       onSwipeableOpen={handleSwipeableOpen}
@@ -103,6 +114,7 @@ const SwipeableConversation = ({
             item: item.item,
           });
         }}
+        colors={colors}
       />
     </Swipeable>
   );
@@ -112,6 +124,7 @@ const SwipeableConversation = ({
 // Main Component
 // ====================
 const MessagesScreen = ({ navigation }) => {
+  const { colors } = useTheme();
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -268,6 +281,7 @@ const MessagesScreen = ({ navigation }) => {
         navigation={navigation}
         onDelete={deleteConversation}
         onSwipeableOpen={handleSwipeableOpen}
+        colors={colors}
       />
     );
   };
@@ -277,11 +291,20 @@ const MessagesScreen = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Messages</Text>
-        <Text style={styles.headerSubtitle}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+        ]}
+      >
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          Messages
+        </Text>
+        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
           Connect with other community members
         </Text>
       </View>
@@ -293,13 +316,25 @@ const MessagesScreen = ({ navigation }) => {
         renderItem={renderConversationItem} // Use the new renderer
         style={styles.scrollView}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <MessageCircle size={64} color="#DFE0E4" />
-            <Text style={styles.emptyStateText}>No messages yet</Text>
-            <Text style={styles.emptyStateSubtext}>
+            <MessageCircle size={64} color={colors.border} />
+            <Text style={[styles.emptyStateText, { color: colors.text }]}>
+              No messages yet
+            </Text>
+            <Text
+              style={[
+                styles.emptyStateSubtext,
+                { color: colors.textSecondary },
+              ]}
+            >
               Start a conversation about an item
             </Text>
           </View>
@@ -312,12 +347,18 @@ const MessagesScreen = ({ navigation }) => {
 // ====================
 // Sub-Component
 // ====================
-const ConversationItem = ({ conversation, onPress }) => {
+const ConversationItem = ({ conversation, onPress, colors }) => {
   const { other_user, last_message, unread_count, item } = conversation;
   const hasUnread = unread_count > 0;
 
   return (
-    <TouchableOpacity style={styles.conversationItem} onPress={onPress}>
+    <TouchableOpacity
+      style={[
+        styles.conversationItem,
+        { backgroundColor: colors.card, borderBottomColor: colors.border },
+      ]}
+      onPress={onPress}
+    >
       {/* Avatar */}
       <View style={styles.avatarContainer}>
         {other_user.avatar_url ? (
@@ -326,23 +367,36 @@ const ConversationItem = ({ conversation, onPress }) => {
             style={styles.avatar}
           />
         ) : (
-          <View style={styles.avatarPlaceholder}>
+          <View
+            style={[
+              styles.avatarPlaceholder,
+              { backgroundColor: colors.primary },
+            ]}
+          >
             <User size={28} color="#FFFFFF" />
           </View>
         )}
-        {hasUnread && <View style={styles.unreadDot} />}
+        {hasUnread && (
+          <View
+            style={[styles.unreadDot, { backgroundColor: colors.primary }]}
+          />
+        )}
       </View>
 
       {/* Content */}
       <View style={styles.conversationContent}>
         <View style={styles.conversationHeader}>
           <Text
-            style={[styles.userName, hasUnread && styles.userNameUnread]}
+            style={[
+              styles.userName,
+              { color: colors.text },
+              hasUnread && { fontWeight: "700" },
+            ]}
             numberOfLines={1}
           >
             {other_user.full_name || "Unknown User"}
           </Text>
-          <Text style={styles.timestamp}>
+          <Text style={[styles.timestamp, { color: colors.textSecondary }]}>
             {last_message?.created_at
               ? getTimeAgo(last_message.created_at)
               : ""}
@@ -351,27 +405,36 @@ const ConversationItem = ({ conversation, onPress }) => {
 
         <View style={styles.messagePreview}>
           <Text
-            style={[styles.lastMessage, hasUnread && styles.lastMessageUnread]}
+            style={[
+              styles.lastMessage,
+              { color: colors.textSecondary },
+              hasUnread && { color: colors.text, fontWeight: "600" },
+            ]}
             numberOfLines={1}
           >
             {last_message?.content || "No messages yet"}
           </Text>
           {hasUnread && unread_count > 0 && (
-            <View style={styles.unreadBadge}>
+            <View
+              style={[styles.unreadBadge, { backgroundColor: colors.primary }]}
+            >
               <Text style={styles.unreadCount}>{unread_count}</Text>
             </View>
           )}
         </View>
 
         {item && (
-          <Text style={styles.itemReference} numberOfLines={1}>
+          <Text
+            style={[styles.itemReference, { color: colors.textTertiary }]}
+            numberOfLines={1}
+          >
             About: {item.title}
           </Text>
         )}
       </View>
 
       {/* Chevron */}
-      <ChevronRight size={20} color="#8E8E93" />
+      <ChevronRight size={20} color={colors.textSecondary} />
     </TouchableOpacity>
   );
 };

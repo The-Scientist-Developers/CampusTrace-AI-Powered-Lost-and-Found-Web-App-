@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../../../api/apiClient";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { AlertTriangle, Loader2, KeyRound } from "lucide-react";
+import { AlertTriangle, Loader2, KeyRound, ShieldCheck } from "lucide-react";
 import axios from "axios";
 import { useTheme } from "../../../contexts/ThemeContext";
 
@@ -124,10 +124,13 @@ export default function UserSettingsPage() {
     setFontSize,
     contrast,
     setContrast,
+    theme,
+    toggleTheme,
   } = useTheme();
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
 
   const [matchNotifications, setMatchNotifications] = useState(true);
   const [claimNotifications, setClaimNotifications] = useState(true);
@@ -146,6 +149,17 @@ export default function UserSettingsPage() {
           toast.error("You must be logged in");
           setLoading(false);
           return;
+        }
+
+        // Fetch profile to check admin role
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", session.user.id)
+          .single();
+
+        if (!profileError && profileData) {
+          setProfile(profileData);
         }
 
         const response = await axios.get("/api/profile/preferences", {
@@ -313,7 +327,52 @@ export default function UserSettingsPage() {
             }
           />
         </div>
+
+        {/* Dark Mode Toggle */}
+        <div className="py-2 border-t border-neutral-200 dark:border-neutral-700 pt-4 mt-4">
+          <SettingToggle
+            label="Dark Mode"
+            description="Switch between light and dark theme for comfortable viewing in any environment."
+            checked={theme === "dark"}
+            onChange={toggleTheme}
+          />
+        </div>
       </SectionCard>
+
+      {/* Admin Dashboard Access - Only visible to admins */}
+      {profile?.role === "admin" && (
+        <div className="mt-8">
+          <SectionCard
+            title="Dashboard Access"
+            description="Switch between User and Admin dashboards to manage the platform."
+          >
+            <div className="py-2">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1 flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-primary-600" />
+                    Admin Dashboard
+                  </h3>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    Access the admin panel to manage users, moderate posts, view
+                    analytics, and configure platform settings.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    navigate("/admin");
+                    setTimeout(() => window.location.reload(), 100);
+                  }}
+                  className="w-full sm:w-auto px-5 py-2.5 sm:py-2 bg-primary-600 text-white font-semibold text-sm rounded-lg hover:bg-primary-700 transition flex items-center justify-center gap-2 flex-shrink-0"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  Go to Admin Panel
+                </button>
+              </div>
+            </div>
+          </SectionCard>
+        </div>
+      )}
 
       {/* Notification Preferences Section */}
       <div className="mt-8">

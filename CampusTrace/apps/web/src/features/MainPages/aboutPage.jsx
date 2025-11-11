@@ -106,19 +106,26 @@ export default function AboutUsPage() {
                 alt="CampusTrace logo"
                 className="h-10 w-10 sm:h-12 sm:w-12 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
               />
-              <span className="text-xl sm:text-xl md:text-2xl font-light tracking-wider text-neutral-800 dark:text-white">
-                CAMPUSTRACE
+              <span
+                className="text-xl sm:text-xl md:text-2xl font-bold text-neutral-800 dark:text-white"
+                style={{
+                  fontFamily: '"Inter", sans-serif',
+                  fontWeight: 700,
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                CampusTrace
               </span>
             </Link>
 
             {/* Back to Home Button */}
             <Link
               to="/"
-              className="flex items-center gap-2 px-5 sm:px-4 py-3 sm:py-2 bg-primary-600 text-white text-base sm:text-sm font-semibold rounded-lg shadow-md hover:shadow-lg hover:bg-primary-700 transform hover:-translate-y-0.5 transition-all duration-300"
+              className="flex items-center gap-2 px-4 sm:px-4 py-2.5 sm:py-2 bg-primary-600 text-white text-sm sm:text-sm font-semibold rounded-lg shadow-md hover:shadow-lg hover:bg-primary-700 transform hover:-translate-y-0.5 transition-all duration-300"
             >
-              <ArrowLeft className="w-5 h-5 sm:w-4 sm:h-4" />
+              <ArrowLeft className="w-4 h-4 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Back to Home</span>
-              <Home className="w-5 h-5 sm:w-4 sm:h-4 sm:hidden" />
+              <Home className="w-4 h-4 sm:w-4 sm:h-4 sm:hidden" />
             </Link>
           </div>
         </nav>
@@ -127,10 +134,10 @@ export default function AboutUsPage() {
       {/* Main Content */}
       <div className="pt-28 pb-12 flex flex-col justify-center items-center">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center animate-fade-in-up">
-          <h1 className="text-5xl sm:text-5xl font-extrabold text-neutral-900 dark:text-white mb-6">
+          <h1 className="text-3xl sm:text-5xl font-extrabold text-neutral-900 dark:text-white mb-5">
             About Our Team
           </h1>
-          <p className="text-lg sm:text-xl text-neutral-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed mb-12">
+          <p className="text-base sm:text-xl text-neutral-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed mb-10">
             We are a dedicated team of student developers from Isabela State
             University, bringing innovative solutions to campus challenges.
             Campus Trace is our project, born from a passion for technology and

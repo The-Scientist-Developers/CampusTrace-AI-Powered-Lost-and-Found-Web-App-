@@ -168,19 +168,26 @@ export default function RegisterUniversityPage() {
                 alt="CampusTrace logo"
                 className="h-10 w-10 sm:h-12 sm:w-12 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
               />
-              <span className="text-xl sm:text-xl md:text-2xl font-light tracking-wider text-neutral-800 dark:text-white">
-                CAMPUSTRACE
+              <span
+                className="text-xl sm:text-xl md:text-2xl font-bold text-neutral-800 dark:text-white"
+                style={{
+                  fontFamily: '"Inter", sans-serif',
+                  fontWeight: 700,
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                CampusTrace
               </span>
             </Link>
 
             {/* Back to Home Button */}
             <Link
               to="/"
-              className="flex items-center gap-2 px-5 sm:px-4 py-3 sm:py-2 bg-primary-600 text-white text-base sm:text-sm font-semibold rounded-lg shadow-md hover:shadow-lg hover:bg-primary-700 transform hover:-translate-y-0.5 transition-all duration-300"
+              className="flex items-center gap-2 px-4 sm:px-4 py-2.5 sm:py-2 bg-primary-600 text-white text-sm sm:text-sm font-semibold rounded-lg shadow-md hover:shadow-lg hover:bg-primary-700 transform hover:-translate-y-0.5 transition-all duration-300"
             >
-              <ArrowLeft className="w-5 h-5 sm:w-4 sm:h-4" />
+              <ArrowLeft className="w-4 h-4 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Back to Home</span>
-              <Home className="w-5 h-5 sm:w-4 sm:h-4 sm:hidden" />
+              <Home className="w-4 h-4 sm:w-4 sm:h-4 sm:hidden" />
             </Link>
           </div>
         </nav>
@@ -190,10 +197,10 @@ export default function RegisterUniversityPage() {
       <div className="pt-28 pb-8 flex items-center justify-center px-4">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center">
-            <h2 className="mt-6 text-3xl sm:text-3xl font-bold tracking-tight text-neutral-800 dark:text-zinc-100">
+            <h2 className="mt-6 text-2xl sm:text-3xl font-bold tracking-tight text-neutral-800 dark:text-zinc-100">
               Register Your University
             </h2>
-            <p className="mt-2 text-base sm:text-sm text-neutral-600 dark:text-gray-400">
+            <p className="mt-2 text-sm sm:text-sm text-neutral-600 dark:text-gray-400">
               Create an admin account to get started with Campus Trace.
             </p>
           </div>

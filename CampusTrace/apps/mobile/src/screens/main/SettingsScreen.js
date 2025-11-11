@@ -21,22 +21,44 @@ import {
   User,
   Camera,
   Check,
+  Moon,
+  Sun,
+  Type,
+  Contrast,
 } from "lucide-react-native";
 import {
   getSupabaseClient,
   API_BASE_URL,
   getAccessToken,
 } from "@campustrace/core";
+import { useTheme } from "../../contexts/ThemeContext";
 
 // Define brand color locally
 const BRAND_COLOR = "#1877F2";
 
-const SectionCard = ({ title, description, children }) => (
-  <View style={styles.sectionCard}>
+const SectionCard = ({ title, description, children, colors }) => (
+  <View
+    style={[
+      styles.sectionCard,
+      {
+        backgroundColor: colors?.card || "#FFFFFF",
+        borderColor: colors?.border || "#E5E7EB",
+      },
+    ]}
+  >
     <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={[styles.sectionTitle, { color: colors?.text || "#000000" }]}>
+        {title}
+      </Text>
       {description && (
-        <Text style={styles.sectionDescription}>{description}</Text>
+        <Text
+          style={[
+            styles.sectionDescription,
+            { color: colors?.textSecondary || "#6B7280" },
+          ]}
+        >
+          {description}
+        </Text>
       )}
     </View>
     <View style={styles.sectionContent}>{children}</View>
@@ -49,13 +71,26 @@ const SettingToggle = ({
   value,
   onValueChange,
   disabled = false,
+  colors,
 }) => (
   <View style={styles.toggleRow}>
     <View style={styles.toggleTextContainer}>
-      <Text style={[styles.toggleLabel, disabled && styles.disabledText]}>
+      <Text
+        style={[
+          styles.toggleLabel,
+          { color: colors.text },
+          disabled && { color: colors.textTertiary },
+        ]}
+      >
         {label}
       </Text>
-      <Text style={[styles.toggleDescription, disabled && styles.disabledText]}>
+      <Text
+        style={[
+          styles.toggleDescription,
+          { color: colors.textSecondary },
+          disabled && { color: colors.textTertiary },
+        ]}
+      >
         {description}
       </Text>
     </View>
@@ -63,13 +98,25 @@ const SettingToggle = ({
       value={value}
       onValueChange={onValueChange}
       disabled={disabled}
-      trackColor={{ false: "#E5E7EB", true: BRAND_COLOR }}
+      trackColor={{ false: colors.border, true: colors.primary }}
       thumbColor={"#FFFFFF"}
     />
   </View>
 );
 
 const SettingsScreen = ({ navigation }) => {
+  const {
+    isDark,
+    toggleTheme,
+    colorMode,
+    changeColorMode,
+    fontSize,
+    changeFontSize,
+    highContrast,
+    toggleHighContrast,
+    colors,
+  } = useTheme();
+
   const [supabase, setSupabase] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -280,18 +327,29 @@ const SettingsScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       {/* Header */}
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+        ]}
+      >
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <ChevronLeft size={24} color="#000000" />
+          <ChevronLeft size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Settings</Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            Settings
+          </Text>
+          <Text
+            style={[styles.headerSubtitle, { color: colors.textSecondary }]}
+          >
             Manage your account and preferences
           </Text>
         </View>
@@ -299,16 +357,24 @@ const SettingsScreen = ({ navigation }) => {
       </View>
 
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={BRAND_COLOR} />
+        <View
+          style={[
+            styles.loadingContainer,
+            { backgroundColor: colors.background },
+          ]}
+        >
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
-        <ScrollView style={styles.scrollView}>
+        <ScrollView
+          style={[styles.scrollView, { backgroundColor: colors.background }]}
+        >
           {/* --- Profile Section (As requested) --- */}
           <View style={styles.sectionContainer}>
             <SectionCard
               title="Profile"
               description="Manage your public profile information."
+              colors={colors}
             >
               {/* Avatar */}
               <View style={styles.profileEditContainer}>
@@ -319,12 +385,23 @@ const SettingsScreen = ({ navigation }) => {
                       style={styles.avatarImage}
                     />
                   ) : (
-                    <View style={styles.avatarPlaceholder}>
-                      <User size={40} color={BRAND_COLOR} />
+                    <View
+                      style={[
+                        styles.avatarPlaceholder,
+                        {
+                          backgroundColor: colors.surface,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                    >
+                      <User size={40} color={colors.primary} />
                     </View>
                   )}
                   <TouchableOpacity
-                    style={styles.cameraIcon}
+                    style={[
+                      styles.cameraIcon,
+                      { backgroundColor: colors.primary },
+                    ]}
                     onPress={() => handleOpenWebApp("Profile Photo")}
                   >
                     <Camera size={16} color="#FFFFFF" />
@@ -333,14 +410,26 @@ const SettingsScreen = ({ navigation }) => {
               </View>
 
               {/* Full Name */}
-              <View style={styles.inputContainer}>
-                <User size={18} color="#9CA3AF" style={styles.inputIcon} />
+              <View
+                style={[
+                  styles.inputContainer,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <User
+                  size={18}
+                  color={colors.textSecondary}
+                  style={styles.inputIcon}
+                />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   placeholder="Full Name"
                   value={fullName}
                   onChangeText={setFullName}
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.textTertiary}
                 />
               </View>
 
@@ -348,6 +437,7 @@ const SettingsScreen = ({ navigation }) => {
               <TouchableOpacity
                 style={[
                   styles.button,
+                  { backgroundColor: colors.primary },
                   isSavingProfile && styles.buttonDisabled,
                 ]}
                 onPress={handleProfileSave}
@@ -370,11 +460,292 @@ const SettingsScreen = ({ navigation }) => {
             <SectionCard
               title="Accessibility"
               description="Customize your visual experience."
+              colors={colors}
             >
-              <Text style={styles.comingSoonText}>
-                Color Theme, Font Size, and Contrast settings are only available
-                on the web app for now.
-              </Text>
+              {/* Dark/Light Mode Toggle */}
+              <View style={styles.toggleRow}>
+                <View style={styles.toggleTextContainer}>
+                  <View style={styles.iconLabelRow}>
+                    {isDark ? (
+                      <Moon size={20} color={colors.primary} />
+                    ) : (
+                      <Sun size={20} color={colors.primary} />
+                    )}
+                    <Text style={[styles.toggleLabel, { color: colors.text }]}>
+                      {isDark ? "Dark Mode" : "Light Mode"}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.toggleDescription,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    Switch between light and dark themes
+                  </Text>
+                </View>
+                <Switch
+                  value={isDark}
+                  onValueChange={toggleTheme}
+                  trackColor={{ false: "#E5E7EB", true: colors.primary }}
+                  thumbColor={"#FFFFFF"}
+                />
+              </View>
+
+              {/* Color Theme Picker */}
+              <View style={styles.colorThemeSection}>
+                <View style={styles.iconLabelRow}>
+                  <Type size={20} color={colors.primary} />
+                  <Text style={[styles.toggleLabel, { color: colors.text }]}>
+                    Color Theme
+                  </Text>
+                </View>
+                <Text
+                  style={[
+                    styles.toggleDescription,
+                    { color: colors.textSecondary, marginBottom: 12 },
+                  ]}
+                >
+                  Choose a color theme that suits your preference
+                </Text>
+
+                <View style={styles.colorThemeGrid}>
+                  <TouchableOpacity
+                    style={[
+                      styles.colorThemeButton,
+                      {
+                        borderColor:
+                          colorMode === "blue" ? colors.primary : colors.border,
+                      },
+                      colorMode === "blue" && { borderWidth: 3 },
+                    ]}
+                    onPress={() => changeColorMode("blue")}
+                  >
+                    <View
+                      style={[
+                        styles.colorThemeCircle,
+                        { backgroundColor: "#1877F2" },
+                      ]}
+                    />
+                    <Text style={[styles.colorThemeEmoji, { fontSize: 24 }]}>
+                      🧩
+                    </Text>
+                    <Text
+                      style={[styles.colorThemeLabel, { color: colors.text }]}
+                    >
+                      Autism
+                    </Text>
+                    <Text
+                      style={[
+                        styles.colorThemeDesc,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      Blue
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.colorThemeButton,
+                      {
+                        borderColor:
+                          colorMode === "purple"
+                            ? colors.primary
+                            : colors.border,
+                      },
+                      colorMode === "purple" && { borderWidth: 3 },
+                    ]}
+                    onPress={() => changeColorMode("purple")}
+                  >
+                    <View
+                      style={[
+                        styles.colorThemeCircle,
+                        { backgroundColor: "#9333EA" },
+                      ]}
+                    />
+                    <Text style={[styles.colorThemeEmoji, { fontSize: 24 }]}>
+                      💜
+                    </Text>
+                    <Text
+                      style={[styles.colorThemeLabel, { color: colors.text }]}
+                    >
+                      GAD
+                    </Text>
+                    <Text
+                      style={[
+                        styles.colorThemeDesc,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      Purple
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.colorThemeButton,
+                      {
+                        borderColor:
+                          colorMode === "pink" ? colors.primary : colors.border,
+                      },
+                      colorMode === "pink" && { borderWidth: 3 },
+                    ]}
+                    onPress={() => changeColorMode("pink")}
+                  >
+                    <View
+                      style={[
+                        styles.colorThemeCircle,
+                        { backgroundColor: "#EC4899" },
+                      ]}
+                    />
+                    <Text style={[styles.colorThemeEmoji, { fontSize: 24 }]}>
+                      🎗️
+                    </Text>
+                    <Text
+                      style={[styles.colorThemeLabel, { color: colors.text }]}
+                    >
+                      Breast Cancer
+                    </Text>
+                    <Text
+                      style={[
+                        styles.colorThemeDesc,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      Pink
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.colorThemeButton,
+                      {
+                        borderColor:
+                          colorMode === "green"
+                            ? colors.primary
+                            : colors.border,
+                      },
+                      colorMode === "green" && { borderWidth: 3 },
+                    ]}
+                    onPress={() => changeColorMode("green")}
+                  >
+                    <View
+                      style={[
+                        styles.colorThemeCircle,
+                        { backgroundColor: "#10B981" },
+                      ]}
+                    />
+                    <Text style={[styles.colorThemeEmoji, { fontSize: 24 }]}>
+                      🌍
+                    </Text>
+                    <Text
+                      style={[styles.colorThemeLabel, { color: colors.text }]}
+                    >
+                      Environmental
+                    </Text>
+                    <Text
+                      style={[
+                        styles.colorThemeDesc,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      Green
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Font Size Selector */}
+              <View style={styles.fontSizeSection}>
+                <View style={styles.iconLabelRow}>
+                  <Type size={20} color={colors.primary} />
+                  <Text style={[styles.toggleLabel, { color: colors.text }]}>
+                    Font Size
+                  </Text>
+                </View>
+                <Text
+                  style={[
+                    styles.toggleDescription,
+                    { color: colors.textSecondary, marginBottom: 12 },
+                  ]}
+                >
+                  Adjust text size for better readability
+                </Text>
+
+                <View style={styles.fontSizeGrid}>
+                  {["small", "medium", "large", "xlarge"].map((size) => (
+                    <TouchableOpacity
+                      key={size}
+                      style={[
+                        styles.fontSizeButton,
+                        {
+                          backgroundColor:
+                            fontSize === size ? colors.primary : colors.surface,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                      onPress={() => changeFontSize(size)}
+                    >
+                      <Text
+                        style={[
+                          styles.fontSizeButtonText,
+                          {
+                            color: fontSize === size ? "#FFFFFF" : colors.text,
+                          },
+                        ]}
+                      >
+                        {size === "small"
+                          ? "A"
+                          : size === "medium"
+                          ? "A"
+                          : size === "large"
+                          ? "A"
+                          : "A"}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.fontSizeLabel,
+                          {
+                            color:
+                              fontSize === size
+                                ? "#FFFFFF"
+                                : colors.textSecondary,
+                          },
+                        ]}
+                      >
+                        {size.charAt(0).toUpperCase() + size.slice(1)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* High Contrast Toggle */}
+              <View style={styles.toggleRow}>
+                <View style={styles.toggleTextContainer}>
+                  <View style={styles.iconLabelRow}>
+                    <Contrast size={20} color={colors.primary} />
+                    <Text style={[styles.toggleLabel, { color: colors.text }]}>
+                      High Contrast
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.toggleDescription,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    Increase contrast for better visibility
+                  </Text>
+                </View>
+                <Switch
+                  value={highContrast}
+                  onValueChange={toggleHighContrast}
+                  trackColor={{ false: "#E5E7EB", true: colors.primary }}
+                  thumbColor={"#FFFFFF"}
+                />
+              </View>
             </SectionCard>
           </View>
 
@@ -383,6 +754,7 @@ const SettingsScreen = ({ navigation }) => {
             <SectionCard
               title="Notification Preferences"
               description="Choose how and when you receive updates."
+              colors={colors}
             >
               <View style={styles.toggleGroup}>
                 <SettingToggle
@@ -390,6 +762,7 @@ const SettingsScreen = ({ navigation }) => {
                   description="Master switch for all email notifications."
                   value={emailNotificationsEnabled}
                   onValueChange={setEmailNotificationsEnabled}
+                  colors={colors}
                 />
               </View>
 
@@ -400,6 +773,7 @@ const SettingsScreen = ({ navigation }) => {
                   value={matchNotifications}
                   onValueChange={setMatchNotifications}
                   disabled={!emailNotificationsEnabled}
+                  colors={colors}
                 />
                 <SettingToggle
                   label="Claim Notifications"
@@ -407,6 +781,7 @@ const SettingsScreen = ({ navigation }) => {
                   value={claimNotifications}
                   onValueChange={setClaimNotifications}
                   disabled={!emailNotificationsEnabled}
+                  colors={colors}
                 />
                 <SettingToggle
                   label="Message Notifications"
@@ -414,6 +789,7 @@ const SettingsScreen = ({ navigation }) => {
                   value={messageNotifications}
                   onValueChange={setMessageNotifications}
                   disabled={!emailNotificationsEnabled}
+                  colors={colors}
                 />
                 <SettingToggle
                   label="Moderation Updates"
@@ -421,11 +797,16 @@ const SettingsScreen = ({ navigation }) => {
                   value={moderationNotifications}
                   onValueChange={setModerationNotifications}
                   disabled={!emailNotificationsEnabled}
+                  colors={colors}
                 />
               </View>
 
               <TouchableOpacity
-                style={[styles.button, isSaving && styles.buttonDisabled]}
+                style={[
+                  styles.button,
+                  { backgroundColor: colors.primary },
+                  isSaving && styles.buttonDisabled,
+                ]}
                 onPress={handlePreferencesSave}
                 disabled={isSaving}
               >
@@ -443,20 +824,41 @@ const SettingsScreen = ({ navigation }) => {
             <SectionCard
               title="Security"
               description="Manage your account security."
+              colors={colors}
             >
               <View style={styles.securityRow}>
                 <View style={styles.toggleTextContainer}>
-                  <Text style={styles.toggleLabel}>Password</Text>
-                  <Text style={styles.toggleDescription}>
+                  <Text style={[styles.toggleLabel, { color: colors.text }]}>
+                    Password
+                  </Text>
+                  <Text
+                    style={[
+                      styles.toggleDescription,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
                     Update your password to keep your account secure.
                   </Text>
                 </View>
                 <TouchableOpacity
-                  style={styles.securityButton}
+                  style={[
+                    styles.securityButton,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.primary,
+                    },
+                  ]}
                   onPress={() => handleOpenWebApp("Password")} // Use new handler
                 >
-                  <KeyRound size={16} color={BRAND_COLOR} />
-                  <Text style={styles.securityButtonText}>Update</Text>
+                  <KeyRound size={16} color={colors.primary} />
+                  <Text
+                    style={[
+                      styles.securityButtonText,
+                      { color: colors.primary },
+                    ]}
+                  >
+                    Update
+                  </Text>
                 </TouchableOpacity>
               </View>
             </SectionCard>
@@ -464,17 +866,32 @@ const SettingsScreen = ({ navigation }) => {
 
           {/* Danger Zone Section */}
           <View style={styles.sectionContainer}>
-            <Text style={styles.dangerZoneTitle}>Danger Zone</Text>
-            <View style={styles.dangerZoneCard}>
+            <Text style={[styles.dangerZoneTitle, { color: colors.error }]}>
+              Danger Zone
+            </Text>
+            <View
+              style={[
+                styles.dangerZoneCard,
+                { backgroundColor: colors.card, borderColor: colors.error },
+              ]}
+            >
               <View style={styles.toggleTextContainer}>
-                <Text style={styles.toggleLabel}>Delete Your Account</Text>
-                <Text style={styles.toggleDescription}>
+                <Text style={[styles.toggleLabel, { color: colors.text }]}>
+                  Delete Your Account
+                </Text>
+                <Text
+                  style={[
+                    styles.toggleDescription,
+                    { color: colors.textSecondary },
+                  ]}
+                >
                   This action is permanent and cannot be undone.
                 </Text>
               </View>
               <TouchableOpacity
                 style={[
                   styles.buttonDanger,
+                  { backgroundColor: colors.error },
                   isDeleting && styles.buttonDisabled,
                 ]}
                 onPress={handleDeleteAccount}
@@ -701,6 +1118,79 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#1F2937",
     width: "100%", // For profile name input
+  },
+  // --- THEME/ACCESSIBILITY STYLES ---
+  iconLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+  colorThemeSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  colorThemeGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    justifyContent: "space-between",
+  },
+  colorThemeButton: {
+    width: "48%",
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#E5E7EB",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+  },
+  colorThemeCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginBottom: 8,
+  },
+  colorThemeEmoji: {
+    marginBottom: 4,
+  },
+  colorThemeLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  colorThemeDesc: {
+    fontSize: 12,
+  },
+  fontSizeSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  fontSizeGrid: {
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "space-between",
+  },
+  fontSizeButton: {
+    flex: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+  },
+  fontSizeButtonText: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+  fontSizeLabel: {
+    fontSize: 11,
+    fontWeight: "500",
   },
 });
 

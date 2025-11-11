@@ -9,8 +9,8 @@ import {
   Platform,
   Alert,
   ScrollView,
-  ActivityIndicator,
   Linking,
+  Image, // Keep Image import for profile pictures
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -21,11 +21,73 @@ import {
   User,
   AlertCircle,
   CheckCircle,
+  ChevronRight, // For list item
+  ChevronLeft, // For back button
 } from "lucide-react-native";
-import { getSupabaseClient, BRAND_COLOR } from "@campustrace/core";
+import { getSupabaseClient } from "@campustrace/core";
+import { useTheme } from "../../contexts/ThemeContext";
 import LoadingScreen from "../../components/LoadingScreen";
+import Svg, {
+  Path,
+  Circle,
+  Rect,
+  Defs,
+  LinearGradient,
+  Stop,
+  G,
+  Line,
+  RadialGradient,
+} from "react-native-svg";
+
+// CampusTrace Icon Component
+const CampusTraceIcon = ({ width = 80, height = 80 }) => (
+  <Svg width={width} height={height} viewBox="0 0 512 512">
+    <Defs>
+      <LinearGradient id="iconBlueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <Stop offset="0%" stopColor="#2563EB" stopOpacity="1" />
+        <Stop offset="100%" stopColor="#1E40AF" stopOpacity="1" />
+      </LinearGradient>
+    </Defs>
+
+    {/* Background */}
+    <Rect
+      x="16"
+      y="16"
+      width="480"
+      height="480"
+      rx="100"
+      ry="100"
+      fill="url(#iconBlueGradient)"
+    />
+
+    {/* Search icon */}
+    <G transform="translate(256, 256)">
+      {/* Search circle */}
+      <Circle
+        r="100"
+        fill="none"
+        stroke="white"
+        strokeWidth="26"
+        transform="translate(-26, -26)"
+      />
+      {/* Handle */}
+      <Line
+        x1="46"
+        y1="46"
+        x2="110"
+        y2="110"
+        stroke="white"
+        strokeWidth="26"
+        strokeLinecap="round"
+      />
+      {/* AI dot */}
+      <Circle r="18" fill="white" transform="translate(-26, -26)" />
+    </G>
+  </Svg>
+);
 
 const LoginScreen = ({ navigation }) => {
+  const { colors, fontSizes, isDark } = useTheme();
   const [isLogin, setIsLogin] = useState(true);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -40,7 +102,8 @@ const LoginScreen = ({ navigation }) => {
 
   // Saved accounts
   const [savedAccounts, setSavedAccounts] = useState([]);
-  const [showSavedAccounts, setShowSavedAccounts] = useState(false);
+  // Show saved accounts by default if they exist
+  const [showSavedAccounts, setShowSavedAccounts] = useState(true);
 
   // Password strength
   const [passwordStrength, setPasswordStrength] = useState({
@@ -84,10 +147,14 @@ const LoginScreen = ({ navigation }) => {
       if (saved) {
         const accounts = JSON.parse(saved);
         setSavedAccounts(accounts);
+        // Set showSavedAccounts based on whether accounts exist
         setShowSavedAccounts(accounts.length > 0 && isLogin);
+      } else {
+        setShowSavedAccounts(false);
       }
     } catch (error) {
       console.log("Error loading saved accounts:", error);
+      setShowSavedAccounts(false);
     }
   };
 
@@ -108,7 +175,7 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
-  const saveAccount = async (email, fullName) => {
+  const saveAccount = async (email, fullName, avatarUrl = null) => {
     try {
       const saved = await AsyncStorage.getItem("campustrace_saved_accounts");
       let accounts = saved ? JSON.parse(saved) : [];
@@ -120,6 +187,7 @@ const LoginScreen = ({ navigation }) => {
       accounts.unshift({
         email,
         fullName: fullName || email.split("@")[0],
+        avatarUrl: avatarUrl || null,
         lastLogin: new Date().toISOString(),
       });
 
@@ -147,16 +215,20 @@ const LoginScreen = ({ navigation }) => {
           JSON.stringify(accounts)
         );
         setSavedAccounts(accounts);
-        setShowSavedAccounts(accounts.length > 0);
+        // If no accounts left, hide the list
+        if (accounts.length === 0) {
+          setShowSavedAccounts(false);
+        }
       }
     } catch (error) {
       console.log("Error removing account:", error);
     }
   };
 
+  // When selecting an account, fill email and go to form
   const selectAccount = (account) => {
     setEmail(account.email);
-    setShowSavedAccounts(false);
+    setShowSavedAccounts(false); // Switch to login form
   };
 
   const validate = () => {
@@ -217,9 +289,21 @@ const LoginScreen = ({ navigation }) => {
 
         if (result.error) throw result.error;
 
+        // Fetch profile data to get avatar_url
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("full_name, avatar_url")
+          .eq("id", result.data.user.id)
+          .single();
+
+        const userName =
+          profileData?.full_name || result.data?.user?.user_metadata?.full_name;
+        const avatarUrl = profileData?.avatar_url || null;
+
         await saveEmail(email);
-        await saveAccount(email, result.data?.user?.user_metadata?.full_name);
+        await saveAccount(email, userName, avatarUrl);
         Alert.alert("Success", "Logged in successfully!");
+        // On successful login, navigation would happen here (not shown in snippet)
       } else {
         result = await supabase.auth.signUp({
           email: email.trim(),
@@ -247,6 +331,7 @@ const LoginScreen = ({ navigation }) => {
   };
 
   const handleForgotPassword = () => {
+    // This logic is kept, but the button is styled like the screenshot
     Alert.alert(
       "Reset Password",
       "Please visit the web app to reset your password.",
@@ -277,9 +362,9 @@ const LoginScreen = ({ navigation }) => {
 
   const getPasswordStrengthColor = () => {
     const score = getPasswordStrengthScore();
-    if (score <= 2) return "#EF4444";
-    if (score <= 3) return "#F59E0B";
-    return "#10B981";
+    if (score <= 2) return "#EF4444"; // red
+    if (score <= 3) return "#F59E0B"; // amber
+    return "#10B981"; // green
   };
 
   const getPasswordStrengthText = () => {
@@ -289,9 +374,275 @@ const LoginScreen = ({ navigation }) => {
     return "Strong";
   };
 
-  if (initialLoading) {
+  const toggleForm = (login) => {
+    setIsLogin(login);
+    setErrors({});
+    setTouched({});
+    setFullName("");
+    setPassword("");
+    setConfirmPassword("");
+    // Don't clear email
+  };
+
+  if (initialLoading || loading) {
     return <LoadingScreen />;
   }
+
+  // Use theme colors for dark mode UI
+  // Fallbacks are provided for a dark theme
+  const themeColors = {
+    background: colors.background || "#000000",
+    surface: colors.surface || "#1A1A1A", // For inputs
+    border: colors.border || "#363636",
+    text: colors.text || "#FFFFFF",
+    textSecondary: colors.textSecondary || "#A8A8A8",
+    primary: colors.primary || "#0095F6", // Instagram Blue
+    error: colors.error || "#ED4956", // Instagram Red
+    success: colors.success || "#10B981",
+  };
+
+  // Create dynamic styles based on theme
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: themeColors.background,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      justifyContent: "space-between", // Pushes footer to bottom
+      padding: 24,
+      paddingTop: Platform.OS === "android" ? 40 : 60,
+    },
+    mainContent: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      width: "100%",
+    },
+    backButton: {
+      position: "absolute",
+      top: Platform.OS === "android" ? 30 : 50,
+      left: 16,
+      zIndex: 10,
+    },
+    logoContainer: {
+      alignItems: "center",
+      marginBottom: 48,
+    },
+    // Saved Accounts List
+    savedAccountsContainer: {
+      width: "100%",
+      alignItems: "center",
+    },
+    savedAccountItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      backgroundColor: "transparent",
+      borderWidth: 1,
+      borderColor: themeColors.border,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+      width: "100%",
+    },
+    accountLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+    },
+    accountAvatar: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: themeColors.primary,
+      justifyContent: "center",
+      alignItems: "center",
+      marginRight: 16,
+      overflow: "hidden",
+    },
+    accountAvatarImage: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+    },
+    accountAvatarText: {
+      fontSize: 24,
+      fontWeight: "600",
+      color: themeColors.text,
+    },
+    accountInfo: {
+      flex: 1,
+    },
+    accountName: {
+      fontSize: fontSizes.base || 16,
+      fontWeight: "600",
+      color: themeColors.text,
+      marginBottom: 2,
+    },
+    accountEmail: {
+      fontSize: fontSizes.small || 14,
+      color: themeColors.textSecondary,
+    },
+    removeButton: {
+      padding: 8,
+    },
+    removeButtonText: {
+      fontSize: 24,
+      color: themeColors.textSecondary,
+      lineHeight: 24,
+      fontWeight: "bold",
+    },
+    useAnotherAccount: {
+      paddingVertical: 12,
+      alignItems: "center",
+      marginBottom: 16,
+    },
+    useAnotherAccountText: {
+      fontSize: fontSizes.base || 16,
+      color: themeColors.primary,
+      fontWeight: "600",
+    },
+
+    // Login/Sign Up Form
+    formContainer: {
+      width: "100%",
+    },
+    inputWrapper: {
+      marginBottom: 12,
+    },
+    inputContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: themeColors.surface,
+      borderWidth: 1,
+      borderColor: themeColors.border,
+      borderRadius: 12, // More rounded
+      paddingHorizontal: 14,
+      height: 52,
+    },
+    inputError: {
+      borderColor: themeColors.error,
+    },
+    inputIcon: {
+      marginRight: 12,
+    },
+    input: {
+      flex: 1,
+      fontSize: fontSizes.base || 16,
+      color: themeColors.text,
+      paddingVertical: 12, // Ensure text isn't cut off
+    },
+    eyeIcon: {
+      padding: 4,
+    },
+    errorContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 6,
+      paddingLeft: 4,
+    },
+    errorText: {
+      fontSize: fontSizes.small || 14,
+      color: themeColors.error,
+      marginLeft: 4,
+    },
+    // Password Strength
+    passwordStrength: {
+      backgroundColor: "transparent",
+      borderRadius: 8,
+      paddingVertical: 12,
+      marginBottom: 12,
+    },
+    strengthHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 8,
+    },
+    strengthLabel: {
+      fontSize: fontSizes.small || 14,
+      color: themeColors.textSecondary,
+      fontWeight: "600",
+    },
+    strengthText: {
+      fontSize: fontSizes.small || 14,
+      fontWeight: "600",
+    },
+    requirements: {
+      gap: 6,
+    },
+    requirement: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    unmetCircle: {
+      width: 14,
+      height: 14,
+      borderRadius: 7,
+      borderWidth: 2,
+      borderColor: themeColors.border,
+    },
+    requirementText: {
+      fontSize: fontSizes.small || 14,
+      color: themeColors.textSecondary,
+    },
+    requirementTextMet: {
+      color: themeColors.success,
+    },
+    // Forgot Password
+    forgotPassword: {
+      alignSelf: "flex-end",
+      marginBottom: 20,
+      marginTop: 8,
+    },
+    forgotPasswordText: {
+      fontSize: fontSizes.small || 14,
+      color: themeColors.primary,
+      fontWeight: "600",
+    },
+    // Main Button
+    button: {
+      backgroundColor: themeColors.primary,
+      borderRadius: 12,
+      height: 48,
+      justifyContent: "center",
+      alignItems: "center",
+      marginTop: 8,
+    },
+    buttonText: {
+      color: "#FFFFFF",
+      fontSize: fontSizes.base || 16,
+      fontWeight: "700",
+    },
+
+    // Footer
+    footer: {
+      width: "100%",
+      alignItems: "center",
+      paddingTop: 24,
+    },
+    footerButton: {
+      borderWidth: 1,
+      borderColor: themeColors.primary,
+      borderRadius: 12,
+      height: 48,
+      justifyContent: "center",
+      alignItems: "center",
+      width: "100%",
+    },
+    footerButtonText: {
+      color: themeColors.primary,
+      fontSize: fontSizes.base || 16,
+      fontWeight: "700",
+    },
+    metaText: {
+      marginTop: 32,
+      fontSize: fontSizes.small || 14,
+      color: themeColors.textSecondary,
+      fontWeight: "600",
+    },
+  });
 
   return (
     <KeyboardAvoidingView
@@ -303,598 +654,360 @@ const LoginScreen = ({ navigation }) => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Logo */}
-        <View style={styles.logoContainer}>
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoText}>CT</Text>
-          </View>
-          <Text style={styles.appName}>CampusTrace</Text>
-          <Text style={styles.tagline}>
-            {isLogin ? "Welcome back" : "Create your account"}
-          </Text>
-        </View>
-
-        {/* Saved Accounts */}
-        {showSavedAccounts && savedAccounts.length > 0 && (
-          <View style={styles.savedAccountsContainer}>
-            {savedAccounts.map((account, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.savedAccountItem}
-                onPress={() => selectAccount(account)}
-              >
-                <View style={styles.accountLeft}>
-                  <View style={styles.accountAvatar}>
-                    <Text style={styles.accountAvatarText}>
-                      {account.fullName.charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={styles.accountInfo}>
-                    <Text style={styles.accountName}>{account.fullName}</Text>
-                    <Text style={styles.accountEmail}>{account.email}</Text>
-                  </View>
-                </View>
-                <TouchableOpacity
-                  onPress={() => removeAccount(account.email)}
-                  style={styles.removeButton}
-                >
-                  <Text style={styles.removeButtonText}>×</Text>
-                </TouchableOpacity>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity
-              style={styles.useAnotherAccount}
-              onPress={() => setShowSavedAccounts(false)}
-            >
-              <Text style={styles.useAnotherAccountText}>
-                Use another account
-              </Text>
-            </TouchableOpacity>
-          </View>
+        {/* Back Button (only on form screen) */}
+        {!showSavedAccounts && isLogin && savedAccounts.length > 0 && (
+          <TouchableOpacity
+            onPress={() => setShowSavedAccounts(true)}
+            style={styles.backButton}
+          >
+            <ChevronLeft size={28} color={themeColors.text} />
+          </TouchableOpacity>
         )}
 
-        {/* Form Container */}
-        {(!showSavedAccounts || !isLogin) && (
-          <View style={styles.formContainer}>
-            {/* Full Name Input (Sign Up Only) */}
-            {!isLogin && (
+        {/* Main Content: Logo + (List or Form) */}
+        <View style={styles.mainContent}>
+          <View style={styles.logoContainer}>
+            <CampusTraceIcon width={80} height={80} />
+          </View>
+
+          {/* Render Saved Accounts List */}
+          {showSavedAccounts && isLogin && savedAccounts.length > 0 ? (
+            <View style={styles.savedAccountsContainer}>
+              {savedAccounts.map((account, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.savedAccountItem}
+                  onPress={() => selectAccount(account)}
+                >
+                  <View style={styles.accountLeft}>
+                    <View style={styles.accountAvatar}>
+                      {account.avatarUrl ? (
+                        <Image
+                          source={{ uri: account.avatarUrl }}
+                          style={styles.accountAvatarImage}
+                        />
+                      ) : (
+                        <Text style={styles.accountAvatarText}>
+                          {account.fullName.charAt(0).toUpperCase()}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={styles.accountInfo}>
+                      <Text style={styles.accountName} numberOfLines={1}>
+                        {account.fullName}
+                      </Text>
+                      <Text style={styles.accountEmail} numberOfLines={1}>
+                        {account.email}
+                      </Text>
+                    </View>
+                  </View>
+                  {/* Kept remove button functionality */}
+                  <TouchableOpacity
+                    onPress={() => removeAccount(account.email)}
+                    style={styles.removeButton}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Text style={styles.removeButtonText}>×</Text>
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                style={styles.useAnotherAccount}
+                onPress={() => setShowSavedAccounts(false)}
+              >
+                <Text style={styles.useAnotherAccountText}>
+                  Use another account
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            // Render Login/Sign Up Form
+            <View style={styles.formContainer}>
+              {/* Full Name Input (Sign Up Only) */}
+              {!isLogin && (
+                <View style={styles.inputWrapper}>
+                  <View
+                    style={[
+                      styles.inputContainer,
+                      errors.fullName && touched.fullName && styles.inputError,
+                    ]}
+                  >
+                    <User
+                      size={20}
+                      color={themeColors.textSecondary}
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Full Name"
+                      placeholderTextColor={themeColors.textSecondary}
+                      value={fullName}
+                      onChangeText={(value) => handleInput("fullName", value)}
+                      autoCapitalize="words"
+                    />
+                  </View>
+                  {errors.fullName && touched.fullName && (
+                    <View style={styles.errorContainer}>
+                      <AlertCircle size={14} color={themeColors.error} />
+                      <Text style={styles.errorText}>{errors.fullName}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* Email Input */}
               <View style={styles.inputWrapper}>
                 <View
                   style={[
                     styles.inputContainer,
-                    errors.fullName && touched.fullName && styles.inputError,
+                    errors.email && touched.email && styles.inputError,
                   ]}
                 >
-                  <User size={20} color="#8E8E93" style={styles.inputIcon} />
+                  <Mail
+                    size={20}
+                    color={themeColors.textSecondary}
+                    style={styles.inputIcon}
+                  />
                   <TextInput
                     style={styles.input}
-                    placeholder="Full Name"
-                    placeholderTextColor="#8E8E93"
-                    value={fullName}
-                    onChangeText={(value) => handleInput("fullName", value)}
-                    autoCapitalize="words"
+                    placeholder="Email or username"
+                    placeholderTextColor={themeColors.textSecondary}
+                    value={email}
+                    onChangeText={(value) => handleInput("email", value)}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
                   />
                 </View>
-                {errors.fullName && touched.fullName && (
+                {errors.email && touched.email && (
                   <View style={styles.errorContainer}>
-                    <AlertCircle size={14} color="#EF4444" />
-                    <Text style={styles.errorText}>{errors.fullName}</Text>
+                    <AlertCircle size={14} color={themeColors.error} />
+                    <Text style={styles.errorText}>{errors.email}</Text>
                   </View>
                 )}
               </View>
-            )}
 
-            {/* Email Input */}
-            <View style={styles.inputWrapper}>
-              <View
-                style={[
-                  styles.inputContainer,
-                  errors.email && touched.email && styles.inputError,
-                ]}
-              >
-                <Mail size={20} color="#8E8E93" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Email"
-                  placeholderTextColor="#8E8E93"
-                  value={email}
-                  onChangeText={(value) => handleInput("email", value)}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-              {errors.email && touched.email && (
-                <View style={styles.errorContainer}>
-                  <AlertCircle size={14} color="#EF4444" />
-                  <Text style={styles.errorText}>{errors.email}</Text>
-                </View>
-              )}
-            </View>
-
-            {/* Password Input */}
-            <View style={styles.inputWrapper}>
-              <View
-                style={[
-                  styles.inputContainer,
-                  errors.password && touched.password && styles.inputError,
-                ]}
-              >
-                <Lock size={20} color="#8E8E93" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Password"
-                  placeholderTextColor="#8E8E93"
-                  value={password}
-                  onChangeText={(value) => handleInput("password", value)}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeIcon}
-                >
-                  {showPassword ? (
-                    <EyeOff size={20} color="#8E8E93" />
-                  ) : (
-                    <Eye size={20} color="#8E8E93" />
-                  )}
-                </TouchableOpacity>
-              </View>
-              {errors.password && touched.password && (
-                <View style={styles.errorContainer}>
-                  <AlertCircle size={14} color="#EF4444" />
-                  <Text style={styles.errorText}>{errors.password}</Text>
-                </View>
-              )}
-            </View>
-
-            {/* Confirm Password (Sign Up Only) */}
-            {!isLogin && (
+              {/* Password Input */}
               <View style={styles.inputWrapper}>
                 <View
                   style={[
                     styles.inputContainer,
-                    errors.confirmPassword &&
-                      touched.confirmPassword &&
-                      styles.inputError,
+                    errors.password && touched.password && styles.inputError,
                   ]}
                 >
-                  <Lock size={20} color="#8E8E93" style={styles.inputIcon} />
+                  <Lock
+                    size={20}
+                    color={themeColors.textSecondary}
+                    style={styles.inputIcon}
+                  />
                   <TextInput
                     style={styles.input}
-                    placeholder="Confirm Password"
-                    placeholderTextColor="#8E8E93"
-                    value={confirmPassword}
-                    onChangeText={(value) =>
-                      handleInput("confirmPassword", value)
-                    }
-                    secureTextEntry={!showConfirm}
+                    placeholder="Password"
+                    placeholderTextColor={themeColors.textSecondary}
+                    value={password}
+                    onChangeText={(value) => handleInput("password", value)}
+                    secureTextEntry={!showPassword}
                     autoCapitalize="none"
                   />
                   <TouchableOpacity
-                    onPress={() => setShowConfirm(!showConfirm)}
+                    onPress={() => setShowPassword(!showPassword)}
                     style={styles.eyeIcon}
                   >
-                    {showConfirm ? (
-                      <EyeOff size={20} color="#8E8E93" />
+                    {showPassword ? (
+                      <EyeOff size={20} color={themeColors.textSecondary} />
                     ) : (
-                      <Eye size={20} color="#8E8E93" />
+                      <Eye size={20} color={themeColors.textSecondary} />
                     )}
                   </TouchableOpacity>
                 </View>
-                {errors.confirmPassword && touched.confirmPassword && (
+                {errors.password && touched.password && (
                   <View style={styles.errorContainer}>
-                    <AlertCircle size={14} color="#EF4444" />
-                    <Text style={styles.errorText}>
-                      {errors.confirmPassword}
-                    </Text>
+                    <AlertCircle size={14} color={themeColors.error} />
+                    <Text style={styles.errorText}>{errors.password}</Text>
                   </View>
                 )}
               </View>
-            )}
 
-            {/* Password Strength Indicator (Sign Up Only) */}
-            {!isLogin && password.length > 0 && (
-              <View style={styles.passwordStrength}>
-                <View style={styles.strengthHeader}>
-                  <Text style={styles.strengthLabel}>Password Strength:</Text>
-                  <Text
+              {/* Confirm Password (Sign Up Only) */}
+              {!isLogin && (
+                <View style={styles.inputWrapper}>
+                  <View
                     style={[
-                      styles.strengthText,
-                      { color: getPasswordStrengthColor() },
+                      styles.inputContainer,
+                      errors.confirmPassword &&
+                        touched.confirmPassword &&
+                        styles.inputError,
                     ]}
                   >
-                    {getPasswordStrengthText()}
+                    <Lock
+                      size={20}
+                      color={themeColors.textSecondary}
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Confirm Password"
+                      placeholderTextColor={themeColors.textSecondary}
+                      value={confirmPassword}
+                      onChangeText={(value) =>
+                        handleInput("confirmPassword", value)
+                      }
+                      secureTextEntry={!showConfirm}
+                      autoCapitalize="none"
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowConfirm(!showConfirm)}
+                      style={styles.eyeIcon}
+                    >
+                      {showConfirm ? (
+                        <EyeOff size={20} color={themeColors.textSecondary} />
+                      ) : (
+                        <Eye size={20} color={themeColors.textSecondary} />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                  {errors.confirmPassword && touched.confirmPassword && (
+                    <View style={styles.errorContainer}>
+                      <AlertCircle size={14} color={themeColors.error} />
+                      <Text style={styles.errorText}>
+                        {errors.confirmPassword}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* Password Strength Indicator (Sign Up Only) */}
+              {!isLogin && password.length > 0 && (
+                <View style={styles.passwordStrength}>
+                  <View style={styles.strengthHeader}>
+                    <Text style={styles.strengthLabel}>Password Strength:</Text>
+                    <Text
+                      style={[
+                        styles.strengthText,
+                        { color: getPasswordStrengthColor() },
+                      ]}
+                    >
+                      {getPasswordStrengthText()}
+                    </Text>
+                  </View>
+                  <View style={styles.requirements}>
+                    <PasswordRequirement
+                      met={passwordStrength.hasMinLength}
+                      text="At least 6 characters"
+                      colors={themeColors}
+                    />
+                    <PasswordRequirement
+                      met={passwordStrength.hasUpperCase}
+                      text="One uppercase letter"
+                      colors={themeColors}
+                    />
+                    <PasswordRequirement
+                      met={passwordStrength.hasLowerCase}
+                      text="One lowercase letter"
+                      colors={themeColors}
+                    />
+                    <PasswordRequirement
+                      met={passwordStrength.hasNumber}
+                      text="One number"
+                      colors={themeColors}
+                    />
+                    <PasswordRequirement
+                      met={passwordStrength.hasSpecialChar}
+                      text="One special character"
+                      colors={themeColors}
+                    />
+                  </View>
+                </View>
+              )}
+
+              {/* Forgot Password (Login Only) */}
+              {isLogin && (
+                <TouchableOpacity
+                  onPress={handleForgotPassword}
+                  style={styles.forgotPassword}
+                >
+                  <Text style={styles.forgotPasswordText}>
+                    Forgot password?
                   </Text>
-                </View>
-                <View style={styles.requirements}>
-                  <PasswordRequirement
-                    met={passwordStrength.hasMinLength}
-                    text="At least 6 characters"
-                  />
-                  <PasswordRequirement
-                    met={passwordStrength.hasUpperCase}
-                    text="One uppercase letter"
-                  />
-                  <PasswordRequirement
-                    met={passwordStrength.hasLowerCase}
-                    text="One lowercase letter"
-                  />
-                  <PasswordRequirement
-                    met={passwordStrength.hasNumber}
-                    text="One number"
-                  />
-                  <PasswordRequirement
-                    met={passwordStrength.hasSpecialChar}
-                    text="One special character"
-                  />
-                </View>
-              </View>
-            )}
+                </TouchableOpacity>
+              )}
 
-            {/* Forgot Password (Login Only) */}
-            {isLogin && (
+              {/* Login/Sign Up Button */}
               <TouchableOpacity
-                onPress={handleForgotPassword}
-                style={styles.forgotPassword}
+                style={styles.button}
+                onPress={handleAuth}
+                disabled={loading}
               >
-                <Text style={styles.forgotPasswordText}>Forgot password?</Text>
-              </TouchableOpacity>
-            )}
-
-            {/* Login/Sign Up Button */}
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
-              onPress={handleAuth}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
                 <Text style={styles.buttonText}>
                   {isLogin ? "Log In" : "Sign Up"}
                 </Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
 
-        {/* Divider */}
-        {(!showSavedAccounts || !isLogin) && (
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-          </View>
-        )}
-
-        {/* Switch Mode */}
-        {(!showSavedAccounts || !isLogin) && (
+        {/* Footer: Toggle Button + Meta */}
+        <View style={styles.footer}>
           <TouchableOpacity
-            style={styles.switchButton}
+            style={styles.footerButton}
             onPress={() => {
-              setIsLogin(!isLogin);
-              setErrors({});
-              setTouched({});
+              // If on saved accounts, switch to sign up
+              if (showSavedAccounts) {
+                toggleForm(false); // Go to Sign Up
+                setShowSavedAccounts(false);
+              } else {
+                toggleForm(!isLogin); // Toggle between Log In and Sign Up
+              }
             }}
           >
-            <Text style={styles.switchButtonText}>
-              {isLogin ? "Create new account" : "Already have an account?"}
+            <Text style={styles.footerButtonText}>
+              {isLogin ? "Create new account" : "Log in"}
             </Text>
           </TouchableOpacity>
-        )}
-
-        {/* Register with University ID */}
-        {!isLogin && (
-          <TouchableOpacity
-            style={styles.universityIdButton}
-            onPress={() => {
-              Alert.alert(
-                "Register with University ID",
-                "For faster verification, register using your university ID on the web app.",
-                [
-                  { text: "Cancel", style: "cancel" },
-                  {
-                    text: "Open Web App",
-                    onPress: () =>
-                      Linking.openURL("https://campustrace.site/register"),
-                  },
-                ]
-              );
-            }}
-          >
-            <Text style={styles.universityIdText}>
-              Register with your University ID instead
-            </Text>
-          </TouchableOpacity>
-        )}
+          <Text style={styles.metaText}>CampusTrace</Text>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 };
 
-const PasswordRequirement = ({ met, text }) => (
-  <View style={styles.requirement}>
-    {met ? (
-      <CheckCircle size={14} color="#10B981" />
-    ) : (
-      <View style={styles.unmetCircle} />
-    )}
-    <Text style={[styles.requirementText, met && styles.requirementTextMet]}>
-      {text}
-    </Text>
-  </View>
-);
+// PasswordRequirement sub-component
+const PasswordRequirement = ({ met, text, colors }) => {
+  const styles = StyleSheet.create({
+    requirement: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    unmetCircle: {
+      width: 14,
+      height: 14,
+      borderRadius: 7,
+      borderWidth: 2,
+      borderColor: colors.border,
+    },
+    requirementText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    requirementTextMet: {
+      color: colors.success,
+    },
+  });
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F0F2F5",
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    padding: 20,
-  },
-  logoContainer: {
-    alignItems: "center",
-    marginBottom: 32,
-  },
-  logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: BRAND_COLOR,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  logoText: {
-    fontSize: 36,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    letterSpacing: -1,
-  },
-  appName: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#1C1E21",
-    letterSpacing: -0.5,
-    marginBottom: 4,
-  },
-  tagline: {
-    fontSize: 15,
-    color: "#606770",
-  },
-  savedAccountsContainer: {
-    width: "100%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  savedAccountItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    marginBottom: 8,
-  },
-  accountLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  accountAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: BRAND_COLOR,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  accountAvatarText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-  },
-  accountInfo: {
-    flex: 1,
-  },
-  accountName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1C1E21",
-    marginBottom: 2,
-  },
-  accountEmail: {
-    fontSize: 13,
-    color: "#606770",
-  },
-  removeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#F0F2F5",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  removeButtonText: {
-    fontSize: 24,
-    color: "#606770",
-    lineHeight: 24,
-  },
-  useAnotherAccount: {
-    paddingVertical: 12,
-    alignItems: "center",
-    borderTopWidth: 1,
-    borderTopColor: "#DFE0E4",
-    marginTop: 4,
-  },
-  useAnotherAccountText: {
-    fontSize: 15,
-    color: BRAND_COLOR,
-    fontWeight: "600",
-  },
-  formContainer: {
-    width: "100%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  inputWrapper: {
-    marginBottom: 12,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F5F6F7",
-    borderWidth: 1,
-    borderColor: "#DFE0E4",
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    height: 50,
-  },
-  inputError: {
-    borderColor: "#EF4444",
-    backgroundColor: "#FEF2F2",
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    fontSize: 15,
-    color: "#1C1E21",
-  },
-  eyeIcon: {
-    padding: 4,
-  },
-  errorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 6,
-    paddingLeft: 4,
-  },
-  errorText: {
-    fontSize: 13,
-    color: "#EF4444",
-    marginLeft: 4,
-  },
-  passwordStrength: {
-    backgroundColor: "#F5F6F7",
-    borderRadius: 6,
-    padding: 12,
-    marginBottom: 12,
-  },
-  strengthHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  strengthLabel: {
-    fontSize: 13,
-    color: "#606770",
-    fontWeight: "600",
-  },
-  strengthText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  requirements: {
-    gap: 6,
-  },
-  requirement: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  unmetCircle: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: "#DFE0E4",
-  },
-  requirementText: {
-    fontSize: 12,
-    color: "#8A8D91",
-  },
-  requirementTextMet: {
-    color: "#10B981",
-  },
-  forgotPassword: {
-    alignSelf: "center",
-    marginBottom: 16,
-    marginTop: 8,
-  },
-  forgotPasswordText: {
-    fontSize: 14,
-    color: BRAND_COLOR,
-    fontWeight: "500",
-  },
-  button: {
-    backgroundColor: BRAND_COLOR,
-    borderRadius: 6,
-    height: 48,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  divider: {
-    marginVertical: 20,
-  },
-  dividerLine: {
-    height: 1,
-    backgroundColor: "#DFE0E4",
-  },
-  switchButton: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 6,
-    paddingVertical: 14,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: BRAND_COLOR,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  switchButtonText: {
-    fontSize: 15,
-    color: BRAND_COLOR,
-    fontWeight: "600",
-  },
-  universityIdButton: {
-    marginTop: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  universityIdText: {
-    fontSize: 14,
-    color: "#606770",
-    textDecorationLine: "underline",
-  },
-});
+  return (
+    <View style={styles.requirement}>
+      {met ? (
+        <CheckCircle size={14} color={colors.success} />
+      ) : (
+        <View style={styles.unmetCircle} />
+      )}
+      <Text style={[styles.requirementText, met && styles.requirementTextMet]}>
+        {text}
+      </Text>
+    </View>
+  );
+};
 
 export default LoginScreen;

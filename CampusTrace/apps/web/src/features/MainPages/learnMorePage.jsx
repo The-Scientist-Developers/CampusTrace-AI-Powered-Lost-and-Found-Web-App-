@@ -114,7 +114,14 @@ export default function LearnMorePage() {
                 alt="CampusTrace logo"
                 className="h-10 w-10 sm:h-12 sm:w-12 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
               />
-              <span className="text-lg sm:text-xl font-bold text-neutral-800 dark:text-white">
+              <span
+                className="text-lg sm:text-xl font-bold text-neutral-800 dark:text-white"
+                style={{
+                  fontFamily: '"Inter", sans-serif',
+                  fontWeight: 700,
+                  letterSpacing: "-0.02em",
+                }}
+              >
                 CampusTrace
               </span>
             </Link>
@@ -142,13 +149,13 @@ export default function LearnMorePage() {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="text-center mb-16 sm:mb-20"
           >
-            <p className="text-primary-600 dark:text-primary-500 font-semibold tracking-widest uppercase mb-3 text-sm">
+            <p className="text-primary-600 dark:text-primary-500 font-semibold tracking-widest uppercase mb-3 text-xs">
               Platform Overview
             </p>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-neutral-900 dark:text-white leading-tight">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-neutral-900 dark:text-white leading-tight">
               How CampusTrace Works
             </h1>
-            <p className="mt-4 text-lg sm:text-xl text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto">
+            <p className="mt-4 text-base sm:text-xl text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto">
               A comprehensive guide to leveraging our intelligent lost and found
               platform for your university community.
             </p>

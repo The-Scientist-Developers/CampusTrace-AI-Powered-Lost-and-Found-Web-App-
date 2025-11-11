@@ -11,10 +11,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Trophy, Award, Star, User } from "lucide-react-native";
-import { apiClient, BRAND_COLOR } from "@campustrace/core"; // This will work after you fix packages/core/src/index.js
+import { apiClient } from "@campustrace/core"; // This will work after you fix packages/core/src/index.js
 import SimpleLoadingScreen from "../../components/SimpleLoadingScreen";
+import { useTheme } from "../../contexts/ThemeContext";
+
+const BRAND_COLOR = "#1877F2";
 
 const LeaderboardScreen = () => {
+  const { colors, fontSizes } = useTheme();
+
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -49,11 +54,20 @@ const LeaderboardScreen = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Leaderboard</Text>
-        <Text style={styles.headerSubtitle}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+        ]}
+      >
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          Leaderboard
+        </Text>
+        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
           Top users who helped return the most items
         </Text>
       </View>
@@ -62,17 +76,31 @@ const LeaderboardScreen = () => {
         data={leaderboard}
         keyExtractor={(item) => item.user_id}
         renderItem={({ item, index }) => (
-          <LeaderboardRow user={item} rank={index + 1} />
+          <LeaderboardRow user={item} rank={index + 1} colors={colors} />
         )}
-        style={styles.scrollView}
+        style={[styles.scrollView, { backgroundColor: colors.background }]}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
         }
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Trophy size={64} color="#DFE0E4" />
-            <Text style={styles.emptyStateText}>No data yet</Text>
-            <Text style={styles.emptyStateSubtext}>
+          <View
+            style={[styles.emptyState, { backgroundColor: colors.background }]}
+          >
+            <Trophy size={64} color={colors.border} />
+            <Text style={[styles.emptyStateText, { color: colors.text }]}>
+              No data yet
+            </Text>
+            <Text
+              style={[
+                styles.emptyStateSubtext,
+                { color: colors.textSecondary },
+              ]}
+            >
               Be the first to return an item!
             </Text>
           </View>
@@ -82,14 +110,18 @@ const LeaderboardScreen = () => {
   );
 };
 
-const LeaderboardRow = ({ user, rank }) => {
+const LeaderboardRow = ({ user, rank, colors }) => {
   const getRankIcon = () => {
     if (rank === 1)
       return <Trophy size={24} color="#FFD700" strokeWidth={2.5} />;
     if (rank === 2)
       return <Award size={24} color="#C0C0C0" strokeWidth={2.5} />;
     if (rank === 3) return <Star size={24} color="#CD7F32" strokeWidth={2.5} />;
-    return <Text style={styles.rankNumber}>{rank}</Text>;
+    return (
+      <Text style={[styles.rankNumber, { color: colors?.text || "#000000" }]}>
+        {rank}
+      </Text>
+    );
   };
 
   const getRankStyle = () => {
@@ -100,27 +132,61 @@ const LeaderboardRow = ({ user, rank }) => {
   };
 
   return (
-    <View style={[styles.leaderboardRow, getRankStyle()]}>
+    <View
+      style={[
+        styles.leaderboardRow,
+        getRankStyle(),
+        {
+          backgroundColor: colors?.card || "#FFFFFF",
+          borderColor: colors?.border || "#E5E7EB",
+        },
+      ]}
+    >
       <View style={styles.rankContainer}>{getRankIcon()}</View>
 
       <View style={styles.avatarContainer}>
         {user.avatar_url ? (
           <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
         ) : (
-          <View style={styles.avatarPlaceholder}>
+          <View
+            style={[
+              styles.avatarPlaceholder,
+              { backgroundColor: colors?.primary || BRAND_COLOR },
+            ]}
+          >
             <User size={24} color="#FFFFFF" />
           </View>
         )}
       </View>
 
       <View style={styles.userInfo}>
-        <Text style={styles.userName}>{user.full_name || "Anonymous"}</Text>
-        <Text style={styles.rankLabel}>Rank {rank}</Text>
+        <Text style={[styles.userName, { color: colors?.text || "#000000" }]}>
+          {user.full_name || "Anonymous"}
+        </Text>
+        <Text
+          style={[
+            styles.rankLabel,
+            { color: colors?.textSecondary || "#8E8E93" },
+          ]}
+        >
+          Rank {rank}
+        </Text>
       </View>
 
       <View style={styles.scoreContainer}>
-        <Text style={styles.scoreValue}>{user.recovered_count || 0}</Text>
-        <Text style={styles.scoreLabel}>Returned</Text>
+        <Text
+          style={[styles.scoreValue, { color: colors?.primary || BRAND_COLOR }]}
+        >
+          {user.recovered_count || 0}
+        </Text>
+        <Text
+          style={[
+            styles.scoreLabel,
+            { color: colors?.textSecondary || "#8E8E93" },
+          ]}
+        >
+          Returned
+        </Text>
       </View>
     </View>
   );

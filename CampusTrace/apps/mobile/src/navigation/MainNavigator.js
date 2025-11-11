@@ -10,6 +10,7 @@ import {
 } from "@expo/vector-icons";
 // Import Supabase client
 import { getSupabaseClient } from "@campustrace/core";
+import { useTheme } from "../contexts/ThemeContext";
 
 // Import main screens
 import DashboardScreen from "../screens/main/DashboardScreen";
@@ -31,9 +32,6 @@ import ForgotPasswordScreen from "../screens/auth/ForgotPasswordScreen";
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 const ProfileStackNav = createNativeStackNavigator(); // New stack for profile
-
-// Define brand color locally
-const BRAND_COLOR = "#1877F2";
 
 // Dashboard Stack Navigator (includes nested screens)
 function DashboardStack() {
@@ -65,6 +63,7 @@ function ProfileStack() {
 
 export default function MainNavigator() {
   const [profile, setProfile] = useState(null);
+  const { colors, isDark } = useTheme();
 
   useEffect(() => {
     const supabase = getSupabaseClient();
@@ -173,12 +172,12 @@ export default function MainNavigator() {
               return <Feather name="home" size={iconSize} color={color} />;
           }
         },
-        tabBarActiveTintColor: BRAND_COLOR,
-        tabBarInactiveTintColor: "#8E8E93",
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: isDark ? "#8E8E93" : "#8E8E93",
         tabBarStyle: {
-          backgroundColor: "#FFFFFF",
+          backgroundColor: colors.surface,
           borderTopWidth: 0.5,
-          borderTopColor: "#DBDBDB",
+          borderTopColor: colors.border,
           paddingBottom: 8,
           paddingTop: 8,
           height: 56,

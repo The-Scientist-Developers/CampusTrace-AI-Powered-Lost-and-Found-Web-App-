@@ -30,6 +30,10 @@ import {
 import { useTheme } from "../../contexts/ThemeContext";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
+import MobileBottomNav from "./MobileBottomNav";
+import MobileHeader from "./MobileHeader";
+import DesktopSidebar from "./DesktopSidebar";
+import RightSuggestions from "./RightSuggestions";
 
 const DashboardSkeleton = ({ isSidebarOpen, mobileMenu }) => (
   <div className="h-screen flex flex-col bg-neutral-50 dark:bg-[#1a1a1a] text-neutral-800 dark:text-neutral-300 overflow-hidden">
@@ -542,16 +546,23 @@ export default function DashboardLayout({ children, user }) {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-[#1a1a1a] dark:to-[#0f0f0f] text-neutral-800 dark:text-neutral-300 overflow-hidden">
+    <div className="h-screen flex flex-col bg-white dark:bg-[#1a1a1a] text-neutral-800 dark:text-neutral-300 overflow-hidden">
       {mobileMenu && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setMobileMenu(false)}
         />
       )}
 
-      {/* Redesigned Header */}
-      <header className="h-16 px-3 sm:px-4 lg:px-6 bg-white/80 dark:bg-[#1f1f1f]/80 backdrop-blur-xl border-b border-neutral-200/50 dark:border-neutral-800 flex items-center justify-between shadow-sm z-30 flex-shrink-0">
+      {/* Mobile Header - Only visible on mobile/tablet */}
+      <MobileHeader
+        notificationCount={notificationCount}
+        messageCount={messageCount}
+        profile={profile}
+      />
+
+      {/* Old Header - Hidden on mobile, only for tablet */}
+      <header className="hidden md:flex lg:hidden h-16 px-3 sm:px-4 lg:px-6 bg-white/80 dark:bg-[#1f1f1f]/80 backdrop-blur-xl border-b border-neutral-200/50 dark:border-neutral-800 items-center justify-between shadow-sm z-30 flex-shrink-0">
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Mobile Menu Button */}
           <button
@@ -816,9 +827,18 @@ export default function DashboardLayout({ children, user }) {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Redesigned Sidebar */}
+        {/* Instagram-Style Desktop Sidebar - Only visible on desktop (≥1024px) */}
+        <div className="hidden lg:block">
+          <DesktopSidebar
+            notificationCount={notificationCount}
+            messageCount={messageCount}
+            profile={profile}
+          />
+        </div>
+
+        {/* Old Collapsible Sidebar - Only for mobile/tablet (<1024px) */}
         <aside
-          className={`fixed md:relative inset-y-0 left-0 z-50 bg-white/95 dark:bg-[#1f1f1f]/95 backdrop-blur-xl md:bg-white/80 dark:md:bg-[#1f1f1f]/80 flex flex-col transition-all duration-300 ease-in-out border-r border-neutral-200/50 dark:border-neutral-800 ${
+          className={`fixed md:relative inset-y-0 left-0 z-50 bg-white/95 dark:bg-[#1f1f1f]/95 backdrop-blur-xl md:bg-white/80 dark:md:bg-[#1f1f1f]/80 flex flex-col transition-all duration-300 ease-in-out border-r border-neutral-200/50 dark:border-neutral-800 lg:hidden ${
             mobileMenu
               ? "translate-x-0 w-[280px] shadow-2xl"
               : "-translate-x-full md:translate-x-0"
@@ -923,10 +943,24 @@ export default function DashboardLayout({ children, user }) {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-[#1a1a1a] dark:to-[#0f0f0f]">
-          <div className="p-4 md:p-6 lg:p-8 min-h-full">{children}</div>
+        <main className="flex-1 overflow-y-auto bg-white dark:bg-[#1a1a1a] lg:ml-64 lg:mr-80">
+          <div className="p-4 md:p-6 lg:p-8 min-h-full pb-20 lg:pb-8">
+            {children}
+          </div>
         </main>
+
+        {/* Right Suggestions Panel - Only visible on desktop (≥1024px) */}
+        <div className="hidden lg:block">
+          <RightSuggestions profile={profile} />
+        </div>
       </div>
+
+      {/* Mobile Bottom Navigation - Only visible on mobile */}
+      <MobileBottomNav
+        notificationCount={notificationCount}
+        messageCount={messageCount}
+        profile={profile}
+      />
     </div>
   );
 }
