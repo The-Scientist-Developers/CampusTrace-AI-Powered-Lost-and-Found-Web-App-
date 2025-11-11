@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   ArrowRight,
   EyeOff,
@@ -9,13 +9,13 @@ import {
   Package,
   CheckCircle,
   AlertCircle,
-  BarChart3,
   Activity,
   Camera,
   Sparkles,
-  TrendingUp,
   Tag,
   Clock,
+  Heart,
+  Send,
 } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase, getAccessToken } from "../../../api/apiClient.js";
@@ -31,12 +31,34 @@ import {
   ResponsiveContainer,
   Area,
   AreaChart,
-  Cell,
 } from "recharts";
 import { useTheme } from "../../../contexts/ThemeContext";
-
 import { API_BASE_URL } from "../../../api/apiClient.js";
 
+// ==================== Helper Functions ====================
+const timeAgo = (dateString) => {
+  if (!dateString) return "unknown time";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "invalid date";
+  const seconds = Math.floor((new Date() - date) / 1000);
+  const intervals = [
+    { label: "year", seconds: 31536000 },
+    { label: "month", seconds: 2592000 },
+    { label: "day", seconds: 86400 },
+    { label: "hour", seconds: 3600 },
+    { label: "minute", seconds: 60 },
+    { label: "second", seconds: 1 },
+  ];
+  for (const interval of intervals) {
+    const count = Math.floor(seconds / interval.seconds);
+    if (count >= 1) {
+      return `${count} ${interval.label}${count > 1 ? "s" : ""} ago`;
+    }
+  }
+  return "just now";
+};
+
+// --- Status Badge (from RN layout) ---
 const StatusBadge = ({ status }) => {
   const statusConfig = {
     approved: {
@@ -65,13 +87,11 @@ const StatusBadge = ({ status }) => {
       label: "Pending Return",
     },
   };
-
   const config = statusConfig[status?.toLowerCase()] || {
     bg: "bg-neutral-100 dark:bg-zinc-500/20",
     text: "text-neutral-800 dark:text-gray-400",
     label: "Unknown",
   };
-
   return (
     <span
       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${config.bg} ${config.text}`}
@@ -81,82 +101,162 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const StatCard = ({ icon: Icon, title, value, trend, color = "primary" }) => {
-  const colors = {
-    primary: "from-primary-500 to-primary-600",
-    green: "from-green-500 to-green-600",
-    red: "from-red-500 to-rose-600",
-    blue: "from-blue-500 to-cyan-600",
-  };
-
-  const iconColors = {
-    primary: "text-primary-600 dark:text-primary-400",
-    green: "text-green-600 dark:text-green-400",
-    red: "text-red-600 dark:text-red-400",
-    blue: "text-blue-600 dark:text-blue-400",
-  };
-
-  const iconBgColors = {
-    primary: "bg-primary-100 dark:bg-primary-500/10",
-    green: "bg-green-100 dark:bg-green-500/10",
-    red: "bg-red-100 dark:bg-red-500/10",
-    blue: "bg-blue-100 dark:bg-blue-500/10",
-  };
-
+// --- Stat Card (Styled like RN layout) ---
+const StatCard = ({ icon: Icon, label, value, color }) => {
   return (
-    <div className="relative bg-white dark:bg-[#2a2a2a] rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-neutral-200 dark:border-[#3a3a3a]">
+    <div className="flex-1 bg-white dark:bg-[#2a2a2a] rounded-xl p-4 items-center border border-neutral-200 dark:border-[#3a3a3a]">
       <div
-        className={`absolute inset-0 bg-gradient-to-br ${colors[color]} opacity-5 rounded-2xl`}
-      />
-      <div className="relative">
-        <div
-          className={`inline-flex p-3 rounded-xl ${iconBgColors[color]} mb-4`}
-        >
-          <Icon className={`w-6 h-6 ${iconColors[color]}`} />
-        </div>
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-            {title}
-          </h3>
-          <p className="text-3xl font-bold text-neutral-800 dark:text-white">
-            {value}
-          </p>
-          {trend && (
-            <div className="flex items-center gap-1 text-sm">
-              <TrendingUp className="w-4 h-4 text-green-500" />
-              <span className="text-green-600 dark:text-green-400">
-                {trend}% this week
-              </span>
-            </div>
-          )}
-        </div>
+        className={`w-12 h-12 rounded-full flex items-center justify-center mb-2`}
+        style={{ backgroundColor: color + "15" }}
+      >
+        <Icon className="w-6 h-6" style={{ color: color }} />
       </div>
+      <p className="text-3xl font-bold text-neutral-800 dark:text-white">
+        {value}
+      </p>
+      <p className="text-xs text-neutral-500 dark:text-neutral-400">{label}</p>
     </div>
   );
 };
 
-const CardSkeleton = () => (
-  <div className="bg-white dark:bg-[#2a2a2a] rounded-2xl p-6 shadow-sm border border-neutral-200 dark:border-[#3a3a3a]">
-    <Skeleton height={120} className="rounded-xl mb-4" />
-    <Skeleton height={24} width="70%" className="mb-2" />
-    <Skeleton height={20} width="40%" />
+// --- Image Placeholder (from RN layout) ---
+const ItemImage = ({ imageUrl, className }) => (
+  <div
+    className={`bg-neutral-100 dark:bg-neutral-800 overflow-hidden ${className}`}
+  >
+    {imageUrl ? (
+      <img src={imageUrl} alt="item" className="w-full h-full object-cover" />
+    ) : (
+      <div className="w-full h-full flex items-center justify-center">
+        <Camera className="w-8 h-8 text-neutral-300 dark:text-neutral-600" />
+      </div>
+    )}
   </div>
 );
 
-const DashboardSkeleton = () => (
-  <div className="space-y-8">
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {[...Array(4)].map((_, i) => (
-        <CardSkeleton key={i} />
-      ))}
+// --- Item Card (Styled like RN layout) ---
+const ItemCard = ({ item, onPress }) => (
+  <button
+    onClick={onPress}
+    className="w-[70vw] sm:w-64 bg-white dark:bg-[#2a2a2a] rounded-xl border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden flex-shrink-0 snap-start"
+  >
+    <ItemImage imageUrl={item.image_url} className="w-full aspect-square" />
+    <div className="p-3">
+      <h3 className="text-sm font-semibold text-neutral-800 dark:text-white mb-2 h-10 line-clamp-2">
+        {item.title}
+      </h3>
+      <div className="flex justify-between items-center">
+        <StatusBadge status={item.moderation_status} />
+        <span
+          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+            item.status === "Lost"
+              ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+              : "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
+          }`}
+        >
+          {item.status}
+        </span>
+      </div>
     </div>
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <Skeleton height={300} className="rounded-2xl" />
-      <Skeleton height={300} className="rounded-2xl" />
+  </button>
+);
+
+// --- Match Card (Styled like RN layout) ---
+const MatchCard = ({ item, onPress }) => (
+  <button
+    onClick={onPress}
+    className="w-[70vw] sm:w-64 bg-white dark:bg-[#2a2a2a] rounded-xl border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden flex-shrink-0 snap-start relative"
+  >
+    {item.match_score && (
+      <div className="absolute top-2 left-2 z-10 bg-black/70 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md">
+        {Math.round(item.match_score)}% Match
+      </div>
+    )}
+    <ItemImage imageUrl={item.image_url} className="w-full aspect-square" />
+    <div className="p-3">
+      <h3 className="text-sm font-semibold text-neutral-800 dark:text-white mb-2 truncate">
+        {item.title}
+      </h3>
+      <div className="flex justify-between items-center">
+        <span className="text-xs text-neutral-500 dark:text-neutral-400">
+          {item.category}
+        </span>
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400">
+          Found
+        </span>
+      </div>
     </div>
+  </button>
+);
+
+// --- Activity Item (Styled like RN layout) ---
+const ActivityItem = ({ item, onPress }) => {
+  const statusColor =
+    item.status === "Lost" ? "text-red-500" : "text-green-500";
+  const posterName =
+    item.profiles?.full_name ||
+    (item.profiles?.email ? item.profiles.email.split("@")[0] : "Anonymous");
+
+  return (
+    <button
+      onClick={onPress}
+      className="flex items-center gap-3 p-3 w-full text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
+    >
+      <ItemImage
+        imageUrl={item.image_url}
+        className="w-12 h-12 rounded-lg flex-shrink-0"
+      />
+      <div className="flex-1 min-w-0">
+        <h4 className="text-sm font-semibold text-neutral-800 dark:text-white truncate">
+          {item.title}
+        </h4>
+        <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+          {posterName}
+        </p>
+        <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
+          {timeAgo(item.created_at)}
+          {" · "}
+          <span className={statusColor}>{item.status}</span>
+        </p>
+      </div>
+      <ChevronRight className="w-5 h-5 text-neutral-400 dark:text-neutral-500 flex-shrink-0" />
+    </button>
+  );
+};
+
+// --- Empty State (Styled like RN layout) ---
+const EmptyState = ({
+  icon: Icon,
+  title,
+  description,
+  buttonText,
+  onButtonClick,
+}) => (
+  <div className="text-center p-8 bg-white dark:bg-[#2a2a2a] rounded-xl border border-neutral-200 dark:border-[#3a3a3a] my-3">
+    <div className="w-14 h-14 bg-neutral-100 dark:bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-4">
+      <Icon className="w-7 h-7 text-neutral-400 dark:text-neutral-500" />
+    </div>
+    <h3 className="text-base font-semibold text-neutral-800 dark:text-white mb-1">
+      {title}
+    </h3>
+    {description && (
+      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4 max-w-xs mx-auto">
+        {description}
+      </p>
+    )}
+    {buttonText && (
+      <button
+        onClick={onButtonClick}
+        className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
+      >
+        <Plus className="w-4 h-4" />
+        {buttonText}
+      </button>
+    )}
   </div>
 );
 
+// --- Chart Tooltip (from web) ---
 const CustomTooltip = ({ active, payload, label }) => {
   const { theme } = useTheme();
 
@@ -187,92 +287,180 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
+// --- Chart Card (Styled like RN layout, uses recharts) ---
 const ChartCard = ({ title, data, type = "area" }) => {
   const { theme } = useTheme();
 
-  const primaryColor = "#674CC4";
-  const lostColor = "#ef4444";
-  const foundColor = "#22c55e";
+  const primaryColor = "#1877F2";
+  const lostColor = "#EF4444";
+  const foundColor = "#10B981";
   const axisColor = theme === "light" ? "#555555" : "#a3a3a3";
   const gridColor = theme === "light" ? "#E3E3E3" : "#3a3a3a";
 
+  if (data.length === 0) {
+    return (
+      <div className="bg-white dark:bg-[#2a2a2a] rounded-xl p-4 shadow-sm border border-neutral-200 dark:border-[#3a3a3a] mt-2">
+        <h3 className="text-base font-semibold text-neutral-800 dark:text-white mb-4">
+          {title}
+        </h3>
+        <div className="h-[200px] flex items-center justify-center">
+          <p className="text-sm text-neutral-400">No data to display</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-white dark:bg-[#2a2a2a] rounded-2xl p-6 shadow-sm border border-neutral-200 dark:border-[#3a3a3a]">
-      <h3 className="text-lg font-semibold text-neutral-800 dark:text-white mb-6">
+    <div className="bg-white dark:bg-[#2a2a2a] rounded-xl p-4 shadow-sm border border-neutral-200 dark:border-[#3a3a3a] mt-2">
+      <h3 className="text-base font-semibold text-neutral-800 dark:text-white mb-6">
         {title}
       </h3>
-      <ResponsiveContainer width="100%" height={250}>
-        {type === "area" ? (
-          <AreaChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-            <XAxis
-              dataKey="day"
-              tick={{ fill: axisColor, fontSize: 12 }}
-              stroke={axisColor}
-            />
-            <YAxis
-              tick={{ fill: axisColor, fontSize: 12 }}
-              stroke={axisColor}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <defs>
-              <linearGradient id="colorLost" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={lostColor} stopOpacity={0.8} />
-                <stop offset="95%" stopColor={lostColor} stopOpacity={0.1} />
-              </linearGradient>
-              <linearGradient id="colorFound" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={foundColor} stopOpacity={0.8} />
-                <stop offset="95%" stopColor={foundColor} stopOpacity={0.1} />
-              </linearGradient>
-            </defs>
-            <Area
-              type="monotone"
-              dataKey="lost"
-              stackId="1"
-              stroke={lostColor}
-              fillOpacity={1}
-              fill="url(#colorLost)"
-              name="Lost"
-            />
-            <Area
-              type="monotone"
-              dataKey="found"
-              stackId="1"
-              stroke={foundColor}
-              fillOpacity={1}
-              fill="url(#colorFound)"
-              name="Found"
-            />
-          </AreaChart>
-        ) : (
-          <BarChart data={data} layout="vertical">
-            <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-            <XAxis
-              type="number"
-              tick={{ fill: axisColor, fontSize: 12 }}
-              stroke={axisColor}
-            />
-            <YAxis
-              dataKey="name"
-              type="category"
-              tick={{ fill: axisColor, fontSize: 12 }}
-              stroke={axisColor}
-              width={80}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Bar
-              dataKey="value"
-              fill={primaryColor}
-              radius={[0, 4, 4, 0]}
-              name="Count"
-            />
-          </BarChart>
-        )}
-      </ResponsiveContainer>
+      <div className="h-[220px]">
+        <ResponsiveContainer width="100%" height="100%">
+          {type === "area" ? (
+            <AreaChart
+              data={data}
+              margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+              <XAxis
+                dataKey="day"
+                tick={{ fill: axisColor, fontSize: 10 }}
+                stroke={axisColor}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                tick={{ fill: axisColor, fontSize: 10 }}
+                stroke={axisColor}
+                tickLine={false}
+                axisLine={false}
+                allowDecimals={false}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <defs>
+                <linearGradient id="colorLost" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={lostColor} stopOpacity={0.8} />
+                  <stop offset="95%" stopColor={lostColor} stopOpacity={0.1} />
+                </linearGradient>
+                <linearGradient id="colorFound" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={foundColor} stopOpacity={0.8} />
+                  <stop offset="95%" stopColor={foundColor} stopOpacity={0.1} />
+                </linearGradient>
+              </defs>
+              <Area
+                type="monotone"
+                dataKey="lost"
+                stackId="1"
+                strokeWidth={2}
+                stroke={lostColor}
+                fill="url(#colorLost)"
+                name="Lost"
+              />
+              <Area
+                type="monotone"
+                dataKey="found"
+                stackId="1"
+                strokeWidth={2}
+                stroke={foundColor}
+                fill="url(#colorFound)"
+                name="Found"
+              />
+            </AreaChart>
+          ) : (
+            <BarChart
+              data={data}
+              layout="vertical"
+              margin={{ top: 0, right: 10, left: 10, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+              <XAxis
+                type="number"
+                tick={{ fill: axisColor, fontSize: 10 }}
+                stroke={axisColor}
+                tickLine={false}
+                axisLine={false}
+                allowDecimals={false}
+              />
+              <YAxis
+                dataKey="name"
+                type="category"
+                tick={{ fill: axisColor, fontSize: 10 }}
+                stroke={axisColor}
+                tickLine={false}
+                axisLine={false}
+                width={70}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar
+                dataKey="value"
+                fill={primaryColor}
+                radius={[0, 4, 4, 0]}
+                name="Count"
+                barSize={20}
+              />
+            </BarChart>
+          )}
+        </ResponsiveContainer>
+      </div>
+      {type === "area" && (
+        <div className="flex justify-center items-center gap-6 mt-4">
+          <div className="flex items-center gap-2">
+            <div
+              className="w-2.5 h-2.5 rounded-full"
+              style={{ backgroundColor: lostColor }}
+            ></div>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">
+              Lost
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div
+              className="w-2.5 h-2.5 rounded-full"
+              style={{ backgroundColor: foundColor }}
+            ></div>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">
+              Found
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
+// --- Skeleton Components (Using react-loading-skeleton) ---
+const DashboardSkeleton = () => (
+  <div className="space-y-6 p-4">
+    <div className="w-3/4">
+      <Skeleton height={32} />
+    </div>
+    <div className="flex gap-4">
+      <div className="flex-1">
+        <Skeleton height={128} borderRadius={12} />
+      </div>
+      <div className="flex-1">
+        <Skeleton height={128} borderRadius={12} />
+      </div>
+    </div>
+    <div className="flex gap-4">
+      <div className="flex-1">
+        <Skeleton height={128} borderRadius={12} />
+      </div>
+      <div className="flex-1">
+        <Skeleton height={128} borderRadius={12} />
+      </div>
+    </div>
+    <div>
+      <Skeleton height={300} borderRadius={12} />
+    </div>
+    <div>
+      <Skeleton height={300} borderRadius={12} />
+    </div>
+  </div>
+);
+
+// ==================== Main Page Component ====================
 export default function UserMainPage({ user }) {
   const [myRecentPosts, setMyRecentPosts] = useState([]);
   const [communityActivity, setCommunityActivity] = useState([]);
@@ -281,9 +469,8 @@ export default function UserMainPage({ user }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const { theme } = useTheme(); // Kept useTheme import
+  const primaryColor = theme === "light" ? "#1877F2" : "#38bdf8"; // Using brand colors
 
   const [stats, setStats] = useState({
     totalItems: 0,
@@ -340,13 +527,10 @@ export default function UserMainPage({ user }) {
           .eq("university_id", profile.university_id)
           .eq("moderation_status", "approved")
           .order("created_at", { ascending: false })
-          .limit(50);
+          .limit(50); // Fetch 50, but we will slice 5 for the UI
         setCommunityActivity(communityData);
       } else {
         setCommunityActivity([]);
-        console.warn(
-          "User profile does not have a university_id, community activity cannot be fetched."
-        );
       }
 
       setMyRecentPosts(activePosts);
@@ -398,25 +582,12 @@ export default function UserMainPage({ user }) {
   const fetchMatches = async (itemId) => {
     try {
       const token = await getAccessToken();
-      if (!token) {
-        console.warn("No access token found, cannot fetch matches.");
-        return;
-      }
-
+      if (!token) return;
       const response = await fetch(
         `${API_BASE_URL}/api/items/find-matches/${itemId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({
-          detail: "Failed to fetch matches, invalid server response.",
-        }));
-        throw new Error(
-          errorData.detail || `HTTP error! status: ${response.status}`
-        );
-      }
-
+      if (!response.ok) throw new Error("Failed to fetch matches");
       const matches = await response.json();
       setPossibleMatches(Array.isArray(matches) ? matches.slice(0, 4) : []);
     } catch (err) {
@@ -446,92 +617,105 @@ export default function UserMainPage({ user }) {
       });
     }
 
-    // Categories
     const categoryCount = {};
     items.forEach((item) => {
-      // Ensure category exists and is a string before counting
       if (item.category && typeof item.category === "string") {
         categoryCount[item.category] = (categoryCount[item.category] || 0) + 1;
       }
     });
-
     const categories = Object.entries(categoryCount)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
-      .slice(0, 5); // Limit to top 5
+      .slice(0, 5);
 
     setChartData({ weekly: weeklyData, categories });
   };
 
-  const totalPages = Math.ceil(communityActivity.length / itemsPerPage);
-  const paginatedActivity = communityActivity.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const handleRefresh = () => {
+    fetchDashboardData();
+  };
 
-  if (loading) return <DashboardSkeleton />;
-  if (error)
+  // This is the main loading state
+  if (loading) {
     return (
-      <div className="text-center p-12 bg-red-50 dark:bg-red-900/20 rounded-2xl border border-red-200 dark:border-red-500/30">
-        <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-        <p className="text-red-600 dark:text-red-400 font-medium">
-          Could not load dashboard data.
-        </p>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
-          Error: {error}
-        </p>
-        <button
-          onClick={fetchDashboardData} // Add a retry button
-          className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700"
-        >
-          Try Again
-        </button>
+      <div className="h-screen bg-white dark:bg-[#1a1a1a]">
+        <DashboardSkeleton />
       </div>
     );
+  }
 
-  return (
-    <div className="max-w-7xl mx-auto space-y-12 px-4 sm:px-6 lg:px-8 py-8">
-      {" "}
-      {/* Added padding */}
-      {/* Stats Section */}
-      <section>
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-neutral-700 to-neutral-900 bg-clip-text text-transparent dark:from-white dark:to-neutral-400">
-            Welcome back!
-          </h1>
-          <p className="text-neutral-600 dark:text-neutral-400 mt-2">
-            Here's your activity overview
-          </p>
+  // This is the error state
+  if (error) {
+    return (
+      <div className="h-screen bg-white dark:bg-[#1a1a1a]">
+        <div className="p-4">
+          <div className="text-center p-12 bg-red-50 dark:bg-red-900/20 rounded-2xl border border-red-200 dark:border-red-500/30">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <p className="text-red-600 dark:text-red-400 font-medium">
+              Could not load dashboard data.
+            </p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
+              Error: {error}
+            </p>
+            <button
+              onClick={handleRefresh}
+              className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700"
+            >
+              Try Again
+            </button>
+          </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      </div>
+    );
+  }
+
+  // This is the main content, now matching the RN layout
+  return (
+    <div className="bg-neutral-50 dark:bg-[#1a1a1a]">
+      {/* Welcome Section */}
+      <div className="p-4 bg-white dark:bg-[#242424]">
+        <h2 className="text-base text-neutral-500 dark:text-neutral-400">
+          Welcome back!
+        </h2>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="p-4 bg-white dark:bg-[#242424] border-b border-neutral-200 dark:border-neutral-700">
+        <div className="flex gap-3">
           <StatCard
             icon={Package}
-            title="Total Posts"
+            label="Total Items"
             value={stats.totalItems}
-            color="primary"
+            color={primaryColor}
           />
           <StatCard
             icon={AlertCircle}
-            title="Lost Items"
+            label="Lost Items"
             value={stats.lostItems}
-            color="red"
+            color="#EF4444"
           />
+        </div>
+        <div className="flex gap-3 mt-3">
           <StatCard
             icon={CheckCircle}
-            title="Found Items"
+            label="Found Items"
             value={stats.foundItems}
-            color="green"
+            color="#10B981"
           />
           <StatCard
             icon={Activity}
-            title="Recovered"
+            label="Recovered"
             value={stats.recoveredItems}
-            color="blue"
+            color="#3B82F6"
           />
         </div>
-      </section>
+      </div>
+
       {/* Charts Section */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="p-4 bg-white dark:bg-[#242424] mt-2">
+        <h3 className="text-lg font-semibold text-neutral-800 dark:text-white">
+          Your Activity
+        </h3>
         <ChartCard
           title="Weekly Activity"
           data={chartData.weekly}
@@ -542,56 +726,45 @@ export default function UserMainPage({ user }) {
           data={chartData.categories}
           type="bar"
         />
-      </section>
-      {/* Possible Matches Section - IMPROVED */}
-      <section>
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-neutral-800 dark:text-white flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-primary-500" />{" "}
-            {/* Use theme color */}
+      </div>
+
+      {/* AI-Powered Matches */}
+      <div className="p-4 bg-white dark:bg-[#242424] mt-2">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-5 h-5" style={{ color: primaryColor }} />
+          <h3 className="text-lg font-semibold text-neutral-800 dark:text-white">
             AI-Powered Matches
-          </h2>
-          <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-            Smart matching for your lost items
-          </p>
+          </h3>
         </div>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
+          Smart matching for your lost items
+        </p>
 
         {myLostItem ? (
-          <div className="space-y-6">
-            {/* Display the lost item */}
-            <div className="bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-neutral-900/30 dark:to-neutral-800/30 rounded-2xl p-6 border border-neutral-200 dark:border-neutral-700">
-              <h3 className="text-sm font-semibold text-neutral-600 dark:text-neutral-400 mb-4 uppercase tracking-wider">
+          <div>
+            {/* Your Latest Lost Item Card */}
+            <div className="bg-neutral-50 dark:bg-neutral-900/50 rounded-xl p-4 border border-neutral-200 dark:border-neutral-700">
+              <h4 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-3">
                 Your Latest Lost Item
-              </h3>
-              <div className="flex flex-col sm:flex-row gap-6">
-                <div className="w-full sm:w-32 h-32 rounded-xl overflow-hidden bg-white dark:bg-[#2a2a2a] flex-shrink-0 border border-neutral-200 dark:border-neutral-700">
-                  {myLostItem.image_url ? (
-                    <img
-                      src={myLostItem.image_url}
-                      alt={myLostItem.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-neutral-100 dark:bg-neutral-800">
-                      <Camera className="w-8 h-8 text-neutral-300 dark:text-neutral-600" />
-                    </div>
-                  )}
-                </div>
+              </h4>
+              <div className="flex gap-3">
+                <ItemImage
+                  imageUrl={myLostItem.image_url}
+                  className="w-20 h-20 rounded-lg flex-shrink-0"
+                />
                 <div className="flex-1 min-w-0">
-                  {" "}
-                  {/* Ensure text wraps */}
-                  <h4 className="text-xl font-bold text-neutral-800 dark:text-white mb-2 truncate">
+                  <h5 className="text-base font-bold text-neutral-800 dark:text-white truncate">
                     {myLostItem.title}
-                  </h4>
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3 line-clamp-2">
+                  </h5>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-2 mt-1">
                     {myLostItem.description}
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-[#2a2a2a] rounded-full text-xs font-medium border border-neutral-200 dark:border-neutral-700">
-                      <Tag className="w-3 h-3 text-neutral-500" />
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-neutral-100 dark:bg-neutral-700 rounded-full text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                      <Tag className="w-3 h-3" />
                       {myLostItem.category}
                     </span>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full text-xs font-medium">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full text-xs font-medium">
                       <AlertCircle className="w-3 h-3" />
                       Lost
                     </span>
@@ -600,15 +773,23 @@ export default function UserMainPage({ user }) {
               </div>
             </div>
 
-            {/* Display matches */}
+            {/* Matches List */}
             {possibleMatches.length > 0 ? (
-              <div>
-                <h3 className="text-sm font-semibold text-neutral-500 dark:text-neutral-400 mb-4 uppercase tracking-wider">
+              <div className="mt-4">
+                <h4 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-2">
                   Possible Matches Found ({possibleMatches.length})
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                </h4>
+                <div className="flex gap-3 overflow-x-auto snap-x py-2 -mx-4 px-4">
                   {possibleMatches.map((item) => (
-                    <MatchCard key={item.id} item={item} />
+                    <MatchCard
+                      key={item.id}
+                      item={item}
+                      onPress={() =>
+                        navigate("/dashboard/browse-all", {
+                          state: { itemId: item.id },
+                        })
+                      }
+                    />
                   ))}
                 </div>
               </div>
@@ -616,7 +797,7 @@ export default function UserMainPage({ user }) {
               <EmptyState
                 icon={HelpCircle}
                 title="No matches found yet"
-                description="Our AI is continuously searching. We'll show potential matches here as soon as they're found."
+                description="Our AI is continuously searching. We'll show potential matches here."
               />
             )}
           </div>
@@ -629,19 +810,36 @@ export default function UserMainPage({ user }) {
             onButtonClick={() => navigate("/dashboard/post-new")}
           />
         )}
-      </section>
-      {/* Recent Posts Section */}
-      <section>
-        <SectionHeader
-          title="My Active Posts"
-          description="Your current lost and found items"
-          linkText={myRecentPosts.length > 0 ? "View all posts" : null}
-          linkTo="/dashboard/my-posts"
-        />
+      </div>
+
+      {/* My Recent Posts */}
+      <div className="p-4 bg-white dark:bg-[#242424] mt-2">
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-lg font-semibold text-neutral-800 dark:text-white">
+            My Recent Posts
+          </h3>
+          {myRecentPosts.length > 0 && (
+            <Link
+              to="/dashboard/my-posts"
+              className="text-sm font-semibold"
+              style={{ color: primaryColor }}
+            >
+              View all
+            </Link>
+          )}
+        </div>
         {myRecentPosts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="flex gap-3 overflow-x-auto snap-x py-2 -mx-4 px-4">
             {myRecentPosts.map((item) => (
-              <ItemCard key={item.id} item={item} />
+              <ItemCard
+                key={item.id}
+                item={item}
+                onPress={() =>
+                  navigate("/dashboard/browse-all", {
+                    state: { itemId: item.id },
+                  })
+                }
+              />
             ))}
           </div>
         ) : (
@@ -653,303 +851,35 @@ export default function UserMainPage({ user }) {
             onButtonClick={() => navigate("/dashboard/post-new")}
           />
         )}
-      </section>
-      {/* Community Activity Section */}
-      <section>
-        <SectionHeader
-          title="Latest Community Activity"
-          description={`Recent items reported at your campus`} // Updated description
-        />
+      </div>
+
+      {/* Recent Activity */}
+      <div className="p-4 bg-white dark:bg-[#242424] mt-2 pb-6">
+        <h3 className="text-lg font-semibold text-neutral-800 dark:text-white mb-2">
+          Recent Community Activity
+        </h3>
         {communityActivity.length > 0 ? (
-          <div className="bg-white dark:bg-[#2a2a2a] rounded-2xl shadow-sm border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden">
-            <div className="divide-y divide-neutral-200 dark:divide-[#3a3a3a]">
-              {paginatedActivity.map((item) => (
-                <ActivityItem key={item.id} item={item} />
-              ))}
-            </div>
-            {totalPages > 1 && ( // Only show pagination if needed
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                totalItems={communityActivity.length}
-                itemsPerPage={itemsPerPage}
+          <div className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-700 border-t border-b border-neutral-100 dark:border-neutral-700">
+            {communityActivity.slice(0, 5).map((item) => (
+              <ActivityItem
+                key={item.id}
+                item={item}
+                onPress={() =>
+                  navigate("/dashboard/browse-all", {
+                    state: { itemId: item.id },
+                  })
+                }
               />
-            )}
+            ))}
           </div>
         ) : (
           <EmptyState
-            icon={Activity}
-            title="No community activity yet"
+            icon={Clock}
+            title="No recent activity"
             description="Approved posts from others on your campus will show up here."
           />
         )}
-      </section>
+      </div>
     </div>
   );
 }
-
-// --- Helper Components ---
-const SectionHeader = ({ title, description, linkText, linkTo }) => (
-  <div className="flex items-center justify-between mb-6">
-    <div>
-      <h2 className="text-xl font-bold text-neutral-800 dark:text-white mb-1">
-        {title}
-      </h2>
-      {description && (
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
-          {description}
-        </p>
-      )}
-    </div>
-    {linkText && linkTo && (
-      <Link
-        to={linkTo}
-        className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm font-medium flex items-center gap-1 transition-colors"
-      >
-        {linkText}
-        <ArrowRight className="w-4 h-4" />
-      </Link>
-    )}
-  </div>
-);
-
-const MatchCard = ({ item }) => (
-  <Link
-    to="/dashboard/browse-all"
-    state={{ itemId: item.id }}
-    className="group bg-white dark:bg-[#2a2a2a] rounded-xl border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden hover:shadow-lg transition-all duration-200 block relative"
-  >
-    {item.match_score && (
-      <div className="absolute top-2 left-2 z-10 bg-gradient-to-r from-primary-500 to-purple-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md">
-        {item.match_score}% Match
-      </div>
-    )}
-    <div className="aspect-square bg-neutral-100 dark:bg-[#1a1a1a] relative overflow-hidden">
-      {item.image_url ? (
-        <img
-          src={item.image_url}
-          alt={item.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" // Slightly subtler zoom
-        />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center">
-          <Camera className="w-8 h-8 text-neutral-300 dark:text-neutral-600" />
-        </div>
-      )}
-      {/* Subtle overlay on hover */}
-      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 dark:group-hover:bg-black/20 transition-colors duration-300"></div>
-    </div>
-    <div className="p-4">
-      <h3 className="font-semibold text-neutral-800 dark:text-white line-clamp-1 mb-2">
-        {item.title}
-      </h3>
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-neutral-500 dark:text-neutral-400">
-          {item.category}
-        </span>
-        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full text-xs font-medium">
-          <CheckCircle className="w-3 h-3" /> Found
-        </span>
-      </div>
-    </div>
-  </Link>
-);
-
-const ItemCard = ({ item }) => (
-  <Link
-    to="/dashboard/browse-all" // Link to browse page
-    state={{ itemId: item.id }} // Pass item ID
-    className="group bg-white dark:bg-[#2a2a2a] rounded-xl border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden hover:shadow-lg transition-all duration-200 block" // Added block
-  >
-    <div className="aspect-square bg-neutral-100 dark:bg-[#1a1a1a] relative overflow-hidden">
-      {item.image_url ? (
-        <img
-          src={item.image_url}
-          alt={item.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center">
-          <Camera className="w-8 h-8 text-neutral-300 dark:text-neutral-600" />
-        </div>
-      )}
-      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 dark:group-hover:bg-black/20 transition-colors duration-300"></div>
-    </div>
-    <div className="p-4">
-      <h3 className="font-semibold text-neutral-800 dark:text-white line-clamp-2 mb-3 h-12">
-        {" "}
-        {/* Fixed height for title */}
-        {item.title}
-      </h3>
-      <div className="flex items-center justify-between">
-        <StatusBadge status={item.moderation_status} />
-        <span
-          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-            item.status === "Lost"
-              ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
-              : "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
-          }`}
-        >
-          {item.status === "Lost" ? (
-            <AlertCircle className="w-3 h-3" />
-          ) : (
-            <CheckCircle className="w-3 h-3" />
-          )}
-          {item.status}
-        </span>
-      </div>
-    </div>
-  </Link>
-);
-
-const ActivityItem = ({ item }) => (
-  <Link
-    to="/dashboard/browse-all" // Link to browse page
-    state={{ itemId: item.id }} // Pass item ID
-    className="flex items-center gap-4 p-5 hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors group" // Added group
-  >
-    <div className="w-16 h-16 rounded-xl bg-neutral-100 dark:bg-[#1a1a1a] overflow-hidden flex-shrink-0 border border-neutral-200 dark:border-[#3a3a3a]">
-      {item.image_url ? (
-        <img
-          src={item.image_url}
-          alt={item.title}
-          className="w-full h-full object-cover"
-        />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center">
-          {/* Display category initial or icon */}
-          <Tag className="w-5 h-5 text-neutral-400 dark:text-neutral-600" />
-        </div>
-      )}
-    </div>
-    <div className="flex-1 min-w-0">
-      <p className="font-semibold text-neutral-800 dark:text-white line-clamp-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-        {item.title}
-      </p>
-      <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-1">
-        {" "}
-        {/* Flex wrap for smaller screens */}
-        <span
-          className={`text-xs font-medium px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
-            item.status === "Lost"
-              ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-              : "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
-          }`}
-        >
-          {item.status === "Lost" ? (
-            <AlertCircle className="w-3 h-3" />
-          ) : (
-            <CheckCircle className="w-3 h-3" />
-          )}
-          {item.status}
-        </span>
-        <span className="text-sm text-neutral-500 dark:text-neutral-400">
-          {item.category}
-        </span>
-        <span className="text-sm text-neutral-400 dark:text-neutral-500 flex items-center gap-1">
-          <Clock className="w-3 h-3" /> {timeAgo(item.created_at)}
-        </span>
-      </div>
-    </div>
-    <ArrowRight className="w-5 h-5 text-neutral-400 dark:text-neutral-500 group-hover:translate-x-1 transition-transform flex-shrink-0" />
-  </Link>
-);
-
-const Pagination = ({
-  currentPage,
-  totalPages,
-  onPageChange,
-  totalItems,
-  itemsPerPage,
-}) => (
-  <div className="px-6 py-4 bg-neutral-50 dark:bg-[#1a1a1a] flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-neutral-200 dark:border-[#3a3a3a]">
-    <span className="text-sm text-neutral-600 dark:text-neutral-400 order-2 sm:order-1">
-      Showing {Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)} to{" "}
-      {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} items
-    </span>
-    <div className="flex items-center gap-2 order-1 sm:order-2">
-      <button
-        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-        disabled={currentPage === 1}
-        className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-neutral-300 dark:border-neutral-600"
-        aria-label="Previous page"
-      >
-        <ChevronLeft className="w-5 h-5" />
-      </button>
-      <span className="px-3 py-1 text-sm font-medium text-neutral-700 dark:text-neutral-300">
-        Page {currentPage} / {totalPages}
-      </span>
-      <button
-        onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-        disabled={currentPage === totalPages}
-        className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-neutral-300 dark:border-neutral-600"
-        aria-label="Next page"
-      >
-        <ChevronRight className="w-5 h-5" />
-      </button>
-    </div>
-  </div>
-);
-
-const EmptyState = ({
-  icon: Icon,
-  title,
-  description,
-  buttonText,
-  onButtonClick,
-}) => (
-  <div className="bg-neutral-50 dark:bg-[#2a2a2a]/50 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-2xl p-12">
-    <div className="text-center max-w-sm mx-auto">
-      <div className="w-14 h-14 bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-700 rounded-full flex items-center justify-center mx-auto mb-5 border border-neutral-200 dark:border-neutral-700">
-        <Icon className="w-7 h-7 text-neutral-400 dark:text-neutral-500" />
-      </div>
-      <h3 className="text-lg font-semibold text-neutral-800 dark:text-white mb-2">
-        {title}
-      </h3>
-      <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 leading-relaxed">
-        {description}
-      </p>
-      {buttonText && (
-        <button
-          onClick={onButtonClick}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors shadow-sm hover:shadow-md"
-        >
-          <Plus className="w-4 h-4" />
-          {buttonText}
-        </button>
-      )}
-    </div>
-  </div>
-);
-
-// timeAgo function remains the same
-const timeAgo = (dateString) => {
-  if (!dateString) return "unknown time"; // Handle null or undefined dates
-
-  const date = new Date(dateString);
-  // Check if the date is valid
-  if (isNaN(date.getTime())) {
-    return "invalid date";
-  }
-
-  const seconds = Math.floor((new Date() - date) / 1000);
-
-  const intervals = [
-    { label: "year", seconds: 31536000 },
-    { label: "month", seconds: 2592000 },
-    { label: "day", seconds: 86400 },
-    { label: "hour", seconds: 3600 },
-    { label: "minute", seconds: 60 },
-    { label: "second", seconds: 1 },
-  ];
-
-  for (const interval of intervals) {
-    const count = Math.floor(seconds / interval.seconds);
-    if (count >= 1) {
-      return `${count} ${interval.label}${count > 1 ? "s" : ""} ago`;
-    }
-  }
-
-  return "just now";
-};
