@@ -100,6 +100,11 @@ const LoginScreen = ({ navigation }) => {
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
 
+  // Rate limiting states
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [cooldownTime, setCooldownTime] = useState(0);
+  const [lastAttemptTime, setLastAttemptTime] = useState(null);
+
   // Saved accounts
   const [savedAccounts, setSavedAccounts] = useState([]);
   // Show saved accounts by default if they exist
@@ -127,6 +132,20 @@ const LoginScreen = ({ navigation }) => {
     loadSavedEmail();
     loadSavedAccounts();
   }, []);
+
+  // Cooldown timer effect
+  useEffect(() => {
+    if (cooldownTime > 0) {
+      const timer = setTimeout(() => {
+        setCooldownTime((prev) => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (cooldownTime === 0 && loginAttempts >= 5) {
+      // Reset attempts after cooldown
+      setLoginAttempts(0);
+      setLastAttemptTime(null);
+    }
+  }, [cooldownTime, loginAttempts]);
 
   // Update password strength
   useEffect(() => {
@@ -231,6 +250,40 @@ const LoginScreen = ({ navigation }) => {
     setShowSavedAccounts(false); // Switch to login form
   };
 
+  const checkRateLimit = () => {
+    const now = Date.now();
+
+    // Reset attempts if 15 minutes have passed since last attempt
+    if (lastAttemptTime && now - lastAttemptTime > 15 * 60 * 1000) {
+      setLoginAttempts(0);
+      setLastAttemptTime(null);
+      return true;
+    }
+
+    // Check if in cooldown
+    if (cooldownTime > 0) {
+      Alert.alert(
+        "Too Many Attempts",
+        `Please wait ${cooldownTime} seconds before trying again.`,
+        [{ text: "OK" }]
+      );
+      return false;
+    }
+
+    // Check if max attempts reached
+    if (loginAttempts >= 5) {
+      setCooldownTime(60);
+      Alert.alert(
+        "Too Many Attempts",
+        "Too many login attempts. Please wait 60 seconds.",
+        [{ text: "OK" }]
+      );
+      return false;
+    }
+
+    return true;
+  };
+
   const validate = () => {
     const newErrors = {};
 
@@ -276,7 +329,11 @@ const LoginScreen = ({ navigation }) => {
   const handleAuth = async () => {
     if (!validate()) return;
 
+    // Check rate limit before attempting login
+    if (!checkRateLimit()) return;
+
     setLoading(true);
+
     try {
       const supabase = getSupabaseClient();
       let result;
@@ -302,6 +359,12 @@ const LoginScreen = ({ navigation }) => {
 
         await saveEmail(email);
         await saveAccount(email, userName, avatarUrl);
+
+        // Reset rate limiting on successful login
+        setLoginAttempts(0);
+        setCooldownTime(0);
+        setLastAttemptTime(null);
+
         Alert.alert("Success", "Logged in successfully!");
         // On successful login, navigation would happen here (not shown in snippet)
       } else {
@@ -317,6 +380,11 @@ const LoginScreen = ({ navigation }) => {
 
         if (result.error) throw result.error;
 
+        // Reset rate limiting on successful signup
+        setLoginAttempts(0);
+        setCooldownTime(0);
+        setLastAttemptTime(null);
+
         Alert.alert(
           "Success",
           "Account created! Please check your email to verify your account.",
@@ -324,6 +392,10 @@ const LoginScreen = ({ navigation }) => {
         );
       }
     } catch (error) {
+      // Increment failed attempts and track time
+      setLoginAttempts((prev) => prev + 1);
+      setLastAttemptTime(Date.now());
+
       Alert.alert("Error", error.message || "An error occurred");
     } finally {
       setLoading(false);
@@ -609,6 +681,10 @@ const LoginScreen = ({ navigation }) => {
       justifyContent: "center",
       alignItems: "center",
       marginTop: 8,
+    },
+    buttonDisabled: {
+      backgroundColor: themeColors.border,
+      opacity: 0.6,
     },
     buttonText: {
       color: "#FFFFFF",
@@ -935,12 +1011,19 @@ const LoginScreen = ({ navigation }) => {
 
               {/* Login/Sign Up Button */}
               <TouchableOpacity
-                style={styles.button}
+                style={[
+                  styles.button,
+                  (loading || cooldownTime > 0) && styles.buttonDisabled,
+                ]}
                 onPress={handleAuth}
-                disabled={loading}
+                disabled={loading || cooldownTime > 0}
               >
                 <Text style={styles.buttonText}>
-                  {isLogin ? "Log In" : "Sign Up"}
+                  {cooldownTime > 0
+                    ? `Wait ${cooldownTime}s`
+                    : isLogin
+                    ? "Log In"
+                    : "Sign Up"}
                 </Text>
               </TouchableOpacity>
             </View>

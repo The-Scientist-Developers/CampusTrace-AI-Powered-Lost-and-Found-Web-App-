@@ -37,10 +37,12 @@ const PostNewItemSkeleton = () => (
     <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-sm">
       <div className="p-6 space-y-6">
         <Skeleton height={70} borderRadius={12} />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Skeleton height={70} borderRadius={12} />
-          <Skeleton height={70} borderRadius={12} />
-        </div>
+        {/* ============================================================
+          == CHANGED: Removed grid for skeleton to match new layout ==
+          ============================================================
+        */}
+        <Skeleton height={70} borderRadius={12} />
+        <Skeleton height={70} borderRadius={12} />
         <Skeleton height={120} borderRadius={12} />
         <Skeleton height={180} borderRadius={12} />
       </div>
@@ -221,9 +223,6 @@ export default function PostNewItem() {
         <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full mb-4 shadow-lg">
           <UploadCloud className="w-8 h-8 text-white" />
         </div>
-        <h1 className="text-3xl font-bold mb-2 text-neutral-800 dark:text-white">
-          Post New Item
-        </h1>
         <p className="text-neutral-500 dark:text-gray-400">
           Help reunite lost items with their owners
         </p>
@@ -243,7 +242,7 @@ export default function PostNewItem() {
           I Lost Something
         </button>
         <button
-          type="button"
+          type_button
           onClick={() => setStatus("Found")}
           className={`px-6 py-2.5 rounded-full font-medium transition-all ${
             status === "Found"
@@ -254,6 +253,23 @@ export default function PostNewItem() {
           I Found Something
         </button>
       </div>
+
+      {/* Instructional text (from previous request) */}
+      {status === "Found" && (
+        <div
+          className="bg-primary-50 dark:bg-primary-900/10 border border-primary-200 dark:border-primary-700/50 text-primary-700 dark:text-primary-300 px-4 py-3 rounded-xl mb-8 text-center text-sm"
+          role="alert"
+        >
+          <p>
+            You are posting an item you found. You will be responsible for
+            managing claims and coordinating its return.
+          </p>
+          <p className="font-semibold mt-2">
+            If you don't want this responsibility, please take the item to your
+            university's Lost & Found office.
+          </p>
+        </div>
+      )}
 
       <form
         onSubmit={handleSubmit}
@@ -280,48 +296,58 @@ export default function PostNewItem() {
             />
           </div>
 
-          {/* Grid with better spacing */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label
-                htmlFor="category"
-                className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
-              >
-                <FileText className="w-4 h-4 text-primary-500" />
-                Category
-              </label>
-              <select
-                id="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors"
-              >
-                <option value="Electronics"> Electronics</option>
-                <option value="Documents">Documents</option>
-                <option value="Clothing"> Clothing</option>
-                <option value="Accessories"> Accessories</option>
-                <option value="Other"> Other</option>
-              </select>
-            </div>
-            <div>
-              <label
-                htmlFor="location"
-                className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
-              >
-                <MapPin className="w-4 h-4 text-primary-500" />
-                Location *
-              </label>
-              <input
-                type="text"
-                id="location"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                required
-                className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors"
-                placeholder="e.g., CCSICT building, 2nd floor"
-              />
-            </div>
+          {/* ============================================================
+            == CHANGED: Removed the grid layout wrapper.
+            == Fields will now stack vertically because of the parent "space-y-6".
+            ============================================================
+          */}
+
+          {/* Category (Now stacked) */}
+          <div>
+            <label
+              htmlFor="category"
+              className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
+            >
+              <FileText className="w-4 h-4 text-primary-500" />
+              Category
+            </label>
+            <select
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors"
+            >
+              <option value="Electronics"> Electronics</option>
+              <option value="Documents">Documents</option>
+              <option value="Clothing"> Clothing</option>
+              <option value="Accessories"> Accessories</option>
+              <option value="Other"> Other</option>
+            </select>
           </div>
+
+          {/* Location (Now stacked) */}
+          <div>
+            <label
+              htmlFor="location"
+              className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
+            >
+              <MapPin className="w-4 h-4 text-primary-500" />
+              Location *
+            </label>
+            <input
+              type="text"
+              id="location"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              required
+              className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors"
+              placeholder="e.g., CCSICT building, 2nd floor"
+            />
+          </div>
+          {/* ============================================================
+            == END OF LAYOUT CHANGE
+            ============================================================
+          */}
 
           {/* Contact Info - Full Width */}
           <div>

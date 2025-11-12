@@ -653,16 +653,6 @@ export default function MyPostsPage({ user }) {
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1a]">
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-neutral-800 dark:text-white mb-2">
-            My Posts
-          </h1>
-          <p className="text-neutral-500 dark:text-neutral-400">
-            Manage your lost and found posts
-          </p>
-        </div>
-
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl p-4">
@@ -840,7 +830,9 @@ export default function MyPostsPage({ user }) {
                   className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden"
                 >
                   {/* <div className="p-6 bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/10 dark:to-primary-900/20 border-b border-neutral-200 dark:border-neutral-700"> */}
-<div className="p-6 bg-gradient-to-r from-primary-50 to-primary-100 dark:bg-gradient-to-r dark:from-[#2a2a2a] dark:to-[#2e2e2e] border-b border-neutral-200 dark:border-neutral-700">                    <div className="flex items-center gap-4">
+                  <div className="p-6 bg-gradient-to-r from-primary-50 to-primary-100 dark:bg-gradient-to-r dark:from-[#2a2a2a] dark:to-[#2e2e2e] border-b border-neutral-200 dark:border-neutral-700">
+                    {" "}
+                    <div className="flex items-center gap-4">
                       {post.image_url ? (
                         <img
                           src={post.image_url}

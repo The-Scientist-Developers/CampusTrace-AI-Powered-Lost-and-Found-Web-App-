@@ -40,22 +40,41 @@ async function getAccessToken() {
 const apiClient = {
   async submitClaim(itemId, verificationMessage) {
     const token = await getAccessToken();
-    const response = await fetch(`${API_BASE_URL}/api/claims/create`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        item_id: itemId,
-        verification_message: verificationMessage,
-      }),
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || "Failed to submit claim.");
+
+    // Create an AbortController with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/claims/create`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          item_id: itemId,
+          verification_message: verificationMessage,
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to submit claim.");
+      }
+      return response.json();
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === "AbortError") {
+        throw new Error(
+          "Request timed out. Please check your connection and try again."
+        );
+      }
+      throw error;
     }
-    return response.json();
   },
 };
 
@@ -368,6 +387,11 @@ const ItemDetailsModal = ({ item, onClose, onClaim, user }) => {
   const handleStartConversation = async () => {
     setIsCreatingChat(true);
     const toastId = toast.loading("Opening chat...");
+
+    // Create an AbortController with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
     try {
       const token = await getAccessToken();
       if (!token) throw new Error("Authentication required.");
@@ -379,7 +403,10 @@ const ItemDetailsModal = ({ item, onClose, onClaim, user }) => {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errData = await response.json();
@@ -387,11 +414,21 @@ const ItemDetailsModal = ({ item, onClose, onClaim, user }) => {
       }
 
       const { conversation_id } = await response.json();
-      toast.dismiss(toastId);
+      toast.success("Opening conversation...", { id: toastId });
+      onClose(); // Close the modal before navigating
       navigate(`/dashboard/messages/${conversation_id}`);
     } catch (error) {
-      toast.error(error.message, { id: toastId });
+      clearTimeout(timeoutId);
+      if (error.name === "AbortError") {
+        toast.error(
+          "Request timed out. Please check your connection and try again.",
+          { id: toastId }
+        );
+      } else {
+        toast.error(error.message, { id: toastId });
+      }
     } finally {
+      // Always reset loading state whether success or error
       setIsCreatingChat(false);
     }
   };
@@ -508,7 +545,7 @@ const ItemDetailsModal = ({ item, onClose, onClaim, user }) => {
             </div>
 
             {/* Details and description */}
-            <div className="p-5 space-y-4">
+            <div className="p-5 pb-8 space-y-4">
               {/* Details Grid */}
               <div className="bg-neutral-50 dark:bg-neutral-800/50 rounded-xl p-4 space-y-3">
                 <div className="flex items-start gap-3">
@@ -558,7 +595,7 @@ const ItemDetailsModal = ({ item, onClose, onClaim, user }) => {
 
               {/* Action Buttons */}
               {showActionButtons && (
-                <div className="space-y-3 pt-2">
+                <div className="space-y-3 pt-2 pb-4">
                   {isFoundItem && (
                     <button
                       onClick={(e) => {
@@ -614,7 +651,10 @@ const ClaimModal = ({ item, onClose, onSubmit }) => {
       toast.success("Claim submitted! The finder has been notified.", {
         id: toastId,
       });
-      onClose();
+      // Small delay before closing to ensure toast is visible
+      setTimeout(() => {
+        onClose();
+      }, 100);
     } catch (error) {
       toast.error(error.message || "Failed to submit claim.", { id: toastId });
     } finally {

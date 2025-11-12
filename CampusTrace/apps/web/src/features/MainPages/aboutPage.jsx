@@ -100,14 +100,14 @@ export default function AboutUsPage() {
         <nav className="px-6 sm:px-8 md:px-16 py-6">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
+            <Link to="/" className="flex items-center gap-3 group">
               <img
                 src={logo}
                 alt="CampusTrace logo"
-                className="h-10 w-10 sm:h-12 sm:w-12 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
+                className="h-10 w-10 sm:h-11 sm:w-11 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
               />
               <span
-                className="text-xl sm:text-xl md:text-2xl font-bold text-neutral-800 dark:text-white"
+                className="text-2xl sm:text-2xl md:text-3xl font-bold text-neutral-800 dark:text-white"
                 style={{
                   fontFamily: '"Inter", sans-serif',
                   fontWeight: 700,
@@ -134,10 +134,10 @@ export default function AboutUsPage() {
       {/* Main Content */}
       <div className="pt-28 pb-12 flex flex-col justify-center items-center">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center animate-fade-in-up">
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-neutral-900 dark:text-white mb-5">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-neutral-900 dark:text-white mb-5">
             About Our Team
           </h1>
-          <p className="text-base sm:text-xl text-neutral-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed mb-10">
+          <p className="text-base sm:text-lg md:text-xl text-neutral-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed mb-10">
             We are a dedicated team of student developers from Isabela State
             University, bringing innovative solutions to campus challenges.
             Campus Trace is our project, born from a passion for technology and

@@ -108,14 +108,14 @@ export default function LearnMorePage() {
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
+            <Link to="/" className="flex items-center gap-3 group">
               <img
                 src={logo}
                 alt="CampusTrace logo"
-                className="h-10 w-10 sm:h-12 sm:w-12 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
+                className="h-10 w-10 sm:h-11 sm:w-11 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
               />
               <span
-                className="text-lg sm:text-xl font-bold text-neutral-800 dark:text-white"
+                className="text-2xl sm:text-2xl md:text-3xl font-bold text-neutral-800 dark:text-white"
                 style={{
                   fontFamily: '"Inter", sans-serif',
                   fontWeight: 700,
@@ -152,17 +152,17 @@ export default function LearnMorePage() {
             <p className="text-primary-600 dark:text-primary-500 font-semibold tracking-widest uppercase mb-3 text-xs">
               Platform Overview
             </p>
-            <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-neutral-900 dark:text-white leading-tight">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-neutral-900 dark:text-white leading-tight">
               How CampusTrace Works
             </h1>
-            <p className="mt-4 text-base sm:text-xl text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto">
+            <p className="mt-4 text-base sm:text-lg md:text-xl text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto">
               A comprehensive guide to leveraging our intelligent lost and found
               platform for your university community.
             </p>
           </motion.header>
 
           <div className="mb-20 sm:mb-24">
-            <h2 className="text-3xl sm:text-4xl font-bold text-center text-neutral-800 dark:text-white mb-12 sm:mb-16 border-b-2 border-primary-500/30 pb-4 inline-block mx-auto">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center text-neutral-800 dark:text-white mb-12 sm:mb-16 border-b-2 border-primary-500/30 pb-4 inline-block mx-auto">
               For Students & Staff
             </h2>
             <div className="relative">
@@ -239,7 +239,7 @@ export default function LearnMorePage() {
           </div>
 
           <div className="mb-20 sm:mb-24">
-            <h2 className="text-3xl sm:text-4xl font-bold text-center text-neutral-800 dark:text-white mb-12 sm:mb-16 border-b-2 border-primary-500/30 pb-4 inline-block mx-auto">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center text-neutral-800 dark:text-white mb-12 sm:mb-16 border-b-2 border-primary-500/30 pb-4 inline-block mx-auto">
               For University Administrators
             </h2>
             <div className="relative">
@@ -325,10 +325,10 @@ export default function LearnMorePage() {
             transition={{ duration: 0.7, ease: "easeOut" }}
             className="mt-20 text-center bg-gradient-to-br from-primary-50 to-indigo-100 dark:from-neutral-800 dark:to-neutral-900 p-10 sm:p-14 rounded-2xl shadow-lg border border-neutral-200 dark:border-neutral-700"
           >
-            <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900 dark:text-white mb-5">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-neutral-900 dark:text-white mb-5">
               Transform Your Campus Lost & Found Experience
             </h2>
-            <p className="text-lg text-neutral-600 dark:text-neutral-400 max-w-xl mx-auto mb-8">
+            <p className="text-base sm:text-lg md:text-xl text-neutral-600 dark:text-neutral-400 max-w-xl mx-auto mb-8">
               Join thousands of universities leveraging intelligent technology
               to reunite community members with their belongings.
             </p>

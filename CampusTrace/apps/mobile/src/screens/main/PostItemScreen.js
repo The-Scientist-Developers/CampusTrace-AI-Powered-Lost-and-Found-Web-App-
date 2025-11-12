@@ -347,6 +347,46 @@ export default function PostItemScreen({ navigation, route }) {
             </TouchableOpacity>
           </View>
 
+          {/* ============================================================
+            == RECOMMENDED CODE ADDITION START
+            ============================================================
+          */}
+          {status === "Found" && !isEditMode && (
+            <View
+              style={[
+                styles.infoBox,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Text
+                style={[styles.infoBoxText, { color: colors.textSecondary }]}
+              >
+                You are posting an item you found. You will be responsible for
+                managing claims and coordinating its return.
+              </Text>
+              <Text
+                style={[
+                  styles.infoBoxText,
+                  {
+                    color: colors.textSecondary,
+                    marginTop: 10,
+                    fontWeight: "bold",
+                  },
+                ]}
+              >
+                If you don't want this responsibility, please take the item to
+                your university's Lost & Found office.
+              </Text>
+            </View>
+          )}
+          {/* ============================================================
+            == RECOMMENDED CODE ADDITION END
+            ============================================================
+          */}
+
           {isEditMode && (
             <Text style={[styles.editNote, { color: colors.textSecondary }]}>
               Item type (Lost/Found) cannot be changed after posting.
@@ -925,6 +965,24 @@ const styles = StyleSheet.create({
     color: "#6b7280",
     marginTop: 12,
   },
+  // ============================================================
+  // == RECOMMENDED STYLES ADDITION START
+  // ============================================================
+  infoBox: {
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  infoBoxText: {
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: "center",
+  },
+  // ============================================================
+  // == RECOMMENDED STYLES ADDITION END
+  // ============================================================
+
   // Modal styles
   modalOverlay: {
     flex: 1,

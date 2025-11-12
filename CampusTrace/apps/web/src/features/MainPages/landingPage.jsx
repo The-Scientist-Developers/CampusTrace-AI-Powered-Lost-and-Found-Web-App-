@@ -48,6 +48,14 @@ import {
   Download as DownloadIcon,
   ChevronLeft,
   ChevronRight,
+  Smartphone,
+  Tablet,
+  QrCode,
+  ExternalLink,
+  CheckCircle2,
+  Star,
+  TrendingUp,
+  Camera,
 } from "lucide-react";
 const ProfessionalScreenshotGallery = ({ screenshots }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -406,31 +414,6 @@ const useParallax = (speed = 0.5) => {
   return offset;
 };
 
-const ScrollProgress = () => {
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const totalHeight =
-        document.documentElement.scrollHeight - window.innerHeight;
-      const currentProgress = (window.pageYOffset / totalHeight) * 100;
-      setProgress(currentProgress);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  return (
-    <div className="fixed top-0 left-0 right-0 h-1 bg-transparent z-[60]">
-      <div
-        className="h-full bg-primary-500 transition-all duration-150 shadow-lg shadow-primary-500/50"
-        style={{ width: `${progress}%` }}
-      />
-    </div>
-  );
-};
-
 const FeatureSlider = ({ features }) => {
   const controls = useAnimation();
   const { ref, inView } = useIntersectionObserver({
@@ -512,17 +495,17 @@ const FAQItem = ({ question, answer, isOpen, onToggle, index }) => {
     >
       <button
         onClick={onToggle}
-        className="w-full py-5 sm:py-6 px-4 flex justify-between items-center text-left hover:bg-neutral-100 dark:hover:bg-neutral-800/50 rounded-lg group transition-all duration-300"
+        className="w-full py-4 sm:py-5 md:py-6 px-3 sm:px-4 flex justify-between items-center text-left hover:bg-neutral-100 dark:hover:bg-neutral-800/50 rounded-lg group transition-all duration-300"
       >
-        <h3 className="text-base sm:text-base lg:text-lg font-semibold text-neutral-900 dark:text-white pr-4 sm:pr-8 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
+        <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-neutral-900 dark:text-white pr-3 sm:pr-4 md:pr-8 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300 leading-snug">
           {question}
         </h3>
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0, scale: isOpen ? 1.1 : 1 }}
           transition={{ duration: 0.3 }}
-          className="p-1.5 sm:p-2 rounded-full bg-primary-100 dark:bg-primary-500/10 flex-shrink-0"
+          className="p-1 sm:p-1.5 md:p-2 rounded-full bg-primary-100 dark:bg-primary-500/10 flex-shrink-0"
         >
-          <ChevronDown className="w-5 h-5 sm:w-5 sm:h-5 text-primary-600 dark:text-primary-400" />
+          <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600 dark:text-primary-400" />
         </motion.div>
       </button>
       <motion.div
@@ -531,8 +514,8 @@ const FAQItem = ({ question, answer, isOpen, onToggle, index }) => {
         transition={{ duration: 0.3, ease: "easeInOut" }}
         className="overflow-hidden"
       >
-        <div className="pb-5 sm:pb-6 px-4">
-          <p className="text-base sm:text-base text-neutral-600 dark:text-neutral-400 leading-relaxed">
+        <div className="pb-4 sm:pb-5 md:pb-6 px-3 sm:px-4">
+          <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 leading-relaxed">
             {answer}
           </p>
         </div>
@@ -591,32 +574,32 @@ const FeatureCard = ({ icon: Icon, title, description, index }) => {
     >
       <div
         ref={cardRef}
-        className={`relative rounded-2xl bg-white dark:bg-[#2a2a2a] p-6 sm:p-8 shadow-md hover:shadow-xl transition-all duration-300 h-full group border border-transparent hover:border-primary-500/20`}
+        className={`relative rounded-xl sm:rounded-2xl bg-white dark:bg-[#2a2a2a] p-5 sm:p-6 md:p-8 shadow-md hover:shadow-xl transition-all duration-300 h-full group border border-transparent hover:border-primary-500/20`}
       >
         <div
-          className={`absolute -inset-px rounded-2xl transition-opacity duration-300 opacity-0 group-hover:opacity-100 ${
+          className={`absolute -inset-px rounded-xl sm:rounded-2xl transition-opacity duration-300 opacity-0 group-hover:opacity-100 ${
             isHovered
-              ? "bg-gradient-to-br from-primary-400/10 via-transparent to-purple-400/10"
+              ? "bg-gradient-to-br from-primary-400/10 via-transparent to-blue-400/10"
               : ""
           }`}
           aria-hidden="true"
         />
 
-        <div className="relative mb-4 sm:mb-6">
+        <div className="relative mb-4 sm:mb-5 md:mb-6">
           <motion.div
             animate={{ scale: isHovered ? 1.1 : 1, rotate: isHovered ? 6 : 0 }}
             transition={{ type: "spring", stiffness: 400, damping: 15 }}
-            className="flex items-center justify-center h-14 w-14 sm:h-12 sm:w-12 bg-primary-100 dark:bg-primary-500/10 rounded-lg"
+            className="flex items-center justify-center h-12 w-12 sm:h-14 sm:w-14 bg-primary-100 dark:bg-primary-500/10 rounded-lg shadow-sm"
           >
-            <Icon className="w-7 h-7 sm:w-6 sm:h-6 text-primary-600 dark:text-primary-400" />
+            <Icon className="w-6 h-6 sm:w-7 sm:h-7 text-primary-600 dark:text-primary-400" />
           </motion.div>
         </div>
 
-        <h3 className="text-lg sm:text-lg font-bold text-neutral-900 dark:text-white mb-3 sm:mb-3 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
+        <h3 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white mb-2 sm:mb-3 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
           {title}
         </h3>
 
-        <p className="text-neutral-600 dark:text-neutral-400 text-sm sm:text-sm leading-relaxed">
+        <p className="text-neutral-600 dark:text-neutral-400 text-sm leading-relaxed">
           {description}
         </p>
 
@@ -656,7 +639,7 @@ const FeatureSection = ({ title, subtitle, features, id, startIndex = 0 }) => {
           }}
           className="text-center mb-10 sm:mb-14 relative"
         >
-          <h2 className="text-3xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4 relative inline-block px-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-neutral-900 dark:text-white mb-4 relative inline-block px-4">
             {title}
             <motion.span
               initial={{ width: 0 }}
@@ -669,7 +652,7 @@ const FeatureSection = ({ title, subtitle, features, id, startIndex = 0 }) => {
               className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 bg-primary-500 rounded-full"
             />
           </h2>
-          <p className="text-base sm:text-base text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto mt-4 px-4">
+          <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto mt-4 px-4">
             {subtitle}
           </p>
         </motion.div>
@@ -698,7 +681,7 @@ const ScreenshotSection = ({ screenshots }) => {
     <section
       ref={ref}
       id="screenshots"
-      className="py-16 sm:py-20 bg-neutral-100 dark:bg-[#2a2a2a] overflow-hidden"
+      className="py-16 sm:py-20 bg-neutral-100 dark:bg-[#2a2a2a] overflow-hidden scroll-mt-28"
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
@@ -710,7 +693,7 @@ const ScreenshotSection = ({ screenshots }) => {
           }}
           className="text-center mb-10 sm:mb-14"
         >
-          <h2 className="text-3xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-4 relative inline-block px-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-neutral-900 dark:text-white mb-4 relative inline-block px-4">
             See CampusTrace in Action
             <motion.span
               initial={{ width: 0 }}
@@ -723,7 +706,7 @@ const ScreenshotSection = ({ screenshots }) => {
               className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 bg-primary-500 rounded-full"
             />
           </h2>
-          <p className="text-base sm:text-base text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto mt-4 px-4">
+          <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto mt-4 px-4">
             Take a visual tour of our key features and user-friendly interface.
             Click any image to view it in full size.
           </p>
@@ -736,11 +719,340 @@ const ScreenshotSection = ({ screenshots }) => {
   );
 };
 
+// Mobile App Section Component
+const MobileAppSection = () => {
+  const { ref, animation, inView } = useInView({
+    threshold: 0.2,
+    triggerOnce: true,
+  });
+
+  return (
+    <section
+      id="mobile-app"
+      ref={ref}
+      className="py-16 sm:py-24 bg-gradient-to-br from-primary-50 via-blue-50 to-primary-100 dark:from-primary-900/10 dark:via-[#1a1a1a] dark:to-primary-900/5 relative overflow-hidden scroll-mt-28"
+    >
+      {/* Background decorations - Blue Theme Only */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-primary-400 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-400 rounded-full blur-3xl animate-pulse-delayed" />
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <motion.div
+          animate={animation}
+          initial="hidden"
+          variants={{
+            visible: { opacity: 1, y: 0, transition: { duration: 0.8 } },
+            hidden: { opacity: 0, y: 30 },
+          }}
+          className="text-center mb-12 sm:mb-16"
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-100 dark:bg-primary-500/10 rounded-full mb-6">
+            <Smartphone className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+            <span className="text-sm font-semibold text-primary-600 dark:text-primary-400">
+              NOW AVAILABLE
+            </span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-neutral-900 dark:text-white mb-3 sm:mb-4 px-4">
+            CampusTrace On The Go
+          </h2>
+          <p className="text-sm sm:text-base md:text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto px-4">
+            Take CampusTrace with you everywhere. Download our mobile app for
+            Android devices and never miss a match notification.
+          </p>
+        </motion.div>
+
+        <div className="grid md:grid-cols-2 gap-8 sm:gap-10 md:gap-12 items-center">
+          {/* Left side - Features */}
+          <motion.div
+            animate={animation}
+            initial="hidden"
+            variants={{
+              visible: {
+                opacity: 1,
+                x: 0,
+                transition: { duration: 0.8, delay: 0.2 },
+              },
+              hidden: { opacity: 0, x: -30 },
+            }}
+            className="space-y-4 sm:space-y-5 md:space-y-6"
+          >
+            {[
+              {
+                icon: Bell,
+                title: "Push Notifications",
+                description:
+                  "Receive instant alerts for AI matches, claims, and messages directly on your phone.",
+              },
+              {
+                icon: Camera,
+                title: "Quick Photo Capture",
+                description:
+                  "Snap and post lost or found items on the spot with your phone's camera.",
+              },
+              {
+                icon: MessageSquare,
+                title: "Chat Anywhere",
+                description:
+                  "Stay connected and coordinate item returns while you're on the move.",
+              },
+              {
+                icon: Zap,
+                title: "Lightning Fast",
+                description:
+                  "Optimized mobile experience with offline support and fast loading times.",
+              },
+            ].map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={inView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
+                className="flex gap-3 sm:gap-4 items-start bg-white/80 dark:bg-[#2a2a2a]/80 backdrop-blur-sm p-3 sm:p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:shadow-lg transition-shadow duration-300"
+              >
+                <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-primary-100 dark:bg-primary-500/10 rounded-lg flex items-center justify-center">
+                  <feature.icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600 dark:text-primary-400" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white mb-1">
+                    {feature.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                    {feature.description}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Right side - Download CTA */}
+          <motion.div
+            animate={animation}
+            initial="hidden"
+            variants={{
+              visible: {
+                opacity: 1,
+                x: 0,
+                transition: { duration: 0.8, delay: 0.4 },
+              },
+              hidden: { opacity: 0, x: 30 },
+            }}
+            className="relative mt-8 md:mt-0"
+          >
+            <div className="bg-gradient-to-br from-primary-600 to-blue-600 rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 text-white shadow-2xl">
+              <div className="flex items-center justify-center mb-5 sm:mb-6">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-white/20 rounded-2xl blur-xl"></div>
+                  <Smartphone className="relative w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24" />
+                </div>
+              </div>
+
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-bold mb-3 sm:mb-4 text-center">
+                Download for Android
+              </h3>
+
+              <p className="text-white/90 text-center mb-6 sm:mb-8 text-xs sm:text-sm md:text-base px-2">
+                Get the CampusTrace APK file and install it on your Android
+                device. Not yet available on Google Play Store.
+              </p>
+
+              <div className="space-y-3 sm:space-y-4">
+                <a
+                  href="#"
+                  className="block w-full py-3.5 sm:py-4 px-4 sm:px-6 bg-white text-primary-600 rounded-xl font-bold text-center hover:bg-neutral-100 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 text-sm sm:text-base"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    alert(
+                      "APK download will be available soon! Contact your university administrator for early access."
+                    );
+                  }}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <DownloadIcon className="w-5 h-5" />
+                    <span>Download APK</span>
+                  </div>
+                </a>
+
+                <div className="flex items-center justify-center gap-2 text-white/80 text-xs">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Safe & Secure Download</span>
+                </div>
+              </div>
+
+              <div className="mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-white/20">
+                <p className="text-xs sm:text-xs text-white/70 text-center px-2">
+                  <strong className="text-white">Note:</strong> Enable "Install
+                  from Unknown Sources" in your Android settings before
+                  installing.
+                </p>
+              </div>
+            </div>
+
+            {/* Decorative elements - Blue Theme Only */}
+            <div className="absolute -bottom-3 -right-3 sm:-bottom-4 sm:-right-4 w-20 h-20 sm:w-24 sm:h-24 bg-primary-200 dark:bg-primary-800/30 rounded-full blur-2xl -z-10"></div>
+            <div className="absolute -top-3 -left-3 sm:-top-4 sm:-left-4 w-24 h-24 sm:w-32 sm:h-32 bg-blue-200 dark:bg-blue-800/30 rounded-full blur-2xl -z-10"></div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// Stats Section Component
+const StatsSection = () => {
+  const { ref, animation, inView } = useInView({
+    threshold: 0.3,
+    triggerOnce: true,
+  });
+
+  const stats = [
+    { icon: TrendingUp, label: "Platform Launch", value: "2024", suffix: "" },
+    {
+      icon: ShieldCheck,
+      label: "University-Verified",
+      value: "100",
+      suffix: "%",
+    },
+    { icon: Users, label: "Active Community", value: "Growing", suffix: "" },
+    {
+      icon: CheckCircle2,
+      label: "AI-Powered Matching",
+      value: "Smart",
+      suffix: "",
+    },
+  ];
+
+  return (
+    <section ref={ref} className="py-16 sm:py-20 bg-white dark:bg-[#2a2a2a]">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          animate={animation}
+          initial="hidden"
+          variants={{
+            visible: { opacity: 1, y: 0, transition: { duration: 0.8 } },
+            hidden: { opacity: 0, y: 30 },
+          }}
+          className="text-center mb-12"
+        >
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-neutral-900 dark:text-white mb-4">
+            Building a Better Campus Community
+          </h2>
+          <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto">
+            CampusTrace is a new platform designed to revolutionize how
+            universities handle lost and found items.
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+          {stats.map((stat, index) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={inView ? { opacity: 1, scale: 1 } : {}}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              className="text-center p-6 bg-neutral-50 dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-neutral-700 hover:shadow-lg transition-all duration-300"
+            >
+              <stat.icon className="w-10 h-10 sm:w-12 sm:h-12 text-primary-600 dark:text-primary-400 mx-auto mb-4" />
+              <div className="text-3xl sm:text-4xl font-bold text-neutral-900 dark:text-white mb-2">
+                {stat.value}
+                <span className="text-primary-600 dark:text-primary-400">
+                  {stat.suffix}
+                </span>
+              </div>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                {stat.label}
+              </p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// Trust & Security Section
+const TrustSection = () => {
+  const { ref, animation, inView } = useInView({
+    threshold: 0.2,
+    triggerOnce: true,
+  });
+
+  return (
+    <section
+      ref={ref}
+      className="py-16 sm:py-20 bg-neutral-100 dark:bg-[#1a1a1a]"
+    >
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          animate={animation}
+          initial="hidden"
+          variants={{
+            visible: { opacity: 1, y: 0, transition: { duration: 0.8 } },
+            hidden: { opacity: 0, y: 30 },
+          }}
+          className="text-center mb-12 sm:mb-16"
+        >
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-neutral-900 dark:text-white mb-4">
+            Built With Security & Privacy in Mind
+          </h2>
+          <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto">
+            Your safety and privacy are our top priorities. Here's how we
+            protect your data and ensure a trusted community.
+          </p>
+        </motion.div>
+
+        <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
+          {[
+            {
+              icon: University,
+              title: "University Verification",
+              description:
+                "Only verified students and staff from registered universities can join, ensuring a trusted community.",
+            },
+            {
+              icon: Lock,
+              title: "Data Encryption",
+              description:
+                "All data is encrypted and isolated using Supabase Row Level Security for maximum privacy protection.",
+            },
+            {
+              icon: UserCheck,
+              title: "AI Face Verification",
+              description:
+                "Profile pictures are verified with AI to ensure authentic users and prevent fake accounts.",
+            },
+          ].map((item, index) => (
+            <motion.div
+              key={item.title}
+              initial={{ opacity: 0, y: 30 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6, delay: index * 0.15 }}
+              className="bg-white dark:bg-[#2a2a2a] rounded-2xl p-8 shadow-md hover:shadow-xl transition-all duration-300 border border-neutral-200 dark:border-neutral-700"
+            >
+              <div className="w-14 h-14 bg-primary-100 dark:bg-primary-500/10 rounded-xl flex items-center justify-center mb-6">
+                <item.icon className="w-8 h-8 text-primary-600 dark:text-primary-400" />
+              </div>
+              <h3 className="text-xl font-bold text-neutral-900 dark:text-white mb-3">
+                {item.title}
+              </h3>
+              <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                {item.description}
+              </p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 // --- Main Landing Page Component ---
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFAQ, setOpenFAQ] = useState(0);
   const [scrolled, setScrolled] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const heroParallax = useParallax(0.3);
   const gridParallax = useParallax(-0.2);
 
@@ -759,6 +1071,18 @@ export default function LandingPage() {
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Mouse tracking for interactive effects
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setMousePosition({
+        x: (e.clientX / window.innerWidth - 0.5) * 20,
+        y: (e.clientY / window.innerHeight - 0.5) * 20,
+      });
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
   // Quick features for the slider
@@ -935,9 +1259,57 @@ export default function LandingPage() {
         />
       </Helmet>
 
+      {/* Mobile App Alert Banner */}
+      <motion.div
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{
+          duration: 0.6,
+          delay: 0.2,
+          type: "spring",
+          stiffness: 100,
+        }}
+        className="fixed top-0 left-0 right-0 z-[60] bg-gradient-to-r from-primary-600 via-primary-500 to-primary-600 text-white py-2.5 sm:py-3 shadow-lg backdrop-blur-sm"
+        style={{
+          backgroundSize: "200% 100%",
+          animation: "gradientShift 8s ease infinite",
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 text-center">
+            <motion.div
+              animate={{
+                scale: [1, 1.2, 1],
+                rotate: [0, 10, -10, 0],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                repeatType: "reverse",
+              }}
+            >
+              <Smartphone className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+            </motion.div>
+            <p className="text-xs sm:text-sm font-semibold">
+              <span className="hidden sm:inline">🎉 New! </span>
+              CampusTrace Mobile App Now Available for Android
+              <span className="hidden md:inline"> - Download APK Today!</span>
+            </p>
+            <motion.a
+              href="#mobile-app"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="ml-2 px-3 py-1 sm:px-4 sm:py-1.5 bg-white text-primary-600 rounded-full text-xs sm:text-sm font-bold hover:bg-neutral-100 transition-all duration-300 flex-shrink-0"
+            >
+              Get App
+            </motion.a>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Header */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        className={`fixed top-[42px] sm:top-[48px] left-0 right-0 z-50 transition-all duration-500 ${
           scrolled
             ? "bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur-md"
             : "bg-transparent"
@@ -946,16 +1318,16 @@ export default function LandingPage() {
         <nav className="px-6 sm:px-8 md:px-16 py-6">
           <div className="flex justify-between items-center">
             {/* Logo and Brand Name */}
-            <Link to="/" className="flex items-center gap-2 group">
+            <Link to="/" className="flex items-center gap-3 group">
               <motion.img
                 src={logo}
                 alt="CampusTrace logo"
-                className="h-8 w-8"
+                className="h-10 w-10 sm:h-11 sm:w-11"
                 whileHover={{ scale: 1.05 }}
               />
               <motion.span
                 whileHover={{ scale: 1.05 }}
-                className="text-xl md:text-2xl font-bold text-neutral-800 dark:text-white"
+                className="text-2xl sm:text-2xl md:text-3xl font-bold text-neutral-800 dark:text-white"
                 style={{
                   fontFamily: '"Inter", sans-serif',
                   fontWeight: 700,
@@ -1186,9 +1558,41 @@ export default function LandingPage() {
         )}
       </AnimatePresence>
 
-      <main className="flex-grow pt-20 md:pt-24 relative z-10">
+      <main className="flex-grow pt-[100px] sm:pt-[110px] md:pt-[120px] relative z-10">
         {/* Hero Section */}
-        <section className="min-h-[calc(100vh-80px)] md:min-h-[calc(80vh-96px)] flex items-center justify-center text-center relative overflow-hidden px-4">
+        <section className="min-h-[calc(100vh-120px)] md:min-h-[calc(80vh-120px)] flex items-center justify-center text-center relative overflow-hidden px-4 sm:px-6">
+          {/* Animated Gradient Background - Blue Theme Only */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary-50 via-blue-50 to-primary-100 dark:from-[#1a1a1a] dark:via-primary-900/10 dark:to-primary-900/5" />
+
+          {/* Floating particles - Blue Theme */}
+          {[...Array(12)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-2 h-2 bg-primary-400/20 dark:bg-primary-400/10 rounded-full"
+              initial={{
+                x: Math.random() * window.innerWidth,
+                y: Math.random() * window.innerHeight,
+              }}
+              animate={{
+                y: [
+                  Math.random() * window.innerHeight,
+                  Math.random() * window.innerHeight,
+                ],
+                x: [
+                  Math.random() * window.innerWidth,
+                  Math.random() * window.innerWidth,
+                ],
+                scale: [1, 1.5, 1],
+                opacity: [0.2, 0.5, 0.2],
+              }}
+              transition={{
+                duration: 10 + Math.random() * 20,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+            />
+          ))}
+
           <div
             className="absolute inset-0 opacity-20 dark:opacity-5 [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_100%)]"
             style={{ transform: `translateY(${gridParallax}px)` }}
@@ -1220,37 +1624,101 @@ export default function LandingPage() {
             </svg>
           </div>
 
+          {/* Animated gradient blobs - Blue Theme Only */}
           <div className="absolute inset-0 overflow-hidden -z-10">
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 1.5, ease: "easeOut" }}
-              className="absolute top-10 left-10 sm:left-20 w-48 h-48 sm:w-72 sm:h-72 bg-primary-400/10 dark:bg-primary-500/10 rounded-full blur-3xl animate-float"
+              className="absolute top-5 left-5 sm:top-10 sm:left-20 w-40 h-40 sm:w-72 sm:h-72 bg-gradient-to-br from-primary-400/15 to-blue-400/15 dark:from-primary-500/10 dark:to-blue-500/8 rounded-full blur-3xl animate-float"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 1.5, ease: "easeOut", delay: 0.3 }}
-              className="absolute bottom-10 right-10 sm:bottom-20 sm:right-20 w-64 h-64 sm:w-96 sm:h-96 bg-purple-400/10 dark:bg-purple-500/10 rounded-full blur-3xl animate-float-delayed"
+              className="absolute bottom-5 right-5 sm:bottom-20 sm:right-20 w-48 h-48 sm:w-96 sm:h-96 bg-gradient-to-br from-blue-400/15 to-primary-400/15 dark:from-blue-500/8 dark:to-primary-500/10 rounded-full blur-3xl animate-float-delayed"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1.5, ease: "easeOut", delay: 0.6 }}
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 sm:w-[500px] sm:h-[500px] bg-gradient-to-br from-primary-300/8 to-blue-300/8 dark:from-primary-600/5 dark:to-blue-600/5 rounded-full blur-3xl"
             />
           </div>
 
           <motion.div
-            className="max-w-4xl mx-auto py-12 sm:py-16 relative z-10"
-            style={{ transform: `translateY(${heroParallax}px)` }}
+            className="max-w-4xl mx-auto py-8 sm:py-12 md:py-16 relative z-10 w-full"
+            style={{
+              transform: `translateY(${heroParallax}px)`,
+            }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.1 }}
           >
+            {/* Animated badge */}
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
+              className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-gradient-to-r from-primary-500/10 to-blue-500/10 dark:from-primary-400/20 dark:to-blue-400/20 border border-primary-200 dark:border-primary-500/30 backdrop-blur-sm"
+            >
+              <Sparkles className="w-4 h-4 text-primary-600 dark:text-primary-400 animate-pulse" />
+              <span className="text-sm font-semibold bg-gradient-to-r from-primary-600 to-blue-600 dark:from-primary-400 dark:to-blue-400 bg-clip-text text-transparent">
+                AI-Powered Lost & Found Platform
+              </span>
+            </motion.div>
+
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: [0.25, 1, 0.5, 1] }}
+              transition={{
+                duration: 0.8,
+                ease: [0.25, 1, 0.5, 1],
+                delay: 0.2,
+              }}
             >
-              <h1 className="text-4xl sm:text-5xl md:text-5xl lg:text-6xl font-bold tracking-tight text-neutral-900 dark:text-white leading-tight">
-                Reconnect What's Lost,{" "}
-                <span className="text-primary-600 dark:text-primary-400 block sm:inline mt-2 sm:mt-0">
-                  Powered by AI
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-neutral-900 dark:text-white leading-tight px-2">
+                <span className="inline-block">
+                  <motion.span
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                    className="inline-block"
+                  >
+                    Reconnect
+                  </motion.span>{" "}
+                  <motion.span
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.4 }}
+                    className="inline-block"
+                  >
+                    What's
+                  </motion.span>{" "}
+                  <motion.span
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.5 }}
+                    className="inline-block"
+                  >
+                    Lost,
+                  </motion.span>
+                </span>{" "}
+                <span className="relative inline-block mt-2 sm:mt-0">
+                  <motion.span
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.6, delay: 0.6 }}
+                    className="relative inline-block bg-gradient-to-r from-primary-600 via-blue-600 to-blue-700 dark:from-primary-400 dark:via-blue-400 dark:to-blue-500 bg-clip-text text-transparent"
+                  >
+                    Powered by AI
+                  </motion.span>
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 0.8, delay: 1 }}
+                    className="absolute -bottom-2 left-0 h-1 bg-gradient-to-r from-primary-600 via-blue-600 to-blue-700 dark:from-primary-400 dark:via-blue-400 dark:to-blue-500 rounded-full"
+                  />
                 </span>
               </h1>
             </motion.div>
@@ -1258,33 +1726,70 @@ export default function LandingPage() {
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-              className="mt-6 sm:mt-6 max-w-2xl mx-auto text-base sm:text-base md:text-lg text-neutral-600 dark:text-neutral-400 leading-relaxed"
+              transition={{ duration: 0.8, delay: 0.8, ease: "easeOut" }}
+              className="mt-4 sm:mt-6 max-w-2xl mx-auto text-sm sm:text-base md:text-lg text-neutral-600 dark:text-neutral-400 leading-relaxed px-2"
             >
-              CampusTrace uses smart technology to make finding lost items on
-              campus simple and fast. Join your university's secure lost and
-              found network today.
+              CampusTrace uses{" "}
+              <span className="font-semibold text-primary-600 dark:text-primary-400">
+                smart technology
+              </span>{" "}
+              to make finding lost items on campus simple and fast. Join your
+              university's secure lost and found network today.
             </motion.p>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
-              className="mt-8 sm:mt-10 flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-4"
+              transition={{ duration: 0.8, delay: 1, ease: "easeOut" }}
+              className="mt-6 sm:mt-8 md:mt-10 flex flex-col sm:flex-row justify-center items-center gap-3 px-4"
             >
               <Link
                 to="/login"
-                className="group px-8 sm:px-7 py-3 sm:py-2.5 bg-primary-600 text-white font-medium rounded-lg shadow hover:shadow-lg hover:bg-primary-700 transition-all duration-300 flex items-center justify-center gap-2 text-base sm:text-base w-full sm:w-auto"
+                className="group relative px-8 py-3.5 sm:px-7 sm:py-3 bg-gradient-to-r from-primary-600 to-blue-600 text-white font-semibold rounded-lg overflow-hidden transition-all duration-300 flex items-center justify-center gap-2 text-base w-full sm:w-auto shadow-lg hover:shadow-2xl hover:shadow-primary-500/50 transform hover:scale-105"
               >
-                <span className="relative z-10">Get Started</span>
-                <ArrowRight className="w-4 h-4 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform relative z-10" />
+                <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-primary-500 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <span className="relative z-10 flex items-center gap-2">
+                  Get Started
+                  <ArrowRight className="w-5 h-5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform" />
+                </span>
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-20 transition-opacity">
+                  <div className="w-32 h-32 bg-white rounded-full blur-2xl" />
+                </div>
               </Link>
               <Link
                 to="/learn-more"
-                className="px-8 sm:px-7 py-3 sm:py-2.5 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 font-medium rounded-lg shadow hover:shadow-lg transition-all duration-300 border border-neutral-200 dark:border-neutral-700 w-full sm:w-auto text-center text-base sm:text-base"
+                className="group relative px-8 py-3.5 sm:px-7 sm:py-3 bg-white/80 dark:bg-neutral-800/80 backdrop-blur-sm text-neutral-700 dark:text-neutral-200 font-semibold rounded-lg transition-all duration-300 border-2 border-neutral-300 dark:border-neutral-600 w-full sm:w-auto text-center text-base shadow-lg hover:shadow-xl hover:border-primary-500 dark:hover:border-primary-400 transform hover:scale-105"
               >
-                Learn More
+                <span className="flex items-center justify-center gap-2">
+                  Learn More
+                  <Eye className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </span>
               </Link>
+            </motion.div>
+
+            {/* Trust indicators */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 1.2 }}
+              className="mt-8 sm:mt-12 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 px-4"
+            >
+              {[
+                { icon: ShieldCheck, text: "University Verified" },
+                { icon: Sparkles, text: "AI-Powered" },
+                { icon: Lock, text: "Secure & Private" },
+              ].map((item, index) => (
+                <motion.div
+                  key={item.text}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.4, delay: 1.3 + index * 0.1 }}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/50 dark:bg-neutral-800/50 backdrop-blur-sm border border-neutral-200 dark:border-neutral-700"
+                >
+                  <item.icon className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                  <span className="font-medium">{item.text}</span>
+                </motion.div>
+              ))}
             </motion.div>
           </motion.div>
         </section>
@@ -1295,7 +1800,7 @@ export default function LandingPage() {
         <section
           id="how-it-works"
           ref={howItWorksRef.ref}
-          className="py-16 sm:py-20 bg-white dark:bg-[#2a2a2a]"
+          className="py-16 sm:py-20 bg-white dark:bg-[#2a2a2a] scroll-mt-28"
         >
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative">
             <motion.div
@@ -1307,10 +1812,10 @@ export default function LandingPage() {
               }}
               className="text-center mb-12 sm:mb-16"
             >
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-3 sm:mb-4">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-neutral-900 dark:text-white mb-3 sm:mb-4">
                 How It Works
               </h2>
-              <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 max-w-xl mx-auto">
+              <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400 max-w-xl mx-auto">
                 Recovering lost items is simple with CampusTrace.
               </p>
             </motion.div>
@@ -1357,9 +1862,9 @@ export default function LandingPage() {
                       },
                       hidden: { opacity: 0, y: 40 },
                     }}
-                    className="relative text-center group"
+                    className="relative text-center group px-4"
                   >
-                    <div className="relative inline-block mb-5 sm:mb-8">
+                    <div className="relative inline-block mb-4 sm:mb-5 md:mb-8">
                       <motion.div
                         whileHover={{ scale: 1.1, rotate: 10 }}
                         transition={{
@@ -1367,17 +1872,17 @@ export default function LandingPage() {
                           stiffness: 300,
                           damping: 10,
                         }}
-                        className="flex items-center justify-center h-20 w-20 sm:h-20 sm:w-20 bg-primary-100 dark:bg-primary-500/10 rounded-full mx-auto ring-4 ring-white dark:ring-[#2a2a2a]"
+                        className="flex items-center justify-center h-16 w-16 sm:h-20 sm:w-20 bg-primary-100 dark:bg-primary-500/10 rounded-full mx-auto ring-4 ring-white dark:ring-[#2a2a2a] shadow-md"
                       >
-                        <step.icon className="w-9 h-9 sm:w-9 sm:h-9 text-primary-600 dark:text-primary-400" />
+                        <step.icon className="w-8 h-8 sm:w-9 sm:h-9 text-primary-600 dark:text-primary-400" />
                       </motion.div>
                       {/* Animated Ring */}
                       <span className="absolute inset-0 rounded-full ring-2 ring-primary-500/30 animate-ping opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                     </div>
-                    <h3 className="text-2xl sm:text-2xl font-bold text-neutral-900 dark:text-white mb-4 sm:mb-4">
+                    <h3 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white mb-3 sm:mb-4 px-2">
                       {step.title}
                     </h3>
-                    <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed text-base sm:text-base">
+                    <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed text-sm sm:text-base px-2">
                       {step.description}
                     </p>
                   </motion.div>
@@ -1388,7 +1893,7 @@ export default function LandingPage() {
         </section>
 
         {/* Features Section */}
-        <div id="features">
+        <div id="features" className="scroll-mt-28">
           <FeatureSection
             title="For Students & Staff"
             subtitle="Smart tools designed for effortless item recovery within your trusted campus community."
@@ -1411,14 +1916,23 @@ export default function LandingPage() {
         {/* Enhanced Screenshot Showcase Section */}
         <ScreenshotSection screenshots={screenshots} />
 
+        {/* Stats Section - New Platform Highlight */}
+        <StatsSection />
+
+        {/* Mobile App Download Section */}
+        <MobileAppSection />
+
+        {/* Trust & Security Section */}
+        <TrustSection />
+
         {/* FAQ Section */}
         <section className="py-16 sm:py-20 bg-white dark:bg-[#1a1a1a]">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10 sm:mb-14">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-3">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-neutral-900 dark:text-white mb-3">
                 Got Questions?
               </h2>
-              <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400">
+              <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400">
                 Find quick answers to common queries about CampusTrace.
               </p>
             </div>
@@ -1461,7 +1975,7 @@ export default function LandingPage() {
             }}
             className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10"
           >
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6">
               Ready to Simplify Lost & Found?
             </h2>
             <p className="text-base sm:text-lg md:text-xl mb-8 sm:mb-10 text-white/90 max-w-2xl mx-auto">
@@ -1680,6 +2194,30 @@ export default function LandingPage() {
             transform: translateX(-50%);
           }
         }
+        @keyframes gradient-shift {
+          0%, 100% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+        }
+        @keyframes shimmer {
+          0% {
+            background-position: -1000px 0;
+          }
+          100% {
+            background-position: 1000px 0;
+          }
+        }
+        @keyframes glow {
+          0%, 100% {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+          }
+          50% {
+            box-shadow: 0 0 40px rgba(99, 102, 241, 0.6), 0 0 60px rgba(147, 51, 234, 0.4);
+          }
+        }
 
         /* Apply animations */
         .animate-fade-in-up {
@@ -1702,6 +2240,16 @@ export default function LandingPage() {
         }
         .animate-slide {
           animation: slide 40s linear infinite;
+        }
+        .animate-gradient-shift {
+          background-size: 200% 200%;
+          animation: gradient-shift 15s ease infinite;
+        }
+        .animate-shimmer {
+          animation: shimmer 3s infinite linear;
+        }
+        .animate-glow {
+          animation: glow 3s ease-in-out infinite;
         }
 
         @keyframes fade-in-up {

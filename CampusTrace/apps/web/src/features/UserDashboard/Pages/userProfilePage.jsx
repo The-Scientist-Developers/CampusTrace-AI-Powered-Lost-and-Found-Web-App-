@@ -15,6 +15,7 @@ import {
   Settings,
   Bell,
   ChevronRight,
+  LogOut,
 } from "lucide-react";
 import { FaceDetector, FilesetResolver } from "@mediapipe/tasks-vision";
 
@@ -472,6 +473,19 @@ export default function UserProfilePage({ user }) {
     }
   };
 
+  const handleSignOut = async () => {
+    if (window.confirm("Are you sure you want to sign out?")) {
+      try {
+        await supabase.auth.signOut();
+        toast.success("Signed out successfully!");
+        navigate("/");
+      } catch (err) {
+        console.error("Error signing out:", err);
+        toast.error("Failed to sign out.");
+      }
+    }
+  };
+
   const totalPosts = posts.length;
   const foundItems = posts.filter(
     (p) => p.status?.toLowerCase() === "found"
@@ -618,6 +632,7 @@ export default function UserProfilePage({ user }) {
           label="Help & Support"
           onClick={() => navigate("/dashboard/help")}
         />
+        <MenuItem icon={LogOut} label="Sign Out" onClick={handleSignOut} />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
