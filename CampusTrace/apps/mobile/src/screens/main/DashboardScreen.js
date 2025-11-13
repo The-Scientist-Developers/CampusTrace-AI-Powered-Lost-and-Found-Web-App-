@@ -78,71 +78,47 @@ const DashboardScreen = ({ navigation }) => {
         return;
       }
 
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("university_id")
-        .eq("id", user.id)
-        .single();
-
-      if (profileError) throw profileError;
-      if (!profile) throw new Error("User profile not found.");
-
-      // Fetch all user's items
-      const { data: allMyItems = [], error: itemsError } = await supabase
-        .from("items")
-        .select("*")
-        .eq("user_id", user.id);
-
-      if (itemsError) throw itemsError;
-
-      // Fetch active posts
-      const { data: activePosts = [] } = await supabase
-        .from("items")
-        .select("*")
-        .eq("user_id", user.id)
-        .in("moderation_status", ["approved", "pending", "pending_return"])
-        .order("created_at", { ascending: false })
-        .limit(4);
-
-      setMyRecentPosts(activePosts);
-
-      // Fetch community activity
-      if (profile.university_id) {
-        const { data: communityData = [] } = await supabase
-          .from("items")
-          .select("*, profiles(id, full_name, email)")
-          .eq("university_id", profile.university_id)
-          .eq("moderation_status", "approved")
-          .order("created_at", { ascending: false })
-          .limit(50);
-        setRecentActivity(communityData);
-      } else {
-        setRecentActivity([]);
+      // Use the new consolidated dashboard-summary endpoint
+      const token = await getAccessToken();
+      if (!token) {
+        throw new Error("Authentication required.");
       }
 
-      // Calculate stats
-      const lostCount = allMyItems.filter(
-        (item) => item.status === "Lost"
-      ).length;
-      const foundCount = allMyItems.filter(
-        (item) => item.status === "Found"
-      ).length;
-      const recoveredCount = allMyItems.filter(
-        (item) => item.moderation_status === "recovered"
-      ).length;
-
-      setStats({
-        totalItems: allMyItems.length,
-        lostItems: lostCount,
-        foundItems: foundCount,
-        recoveredItems: recoveredCount,
+      const response = await fetch(`${API_BASE_URL}/api/dashboard-summary`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
-      // Process data for charts
-      processChartData(allMyItems);
+      if (!response.ok) {
+        throw new Error("Failed to fetch dashboard data.");
+      }
 
-      // Find latest lost item and fetch matches
-      const latestLostItem = allMyItems
+      const data = await response.json();
+
+      // Set recent posts
+      setMyRecentPosts(data.myRecentPosts || []);
+
+      // Set recent activity
+      setRecentActivity(data.recentActivity || []);
+
+      // Set stats from the consolidated response
+      setStats({
+        totalItems:
+          data.userStats.found + data.userStats.lost + data.userStats.recovered,
+        lostItems: data.userStats.lost,
+        foundItems: data.userStats.found,
+        recoveredItems: data.userStats.recovered,
+      });
+
+      // Process chart data from recent posts
+      processChartData(data.myRecentPosts);
+
+      // Set AI matches
+      setPossibleMatches(data.aiMatches || []);
+
+      // Find the latest lost item for the "Your Lost Item" section
+      const latestLostItem = data.myRecentPosts
         .filter(
           (item) =>
             item.status === "Lost" &&
@@ -151,13 +127,7 @@ const DashboardScreen = ({ navigation }) => {
         )
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
 
-      if (latestLostItem) {
-        setMyLostItem(latestLostItem);
-        await fetchMatches(latestLostItem.id);
-      } else {
-        setMyLostItem(null);
-        setPossibleMatches([]);
-      }
+      setMyLostItem(latestLostItem || null);
     } catch (error) {
       console.error("Error loading dashboard:", error);
     } finally {

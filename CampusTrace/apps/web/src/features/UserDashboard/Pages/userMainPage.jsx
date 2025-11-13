@@ -311,60 +311,69 @@ const ChartCard = ({ title, data, type = "area" }) => {
   }
 
   return (
-    <div className="bg-white dark:bg-[#2a2a2a] rounded-xl p-4 shadow-sm border border-neutral-200 dark:border-[#3a3a3a] mt-2">
-      <h3 className="text-base font-semibold text-neutral-800 dark:text-white mb-6">
+    <div className="bg-white dark:bg-[#2a2a2a] rounded-xl p-5 shadow-sm border border-neutral-200 dark:border-[#3a3a3a] mt-2">
+      <h3 className="text-lg font-bold text-neutral-800 dark:text-white mb-6">
         {title}
       </h3>
-      <div className="h-[220px]">
+      <div className="h-[260px]">
         <ResponsiveContainer width="100%" height="100%">
           {type === "area" ? (
             <AreaChart
               data={data}
-              margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
+              margin={{ top: 5, right: 5, left: -20, bottom: 0 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke={gridColor}
+                vertical={false}
+              />
               <XAxis
-                dataKey="day"
-                tick={{ fill: axisColor, fontSize: 10 }}
+                dataKey="name"
+                tick={{ fill: axisColor, fontSize: 11, fontWeight: 500 }}
                 stroke={axisColor}
                 tickLine={false}
-                axisLine={false}
+                axisLine={{ stroke: gridColor }}
               />
               <YAxis
-                tick={{ fill: axisColor, fontSize: 10 }}
+                tick={{ fill: axisColor, fontSize: 11 }}
                 stroke={axisColor}
                 tickLine={false}
-                axisLine={false}
+                axisLine={{ stroke: gridColor }}
                 allowDecimals={false}
               />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip
+                content={<CustomTooltip />}
+                cursor={{ stroke: gridColor }}
+              />
               <defs>
                 <linearGradient id="colorLost" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={lostColor} stopOpacity={0.8} />
-                  <stop offset="95%" stopColor={lostColor} stopOpacity={0.1} />
+                  <stop offset="5%" stopColor={lostColor} stopOpacity={0.9} />
+                  <stop offset="95%" stopColor={lostColor} stopOpacity={0.2} />
                 </linearGradient>
                 <linearGradient id="colorFound" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={foundColor} stopOpacity={0.8} />
-                  <stop offset="95%" stopColor={foundColor} stopOpacity={0.1} />
+                  <stop offset="5%" stopColor={foundColor} stopOpacity={0.9} />
+                  <stop offset="95%" stopColor={foundColor} stopOpacity={0.2} />
                 </linearGradient>
               </defs>
               <Area
                 type="monotone"
-                dataKey="lost"
+                dataKey="Lost"
                 stackId="1"
-                strokeWidth={2}
+                strokeWidth={2.5}
                 stroke={lostColor}
                 fill="url(#colorLost)"
                 name="Lost"
+                animationDuration={800}
               />
               <Area
                 type="monotone"
-                dataKey="found"
+                dataKey="Found"
                 stackId="1"
-                strokeWidth={2}
+                strokeWidth={2.5}
                 stroke={foundColor}
                 fill="url(#colorFound)"
                 name="Found"
+                animationDuration={800}
               />
             </AreaChart>
           ) : (
@@ -373,10 +382,20 @@ const ChartCard = ({ title, data, type = "area" }) => {
               layout="vertical"
               margin={{ top: 0, right: 10, left: 10, bottom: 0 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+              <defs>
+                <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#1877F2" stopOpacity={0.8} />
+                  <stop offset="100%" stopColor="#60A5FA" stopOpacity={1} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke={gridColor}
+                horizontal={false}
+              />
               <XAxis
                 type="number"
-                tick={{ fill: axisColor, fontSize: 10 }}
+                tick={{ fill: axisColor, fontSize: 11 }}
                 stroke={axisColor}
                 tickLine={false}
                 axisLine={false}
@@ -385,19 +404,23 @@ const ChartCard = ({ title, data, type = "area" }) => {
               <YAxis
                 dataKey="name"
                 type="category"
-                tick={{ fill: axisColor, fontSize: 10 }}
+                tick={{ fill: axisColor, fontSize: 11, fontWeight: 500 }}
                 stroke={axisColor}
                 tickLine={false}
                 axisLine={false}
-                width={70}
+                width={80}
               />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip
+                content={<CustomTooltip />}
+                cursor={{ fill: gridColor, opacity: 0.3 }}
+              />
               <Bar
-                dataKey="value"
-                fill={primaryColor}
-                radius={[0, 4, 4, 0]}
-                name="Count"
-                barSize={20}
+                dataKey="count"
+                fill="url(#barGradient)"
+                radius={[0, 8, 8, 0]}
+                name="Items"
+                barSize={28}
+                animationDuration={800}
               />
             </BarChart>
           )}
@@ -493,6 +516,85 @@ export default function UserMainPage({ user }) {
   }, [user]);
 
   const fetchDashboardData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Use new consolidated dashboard-summary endpoint
+      const token = await getAccessToken();
+      if (!token) throw new Error("Authentication required");
+
+      const response = await fetch(`${API_BASE_URL}/api/dashboard-summary`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch dashboard data");
+
+      const data = await response.json();
+
+      // Set data from consolidated endpoint
+      setMyRecentPosts(data.myRecentPosts || []);
+      setCommunityActivity(data.recentActivity || []);
+      setPossibleMatches(data.aiMatches || []);
+
+      // Calculate stats from summary
+      const allItemsCount =
+        (data.userStats?.found || 0) + (data.userStats?.lost || 0);
+      setStats({
+        totalItems: allItemsCount,
+        lostItems: data.userStats?.lost || 0,
+        foundItems: data.userStats?.found || 0,
+        recoveredItems: data.userStats?.recovered || 0,
+      });
+
+      // Generate chart data (use all posts for accurate charts)
+      await generateChartData(data.allMyPosts || []);
+    } catch (err) {
+      console.error("Error loading dashboard:", err);
+      setError(err.message || "Failed to load dashboard data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateChartData = async (posts) => {
+    // Generate weekly activity data
+    const weeklyData = {};
+    posts.forEach((item) => {
+      const date = new Date(item.created_at);
+      const dayName = date.toLocaleDateString("en-US", { weekday: "short" });
+      if (!weeklyData[dayName]) {
+        weeklyData[dayName] = { name: dayName, Lost: 0, Found: 0 };
+      }
+      if (item.status === "Lost") weeklyData[dayName].Lost++;
+      else weeklyData[dayName].Found++;
+    });
+
+    const daysOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const weeklyArray = daysOrder.map(
+      (day) => weeklyData[day] || { name: day, Lost: 0, Found: 0 }
+    );
+
+    // Generate category data
+    const categoryCount = {};
+    posts.forEach((item) => {
+      const cat = item.category || "Other";
+      categoryCount[cat] = (categoryCount[cat] || 0) + 1;
+    });
+
+    const categoriesArray = Object.entries(categoryCount)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    setChartData({
+      weekly: weeklyArray,
+      categories: categoriesArray,
+    });
+  };
+
+  const fetchDashboardDataOld = async () => {
     setLoading(true);
     setError(null);
     try {

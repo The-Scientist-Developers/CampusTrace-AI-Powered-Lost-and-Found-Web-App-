@@ -671,6 +671,61 @@ async def signup_user(payload: SignupRequest, request: Request):
             raise HTTPException(status_code=400, detail=f"Signup failed: {str(exc)}")
 
 # ============= Item Routes =============
+@item_router.get("")
+async def get_items_paginated(
+    page: int = 1,
+    limit: int = 20,
+    status: Optional[str] = None,
+    category: Optional[str] = None,
+    search: Optional[str] = None,
+    user_id: str = Depends(get_current_user_id)
+):
+    """
+    Get paginated items for the user's university.
+    Supports filtering by status, category, and search term.
+    Returns items with total count for pagination.
+    """
+    try:
+        # Get user's university
+        profile_res = supabase.table("profiles").select("university_id").eq("id", user_id).single().execute()
+        if not profile_res.data:
+            raise HTTPException(status_code=404, detail="User profile not found.")
+        
+        university_id = profile_res.data['university_id']
+        
+        # Calculate offset
+        offset = (page - 1) * limit
+        
+        # Build query
+        query = supabase.table("items").select(
+            "*, profiles(id, full_name, email)",
+            count="exact"
+        ).eq("university_id", university_id).eq("moderation_status", "approved")
+        
+        # Apply filters
+        if status and status != "All":
+            query = query.eq("status", status)
+        if category:
+            query = query.eq("category", category)
+        if search:
+            query = query.or_(f"title.ilike.%{search}%,description.ilike.%{search}%")
+        
+        # Apply pagination and sorting
+        query = query.order("created_at", desc=True).range(offset, offset + limit - 1)
+        
+        result = query.execute()
+        
+        return {
+            "items": result.data or [],
+            "total_items": result.count or 0,
+            "current_page": page,
+            "total_pages": ((result.count or 0) + limit - 1) // limit,
+            "items_per_page": limit
+        }
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to fetch items: {str(e)}")
+
 @item_router.get("/leaderboard")
 async def get_leaderboard(user_id: str = Depends(get_current_user_id)):
     """
@@ -770,6 +825,7 @@ async def create_item(
         combined_text = f"Title: {item.title}. Description: {item.description}. Location: {item.location}. Category: {item.category}."
 
         image_url = None
+        thumbnail_url = None
         pil_image = None
         image_embedding = None
         text_embedding = None
@@ -793,15 +849,32 @@ async def create_item(
             pil_image.save(output_bytes_io, format="JPEG", quality=90)
             image_bytes_for_storage = output_bytes_io.getvalue()
 
+            # Create thumbnail (200x200) for list views
+            thumbnail_image = pil_image.copy()
+            thumbnail_image.thumbnail((200, 200), Image.Resampling.LANCZOS)
+            thumbnail_bytes_io = io.BytesIO()
+            thumbnail_image.save(thumbnail_bytes_io, format="JPEG", quality=85)
+            thumbnail_bytes = thumbnail_bytes_io.getvalue()
+
             file_suffix = Path(image_file.filename or ".jpg").suffix
             file_path = f"public/{user_id}/{uuid4().hex}{file_suffix}"
+            thumbnail_path = f"public/{user_id}/{uuid4().hex}_thumb{file_suffix}"
 
+            # Upload original image
             supabase.storage.from_("item_images").upload(
                 path=file_path,
                 file=image_bytes_for_storage,
                 file_options={"content-type": "image/jpeg"}
             )
             image_url = supabase.storage.from_("item_images").get_public_url(file_path)
+
+            # Upload thumbnail
+            supabase.storage.from_("item_images").upload(
+                path=thumbnail_path,
+                file=thumbnail_bytes,
+                file_options={"content-type": "image/jpeg"}
+            )
+            thumbnail_url = supabase.storage.from_("item_images").get_public_url(thumbnail_path)
 
             # Generate image embedding (image only, no text)
             print("🔹 Generating image embedding...")
@@ -839,6 +912,7 @@ async def create_item(
             "contact_info": item.contact_info,
             "ai_tags": ai_tags,
             "image_url": image_url,
+            "thumbnail_url": thumbnail_url,
             "user_id": user_id,
             "university_id": university_id,
             "moderation_status": moderation_status,
@@ -1755,6 +1829,99 @@ async def download_backup(file_name: str, university_id: int = Depends(get_admin
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to download backup: {str(e)}")
+
+# ============= Dashboard Summary Endpoint =============
+@app.get("/api/dashboard-summary")
+async def get_dashboard_summary(user_id: str = Depends(get_current_user_id)):
+    """
+    Get consolidated dashboard data in a single API call.
+    Returns: recent items, user stats, unread notifications, AI matches.
+    Optimized for fast dashboard loading.
+    """
+    try:
+        # Get user's university
+        profile_res = supabase.table("profiles").select("university_id, full_name").eq("id", user_id).single().execute()
+        if not profile_res.data:
+            raise HTTPException(status_code=404, detail="User profile not found.")
+        
+        university_id = profile_res.data['university_id']
+        
+        # 1. Get user's recent posts (5 most recent for display)
+        my_posts_res = supabase.table("items").select("*").eq("user_id", user_id).order(
+            "created_at", desc=True
+        ).limit(5).execute()
+        
+        # 1b. Get ALL user posts for chart data
+        all_my_posts_res = supabase.table("items").select("category, status, created_at").eq(
+            "user_id", user_id
+        ).execute()
+        
+        # 2. Get recent campus activity (5 most recent approved items from others)
+        recent_activity_res = supabase.table("items").select(
+            "*, profiles(id, full_name, email)"
+        ).eq("university_id", university_id).eq("moderation_status", "approved").neq(
+            "user_id", user_id
+        ).order("created_at", desc=True).limit(5).execute()
+        
+        # 3. Get user's item counts
+        found_count_res = supabase.table("items").select("id", count="exact").eq(
+            "user_id", user_id
+        ).eq("status", "Found").execute()
+        
+        lost_count_res = supabase.table("items").select("id", count="exact").eq(
+            "user_id", user_id
+        ).eq("status", "Lost").execute()
+        
+        pending_count_res = supabase.table("items").select("id", count="exact").eq(
+            "user_id", user_id
+        ).eq("moderation_status", "pending").execute()
+        
+        recovered_count_res = supabase.table("items").select("id", count="exact").eq(
+            "user_id", user_id
+        ).eq("moderation_status", "recovered").execute()
+        
+        # 4. Get unread notifications count
+        unread_notif_res = supabase.table("notifications").select("id", count="exact").eq(
+            "recipient_id", user_id
+        ).eq("status", "unread").execute()
+        
+        # 5. Get AI matches for user's lost items (top 3 matches)
+        user_lost_items = supabase.table("items").select("id, title").eq(
+            "user_id", user_id
+        ).eq("status", "Lost").eq("moderation_status", "approved").order(
+            "created_at", desc=True
+        ).limit(1).execute()
+        
+        ai_matches = []
+        if user_lost_items.data and len(user_lost_items.data) > 0:
+            # Get matches for the most recent lost item
+            lost_item_id = user_lost_items.data[0]["id"]
+            try:
+                matches_res = supabase.rpc('get_ai_matches_for_item', {
+                    'p_item_id': lost_item_id,
+                    'p_limit': 3
+                }).execute()
+                ai_matches = matches_res.data or []
+            except Exception as match_err:
+                print(f"Error fetching AI matches: {match_err}")
+                ai_matches = []
+        
+        return {
+            "myRecentPosts": my_posts_res.data or [],
+            "allMyPosts": all_my_posts_res.data or [],
+            "recentActivity": recent_activity_res.data or [],
+            "userStats": {
+                "found": found_count_res.count or 0,
+                "lost": lost_count_res.count or 0,
+                "pending": pending_count_res.count or 0,
+                "recovered": recovered_count_res.count or 0
+            },
+            "unreadNotifications": unread_notif_res.count or 0,
+            "aiMatches": ai_matches
+        }
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to fetch dashboard summary: {str(e)}")
 
 # ============= Include Routers =============
 # Register all API routers with the main app

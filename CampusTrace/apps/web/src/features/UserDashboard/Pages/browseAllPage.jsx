@@ -733,9 +733,9 @@ const MarketplaceItem = ({ item, onClick }) => {
     >
       {/* Image - Fixed height on desktop like FB Marketplace */}
       <div className="w-full h-52 md:h-56 bg-neutral-100 dark:bg-zinc-800 relative flex-shrink-0">
-        {item.image_url ? (
+        {item.thumbnail_url || item.image_url ? (
           <img
-            src={item.image_url}
+            src={item.thumbnail_url || item.image_url}
             alt={item.title}
             className="w-full h-full object-cover"
           />
@@ -850,7 +850,7 @@ export default function BrowseAllPage({ user }) {
     }
   }, [location.state]);
 
-  // Main data fetching function
+  // Main data fetching function using paginated API
   const fetchPosts = useCallback(
     async (isSearchReset = false, pageOverride = null) => {
       if (!user?.id) {
@@ -862,46 +862,41 @@ export default function BrowseAllPage({ user }) {
       if (isSearchReset) setSearchTerm("");
       setError(null);
       try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("university_id")
-          .eq("id", user.id)
-          .single();
-        if (!profile) throw new Error("Could not find user profile.");
+        const token = await getAccessToken();
+        if (!token) throw new Error("Authentication required.");
 
-        let query = supabase
-          .from("items")
-          .select(`*, profiles(id, full_name, email)`, { count: "exact" })
-          .eq("university_id", profile.university_id)
-          .eq("moderation_status", "approved");
-
-        // Apply filters
-        if (filters.status !== "All")
-          query = query.eq("status", filters.status);
-        if (filters.categories.length > 0)
-          query = query.in("category", filters.categories);
-        if (filters.dateFilter)
-          query = query.gte("created_at", filters.dateFilter);
-        if (debouncedSearchTerm)
-          query = query.or(
-            `title.ilike.%${debouncedSearchTerm}%,description.ilike.%${debouncedSearchTerm}%,ai_tags.cs.{${debouncedSearchTerm}}`
-          );
-
-        // Pagination
+        // Build query parameters
         const page = pageOverride !== null ? pageOverride : currentPage;
-        const from = (page - 1) * itemsPerPage;
-        const to = from + itemsPerPage - 1;
-        query = query.range(from, to);
-
-        // Sorting
-        query = query.order("created_at", {
-          ascending: filters.sortBy === "oldest",
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: itemsPerPage.toString(),
+          sort_by: filters.sortBy === "oldest" ? "oldest" : "newest",
         });
 
-        const { data, error, count } = await query;
-        if (error) throw error;
-        setPosts(data || []);
-        setTotalPosts(count || 0);
+        // Apply filters
+        if (filters.status !== "All") {
+          params.append("status", filters.status);
+        }
+        if (filters.categories.length > 0) {
+          params.append("category", filters.categories[0]); // API supports single category
+        }
+        if (debouncedSearchTerm) {
+          params.append("search", debouncedSearchTerm);
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/items?${params}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch items.");
+        }
+
+        const data = await response.json();
+        setPosts(data.items || []);
+        setTotalPosts(data.total_items || 0);
       } catch (err) {
         setError("Failed to load posts.");
         toast.error("Failed to load posts.");

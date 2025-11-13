@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -12,39 +12,96 @@ import { SkeletonTheme } from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
 import ErrorBoundary from "./components/errorBoundary.jsx";
-import NotFoundPage from "./features/MainPages/notFoundPage.jsx";
-
-import LandingPage from "./features/MainPages/landingPage.jsx";
-import LoginPage from "./features/MainPages/LoginPage.jsx";
-import DashboardLayout from "./features/UserDashboard/DashboardLayout.jsx";
-import UserMainPage from "./features/UserDashboard/Pages/userMainPage.jsx";
-import AdminDashboardLayout from "./features/AdminDashboard/adminDashboardLayout.jsx";
 import LoadingScreen from "./components/LoadingScreen.jsx";
-import UserProfilePage from "./features/UserDashboard/Pages/userProfilePage.jsx";
-import AdminMainPage from "./features/AdminDashboard/Pages/AdminMainPage.jsx";
-import PostNewItem from "./features/UserDashboard/Pages/userPostItems.jsx";
-import UserManagement from "./features/AdminDashboard/Pages/adminUserManagement.jsx";
-import PostModerationPage from "./features/AdminDashboard/Pages/postModerationPage.jsx";
-import AdminSettingsPage from "./features/AdminDashboard/Pages/adminSettings.jsx";
-import MyPostsPage from "./features/UserDashboard/Pages/userMypostPage.jsx";
-import AboutUsPage from "./features/MainPages/aboutPage.jsx";
-import LearnMorePage from "./features/MainPages/learnMorePage.jsx";
-import BrowseAllPage from "./features/UserDashboard/Pages/browseAllPage.jsx";
-import HelpPage from "./features/UserDashboard/Pages/userHelpPage.jsx";
-import NotificationPage from "./features/UserDashboard/Pages/userNotificationPage.jsx";
-import UserSettingsPage from "./features/UserDashboard/Pages/userSettingsPage.jsx";
-import RegisterUniversityPage from "./features/MainPages/RegisterUniversityPage.jsx";
-import UpdatePasswordPage from "./features/MainPages/UpdatePasswordPage.jsx";
-import AdminNotificationPage from "./features/AdminDashboard/Pages/adminNotificationPage.jsx";
-import LeaderboardPage from "./features/UserDashboard/Pages/leaderBoardPage.jsx";
-import AdminProfilePage from "./features/AdminDashboard/Pages/adminProfile.jsx";
-import MessagesPage from "./features/UserDashboard/Pages/userMessageApp.jsx";
-import ManualRegisterPage from "./features/MainPages/manualRegisterPage.jsx";
-import ManualVerificationAdminPage from "./features/AdminDashboard/Pages/adminVerificationPage.jsx";
-import PendingApprovalPage from "./features/MainPages/pendingApprovalPage.jsx";
-import ForgotPasswordPage from "./features/MainPages/forgotPasswordPage.jsx";
-import ConfirmEmailPage from "./features/MainPages/confirmPage.jsx";
-import AdminBackupPage from "./features/AdminDashboard/Pages/adminBackupPage.jsx";
+
+// Lazy load all page components for code splitting
+const NotFoundPage = lazy(() =>
+  import("./features/MainPages/notFoundPage.jsx")
+);
+const LandingPage = lazy(() => import("./features/MainPages/landingPage.jsx"));
+const LoginPage = lazy(() => import("./features/MainPages/LoginPage.jsx"));
+const DashboardLayout = lazy(() =>
+  import("./features/UserDashboard/DashboardLayout.jsx")
+);
+const UserMainPage = lazy(() =>
+  import("./features/UserDashboard/Pages/userMainPage.jsx")
+);
+const AdminDashboardLayout = lazy(() =>
+  import("./features/AdminDashboard/adminDashboardLayout.jsx")
+);
+const UserProfilePage = lazy(() =>
+  import("./features/UserDashboard/Pages/userProfilePage.jsx")
+);
+const AdminMainPage = lazy(() =>
+  import("./features/AdminDashboard/Pages/AdminMainPage.jsx")
+);
+const PostNewItem = lazy(() =>
+  import("./features/UserDashboard/Pages/userPostItems.jsx")
+);
+const UserManagement = lazy(() =>
+  import("./features/AdminDashboard/Pages/adminUserManagement.jsx")
+);
+const PostModerationPage = lazy(() =>
+  import("./features/AdminDashboard/Pages/postModerationPage.jsx")
+);
+const AdminSettingsPage = lazy(() =>
+  import("./features/AdminDashboard/Pages/adminSettings.jsx")
+);
+const MyPostsPage = lazy(() =>
+  import("./features/UserDashboard/Pages/userMypostPage.jsx")
+);
+const AboutUsPage = lazy(() => import("./features/MainPages/aboutPage.jsx"));
+const LearnMorePage = lazy(() =>
+  import("./features/MainPages/learnMorePage.jsx")
+);
+const BrowseAllPage = lazy(() =>
+  import("./features/UserDashboard/Pages/browseAllPage.jsx")
+);
+const HelpPage = lazy(() =>
+  import("./features/UserDashboard/Pages/userHelpPage.jsx")
+);
+const NotificationPage = lazy(() =>
+  import("./features/UserDashboard/Pages/userNotificationPage.jsx")
+);
+const UserSettingsPage = lazy(() =>
+  import("./features/UserDashboard/Pages/userSettingsPage.jsx")
+);
+const RegisterUniversityPage = lazy(() =>
+  import("./features/MainPages/RegisterUniversityPage.jsx")
+);
+const UpdatePasswordPage = lazy(() =>
+  import("./features/MainPages/UpdatePasswordPage.jsx")
+);
+const AdminNotificationPage = lazy(() =>
+  import("./features/AdminDashboard/Pages/adminNotificationPage.jsx")
+);
+const LeaderboardPage = lazy(() =>
+  import("./features/UserDashboard/Pages/leaderBoardPage.jsx")
+);
+const AdminProfilePage = lazy(() =>
+  import("./features/AdminDashboard/Pages/adminProfile.jsx")
+);
+const MessagesPage = lazy(() =>
+  import("./features/UserDashboard/Pages/userMessageApp.jsx")
+);
+const ManualRegisterPage = lazy(() =>
+  import("./features/MainPages/manualRegisterPage.jsx")
+);
+const ManualVerificationAdminPage = lazy(() =>
+  import("./features/AdminDashboard/Pages/adminVerificationPage.jsx")
+);
+const PendingApprovalPage = lazy(() =>
+  import("./features/MainPages/pendingApprovalPage.jsx")
+);
+const ForgotPasswordPage = lazy(() =>
+  import("./features/MainPages/forgotPasswordPage.jsx")
+);
+const ConfirmEmailPage = lazy(() =>
+  import("./features/MainPages/confirmPage.jsx")
+);
+const AdminBackupPage = lazy(() =>
+  import("./features/AdminDashboard/Pages/adminBackupPage.jsx")
+);
 
 function PrivateRouter({ children, isLoading, session }) {
   if (isLoading) return <LoadingScreen />;
@@ -196,146 +253,157 @@ function AppContent() {
     >
       <ErrorBoundary>
         <Router>
-          <Routes>
-            <Route
-              path="/"
-              element={
-                session ? (
-                  <AuthRedirect
-                    session={session}
-                    profile={profile}
-                    isLoading={isLoading}
-                  />
-                ) : (
-                  <LandingPage />
-                )
-              }
-            />
-            <Route
-              path="/login"
-              element={
-                session ? (
-                  <AuthRedirect
-                    session={session}
-                    profile={profile}
-                    isLoading={isLoading}
-                  />
-                ) : (
-                  <LoginPage />
-                )
-              }
-            />
-            <Route
-              path="/register-university"
-              element={<RegisterUniversityPage />}
-            />
-            <Route
-              path="/manual-verification"
-              element={<ManualRegisterPage />}
-            />
-            <Route path="/reset-password" element={<UpdatePasswordPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/confirm-email" element={<ConfirmEmailPage />} />
-            <Route path="/about" element={<AboutUsPage />} />
-            <Route path="/learn-more" element={<LearnMorePage />} />
-            <Route path="/pending-approval" element={<PendingApprovalPage />} />
+          <Suspense fallback={<LoadingScreen />}>
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  session ? (
+                    <AuthRedirect
+                      session={session}
+                      profile={profile}
+                      isLoading={isLoading}
+                    />
+                  ) : (
+                    <LandingPage />
+                  )
+                }
+              />
+              <Route
+                path="/login"
+                element={
+                  session ? (
+                    <AuthRedirect
+                      session={session}
+                      profile={profile}
+                      isLoading={isLoading}
+                    />
+                  ) : (
+                    <LoginPage />
+                  )
+                }
+              />
+              <Route
+                path="/register-university"
+                element={<RegisterUniversityPage />}
+              />
+              <Route
+                path="/manual-verification"
+                element={<ManualRegisterPage />}
+              />
+              <Route path="/reset-password" element={<UpdatePasswordPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/confirm-email" element={<ConfirmEmailPage />} />
+              <Route path="/about" element={<AboutUsPage />} />
+              <Route path="/learn-more" element={<LearnMorePage />} />
+              <Route
+                path="/pending-approval"
+                element={<PendingApprovalPage />}
+              />
 
-            <Route
-              path="/dashboard"
-              element={
-                <PrivateRouter session={session} isLoading={isLoading}>
-                  <DashboardLayout user={session?.user}>
-                    <Outlet />
-                  </DashboardLayout>
-                </PrivateRouter>
-              }
-            >
-              <Route index element={<UserMainPage user={session?.user} />} />
               <Route
-                path="profile"
-                element={<UserProfilePage user={session?.user} />}
-              />
-              <Route
-                path="post-new"
-                element={<PostNewItem user={session?.user} />}
-              />
-              <Route path="leaderboard" element={<LeaderboardPage />} />
-              <Route
-                path="my-posts"
-                element={<MyPostsPage user={session?.user} />}
-              />
-              <Route
-                path="notifications"
-                element={<NotificationPage user={session?.user} />}
-              />
-              <Route
-                path="browse-all"
-                element={<BrowseAllPage user={session?.user} />}
-              />
-              <Route
-                path="messages"
-                element={<MessagesPage user={session?.user} />}
-              />
-              <Route
-                path="messages/:conversationId"
-                element={<MessagesPage user={session?.user} />}
-              />
-              <Route
-                path="settings"
-                element={<UserSettingsPage user={session?.user} />}
-              />
-              <Route path="help" element={<HelpPage user={session?.user} />} />
-            </Route>
+                path="/dashboard"
+                element={
+                  <PrivateRouter session={session} isLoading={isLoading}>
+                    <DashboardLayout user={session?.user}>
+                      <Outlet />
+                    </DashboardLayout>
+                  </PrivateRouter>
+                }
+              >
+                <Route index element={<UserMainPage user={session?.user} />} />
+                <Route
+                  path="profile"
+                  element={<UserProfilePage user={session?.user} />}
+                />
+                <Route
+                  path="post-new"
+                  element={<PostNewItem user={session?.user} />}
+                />
+                <Route path="leaderboard" element={<LeaderboardPage />} />
+                <Route
+                  path="my-posts"
+                  element={<MyPostsPage user={session?.user} />}
+                />
+                <Route
+                  path="notifications"
+                  element={<NotificationPage user={session?.user} />}
+                />
+                <Route
+                  path="browse-all"
+                  element={<BrowseAllPage user={session?.user} />}
+                />
+                <Route
+                  path="messages"
+                  element={<MessagesPage user={session?.user} />}
+                />
+                <Route
+                  path="messages/:conversationId"
+                  element={<MessagesPage user={session?.user} />}
+                />
+                <Route
+                  path="settings"
+                  element={<UserSettingsPage user={session?.user} />}
+                />
+                <Route
+                  path="help"
+                  element={<HelpPage user={session?.user} />}
+                />
+              </Route>
 
-            <Route
-              path="/admin"
-              element={
-                <PrivateRouter session={session} isLoading={isLoading}>
-                  <RoleBasedRouter
-                    profile={profile}
-                    requiredRole="admin"
-                    isLoading={isLoading}
-                  >
-                    <AdminLayoutWrapper user={session?.user} />
-                  </RoleBasedRouter>
-                </PrivateRouter>
-              }
-            >
-              <Route index element={<AdminMainPage user={session?.user} />} />
               <Route
-                path="user-management"
-                element={<UserManagement user={session?.user} />}
-              />
-              <Route
-                path="post-moderation"
-                element={<PostModerationPage user={session?.user} />}
-              />
-              <Route
-                path="notifications"
-                element={<AdminNotificationPage user={session?.user} />}
-              />
-              <Route
-                path="settings"
-                element={<AdminSettingsPage user={session?.user} />}
-              />
-              <Route
-                path="profile"
-                element={<AdminProfilePage user={session?.user} />}
-              />
-              <Route
-                path="manual-verifications"
-                element={<ManualVerificationAdminPage />}
-              />
-              <Route
-                path="backup"
-                element={<AdminBackupPage user={session?.user} />}
-              />
-              <Route path="help" element={<HelpPage user={session?.user} />} />
-            </Route>
+                path="/admin"
+                element={
+                  <PrivateRouter session={session} isLoading={isLoading}>
+                    <RoleBasedRouter
+                      profile={profile}
+                      requiredRole="admin"
+                      isLoading={isLoading}
+                    >
+                      <AdminLayoutWrapper user={session?.user} />
+                    </RoleBasedRouter>
+                  </PrivateRouter>
+                }
+              >
+                <Route index element={<AdminMainPage user={session?.user} />} />
+                <Route
+                  path="user-management"
+                  element={<UserManagement user={session?.user} />}
+                />
+                <Route
+                  path="post-moderation"
+                  element={<PostModerationPage user={session?.user} />}
+                />
+                <Route
+                  path="notifications"
+                  element={<AdminNotificationPage user={session?.user} />}
+                />
+                <Route
+                  path="settings"
+                  element={<AdminSettingsPage user={session?.user} />}
+                />
+                <Route
+                  path="profile"
+                  element={<AdminProfilePage user={session?.user} />}
+                />
+                <Route
+                  path="manual-verifications"
+                  element={<ManualVerificationAdminPage />}
+                />
+                <Route
+                  path="backup"
+                  element={<AdminBackupPage user={session?.user} />}
+                />
+                <Route
+                  path="help"
+                  element={<HelpPage user={session?.user} />}
+                />
+              </Route>
 
-            {/* This must be the LAST route in the list */}
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
+              {/* This must be the LAST route in the list */}
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </Suspense>
         </Router>
       </ErrorBoundary>
     </SkeletonTheme>
