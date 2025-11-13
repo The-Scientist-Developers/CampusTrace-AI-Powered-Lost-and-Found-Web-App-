@@ -52,6 +52,7 @@ export default function PostItemScreen({ navigation, route }) {
   const [newImageUri, setNewImageUri] = useState(null); // This holds a *newly picked* local image
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
 
   const categories = [
@@ -91,7 +92,7 @@ export default function PostItemScreen({ navigation, route }) {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.MediaType.Images, // Fixed deprecated MediaTypeOptions
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8,
@@ -101,6 +102,89 @@ export default function PostItemScreen({ navigation, route }) {
       const uri = result.assets[0].uri;
       setNewImageUri(uri); // Set the new local URI
       setImageUri(uri); // Show the new image in preview
+
+      // Automatically analyze the image with AI
+      await analyzeImageWithAI(uri);
+    }
+  };
+
+  const analyzeImageWithAI = async (uri) => {
+    setIsAnalyzingImage(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Authentication required.");
+
+      // Create FormData for image upload
+      const formData = new FormData();
+      const filename = uri.split("/").pop();
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image`;
+
+      formData.append("image_file", {
+        uri: Platform.OS === "ios" ? uri.replace("file://", "") : uri,
+        name: filename,
+        type,
+      });
+
+      // Create abort controller with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/items/ai/suggest-details-from-image`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+            signal: controller.signal,
+          }
+        );
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.detail || "AI analysis failed.");
+        }
+
+        const data = await response.json();
+
+        // Auto-fill title and category if AI provided suggestions
+        if (data.suggestedTitle && !title) {
+          setTitle(data.suggestedTitle);
+        }
+        if (data.suggestedCategory && !category) {
+          setCategory(data.suggestedCategory);
+        }
+
+        // Show success message
+        if (data.suggestedTitle || data.suggestedCategory) {
+          Alert.alert(
+            "AI Analysis Complete",
+            "Title and category suggestions have been filled in!"
+          );
+        }
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === "AbortError") {
+          console.warn(
+            "AI analysis timed out - continuing without suggestions"
+          );
+        } else {
+          throw fetchError;
+        }
+      }
+    } catch (error) {
+      console.error("Error analyzing image:", error);
+      // Silently fail - don't bother user if AI analysis fails
+      // Image upload will still work without AI suggestions
+    } finally {
+      setIsAnalyzingImage(false);
     }
   };
 
@@ -630,6 +714,25 @@ export default function PostItemScreen({ navigation, route }) {
             </View>
           </View>
 
+          {/* AI Analysis Indicator */}
+          {isAnalyzingImage && (
+            <View
+              style={[
+                styles.aiAnalysisIndicator,
+                {
+                  backgroundColor: colors.primary + "15",
+                  borderColor: colors.primary + "40",
+                },
+              ]}
+            >
+              <Sparkles color={colors.primary} size={20} />
+              <Text style={[styles.aiAnalysisText, { color: colors.primary }]}>
+                AI analyzing image...
+              </Text>
+              <ActivityIndicator color={colors.primary} size="small" />
+            </View>
+          )}
+
           {/* Submit Button */}
           <View style={styles.submitContainer}>
             <TouchableOpacity
@@ -1032,6 +1135,21 @@ const styles = StyleSheet.create({
   },
   categoryOptionTextSelected: {
     color: BRAND_COLOR,
+    fontWeight: "600",
+  },
+  aiAnalysisIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  aiAnalysisText: {
+    fontSize: 14,
     fontWeight: "600",
   },
 });

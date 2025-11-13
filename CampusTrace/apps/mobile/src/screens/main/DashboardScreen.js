@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import {
   View,
   Text,
@@ -63,7 +63,7 @@ const DashboardScreen = ({ navigation }) => {
     loadDashboardData();
   }, []);
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       const supabase = getSupabaseClient();
 
@@ -84,59 +84,77 @@ const DashboardScreen = ({ navigation }) => {
         throw new Error("Authentication required.");
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/dashboard-summary`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // Add timeout to fetch request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch dashboard data.");
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/dashboard-summary`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch dashboard data.");
+        }
+
+        const data = await response.json();
+
+        // Set recent posts
+        setMyRecentPosts(data.myRecentPosts || []);
+
+        // Set recent activity
+        setRecentActivity(data.recentActivity || []);
+
+        // Set stats from the consolidated response
+        setStats({
+          totalItems:
+            data.userStats.found +
+            data.userStats.lost +
+            data.userStats.recovered,
+          lostItems: data.userStats.lost,
+          foundItems: data.userStats.found,
+          recoveredItems: data.userStats.recovered,
+        });
+
+        // Process chart data from recent posts
+        processChartData(data.myRecentPosts);
+
+        // Set AI matches
+        setPossibleMatches(data.aiMatches || []);
+
+        // Find the latest lost item for the "Your Lost Item" section
+        const latestLostItem = data.myRecentPosts
+          .filter(
+            (item) =>
+              item.status === "Lost" &&
+              item.moderation_status !== "recovered" &&
+              item.moderation_status !== "rejected"
+          )
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+
+        setMyLostItem(latestLostItem || null);
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === "AbortError") {
+          console.error(
+            "Dashboard request timed out. Please check your connection."
+          );
+        }
+        throw fetchError;
       }
-
-      const data = await response.json();
-
-      // Set recent posts
-      setMyRecentPosts(data.myRecentPosts || []);
-
-      // Set recent activity
-      setRecentActivity(data.recentActivity || []);
-
-      // Set stats from the consolidated response
-      setStats({
-        totalItems:
-          data.userStats.found + data.userStats.lost + data.userStats.recovered,
-        lostItems: data.userStats.lost,
-        foundItems: data.userStats.found,
-        recoveredItems: data.userStats.recovered,
-      });
-
-      // Process chart data from recent posts
-      processChartData(data.myRecentPosts);
-
-      // Set AI matches
-      setPossibleMatches(data.aiMatches || []);
-
-      // Find the latest lost item for the "Your Lost Item" section
-      const latestLostItem = data.myRecentPosts
-        .filter(
-          (item) =>
-            item.status === "Lost" &&
-            item.moderation_status !== "recovered" &&
-            item.moderation_status !== "rejected"
-        )
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
-
-      setMyLostItem(latestLostItem || null);
     } catch (error) {
       console.error("Error loading dashboard:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
-  const fetchMatches = async (itemId) => {
+  const fetchMatches = useCallback(async (itemId) => {
     try {
       const token = await getAccessToken();
       if (!token) {
@@ -164,9 +182,9 @@ const DashboardScreen = ({ navigation }) => {
       console.error("Error fetching matches:", err);
       setPossibleMatches([]);
     }
-  };
+  }, []);
 
-  const processChartData = (items) => {
+  const processChartData = useCallback((items) => {
     const weeklyData = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -201,29 +219,35 @@ const DashboardScreen = ({ navigation }) => {
       .slice(0, 5);
 
     setChartData({ weekly: weeklyData, categories });
-  };
+  }, []);
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     setRefreshing(true);
     loadDashboardData();
-  };
+  }, [loadDashboardData]);
 
-  const renderMyPostItem = ({ item }) => (
-    <ItemCard
-      item={item}
-      onPress={() => navigation.navigate("Browse", { itemId: item.id })}
-      styles={styles}
-      colors={colors}
-    />
+  const renderMyPostItem = useCallback(
+    ({ item }) => (
+      <ItemCard
+        item={item}
+        onPress={() => navigation.navigate("Browse", { itemId: item.id })}
+        styles={styles}
+        colors={colors}
+      />
+    ),
+    [navigation, styles, colors]
   );
 
-  const renderMatchItem = ({ item }) => (
-    <MatchCard
-      item={item}
-      onPress={() => navigation.navigate("Browse", { itemId: item.id })}
-      styles={styles}
-      colors={colors}
-    />
+  const renderMatchItem = useCallback(
+    ({ item }) => (
+      <MatchCard
+        item={item}
+        onPress={() => navigation.navigate("Browse", { itemId: item.id })}
+        styles={styles}
+        colors={colors}
+      />
+    ),
+    [navigation, styles, colors]
   );
 
   return (
@@ -542,7 +566,7 @@ const timeAgo = (dateString) => {
 };
 
 // --- Re-usable Components ---
-const ItemImage = ({ imageUrl, style, styles }) => (
+const ItemImage = memo(({ imageUrl, style, styles }) => (
   <View style={[styles.itemImageContainer, style]}>
     {imageUrl ? (
       <Image source={{ uri: imageUrl }} style={styles.itemImage} />
@@ -552,9 +576,9 @@ const ItemImage = ({ imageUrl, style, styles }) => (
       </View>
     )}
   </View>
-);
+));
 
-const StatusBadge = ({ status, styles }) => {
+const StatusBadge = memo(({ status, styles }) => {
   const statusConfig = {
     approved: { bg: "#D1FAE5", text: "#065F46", label: "Active" },
     pending: { bg: "#FEF3C7", text: "#92400E", label: "Pending" },
@@ -574,9 +598,9 @@ const StatusBadge = ({ status, styles }) => {
       </Text>
     </View>
   );
-};
+});
 
-const ItemCard = ({ item, onPress, styles, colors }) => (
+const ItemCard = memo(({ item, onPress, styles, colors }) => (
   <TouchableOpacity style={styles.itemCard} onPress={onPress}>
     <ItemImage
       imageUrl={item.image_url}
@@ -611,9 +635,9 @@ const ItemCard = ({ item, onPress, styles, colors }) => (
       </View>
     </View>
   </TouchableOpacity>
-);
+));
 
-const MatchCard = ({ item, onPress, styles, colors }) => (
+const MatchCard = memo(({ item, onPress, styles, colors }) => (
   <TouchableOpacity style={styles.itemCard} onPress={onPress}>
     {item.match_score && (
       <View style={styles.matchBadge}>
@@ -641,9 +665,9 @@ const MatchCard = ({ item, onPress, styles, colors }) => (
       </View>
     </View>
   </TouchableOpacity>
-);
+));
 
-const ActivityItem = ({ item, onPress, styles, colors }) => {
+const ActivityItem = memo(({ item, onPress, styles, colors }) => {
   const statusColor = item.status === "Lost" ? "#EF4444" : "#10B981";
   const posterName =
     item.profiles?.full_name ||
@@ -670,84 +694,85 @@ const ActivityItem = ({ item, onPress, styles, colors }) => {
       <Feather name="chevron-right" size={20} color="#9CA3AF" />
     </TouchableOpacity>
   );
-};
+});
 
-const StatCard = ({
-  icon: Icon,
-  iconName,
-  label,
-  value,
-  color,
-  styles,
-  colors,
-}) => (
-  <View style={styles.statCard}>
-    <View style={[styles.statIconContainer, { backgroundColor: color + "15" }]}>
-      <Icon name={iconName} size={24} color={color} />
+const StatCard = memo(
+  ({ icon: Icon, iconName, label, value, color, styles, colors }) => (
+    <View style={styles.statCard}>
+      <View
+        style={[styles.statIconContainer, { backgroundColor: color + "15" }]}
+      >
+        <Icon name={iconName} size={24} color={color} />
+      </View>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
     </View>
-    <Text style={styles.statValue}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
-  </View>
+  )
 );
 
-const EmptyState = ({
-  icon: Icon,
-  iconName,
-  title,
-  description,
-  buttonText,
-  onButtonClick,
-  colors,
-  styles,
-}) => (
-  <View
-    style={[
-      styles.emptyStateContainer,
-      {
-        backgroundColor:
-          colors.card || styles.emptyStateContainer.backgroundColor,
-      },
-    ]}
-  >
+const EmptyState = memo(
+  ({
+    icon: Icon,
+    iconName,
+    title,
+    description,
+    buttonText,
+    onButtonClick,
+    colors,
+    styles,
+  }) => (
     <View
       style={[
-        styles.emptyStateIconContainer,
+        styles.emptyStateContainer,
         {
           backgroundColor:
-            colors.surface || styles.emptyStateIconContainer.backgroundColor,
+            colors.card || styles.emptyStateContainer.backgroundColor,
         },
       ]}
     >
-      <Icon
-        name={iconName}
-        size={32}
-        color={colors.textSecondary || "#9CA3AF"}
-      />
-    </View>
-    <Text style={[styles.emptyStateTitle, { color: colors.text }]}>
-      {title}
-    </Text>
-    {description && (
-      <Text
-        style={[styles.emptyStateDescription, { color: colors.textSecondary }]}
+      <View
+        style={[
+          styles.emptyStateIconContainer,
+          {
+            backgroundColor:
+              colors.surface || styles.emptyStateIconContainer.backgroundColor,
+          },
+        ]}
       >
-        {description}
+        <Icon
+          name={iconName}
+          size={32}
+          color={colors.textSecondary || "#9CA3AF"}
+        />
+      </View>
+      <Text style={[styles.emptyStateTitle, { color: colors.text }]}>
+        {title}
       </Text>
-    )}
-    {buttonText && (
-      <TouchableOpacity
-        style={[styles.emptyStateButton, { backgroundColor: colors.primary }]}
-        onPress={onButtonClick}
-      >
-        <Text style={[styles.emptyStateButtonText, { color: "#FFFFFF" }]}>
-          {buttonText}
+      {description && (
+        <Text
+          style={[
+            styles.emptyStateDescription,
+            { color: colors.textSecondary },
+          ]}
+        >
+          {description}
         </Text>
-      </TouchableOpacity>
-    )}
-  </View>
+      )}
+      {buttonText && (
+        <TouchableOpacity
+          style={[styles.emptyStateButton, { backgroundColor: colors.primary }]}
+          onPress={onButtonClick}
+        >
+          <Text style={[styles.emptyStateButtonText, { color: "#FFFFFF" }]}>
+            {buttonText}
+          </Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  )
 );
 
-const ChartCard = ({ title, data, type, styles, colors }) => {
+const ChartCard = memo(({ title, data, type, styles, colors }) => {
   const lostColor = "#EF4444";
   const foundColor = "#10B981";
   const primaryColor = colors.primary;
@@ -826,7 +851,7 @@ const ChartCard = ({ title, data, type, styles, colors }) => {
       )}
     </View>
   );
-};
+});
 
 // --- Styles ---
 const createStyles = (colors) => {

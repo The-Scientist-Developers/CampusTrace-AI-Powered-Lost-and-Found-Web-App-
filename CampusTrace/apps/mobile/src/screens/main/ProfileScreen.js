@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import {
   View,
   Text,
@@ -8,31 +8,39 @@ import {
   Alert,
   Image,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   User,
   Settings,
   Bell,
-  Shield,
   HelpCircle,
   LogOut,
   ChevronRight,
-  FileText,
-  CheckCircle,
-  Package,
-} from "lucide-react-native";
+  Award,
+  Heart,
+} from "lucide-react-native"; // Removed unused icons (FileText, CheckCircle, Package, Shield)
 import { getSupabaseClient } from "@campustrace/core";
 import { useTheme } from "../../contexts/ThemeContext";
+import { apiClient } from "../../utils/apiClient";
+
+// Lazy load heavy components
+const BadgeList = React.lazy(() => import("../../components/BadgeList"));
+const ThankYouNotes = React.lazy(() =>
+  import("../../components/ThankYouNotes")
+);
 
 const ProfileScreen = ({ navigation }) => {
   const { colors, fontSizes } = useTheme();
 
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState([]); // Kept logic as requested
+  const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
+    // Kept logic as requested
     totalPosts: 0,
     foundItems: 0,
     recoveredItems: 0,
@@ -134,6 +142,17 @@ const ProfileScreen = ({ navigation }) => {
           ).length || 0;
 
         setStats({ totalPosts, foundItems, recoveredItems });
+
+        // Fetch badges
+        try {
+          const badgesData = await apiClient.get(
+            `/api/badges/user/${user.id}/badges`
+          );
+          setBadges(badgesData.badges || []);
+        } catch (badgeError) {
+          console.error("Error fetching badges:", badgeError);
+          setBadges([]);
+        }
       } catch (error) {
         console.error("Error fetching posts:", error);
       } finally {
@@ -193,9 +212,6 @@ const ProfileScreen = ({ navigation }) => {
       color: colors.textSecondary,
       marginTop: 2,
     },
-    menuButton: {
-      padding: 4,
-    },
     scrollView: {
       flex: 1,
       backgroundColor: colors.background,
@@ -204,7 +220,7 @@ const ProfileScreen = ({ navigation }) => {
       alignItems: "center",
       paddingVertical: 32,
       backgroundColor: colors.surface,
-      marginBottom: 1,
+      marginBottom: 8, // Enhanced UI: Added consistent spacing
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
@@ -240,113 +256,37 @@ const ProfileScreen = ({ navigation }) => {
       alignItems: "center",
       backgroundColor: colors.background,
     },
-    statsContainer: {
-      flexDirection: "row",
-      paddingHorizontal: 16,
+    // --- Removed Stats Styles ---
+    badgesSection: {
       paddingVertical: 20,
-      gap: 12,
+      paddingHorizontal: 16,
       backgroundColor: colors.surface,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-    },
-    statCard: {
-      flex: 1,
-      backgroundColor: colors.background,
-      borderRadius: 12,
-      padding: 16,
-      flexDirection: "column",
-      alignItems: "center",
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    statIconContainer: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      justifyContent: "center",
-      alignItems: "center",
-      marginBottom: 10,
-    },
-    statContent: {
-      alignItems: "center",
-    },
-    statValue: {
-      fontSize: fontSizes.xxl,
-      fontWeight: "700",
-      color: colors.text,
-      marginBottom: 4,
-    },
-    statLabel: {
-      fontSize: fontSizes.small,
-      color: colors.textSecondary,
-      textAlign: "center",
-      fontWeight: "500",
-    },
-    recentPostsSection: {
-      backgroundColor: colors.surface,
-      marginTop: 8,
       marginBottom: 8,
-      paddingVertical: 16,
       borderTopWidth: 1,
       borderBottomWidth: 1,
       borderColor: colors.border,
     },
-    sectionTitle: {
-      fontSize: fontSizes.large,
-      fontWeight: "700",
-      color: colors.text,
+    thankYouNotesSection: {
+      paddingVertical: 20,
       paddingHorizontal: 16,
-      marginBottom: 12,
-    },
-    recentPostsContainer: {
-      paddingHorizontal: 16,
-    },
-    recentPostItem: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingVertical: 12,
-      borderBottomWidth: 0.5,
-      borderBottomColor: colors.border,
-    },
-    recentPostImage: {
-      width: 52,
-      height: 52,
-      borderRadius: 10,
-      backgroundColor: colors.background,
-      justifyContent: "center",
-      alignItems: "center",
-      marginRight: 12,
-      overflow: "hidden",
-      borderWidth: 1,
+      backgroundColor: colors.surface,
+      marginBottom: 8,
+      borderTopWidth: 1,
+      borderBottomWidth: 1,
       borderColor: colors.border,
     },
-    postThumbnail: {
-      width: "100%",
-      height: "100%",
+    sectionHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 16,
+      gap: 8,
     },
-    recentPostInfo: {
-      flex: 1,
-      marginRight: 8,
-    },
-    recentPostTitle: {
-      fontSize: fontSizes.base,
-      fontWeight: "600",
+    sectionTitle: {
+      fontSize: fontSizes.lg,
+      fontWeight: "700",
       color: colors.text,
-      marginBottom: 4,
     },
-    recentPostDate: {
-      fontSize: fontSizes.small,
-      color: colors.textSecondary,
-    },
-    statusBadge: {
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      borderRadius: 12,
-    },
-    statusBadgeText: {
-      fontSize: fontSizes.small,
-      fontWeight: "600",
-    },
+    // --- Removed Recent Posts Styles ---
     menuSection: {
       backgroundColor: colors.surface,
       marginBottom: 8,
@@ -405,7 +345,6 @@ const ProfileScreen = ({ navigation }) => {
             Manage your account and view your activity
           </Text>
         </View>
-        {/* Removed hamburger/menu button as requested */}
       </View>
 
       {loading ? (
@@ -432,50 +371,27 @@ const ProfileScreen = ({ navigation }) => {
             <Text style={dynamicStyles.userEmail}>{user?.email}</Text>
           </View>
 
-          {/* Stats Cards */}
-          <View style={dynamicStyles.statsContainer}>
-            <StatCard
-              label="Total Posts"
-              value={stats.totalPosts}
-              icon={FileText}
-              color="#6366F1"
-              dynamicStyles={dynamicStyles}
-              colors={colors}
-            />
-            <StatCard
-              label="Items Found"
-              value={stats.foundItems}
-              icon={CheckCircle}
-              color="#10B981"
-              dynamicStyles={dynamicStyles}
-              colors={colors}
-            />
-            <StatCard
-              label="Recovered"
-              value={stats.recoveredItems}
-              icon={Package}
-              color="#3B82F6"
-              dynamicStyles={dynamicStyles}
-              colors={colors}
-            />
+          {/* --- Stats Cards Removed --- */}
+
+          {/* Badges Section */}
+          <View style={dynamicStyles.badgesSection}>
+            <View style={dynamicStyles.sectionHeader}>
+              <Award size={24} color={colors.primary} />
+              <Text style={dynamicStyles.sectionTitle}>Badges</Text>
+            </View>
+            <BadgeList badges={badges} colors={colors} />
           </View>
 
-          {/* Recent Posts */}
-          {posts.length > 0 && (
-            <View style={dynamicStyles.recentPostsSection}>
-              <Text style={dynamicStyles.sectionTitle}>Recent Posts</Text>
-              <View style={dynamicStyles.recentPostsContainer}>
-                {posts.slice(0, 5).map((post) => (
-                  <RecentPostItem
-                    key={post.id}
-                    post={post}
-                    dynamicStyles={dynamicStyles}
-                    colors={colors}
-                  />
-                ))}
-              </View>
+          {/* Thank You Notes Section */}
+          <View style={dynamicStyles.thankYouNotesSection}>
+            <View style={dynamicStyles.sectionHeader}>
+              <Heart size={24} color={colors.primary} />
+              <Text style={dynamicStyles.sectionTitle}>Thank You Notes</Text>
             </View>
-          )}
+            <ThankYouNotes userId={user?.id} colors={colors} />
+          </View>
+
+          {/* --- Recent Posts Removed --- */}
 
           {/* Menu Items */}
           <View style={dynamicStyles.menuSection}>
@@ -528,81 +444,8 @@ const MenuItem = ({ icon: Icon, label, onPress, dynamicStyles, colors }) => (
   </TouchableOpacity>
 );
 
-const StatCard = ({
-  label,
-  value,
-  icon: Icon,
-  color,
-  dynamicStyles,
-  colors,
-}) => (
-  <View style={dynamicStyles.statCard}>
-    <View
-      style={[
-        dynamicStyles.statIconContainer,
-        { backgroundColor: color + "20" },
-      ]}
-    >
-      <Icon size={24} color={color} />
-    </View>
-    <View style={dynamicStyles.statContent}>
-      <Text style={dynamicStyles.statValue}>{value}</Text>
-      <Text style={dynamicStyles.statLabel}>{label}</Text>
-    </View>
-  </View>
-);
+// --- StatCard Component Removed ---
 
-const RecentPostItem = ({ post, dynamicStyles, colors }) => (
-  <View style={dynamicStyles.recentPostItem}>
-    <View style={dynamicStyles.recentPostImage}>
-      {post.image_url ? (
-        <Image
-          source={{ uri: post.image_url }}
-          style={dynamicStyles.postThumbnail}
-        />
-      ) : (
-        <FileText size={20} color={colors.textSecondary} />
-      )}
-    </View>
-    <View style={dynamicStyles.recentPostInfo}>
-      <Text style={dynamicStyles.recentPostTitle} numberOfLines={1}>
-        {post.title}
-      </Text>
-      <Text style={dynamicStyles.recentPostDate}>
-        {new Date(post.created_at).toLocaleDateString()}
-      </Text>
-    </View>
-    <View
-      style={[
-        dynamicStyles.statusBadge,
-        {
-          backgroundColor:
-            post.moderation_status === "approved"
-              ? "#10B98120"
-              : post.moderation_status === "recovered"
-              ? "#3B82F620"
-              : "#EAB30820",
-        },
-      ]}
-    >
-      <Text
-        style={[
-          dynamicStyles.statusBadgeText,
-          {
-            color:
-              post.moderation_status === "approved"
-                ? "#10B981"
-                : post.moderation_status === "recovered"
-                ? "#3B82F6"
-                : "#EAB308",
-          },
-        ]}
-      >
-        {post.moderation_status?.charAt(0).toUpperCase() +
-          post.moderation_status?.slice(1).replace("_", " ")}
-      </Text>
-    </View>
-  </View>
-);
+// --- RecentPostItem Component Removed ---
 
 export default ProfileScreen;

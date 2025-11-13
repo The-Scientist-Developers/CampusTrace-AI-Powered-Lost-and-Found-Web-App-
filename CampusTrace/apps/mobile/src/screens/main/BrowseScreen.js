@@ -1,4 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+  memo,
+} from "react";
 import {
   View,
   Text,
@@ -36,7 +43,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react-native";
-import { getSupabaseClient } from "@campustrace/core";
+import { getSupabaseClient, API_BASE_URL } from "@campustrace/core";
 import * as ImagePicker from "expo-image-picker";
 import SimpleLoadingScreen from "../../components/SimpleLoadingScreen";
 import { useNavigation } from "@react-navigation/native";
@@ -44,9 +51,6 @@ import { useTheme } from "../../contexts/ThemeContext";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 const BRAND_COLOR = "#1877F2";
-
-// Replace with your actual API base URL
-const API_BASE_URL = "http://10.0.0.40:8000"; // e.g., "https://api.campustrace.com"
 
 // ==================== Helper Functions ====================
 
@@ -177,622 +181,652 @@ const getTimeAgo = (dateString) => {
 
 // ==================== Component: Filters Modal ====================
 
-const FiltersModal = ({
-  visible,
-  onClose,
-  filters,
-  onFiltersChange,
-  colors,
-  styles,
-}) => {
-  const [localFilters, setLocalFilters] = useState(filters);
+const FiltersModal = memo(
+  ({ visible, onClose, filters, onFiltersChange, colors, styles }) => {
+    const [localFilters, setLocalFilters] = useState(filters);
 
-  const categories = [
-    "Electronics",
-    "Documents",
-    "Clothing",
-    "Accessories",
-    "Other",
-  ];
+    const categories = [
+      "Electronics",
+      "Documents",
+      "Clothing",
+      "Accessories",
+      "Other",
+    ];
 
-  const handleApply = () => {
-    onFiltersChange(localFilters);
-    onClose();
-  };
+    const handleApply = () => {
+      onFiltersChange(localFilters);
+      onClose();
+    };
 
-  const handleReset = () => {
-    setLocalFilters({
-      status: "All",
-      categories: [],
-      sortBy: "newest",
-      dateFilter: "",
-    });
-  };
+    const handleReset = () => {
+      setLocalFilters({
+        status: "All",
+        categories: [],
+        sortBy: "newest",
+        dateFilter: "",
+      });
+    };
 
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Filters</Text>
-            <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
-              <X size={24} color="#000" />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            style={styles.modalBody}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Status Filter */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterSectionTitle}>Status</Text>
-              {["All", "Lost", "Found"].map((status) => (
-                <TouchableOpacity
-                  key={status}
-                  style={styles.filterOption}
-                  onPress={() => setLocalFilters({ ...localFilters, status })}
-                >
-                  <View
-                    style={[
-                      styles.radio,
-                      localFilters.status === status && styles.radioSelected,
-                    ]}
-                  />
-                  <Text style={styles.filterOptionText}>{status}</Text>
-                </TouchableOpacity>
-              ))}
+    return (
+      <Modal
+        visible={visible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={onClose}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Filters</Text>
+              <TouchableOpacity
+                onPress={onClose}
+                style={styles.modalCloseButton}
+              >
+                <X size={24} color="#000" />
+              </TouchableOpacity>
             </View>
 
-            {/* Category Filter */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterSectionTitle}>Categories</Text>
-              {categories.map((category) => (
-                <TouchableOpacity
-                  key={category}
-                  style={styles.filterOption}
-                  onPress={() => {
-                    const cats = localFilters.categories || [];
-                    const newCats = cats.includes(category)
-                      ? cats.filter((c) => c !== category)
-                      : [...cats, category];
-                    setLocalFilters({ ...localFilters, categories: newCats });
-                  }}
-                >
-                  <View
-                    style={[
-                      styles.checkbox,
-                      (localFilters.categories || []).includes(category) &&
-                        styles.checkboxSelected,
-                    ]}
+            <ScrollView
+              style={styles.modalBody}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Status Filter */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>Status</Text>
+                {["All", "Lost", "Found"].map((status) => (
+                  <TouchableOpacity
+                    key={status}
+                    style={styles.filterOption}
+                    onPress={() => setLocalFilters({ ...localFilters, status })}
                   >
-                    {(localFilters.categories || []).includes(category) && (
-                      <Text style={styles.checkmark}>✓</Text>
-                    )}
-                  </View>
-                  <Text style={styles.filterOptionText}>{category}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+                    <View
+                      style={[
+                        styles.radio,
+                        localFilters.status === status && styles.radioSelected,
+                      ]}
+                    />
+                    <Text style={styles.filterOptionText}>{status}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
-            {/* Sort By */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterSectionTitle}>Sort By</Text>
-              {[
-                { value: "newest", label: "Newest First" },
-                { value: "oldest", label: "Oldest First" },
-              ].map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={styles.filterOption}
-                  onPress={() =>
-                    setLocalFilters({ ...localFilters, sortBy: option.value })
-                  }
-                >
-                  <View
-                    style={[
-                      styles.radio,
-                      localFilters.sortBy === option.value &&
-                        styles.radioSelected,
-                    ]}
-                  />
-                  <Text style={styles.filterOptionText}>{option.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
+              {/* Category Filter */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>Categories</Text>
+                {categories.map((category) => (
+                  <TouchableOpacity
+                    key={category}
+                    style={styles.filterOption}
+                    onPress={() => {
+                      const cats = localFilters.categories || [];
+                      const newCats = cats.includes(category)
+                        ? cats.filter((c) => c !== category)
+                        : [...cats, category];
+                      setLocalFilters({ ...localFilters, categories: newCats });
+                    }}
+                  >
+                    <View
+                      style={[
+                        styles.checkbox,
+                        (localFilters.categories || []).includes(category) &&
+                          styles.checkboxSelected,
+                      ]}
+                    >
+                      {(localFilters.categories || []).includes(category) && (
+                        <Text style={styles.checkmark}>✓</Text>
+                      )}
+                    </View>
+                    <Text style={styles.filterOptionText}>{category}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
-          <View style={styles.modalFooter}>
-            <TouchableOpacity style={styles.clearButton} onPress={handleReset}>
-              <Text style={styles.clearButtonText}>Reset</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
-              <Text style={styles.applyButtonText}>Apply Filters</Text>
-            </TouchableOpacity>
+              {/* Sort By */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>Sort By</Text>
+                {[
+                  { value: "newest", label: "Newest First" },
+                  { value: "oldest", label: "Oldest First" },
+                ].map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={styles.filterOption}
+                    onPress={() =>
+                      setLocalFilters({ ...localFilters, sortBy: option.value })
+                    }
+                  >
+                    <View
+                      style={[
+                        styles.radio,
+                        localFilters.sortBy === option.value &&
+                          styles.radioSelected,
+                      ]}
+                    />
+                    <Text style={styles.filterOptionText}>{option.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={handleReset}
+              >
+                <Text style={styles.clearButtonText}>Reset</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.applyButton}
+                onPress={handleApply}
+              >
+                <Text style={styles.applyButtonText}>Apply Filters</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
-    </Modal>
-  );
-};
+      </Modal>
+    );
+  }
+);
 
 // ==================== Component: Item Details Modal ====================
 
-const ItemDetailsModal = ({
-  visible,
-  item,
-  onClose,
-  onClaim,
-  user,
-  navigation,
-  colors,
-  styles,
-}) => {
-  if (!item) return null;
+const ItemDetailsModal = memo(
+  ({ visible, item, onClose, onClaim, user, navigation, colors, styles }) => {
+    if (!item) return null;
 
-  const posterName =
-    item.profiles?.full_name ||
-    (item.profiles?.email ? item.profiles.email.split("@")[0] : "Anonymous");
-  const contactMethods = parseContactInfo(item.contact_info);
-  const isFoundItem = item.status?.toLowerCase() === "found";
-  const isMyOwnItem = item.profiles?.id === user?.id;
-  const showActionButtons = !isMyOwnItem;
+    const posterName =
+      item.profiles?.full_name ||
+      (item.profiles?.email ? item.profiles.email.split("@")[0] : "Anonymous");
+    const contactMethods = parseContactInfo(item.contact_info);
+    const isFoundItem = item.status?.toLowerCase() === "found";
+    const isMyOwnItem = item.profiles?.id === user?.id;
+    const showActionButtons = !isMyOwnItem;
 
-  const handleStartConversation = async () => {
-    try {
-      const supabase = getSupabaseClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const token = session?.access_token;
+    const handleStartConversation = async () => {
+      try {
+        const supabase = getSupabaseClient();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const token = session?.access_token;
 
-      if (!token) {
-        Alert.alert("Error", "Authentication required");
-        return;
-      }
+        if (!token) {
+          Alert.alert("Error", "Authentication required");
+          return;
+        }
 
-      const formData = new FormData();
-      formData.append("item_id", item.id);
+        const formData = new FormData();
+        formData.append("item_id", item.id);
 
-      const response = await fetch(`${API_BASE_URL}/api/conversations/`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.detail || "Failed to start conversation");
-      }
-
-      const { conversation_id } = await response.json();
-
-      // Navigate to chat
-      if (navigation) {
-        navigation.navigate("Dashboard", {
-          screen: "Chat",
-          params: { conversationId: conversation_id },
+        const response = await fetch(`${API_BASE_URL}/api/conversations/`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
         });
-        onClose();
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.detail || "Failed to start conversation");
+        }
+
+        const { conversation_id } = await response.json();
+
+        // Navigate to chat
+        if (navigation) {
+          navigation.navigate("Dashboard", {
+            screen: "Chat",
+            params: { conversationId: conversation_id },
+          });
+          onClose();
+        }
+      } catch (error) {
+        Alert.alert("Error", error.message || "Failed to start conversation");
       }
-    } catch (error) {
-      Alert.alert("Error", error.message || "Failed to start conversation");
-    }
-  };
+    };
 
-  const handleContactPress = (contact) => {
-    if (contact.link) {
-      Linking.openURL(contact.link).catch(() => {
-        Alert.alert("Error", "Cannot open this link");
-      });
-    }
-  };
+    const handleContactPress = (contact) => {
+      if (contact.link) {
+        Linking.openURL(contact.link).catch(() => {
+          Alert.alert("Error", "Cannot open this link");
+        });
+      }
+    };
 
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={false}
-      onRequestClose={onClose}
-    >
-      <SafeAreaView
-        style={[
-          styles.detailModalContainer,
-          { backgroundColor: colors.background },
-        ]}
+    return (
+      <Modal
+        visible={visible}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={onClose}
       >
-        {/* Fixed Header */}
-        <View
+        <SafeAreaView
           style={[
-            styles.detailHeader,
-            {
-              backgroundColor: colors.surface,
-              borderBottomColor: colors.border,
-            },
+            styles.detailModalContainer,
+            { backgroundColor: colors.background },
           ]}
         >
-          <View style={{ flex: 1 }}>
-            <View style={styles.detailBadges}>
-              <View
-                style={[
-                  styles.statusBadge,
-                  {
-                    backgroundColor:
-                      item.status === "Lost"
-                        ? colors.isDark
-                          ? "#7F1D1D"
-                          : "#FEE2E2"
-                        : colors.isDark
-                        ? "#064E3B"
-                        : "#D1FAE5",
-                  },
-                ]}
-              >
-                <Text
+          {/* Fixed Header */}
+          <View
+            style={[
+              styles.detailHeader,
+              {
+                backgroundColor: colors.surface,
+                borderBottomColor: colors.border,
+              },
+            ]}
+          >
+            <View style={{ flex: 1 }}>
+              <View style={styles.detailBadges}>
+                <View
                   style={[
-                    styles.statusText,
+                    styles.statusBadge,
                     {
-                      color:
-                        item.status === "Lost" ? colors.error : colors.success,
+                      backgroundColor:
+                        item.status === "Lost"
+                          ? colors.isDark
+                            ? "#7F1D1D"
+                            : "#FEE2E2"
+                          : colors.isDark
+                          ? "#064E3B"
+                          : "#D1FAE5",
                     },
                   ]}
                 >
-                  {item.status}
-                </Text>
+                  <Text
+                    style={[
+                      styles.statusText,
+                      {
+                        color:
+                          item.status === "Lost"
+                            ? colors.error
+                            : colors.success,
+                      },
+                    ]}
+                  >
+                    {item.status}
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.categoryBadge,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {item.category}
+                  </Text>
+                </View>
               </View>
+              <Text style={[styles.detailTitle, { color: colors.text }]}>
+                {item.title}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={onClose}
+              style={styles.closeButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <X size={24} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Fixed Image */}
+          {item.image_url ? (
+            <Image
+              source={{ uri: item.image_url }}
+              style={styles.detailImageFixed}
+              resizeMode="cover"
+            />
+          ) : (
+            <View
+              style={[
+                styles.noImageContainerFixed,
+                { backgroundColor: colors.surface },
+              ]}
+            >
+              <Camera size={48} color={colors.border} />
+              <Text
+                style={[styles.noImageText, { color: colors.textSecondary }]}
+              >
+                No Image Available
+              </Text>
+            </View>
+          )}
+
+          {/* Fixed Poster Info */}
+          <View
+            style={[
+              styles.posterCardFixed,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <View style={styles.posterInfo}>
               <View
                 style={[
-                  styles.categoryBadge,
+                  styles.posterAvatar,
+                  { backgroundColor: colors.surface },
+                ]}
+              >
+                <User size={24} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={[styles.posterLabel, { color: colors.textSecondary }]}
+                >
+                  Posted by
+                </Text>
+                <Text style={[styles.posterName, { color: colors.text }]}>
+                  {posterName}
+                </Text>
+                {item.profiles?.email && (
+                  <Text
+                    style={[styles.posterEmail, { color: colors.textTertiary }]}
+                  >
+                    {item.profiles.email}
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            {/* Contact Methods */}
+            {contactMethods.length > 0 && (
+              <View style={styles.contactMethods}>
+                {contactMethods.map((contact, index) => {
+                  const Icon = contact.icon;
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      style={[
+                        styles.contactButton,
+                        {
+                          backgroundColor: colors.surface,
+                          borderColor: colors.primary,
+                        },
+                      ]}
+                      onPress={() => handleContactPress(contact)}
+                      disabled={!contact.link}
+                    >
+                      <Icon size={16} color={colors.primary} />
+                      <Text
+                        style={[
+                          styles.contactButtonText,
+                          { color: colors.primary },
+                        ]}
+                      >
+                        {contact.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+
+          {/* Scrollable Content */}
+          <ScrollView
+            style={[
+              styles.detailScrollContent,
+              { backgroundColor: colors.background },
+            ]}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Details Grid */}
+            <View style={styles.detailsGrid}>
+              <View
+                style={[
+                  styles.detailItem,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
+              >
+                <MapPin size={20} color={colors.textSecondary} />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      styles.detailLabel,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    Location
+                  </Text>
+                  <Text style={[styles.detailValue, { color: colors.text }]}>
+                    {item.location || "N/A"}
+                  </Text>
+                </View>
+              </View>
+
+              <View
+                style={[
+                  styles.detailItem,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
+              >
+                <Calendar size={20} color={colors.textSecondary} />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      styles.detailLabel,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    Date Posted
+                  </Text>
+                  <Text style={[styles.detailValue, { color: colors.text }]}>
+                    {formatDate(item.created_at)}
+                  </Text>
+                </View>
+              </View>
+
+              <View
+                style={[
+                  styles.detailItem,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
+              >
+                <Clock size={20} color={colors.textSecondary} />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      styles.detailLabel,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    Time Posted
+                  </Text>
+                  <Text style={[styles.detailValue, { color: colors.text }]}>
+                    {formatTime(item.created_at)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Description */}
+            <View
+              style={[
+                styles.descriptionCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <Text style={[styles.descriptionLabel, { color: colors.text }]}>
+                Description
+              </Text>
+              <Text
+                style={[
+                  styles.descriptionText,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {item.description || "No description provided."}
+              </Text>
+            </View>
+
+            {/* Action Buttons */}
+            {showActionButtons && (
+              <View style={styles.actionButtons}>
+                {isFoundItem && (
+                  <TouchableOpacity
+                    style={[
+                      styles.claimButton,
+                      { backgroundColor: colors.primary },
+                    ]}
+                    onPress={() => onClaim(item)}
+                  >
+                    <Send size={20} color="#FFF" />
+                    <Text style={styles.claimButtonText}>Claim This Item</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  style={[
+                    styles.messageButton,
+                    { backgroundColor: colors.primary },
+                  ]}
+                  onPress={handleStartConversation}
+                >
+                  <MessageCircle size={20} color="#FFF" />
+                  <Text style={styles.messageButtonText}>Message Poster</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+    );
+  }
+);
+
+// ==================== Component: Claim Modal ====================
+
+const ClaimModal = memo(
+  ({ visible, item, onClose, onSubmit, colors, styles }) => {
+    const [verificationMessage, setVerificationMessage] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleSubmit = async () => {
+      if (!verificationMessage.trim()) {
+        Alert.alert("Error", "Please provide a verification detail");
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        await onSubmit(item.id, verificationMessage);
+        Alert.alert(
+          "Success",
+          "Claim submitted! The finder has been notified."
+        );
+        setVerificationMessage("");
+        onClose();
+      } catch (error) {
+        Alert.alert("Error", error.message || "Failed to submit claim");
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
+    return (
+      <Modal
+        visible={visible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={onClose}
+      >
+        <View
+          style={[
+            styles.modalOverlay,
+            { backgroundColor: colors.overlay || "rgba(0,0,0,0.5)" },
+          ]}
+        >
+          <View
+            style={[styles.claimModalContent, { backgroundColor: colors.card }]}
+          >
+            <Text style={[styles.claimModalTitle, { color: colors.text }]}>
+              Claim Item: {item?.title}
+            </Text>
+            <Text
+              style={[
+                styles.claimModalSubtitle,
+                { color: colors.textSecondary },
+              ]}
+            >
+              To verify ownership, please describe a unique detail only you
+              would know.
+            </Text>
+
+            <TextInput
+              style={[
+                styles.claimInput,
+                {
+                  backgroundColor: colors.background,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              placeholder="Enter your secret detail here..."
+              placeholderTextColor={colors.textTertiary}
+              multiline
+              numberOfLines={5}
+              value={verificationMessage}
+              onChangeText={setVerificationMessage}
+              editable={!isSubmitting}
+              textAlignVertical="top"
+            />
+
+            <View style={styles.claimModalButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.cancelButton,
                   {
                     backgroundColor: colors.surface,
                     borderColor: colors.border,
                   },
                 ]}
+                onPress={onClose}
+                disabled={isSubmitting}
               >
-                <Text
-                  style={[styles.categoryText, { color: colors.textSecondary }]}
-                >
-                  {item.category}
+                <Text style={[styles.cancelButtonText, { color: colors.text }]}>
+                  Cancel
                 </Text>
-              </View>
-            </View>
-            <Text style={[styles.detailTitle, { color: colors.text }]}>
-              {item.title}
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={onClose}
-            style={styles.closeButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <X size={24} color={colors.text} />
-          </TouchableOpacity>
-        </View>
+              </TouchableOpacity>
 
-        {/* Fixed Image */}
-        {item.image_url ? (
-          <Image
-            source={{ uri: item.image_url }}
-            style={styles.detailImageFixed}
-            resizeMode="cover"
-          />
-        ) : (
-          <View
-            style={[
-              styles.noImageContainerFixed,
-              { backgroundColor: colors.surface },
-            ]}
-          >
-            <Camera size={48} color={colors.border} />
-            <Text style={[styles.noImageText, { color: colors.textSecondary }]}>
-              No Image Available
-            </Text>
-          </View>
-        )}
-
-        {/* Fixed Poster Info */}
-        <View
-          style={[
-            styles.posterCardFixed,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-        >
-          <View style={styles.posterInfo}>
-            <View
-              style={[styles.posterAvatar, { backgroundColor: colors.surface }]}
-            >
-              <User size={24} color={colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={[styles.posterLabel, { color: colors.textSecondary }]}
-              >
-                Posted by
-              </Text>
-              <Text style={[styles.posterName, { color: colors.text }]}>
-                {posterName}
-              </Text>
-              {item.profiles?.email && (
-                <Text
-                  style={[styles.posterEmail, { color: colors.textTertiary }]}
-                >
-                  {item.profiles.email}
-                </Text>
-              )}
-            </View>
-          </View>
-
-          {/* Contact Methods */}
-          {contactMethods.length > 0 && (
-            <View style={styles.contactMethods}>
-              {contactMethods.map((contact, index) => {
-                const Icon = contact.icon;
-                return (
-                  <TouchableOpacity
-                    key={index}
-                    style={[
-                      styles.contactButton,
-                      {
-                        backgroundColor: colors.surface,
-                        borderColor: colors.primary,
-                      },
-                    ]}
-                    onPress={() => handleContactPress(contact)}
-                    disabled={!contact.link}
-                  >
-                    <Icon size={16} color={colors.primary} />
-                    <Text
-                      style={[
-                        styles.contactButtonText,
-                        { color: colors.primary },
-                      ]}
-                    >
-                      {contact.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-        </View>
-
-        {/* Scrollable Content */}
-        <ScrollView
-          style={[
-            styles.detailScrollContent,
-            { backgroundColor: colors.background },
-          ]}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Details Grid */}
-          <View style={styles.detailsGrid}>
-            <View
-              style={[
-                styles.detailItem,
-                { backgroundColor: colors.card, borderColor: colors.border },
-              ]}
-            >
-              <MapPin size={20} color={colors.textSecondary} />
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={[styles.detailLabel, { color: colors.textSecondary }]}
-                >
-                  Location
-                </Text>
-                <Text style={[styles.detailValue, { color: colors.text }]}>
-                  {item.location || "N/A"}
-                </Text>
-              </View>
-            </View>
-
-            <View
-              style={[
-                styles.detailItem,
-                { backgroundColor: colors.card, borderColor: colors.border },
-              ]}
-            >
-              <Calendar size={20} color={colors.textSecondary} />
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={[styles.detailLabel, { color: colors.textSecondary }]}
-                >
-                  Date Posted
-                </Text>
-                <Text style={[styles.detailValue, { color: colors.text }]}>
-                  {formatDate(item.created_at)}
-                </Text>
-              </View>
-            </View>
-
-            <View
-              style={[
-                styles.detailItem,
-                { backgroundColor: colors.card, borderColor: colors.border },
-              ]}
-            >
-              <Clock size={20} color={colors.textSecondary} />
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={[styles.detailLabel, { color: colors.textSecondary }]}
-                >
-                  Time Posted
-                </Text>
-                <Text style={[styles.detailValue, { color: colors.text }]}>
-                  {formatTime(item.created_at)}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Description */}
-          <View
-            style={[
-              styles.descriptionCard,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-          >
-            <Text style={[styles.descriptionLabel, { color: colors.text }]}>
-              Description
-            </Text>
-            <Text
-              style={[styles.descriptionText, { color: colors.textSecondary }]}
-            >
-              {item.description || "No description provided."}
-            </Text>
-          </View>
-
-          {/* Action Buttons */}
-          {showActionButtons && (
-            <View style={styles.actionButtons}>
-              {isFoundItem && (
-                <TouchableOpacity
-                  style={[
-                    styles.claimButton,
-                    { backgroundColor: colors.primary },
-                  ]}
-                  onPress={() => onClaim(item)}
-                >
-                  <Send size={20} color="#FFF" />
-                  <Text style={styles.claimButtonText}>Claim This Item</Text>
-                </TouchableOpacity>
-              )}
               <TouchableOpacity
                 style={[
-                  styles.messageButton,
+                  styles.submitButton,
                   { backgroundColor: colors.primary },
+                  isSubmitting && { ...styles.disabledButton, opacity: 0.5 },
                 ]}
-                onPress={handleStartConversation}
+                onPress={handleSubmit}
+                disabled={isSubmitting}
               >
-                <MessageCircle size={20} color="#FFF" />
-                <Text style={styles.messageButtonText}>Message Poster</Text>
+                {isSubmitting ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <>
+                    <Send size={18} color="#FFF" />
+                    <Text style={styles.submitButtonText}>Submit Claim</Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
-          )}
-        </ScrollView>
-      </SafeAreaView>
-    </Modal>
-  );
-};
-
-// ==================== Component: Claim Modal ====================
-
-const ClaimModal = ({ visible, item, onClose, onSubmit, colors, styles }) => {
-  const [verificationMessage, setVerificationMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async () => {
-    if (!verificationMessage.trim()) {
-      Alert.alert("Error", "Please provide a verification detail");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await onSubmit(item.id, verificationMessage);
-      Alert.alert("Success", "Claim submitted! The finder has been notified.");
-      setVerificationMessage("");
-      onClose();
-    } catch (error) {
-      Alert.alert("Error", error.message || "Failed to submit claim");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
-    >
-      <View
-        style={[
-          styles.modalOverlay,
-          { backgroundColor: colors.overlay || "rgba(0,0,0,0.5)" },
-        ]}
-      >
-        <View
-          style={[styles.claimModalContent, { backgroundColor: colors.card }]}
-        >
-          <Text style={[styles.claimModalTitle, { color: colors.text }]}>
-            Claim Item: {item?.title}
-          </Text>
-          <Text
-            style={[styles.claimModalSubtitle, { color: colors.textSecondary }]}
-          >
-            To verify ownership, please describe a unique detail only you would
-            know.
-          </Text>
-
-          <TextInput
-            style={[
-              styles.claimInput,
-              {
-                backgroundColor: colors.background,
-                borderColor: colors.border,
-                color: colors.text,
-              },
-            ]}
-            placeholder="Enter your secret detail here..."
-            placeholderTextColor={colors.textTertiary}
-            multiline
-            numberOfLines={5}
-            value={verificationMessage}
-            onChangeText={setVerificationMessage}
-            editable={!isSubmitting}
-            textAlignVertical="top"
-          />
-
-          <View style={styles.claimModalButtons}>
-            <TouchableOpacity
-              style={[
-                styles.cancelButton,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-              ]}
-              onPress={onClose}
-              disabled={isSubmitting}
-            >
-              <Text style={[styles.cancelButtonText, { color: colors.text }]}>
-                Cancel
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.submitButton,
-                { backgroundColor: colors.primary },
-                isSubmitting && { ...styles.disabledButton, opacity: 0.5 },
-              ]}
-              onPress={handleSubmit}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator size="small" color="#FFF" />
-              ) : (
-                <>
-                  <Send size={18} color="#FFF" />
-                  <Text style={styles.submitButtonText}>Submit Claim</Text>
-                </>
-              )}
-            </TouchableOpacity>
           </View>
         </View>
-      </View>
-    </Modal>
-  );
-};
+      </Modal>
+    );
+  }
+);
 
 // ==================== Component: Marketplace Grid Item ====================
 
-const MarketplaceItem = ({ item, colors, styles }) => {
+const MarketplaceItem = memo(({ item, colors, styles }) => {
   const statusColor =
     item.status === "Lost"
       ? colors?.error || "#EF4444"
@@ -886,7 +920,7 @@ const MarketplaceItem = ({ item, colors, styles }) => {
       </View>
     </View>
   );
-};
+});
 
 // ==================== Main Component: BrowseScreen ====================
 
@@ -934,7 +968,7 @@ const BrowseScreen = () => {
     }
   }, [filters, debouncedSearchQuery, user]);
 
-  const getCurrentUser = async () => {
+  const getCurrentUser = useCallback(async () => {
     try {
       const supabase = getSupabaseClient();
       const {
@@ -944,7 +978,7 @@ const BrowseScreen = () => {
     } catch (error) {
       console.error("Error getting user:", error);
     }
-  };
+  }, []);
 
   const fetchItems = async (reset = false, pageOverride = null) => {
     try {

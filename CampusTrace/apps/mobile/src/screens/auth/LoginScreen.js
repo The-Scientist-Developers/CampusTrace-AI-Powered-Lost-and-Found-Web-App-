@@ -10,7 +10,7 @@ import {
   Alert,
   ScrollView,
   Linking,
-  Image, // Keep Image import for profile pictures
+  Image,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -21,12 +21,17 @@ import {
   User,
   AlertCircle,
   CheckCircle,
-  ChevronRight, // For list item
-  ChevronLeft, // For back button
+  ChevronRight,
+  ChevronLeft,
+  Hash,
+  UploadCloud, // Added for file upload
+  Camera, // Added for camera
 } from "lucide-react-native";
 import { getSupabaseClient } from "@campustrace/core";
 import { useTheme } from "../../contexts/ThemeContext";
 import LoadingScreen from "../../components/LoadingScreen";
+import { apiClient, API_BASE_URL } from "../../utils/apiClient"; // Make sure API_BASE_URL is exported from your client
+import * as ImagePicker from "expo-image-picker"; // Import ImagePicker
 import Svg, {
   Path,
   Circle,
@@ -36,7 +41,6 @@ import Svg, {
   Stop,
   G,
   Line,
-  RadialGradient,
 } from "react-native-svg";
 
 // CampusTrace Icon Component
@@ -48,8 +52,6 @@ const CampusTraceIcon = ({ width = 80, height = 80 }) => (
         <Stop offset="100%" stopColor="#1E40AF" stopOpacity="1" />
       </LinearGradient>
     </Defs>
-
-    {/* Background */}
     <Rect
       x="16"
       y="16"
@@ -59,10 +61,7 @@ const CampusTraceIcon = ({ width = 80, height = 80 }) => (
       ry="100"
       fill="url(#iconBlueGradient)"
     />
-
-    {/* Search icon */}
     <G transform="translate(256, 256)">
-      {/* Search circle */}
       <Circle
         r="100"
         fill="none"
@@ -70,7 +69,6 @@ const CampusTraceIcon = ({ width = 80, height = 80 }) => (
         strokeWidth="26"
         transform="translate(-26, -26)"
       />
-      {/* Handle */}
       <Line
         x1="46"
         y1="46"
@@ -80,7 +78,6 @@ const CampusTraceIcon = ({ width = 80, height = 80 }) => (
         strokeWidth="26"
         strokeLinecap="round"
       />
-      {/* AI dot */}
       <Circle r="18" fill="white" transform="translate(-26, -26)" />
     </G>
   </Svg>
@@ -90,6 +87,7 @@ const LoginScreen = ({ navigation }) => {
   const { colors, fontSizes, isDark } = useTheme();
   const [isLogin, setIsLogin] = useState(true);
   const [fullName, setFullName] = useState("");
+  const [universityId, setUniversityId] = useState(""); // Kept for validation logic, but field is now image
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -100,17 +98,18 @@ const LoginScreen = ({ navigation }) => {
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
 
-  // Rate limiting states
+  const [registerType, setRegisterType] = useState("regular");
+
+  // NEW: State for University ID Image
+  const [idImage, setIdImage] = useState(null); // Will store { uri, name, type }
+
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [cooldownTime, setCooldownTime] = useState(0);
   const [lastAttemptTime, setLastAttemptTime] = useState(null);
 
-  // Saved accounts
   const [savedAccounts, setSavedAccounts] = useState([]);
-  // Show saved accounts by default if they exist
   const [showSavedAccounts, setShowSavedAccounts] = useState(true);
 
-  // Password strength
   const [passwordStrength, setPasswordStrength] = useState({
     hasMinLength: false,
     hasUpperCase: false,
@@ -120,11 +119,9 @@ const LoginScreen = ({ navigation }) => {
   });
 
   useEffect(() => {
-    // Show loading screen for 1.5 seconds
     const timer = setTimeout(() => {
       setInitialLoading(false);
     }, 1500);
-
     return () => clearTimeout(timer);
   }, []);
 
@@ -133,7 +130,6 @@ const LoginScreen = ({ navigation }) => {
     loadSavedAccounts();
   }, []);
 
-  // Cooldown timer effect
   useEffect(() => {
     if (cooldownTime > 0) {
       const timer = setTimeout(() => {
@@ -141,13 +137,11 @@ const LoginScreen = ({ navigation }) => {
       }, 1000);
       return () => clearTimeout(timer);
     } else if (cooldownTime === 0 && loginAttempts >= 5) {
-      // Reset attempts after cooldown
       setLoginAttempts(0);
       setLastAttemptTime(null);
     }
   }, [cooldownTime, loginAttempts]);
 
-  // Update password strength
   useEffect(() => {
     if (!isLogin && password) {
       setPasswordStrength({
@@ -166,7 +160,6 @@ const LoginScreen = ({ navigation }) => {
       if (saved) {
         const accounts = JSON.parse(saved);
         setSavedAccounts(accounts);
-        // Set showSavedAccounts based on whether accounts exist
         setShowSavedAccounts(accounts.length > 0 && isLogin);
       } else {
         setShowSavedAccounts(false);
@@ -198,21 +191,14 @@ const LoginScreen = ({ navigation }) => {
     try {
       const saved = await AsyncStorage.getItem("campustrace_saved_accounts");
       let accounts = saved ? JSON.parse(saved) : [];
-
-      // Remove existing account with same email
       accounts = accounts.filter((acc) => acc.email !== email);
-
-      // Add new account at the beginning
       accounts.unshift({
         email,
         fullName: fullName || email.split("@")[0],
         avatarUrl: avatarUrl || null,
         lastLogin: new Date().toISOString(),
       });
-
-      // Keep only last 3 accounts
       accounts = accounts.slice(0, 3);
-
       await AsyncStorage.setItem(
         "campustrace_saved_accounts",
         JSON.stringify(accounts)
@@ -234,7 +220,6 @@ const LoginScreen = ({ navigation }) => {
           JSON.stringify(accounts)
         );
         setSavedAccounts(accounts);
-        // If no accounts left, hide the list
         if (accounts.length === 0) {
           setShowSavedAccounts(false);
         }
@@ -244,23 +229,18 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
-  // When selecting an account, fill email and go to form
   const selectAccount = (account) => {
     setEmail(account.email);
-    setShowSavedAccounts(false); // Switch to login form
+    setShowSavedAccounts(false);
   };
 
   const checkRateLimit = () => {
     const now = Date.now();
-
-    // Reset attempts if 15 minutes have passed since last attempt
     if (lastAttemptTime && now - lastAttemptTime > 15 * 60 * 1000) {
       setLoginAttempts(0);
       setLastAttemptTime(null);
       return true;
     }
-
-    // Check if in cooldown
     if (cooldownTime > 0) {
       Alert.alert(
         "Too Many Attempts",
@@ -269,8 +249,6 @@ const LoginScreen = ({ navigation }) => {
       );
       return false;
     }
-
-    // Check if max attempts reached
     if (loginAttempts >= 5) {
       setCooldownTime(60);
       Alert.alert(
@@ -280,7 +258,6 @@ const LoginScreen = ({ navigation }) => {
       );
       return false;
     }
-
     return true;
   };
 
@@ -303,6 +280,9 @@ const LoginScreen = ({ navigation }) => {
       if (!fullName) {
         newErrors.fullName = "Full name is required";
       }
+      if (registerType === "manual" && !idImage) {
+        newErrors.idImage = "University ID photo is required";
+      }
       if (!confirmPassword) {
         newErrors.confirmPassword = "Please confirm your password";
       } else if (confirmPassword !== password) {
@@ -320,90 +300,123 @@ const LoginScreen = ({ navigation }) => {
       email: true,
       password: true,
       fullName: !isLogin,
+      idImage: !isLogin && registerType === "manual",
       confirmPassword: !isLogin,
     });
 
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleAuth = async () => {
+  const handleLogin = async () => {
     if (!validate()) return;
-
-    // Check rate limit before attempting login
     if (!checkRateLimit()) return;
 
     setLoading(true);
-
     try {
       const supabase = getSupabaseClient();
-      let result;
+      let result = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
-      if (isLogin) {
-        result = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
-        });
+      if (result.error) throw result.error;
 
-        if (result.error) throw result.error;
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url")
+        .eq("id", result.data.user.id)
+        .single();
 
-        // Fetch profile data to get avatar_url
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("full_name, avatar_url")
-          .eq("id", result.data.user.id)
-          .single();
+      const userName =
+        profileData?.full_name || result.data?.user?.user_metadata?.full_name;
+      const avatarUrl = profileData?.avatar_url || null;
 
-        const userName =
-          profileData?.full_name || result.data?.user?.user_metadata?.full_name;
-        const avatarUrl = profileData?.avatar_url || null;
+      await saveEmail(email);
+      await saveAccount(email, userName, avatarUrl);
 
-        await saveEmail(email);
-        await saveAccount(email, userName, avatarUrl);
+      setLoginAttempts(0);
+      setCooldownTime(0);
+      setLastAttemptTime(null);
 
-        // Reset rate limiting on successful login
-        setLoginAttempts(0);
-        setCooldownTime(0);
-        setLastAttemptTime(null);
-
-        Alert.alert("Success", "Logged in successfully!");
-        // On successful login, navigation would happen here (not shown in snippet)
-      } else {
-        result = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          options: {
-            data: {
-              full_name: fullName,
-            },
-          },
-        });
-
-        if (result.error) throw result.error;
-
-        // Reset rate limiting on successful signup
-        setLoginAttempts(0);
-        setCooldownTime(0);
-        setLastAttemptTime(null);
-
-        Alert.alert(
-          "Success",
-          "Account created! Please check your email to verify your account.",
-          [{ text: "OK", onPress: () => setIsLogin(true) }]
-        );
-      }
+      // Alert.alert("Success", "Logged in successfully!"); // Let AuthNavigator handle it
     } catch (error) {
-      // Increment failed attempts and track time
       setLoginAttempts((prev) => prev + 1);
       setLastAttemptTime(Date.now());
-
       Alert.alert("Error", error.message || "An error occurred");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSignUp = async () => {
+    if (!validate()) return;
+    setLoading(true);
+
+    try {
+      if (registerType === "regular") {
+        const supabase = getSupabaseClient();
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: {
+            data: {
+              full_name: fullName.trim(),
+            },
+          },
+        });
+        if (error) throw error;
+        Alert.alert(
+          "Success",
+          "Account created! Please check your email to verify your account.",
+          [{ text: "OK", onPress: () => toggleForm(true) }]
+        );
+      } else {
+        // --- Manual Signup with FormData ---
+        const formData = new FormData();
+        formData.append("full_name", fullName.trim());
+        formData.append("email", email.trim());
+        formData.append("password", password);
+
+        // Append the image file
+        formData.append("university_id_image", {
+          uri: idImage.uri,
+          name: idImage.name,
+          type: idImage.type,
+        });
+
+        // Use fetch for multipart/form-data
+        const response = await fetch(
+          `${API_BASE_URL}/api/auth/register-manual`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+          throw new Error(responseData.detail || "An error occurred");
+        }
+
+        // Navigate to Pending Approval screen on success
+        navigation.navigate("PendingApproval");
+      }
+
+      setLoginAttempts(0);
+      setCooldownTime(0);
+      setLastAttemptTime(null);
+    } catch (error) {
+      Alert.alert(
+        "Sign Up Failed",
+        error.message || "Could not complete registration."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleForgotPassword = () => {
-    // This logic is kept, but the button is styled like the screenshot
     Alert.alert(
       "Reset Password",
       "Please visit the web app to reset your password.",
@@ -428,15 +441,68 @@ const LoginScreen = ({ navigation }) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
   };
 
+  // --- NEW: Image Picker Functions ---
+  const handleImagePick = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission Denied",
+        "Sorry, we need camera roll permissions to make this work!"
+      );
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaType.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
+      const { uri } = result.assets[0];
+      const fileName = uri.split("/").pop();
+      const fileType = `image/${fileName.split(".").pop()}`;
+      setIdImage({ uri, name: fileName, type: fileType });
+      setErrors((prev) => ({ ...prev, idImage: null })); // Clear error
+    }
+  };
+
+  const handleCameraCapture = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission Denied",
+        "Sorry, we need camera permissions to make this work!"
+      );
+      return;
+    }
+
+    let result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
+      const { uri } = result.assets[0];
+      const fileName = uri.split("/").pop();
+      const fileType = `image/${fileName.split(".").pop()}`;
+      setIdImage({ uri, name: fileName, type: fileType });
+      setErrors((prev) => ({ ...prev, idImage: null })); // Clear error
+    }
+  };
+  // --- END: Image Picker Functions ---
+
   const getPasswordStrengthScore = () => {
     return Object.values(passwordStrength).filter(Boolean).length;
   };
 
   const getPasswordStrengthColor = () => {
     const score = getPasswordStrengthScore();
-    if (score <= 2) return "#EF4444"; // red
-    if (score <= 3) return "#F59E0B"; // amber
-    return "#10B981"; // green
+    if (score <= 2) return "#EF4444";
+    if (score <= 3) return "#F59E0B";
+    return "#10B981";
   };
 
   const getPasswordStrengthText = () => {
@@ -451,29 +517,28 @@ const LoginScreen = ({ navigation }) => {
     setErrors({});
     setTouched({});
     setFullName("");
+    setUniversityId("");
     setPassword("");
     setConfirmPassword("");
-    // Don't clear email
+    setIdImage(null); // Clear image
+    setRegisterType("regular");
   };
 
-  if (initialLoading || loading) {
+  if (initialLoading) {
     return <LoadingScreen />;
   }
 
-  // Use theme colors for dark mode UI
-  // Fallbacks are provided for a dark theme
   const themeColors = {
     background: colors.background || "#000000",
-    surface: colors.surface || "#1A1A1A", // For inputs
+    surface: colors.surface || "#1A1A1A",
     border: colors.border || "#363636",
     text: colors.text || "#FFFFFF",
     textSecondary: colors.textSecondary || "#A8A8A8",
-    primary: colors.primary || "#0095F6", // Instagram Blue
-    error: colors.error || "#ED4956", // Instagram Red
+    primary: colors.primary || "#0095F6",
+    error: colors.error || "#ED4956",
     success: colors.success || "#10B981",
   };
 
-  // Create dynamic styles based on theme
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -481,7 +546,7 @@ const LoginScreen = ({ navigation }) => {
     },
     scrollContent: {
       flexGrow: 1,
-      justifyContent: "space-between", // Pushes footer to bottom
+      justifyContent: "space-between",
       padding: 24,
       paddingTop: Platform.OS === "android" ? 40 : 60,
     },
@@ -501,7 +566,6 @@ const LoginScreen = ({ navigation }) => {
       alignItems: "center",
       marginBottom: 48,
     },
-    // Saved Accounts List
     savedAccountsContainer: {
       width: "100%",
       alignItems: "center",
@@ -575,8 +639,6 @@ const LoginScreen = ({ navigation }) => {
       color: themeColors.primary,
       fontWeight: "600",
     },
-
-    // Login/Sign Up Form
     formContainer: {
       width: "100%",
     },
@@ -589,7 +651,7 @@ const LoginScreen = ({ navigation }) => {
       backgroundColor: themeColors.surface,
       borderWidth: 1,
       borderColor: themeColors.border,
-      borderRadius: 12, // More rounded
+      borderRadius: 12,
       paddingHorizontal: 14,
       height: 52,
     },
@@ -603,7 +665,7 @@ const LoginScreen = ({ navigation }) => {
       flex: 1,
       fontSize: fontSizes.base || 16,
       color: themeColors.text,
-      paddingVertical: 12, // Ensure text isn't cut off
+      paddingVertical: 12,
     },
     eyeIcon: {
       padding: 4,
@@ -619,7 +681,6 @@ const LoginScreen = ({ navigation }) => {
       color: themeColors.error,
       marginLeft: 4,
     },
-    // Password Strength
     passwordStrength: {
       backgroundColor: "transparent",
       borderRadius: 8,
@@ -662,7 +723,6 @@ const LoginScreen = ({ navigation }) => {
     requirementTextMet: {
       color: themeColors.success,
     },
-    // Forgot Password
     forgotPassword: {
       alignSelf: "flex-end",
       marginBottom: 20,
@@ -673,7 +733,6 @@ const LoginScreen = ({ navigation }) => {
       color: themeColors.primary,
       fontWeight: "600",
     },
-    // Main Button
     button: {
       backgroundColor: themeColors.primary,
       borderRadius: 12,
@@ -691,8 +750,6 @@ const LoginScreen = ({ navigation }) => {
       fontSize: fontSizes.base || 16,
       fontWeight: "700",
     },
-
-    // Footer
     footer: {
       width: "100%",
       alignItems: "center",
@@ -719,6 +776,92 @@ const LoginScreen = ({ navigation }) => {
       fontWeight: "700",
       letterSpacing: -0.5,
     },
+    toggleContainer: {
+      flexDirection: "row",
+      backgroundColor: themeColors.surface,
+      borderRadius: 12,
+      padding: 4,
+      marginBottom: 20,
+      borderWidth: 1,
+      borderColor: themeColors.border,
+    },
+    toggleButton: {
+      flex: 1,
+      paddingVertical: 10,
+      borderRadius: 9,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    toggleButtonActive: {
+      backgroundColor: themeColors.primary,
+    },
+    toggleButtonInactive: {
+      backgroundColor: "transparent",
+    },
+    toggleTextActive: {
+      fontSize: fontSizes.small || 14,
+      fontWeight: "600",
+      color: "#FFFFFF",
+    },
+    toggleTextInactive: {
+      fontSize: fontSizes.small || 14,
+      fontWeight: "500",
+      color: themeColors.textSecondary,
+    },
+    // --- NEW STYLES FOR ID UPLOAD ---
+    idUploadContainer: {
+      marginBottom: 12,
+    },
+    idUploadLabel: {
+      fontSize: fontSizes.small || 14,
+      color: themeColors.textSecondary,
+      fontWeight: "600",
+      marginBottom: 8,
+      paddingLeft: 4,
+    },
+    idUploadButtons: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      gap: 12,
+    },
+    idUploadButton: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: themeColors.surface,
+      borderWidth: 1,
+      borderColor: themeColors.border,
+      borderRadius: 12,
+      paddingVertical: 14,
+      gap: 8,
+    },
+    idUploadButtonText: {
+      color: themeColors.text,
+      fontSize: fontSizes.small || 14,
+      fontWeight: "600",
+    },
+    idImagePreviewContainer: {
+      width: "100%",
+      height: 150,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: themeColors.success,
+      backgroundColor: themeColors.surface,
+      justifyContent: "center",
+      alignItems: "center",
+      marginTop: 12,
+      overflow: "hidden",
+    },
+    idImagePreview: {
+      width: "100%",
+      height: "100%",
+      resizeMode: "cover",
+    },
+    idImagePreviewText: {
+      color: themeColors.success,
+      fontWeight: "600",
+    },
   });
 
   return (
@@ -731,7 +874,6 @@ const LoginScreen = ({ navigation }) => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Back Button (only on form screen) */}
         {!showSavedAccounts && isLogin && savedAccounts.length > 0 && (
           <TouchableOpacity
             onPress={() => setShowSavedAccounts(true)}
@@ -741,13 +883,11 @@ const LoginScreen = ({ navigation }) => {
           </TouchableOpacity>
         )}
 
-        {/* Main Content: Logo + (List or Form) */}
         <View style={styles.mainContent}>
           <View style={styles.logoContainer}>
             <CampusTraceIcon width={80} height={80} />
           </View>
 
-          {/* Render Saved Accounts List */}
           {showSavedAccounts && isLogin && savedAccounts.length > 0 ? (
             <View style={styles.savedAccountsContainer}>
               {savedAccounts.map((account, index) => (
@@ -778,7 +918,6 @@ const LoginScreen = ({ navigation }) => {
                       </Text>
                     </View>
                   </View>
-                  {/* Kept remove button functionality */}
                   <TouchableOpacity
                     onPress={() => removeAccount(account.email)}
                     style={styles.removeButton}
@@ -798,38 +937,81 @@ const LoginScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View>
           ) : (
-            // Render Login/Sign Up Form
             <View style={styles.formContainer}>
-              {/* Full Name Input (Sign Up Only) */}
               {!isLogin && (
-                <View style={styles.inputWrapper}>
-                  <View
-                    style={[
-                      styles.inputContainer,
-                      errors.fullName && touched.fullName && styles.inputError,
-                    ]}
-                  >
-                    <User
-                      size={20}
-                      color={themeColors.textSecondary}
-                      style={styles.inputIcon}
-                    />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Full Name"
-                      placeholderTextColor={themeColors.textSecondary}
-                      value={fullName}
-                      onChangeText={(value) => handleInput("fullName", value)}
-                      autoCapitalize="words"
-                    />
+                <>
+                  <View style={styles.toggleContainer}>
+                    <TouchableOpacity
+                      style={[
+                        styles.toggleButton,
+                        registerType === "regular"
+                          ? styles.toggleButtonActive
+                          : styles.toggleButtonInactive,
+                      ]}
+                      onPress={() => setRegisterType("regular")}
+                    >
+                      <Text
+                        style={
+                          registerType === "regular"
+                            ? styles.toggleTextActive
+                            : styles.toggleTextInactive
+                        }
+                      >
+                        Regular
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.toggleButton,
+                        registerType === "manual"
+                          ? styles.toggleButtonActive
+                          : styles.toggleButtonInactive,
+                      ]}
+                      onPress={() => setRegisterType("manual")}
+                    >
+                      <Text
+                        style={
+                          registerType === "manual"
+                            ? styles.toggleTextActive
+                            : styles.toggleTextInactive
+                        }
+                      >
+                        Manual (University ID)
+                      </Text>
+                    </TouchableOpacity>
                   </View>
-                  {errors.fullName && touched.fullName && (
-                    <View style={styles.errorContainer}>
-                      <AlertCircle size={14} color={themeColors.error} />
-                      <Text style={styles.errorText}>{errors.fullName}</Text>
+
+                  <View style={styles.inputWrapper}>
+                    <View
+                      style={[
+                        styles.inputContainer,
+                        errors.fullName &&
+                          touched.fullName &&
+                          styles.inputError,
+                      ]}
+                    >
+                      <User
+                        size={20}
+                        color={themeColors.textSecondary}
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Full Name"
+                        placeholderTextColor={themeColors.textSecondary}
+                        value={fullName}
+                        onChangeText={(value) => handleInput("fullName", value)}
+                        autoCapitalize="words"
+                      />
                     </View>
-                  )}
-                </View>
+                    {errors.fullName && touched.fullName && (
+                      <View style={styles.errorContainer}>
+                        <AlertCircle size={14} color={themeColors.error} />
+                        <Text style={styles.errorText}>{errors.fullName}</Text>
+                      </View>
+                    )}
+                  </View>
+                </>
               )}
 
               {/* Email Input */}
@@ -847,7 +1029,7 @@ const LoginScreen = ({ navigation }) => {
                   />
                   <TextInput
                     style={styles.input}
-                    placeholder="Email or username"
+                    placeholder="Email"
                     placeholderTextColor={themeColors.textSecondary}
                     value={email}
                     onChangeText={(value) => handleInput("email", value)}
@@ -863,6 +1045,43 @@ const LoginScreen = ({ navigation }) => {
                   </View>
                 )}
               </View>
+
+              {/* University/Student ID Upload (Manual Sign Up Only) */}
+              {!isLogin && registerType === "manual" && (
+                <View style={styles.idUploadContainer}>
+                  <Text style={styles.idUploadLabel}>University ID Photo</Text>
+                  <View style={styles.idUploadButtons}>
+                    <TouchableOpacity
+                      style={styles.idUploadButton}
+                      onPress={handleImagePick}
+                    >
+                      <UploadCloud size={18} color={themeColors.text} />
+                      <Text style={styles.idUploadButtonText}>Upload</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.idUploadButton}
+                      onPress={handleCameraCapture}
+                    >
+                      <Camera size={18} color={themeColors.text} />
+                      <Text style={styles.idUploadButtonText}>Take Photo</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {idImage && (
+                    <View style={styles.idImagePreviewContainer}>
+                      <Image
+                        source={{ uri: idImage.uri }}
+                        style={styles.idImagePreview}
+                      />
+                    </View>
+                  )}
+                  {errors.idImage && touched.idImage && (
+                    <View style={[styles.errorContainer, { marginTop: 8 }]}>
+                      <AlertCircle size={14} color={themeColors.error} />
+                      <Text style={styles.errorText}>{errors.idImage}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
 
               {/* Password Input */}
               <View style={styles.inputWrapper}>
@@ -998,7 +1217,6 @@ const LoginScreen = ({ navigation }) => {
                 </View>
               )}
 
-              {/* Forgot Password (Login Only) */}
               {isLogin && (
                 <TouchableOpacity
                   onPress={handleForgotPassword}
@@ -1010,13 +1228,12 @@ const LoginScreen = ({ navigation }) => {
                 </TouchableOpacity>
               )}
 
-              {/* Login/Sign Up Button */}
               <TouchableOpacity
                 style={[
                   styles.button,
                   (loading || cooldownTime > 0) && styles.buttonDisabled,
                 ]}
-                onPress={handleAuth}
+                onPress={isLogin ? handleLogin : handleSignUp}
                 disabled={loading || cooldownTime > 0}
               >
                 <Text style={styles.buttonText}>
@@ -1031,17 +1248,15 @@ const LoginScreen = ({ navigation }) => {
           )}
         </View>
 
-        {/* Footer: Toggle Button + Meta */}
         <View style={styles.footer}>
           <TouchableOpacity
             style={styles.footerButton}
             onPress={() => {
-              // If on saved accounts, switch to sign up
               if (showSavedAccounts) {
-                toggleForm(false); // Go to Sign Up
+                toggleForm(false);
                 setShowSavedAccounts(false);
               } else {
-                toggleForm(!isLogin); // Toggle between Log In and Sign Up
+                toggleForm(!isLogin);
               }
             }}
           >
@@ -1056,7 +1271,6 @@ const LoginScreen = ({ navigation }) => {
   );
 };
 
-// PasswordRequirement sub-component
 const PasswordRequirement = ({ met, text, colors }) => {
   const styles = StyleSheet.create({
     requirement: {

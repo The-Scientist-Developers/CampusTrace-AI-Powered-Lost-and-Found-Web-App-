@@ -206,6 +206,8 @@ notification_router = APIRouter(prefix="/api/notifications", tags=["Notification
 claims_router = APIRouter(prefix="/api/claims", tags=["Claims"])
 conversations_router = APIRouter(prefix="/api/conversations", tags=["Conversations"])
 backup_router = APIRouter(prefix="/api/backup", tags=["Backup & Restore"])
+badges_router = APIRouter(prefix="/api/badges", tags=["Badges"])
+handover_router = APIRouter(prefix="/api/handover", tags=["Handover"])
 
 # ============= Helper Functions =============
 async def get_university_settings(university_id: int):
@@ -343,6 +345,130 @@ def calculate_simple_match_score(lost_item: dict, found_item: dict) -> int:
         score += 10
     
     return min(100, score)
+
+def calculate_cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
+    """Calculate cosine similarity between two vectors."""
+    if not vec1 or not vec2 or len(vec1) != len(vec2):
+        return 0.0
+    
+    import numpy as np
+    vec1_array = np.array(vec1)
+    vec2_array = np.array(vec2)
+    
+    norm1 = np.linalg.norm(vec1_array)
+    norm2 = np.linalg.norm(vec2_array)
+    
+    if norm1 == 0 or norm2 == 0:
+        return 0.0
+    
+    return float(np.dot(vec1_array, vec2_array) / (norm1 * norm2))
+
+async def find_proactive_matches(new_item: dict, university_id: int):
+    """
+    Find proactive matches when a new "Found" item is posted.
+    Notifies users with "Lost" items about high-confidence matches.
+    """
+    try:
+        print(f"\n🔍 [PROACTIVE MATCH] Checking for matches for new Found item: {new_item['title']}")
+        
+        # Fetch all "Lost" items from the same university with approved moderation status
+        lost_items_res = supabase.table("items").select(
+            "id, title, user_id, text_embedding, image_embedding, category, location"
+        ).eq("university_id", university_id).eq("status", "Lost").eq("moderation_status", "approved").execute()
+        
+        if not lost_items_res.data:
+            print("📭 No Lost items found to match against.")
+            return
+        
+        print(f"📊 Found {len(lost_items_res.data)} Lost items to compare.")
+        
+        # Get embeddings for the new Found item
+        new_text_embedding = new_item.get('text_embedding')
+        new_image_embedding = new_item.get('image_embedding')
+        
+        high_confidence_threshold = 0.90  # 90% similarity threshold
+        matches_found = 0
+        
+        for lost_item in lost_items_res.data:
+            max_similarity = 0.0
+            
+            # Compare text embeddings if both exist
+            if new_text_embedding and lost_item.get('text_embedding'):
+                text_similarity = calculate_cosine_similarity(new_text_embedding, lost_item['text_embedding'])
+                max_similarity = max(max_similarity, text_similarity)
+                print(f"  📝 Text similarity with '{lost_item['title']}': {text_similarity:.3f}")
+            
+            # Compare image embeddings if both exist
+            if new_image_embedding and lost_item.get('image_embedding'):
+                image_similarity = calculate_cosine_similarity(new_image_embedding, lost_item['image_embedding'])
+                max_similarity = max(max_similarity, image_similarity)
+                print(f"  🖼️ Image similarity with '{lost_item['title']}': {image_similarity:.3f}")
+            
+            # If similarity is above threshold, create notification
+            if max_similarity >= high_confidence_threshold:
+                print(f"  ✅ HIGH MATCH! Notifying user {lost_item['user_id']}")
+                
+                notification_message = f"We think someone just found your {lost_item['title']}! 🎉"
+                create_notification(
+                    recipient_id=lost_item['user_id'],
+                    university_id=university_id,
+                    message=notification_message,
+                    link_to=f"/item/{new_item['id']}",
+                    type='ai_match'
+                )
+                matches_found += 1
+        
+        print(f"✅ Proactive matching complete. {matches_found} high-confidence matches found.\n")
+    
+    except Exception as e:
+        print(f"❌ Error in find_proactive_matches: {e}")
+        traceback.print_exc()
+
+def award_badge(user_id: str, badge_name: str, university_id: int):
+    """
+    Award a badge to a user if they don't already have it.
+    Returns True if badge was awarded, False if user already has it.
+    """
+    try:
+        # Get badge ID by name
+        badge_res = supabase.table("badges").select("id").eq("name", badge_name).single().execute()
+        if not badge_res.data:
+            print(f"⚠️ Badge '{badge_name}' not found in database.")
+            return False
+        
+        badge_id = badge_res.data['id']
+        
+        # Check if user already has this badge
+        existing_badge = supabase.table("user_badges").select("id").eq(
+            "user_id", user_id
+        ).eq("badge_id", badge_id).execute()
+        
+        if existing_badge.data:
+            print(f"ℹ️ User {user_id} already has badge '{badge_name}'")
+            return False
+        
+        # Award the badge
+        supabase.table("user_badges").insert({
+            "user_id": user_id,
+            "badge_id": badge_id
+        }).execute()
+        
+        # Send notification to user
+        create_notification(
+            recipient_id=user_id,
+            university_id=university_id,
+            message=f"🏆 You earned the '{badge_name}' badge!",
+            link_to="/profile",
+            type="badge"
+        )
+        
+        print(f"🏆 Awarded '{badge_name}' badge to user {user_id}")
+        return True
+    
+    except Exception as e:
+        print(f"❌ Error awarding badge: {e}")
+        traceback.print_exc()
+        return False
 
 # ============= Onboarding Route =============
 @onboarding_router.post("/register-university")
@@ -783,6 +909,156 @@ async def generate_description(payload: DescriptionRequest):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to generate AI description: {str(e)}")
 
+@item_router.post("/ai/suggest-details-from-image")
+async def suggest_details_from_image(
+    image_file: UploadFile = File(...),
+    user_id: str = Depends(get_current_user_id)
+):
+    """
+    TASK 3: Analyze an uploaded image to suggest title and category.
+    Uses Gemini Vision AI to extract descriptive keywords from the image.
+    """
+    if not model:
+        raise HTTPException(status_code=503, detail="AI features are not available.")
+    
+    try:
+        print("\n🤖 [AI SUGGEST] Analyzing image for suggestions...")
+        
+        # Read and process the image
+        image_bytes = await image_file.read()
+        max_image_size = int(os.getenv("MAX_IMAGE_SIZE", "5242880"))
+        
+        # Resize if too large
+        if len(image_bytes) > max_image_size:
+            image_bytes = await run_in_threadpool(process_image_efficiently, image_bytes)
+        
+        # Load image for AI analysis
+        pil_image = Image.open(io.BytesIO(image_bytes))
+        
+        # Use Gemini Vision to analyze the image
+        prompt = """
+        Analyze this image of a lost or found item. Describe what you see in a concise way.
+        Focus on:
+        - Object type (e.g., wallet, phone, backpack, ID card, water bottle)
+        - Color(s)
+        - Brand (if visible)
+        - Any distinguishing features
+        
+        Provide your response in this exact format:
+        Object: [type]
+        Color: [color]
+        Keywords: [comma-separated relevant keywords]
+        
+        Be specific but brief.
+        """
+        
+        response = await model.generate_content_async([prompt, pil_image])
+        analysis_text = response.text.strip()
+        
+        print(f"📸 AI Analysis: {analysis_text}")
+        
+        # Parse the response to extract object type and keywords
+        lines = analysis_text.split('\n')
+        object_type = ""
+        color = ""
+        keywords = []
+        
+        for line in lines:
+            line = line.strip()
+            if line.startswith("Object:"):
+                object_type = line.replace("Object:", "").strip()
+            elif line.startswith("Color:"):
+                color = line.replace("Color:", "").strip()
+            elif line.startswith("Keywords:"):
+                keywords_str = line.replace("Keywords:", "").strip()
+                keywords = [k.strip() for k in keywords_str.split(',') if k.strip()]
+        
+        # Generate suggested title
+        if color and object_type:
+            suggested_title = f"{color} {object_type}".title()
+        elif object_type:
+            suggested_title = object_type.title()
+        else:
+            suggested_title = "Item"
+        
+        # Map to category
+        # Common categories: Electronics, Accessories, Documents, Clothing, Bags, Books, Keys, Others
+        category_mapping = {
+            "phone": "Electronics",
+            "cellphone": "Electronics",
+            "smartphone": "Electronics",
+            "laptop": "Electronics",
+            "tablet": "Electronics",
+            "earphone": "Electronics",
+            "headphone": "Electronics",
+            "charger": "Electronics",
+            "powerbank": "Electronics",
+            "wallet": "Accessories",
+            "watch": "Accessories",
+            "bracelet": "Accessories",
+            "necklace": "Accessories",
+            "ring": "Accessories",
+            "glasses": "Accessories",
+            "sunglasses": "Accessories",
+            "umbrella": "Accessories",
+            "id": "Documents",
+            "card": "Documents",
+            "license": "Documents",
+            "certificate": "Documents",
+            "notebook": "Books",
+            "book": "Books",
+            "textbook": "Books",
+            "jacket": "Clothing",
+            "shirt": "Clothing",
+            "pants": "Clothing",
+            "shoes": "Clothing",
+            "bag": "Bags",
+            "backpack": "Bags",
+            "purse": "Bags",
+            "pouch": "Bags",
+            "key": "Keys",
+            "keychain": "Keys",
+            "bottle": "Others",
+            "tumbler": "Others",
+            "lunchbox": "Others",
+        }
+        
+        suggested_category = "Others"  # Default
+        object_lower = object_type.lower()
+        
+        # Check for matches in category mapping
+        for keyword, category in category_mapping.items():
+            if keyword in object_lower:
+                suggested_category = category
+                break
+        
+        # Also check keywords
+        if suggested_category == "Others":
+            for kw in keywords:
+                kw_lower = kw.lower()
+                for keyword, category in category_mapping.items():
+                    if keyword in kw_lower:
+                        suggested_category = category
+                        break
+                if suggested_category != "Others":
+                    break
+        
+        pil_image.close()
+        
+        result = {
+            "suggestedTitle": suggested_title,
+            "suggestedCategory": suggested_category,
+            "analysis": analysis_text,
+            "confidence": "high" if object_type else "low"
+        }
+        
+        print(f"✅ Suggestions: {result}")
+        return result
+    
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to analyze image: {str(e)}")
+
 @item_router.post("/create")
 async def create_item(
     item_data: str = Form(...),
@@ -936,6 +1212,25 @@ async def create_item(
                         link_to="/admin/post-moderation",
                         type="moderation"
                     )
+
+        # TASK 2: Award badges for posting achievements
+        # Check if this is user's first post
+        user_post_count_res = supabase.table("items").select("id", count="exact").eq("user_id", user_id).execute()
+        if user_post_count_res.count == 1:  # Just posted their first item
+            award_badge(user_id, "New Member", university_id)
+        
+        # Check if user reached 10 Found items for Eagle Eye badge
+        if item.status == "Found":
+            found_count_res = supabase.table("items").select("id", count="exact").eq(
+                "user_id", user_id
+            ).eq("status", "Found").execute()
+            if found_count_res.count == 10:
+                award_badge(user_id, "Eagle Eye", university_id)
+
+        # TASK 1: Trigger proactive matching if this is a "Found" item and it's approved
+        if item.status == "Found" and moderation_status == "approved":
+            # Run proactive matching asynchronously (non-blocking)
+            asyncio.create_task(find_proactive_matches(new_item, university_id))
 
         print(f"✅ Item created with text_embedding (dim={len(text_embedding) if text_embedding else 0}) and image_embedding (dim={len(image_embedding) if image_embedding else 0})")
         return {"data": new_item}
@@ -1923,6 +2218,218 @@ async def get_dashboard_summary(user_id: str = Depends(get_current_user_id)):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to fetch dashboard summary: {str(e)}")
 
+# ============= Badge Routes (Task 2) =============
+@badges_router.get("/user/{target_user_id}/badges")
+async def get_user_badges(target_user_id: str, user_id: str = Depends(get_current_user_id)):
+    """
+    Get all badges earned by a specific user.
+    Returns badge details with earned timestamp.
+    """
+    try:
+        # Fetch user badges with badge details using the view
+        badges_res = supabase.from_("user_badges_view").select("*").eq(
+            "user_id", target_user_id
+        ).order("earned_at", desc=True).execute()
+        
+        return {"badges": badges_res.data or []}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to fetch user badges: {str(e)}")
+
+@badges_router.get("/all")
+async def get_all_badges(user_id: str = Depends(get_current_user_id)):
+    """Get all available badges in the system."""
+    try:
+        badges_res = supabase.table("badges").select("*").order("name").execute()
+        return {"badges": badges_res.data or []}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to fetch badges: {str(e)}")
+
+# ============= Handover Routes (Task 4) =============
+@handover_router.post("/items/{item_id}/start-handover")
+async def start_handover(item_id: str, user_id: str = Depends(get_current_user_id)):
+    """
+    Start secure handover process (claimant only).
+    Generates a 4-digit code for verification.
+    """
+    try:
+        import random
+        
+        # Get item details
+        item_res = supabase.table("items").select(
+            "id, title, user_id, status"
+        ).eq("id", item_id).single().execute()
+        
+        if not item_res.data:
+            raise HTTPException(status_code=404, detail="Item not found.")
+        
+        item = item_res.data
+        
+        # TODO: In a real implementation, check if user is the claimant
+        # For now, we'll allow any authenticated user to start handover
+        # You would need a claims table to track who claimed what
+        
+        # Generate 4-digit code
+        handover_code = str(random.randint(1000, 9999))
+        
+        # Update item with handover code and change status
+        supabase.table("items").update({
+            "handover_code": handover_code,
+            "status": "Pending Handover"
+        }).eq("id", item_id).execute()
+        
+        print(f"🔐 Handover started for item {item_id}, code: {handover_code}")
+        
+        return {
+            "success": True,
+            "code": handover_code,
+            "message": "Handover code generated. Share this code with the finder."
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to start handover: {str(e)}")
+
+@handover_router.post("/items/{item_id}/complete-handover")
+async def complete_handover(item_id: str, code: str = Form(...), user_id: str = Depends(get_current_user_id)):
+    """
+    Complete handover process (finder only).
+    Verifies the 4-digit code and marks item as recovered.
+    """
+    try:
+        # Get item details
+        item_res = supabase.table("items").select(
+            "id, title, user_id, handover_code, university_id"
+        ).eq("id", item_id).single().execute()
+        
+        if not item_res.data:
+            raise HTTPException(status_code=404, detail="Item not found.")
+        
+        item = item_res.data
+        
+        # Verify the user is the finder (item owner)
+        if item['user_id'] != user_id:
+            raise HTTPException(status_code=403, detail="Only the finder can complete handover.")
+        
+        # Verify the code
+        if item.get('handover_code') != code:
+            raise HTTPException(status_code=400, detail="Invalid handover code.")
+        
+        # Update item status to Recovered
+        supabase.table("items").update({
+            "status": "Recovered",
+            "handover_code": None  # Clear the code
+        }).eq("id", item_id).execute()
+        
+        # TODO: Get claimant_id from claims table
+        # For now, we'll just notify the finder
+        # In a real implementation, you'd:
+        # 1. Get the claimant from claims table
+        # 2. Notify them to send a thank you note
+        # 3. Award badges based on return count
+        
+        # Award badges to finder
+        # Count returned items (Found items that are now Recovered)
+        returned_count_res = supabase.table("items").select("id", count="exact").eq(
+            "user_id", user_id
+        ).eq("status", "Recovered").execute()
+        
+        returned_count = returned_count_res.count or 0
+        
+        if returned_count == 1:
+            award_badge(user_id, "Good Samaritan", item['university_id'])
+        elif returned_count >= 5:
+            award_badge(user_id, "Campus Hero", item['university_id'])
+        
+        print(f"✅ Handover completed for item {item_id}")
+        
+        return {
+            "success": True,
+            "message": "Item successfully returned! Thank you for being a campus hero! 🎉"
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to complete handover: {str(e)}")
+
+@handover_router.post("/items/{item_id}/thank-you")
+async def send_thank_you_note(
+    item_id: str, 
+    message: str = Form(...), 
+    user_id: str = Depends(get_current_user_id)
+):
+    """
+    Send a thank you note to the finder (claimant only).
+    """
+    try:
+        # Get item details
+        item_res = supabase.table("items").select(
+            "id, title, user_id"
+        ).eq("id", item_id).single().execute()
+        
+        if not item_res.data:
+            raise HTTPException(status_code=404, detail="Item not found.")
+        
+        item = item_res.data
+        finder_id = item['user_id']
+        
+        # TODO: Verify user is the claimant
+        # For now, allow any authenticated user to send thank you note
+        
+        # Insert thank you note
+        supabase.table("thank_you_notes").insert({
+            "item_id": item_id,
+            "finder_id": finder_id,
+            "claimant_id": user_id,
+            "message": message
+        }).execute()
+        
+        # Notify finder
+        profile_res = supabase.table("profiles").select("university_id").eq("id", user_id).single().execute()
+        if profile_res.data:
+            university_id = profile_res.data['university_id']
+            create_notification(
+                recipient_id=finder_id,
+                university_id=university_id,
+                message=f"You received a thank you note for returning {item['title']}!",
+                link_to="/profile",
+                type="thank_you"
+            )
+        
+        print(f"💌 Thank you note sent for item {item_id}")
+        
+        return {
+            "success": True,
+            "message": "Thank you note sent successfully!"
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to send thank you note: {str(e)}")
+
+@handover_router.get("/user/{target_user_id}/thank-you-notes")
+async def get_user_thank_you_notes(target_user_id: str, user_id: str = Depends(get_current_user_id)):
+    """
+    Get all thank you notes received by a user.
+    """
+    try:
+        # Fetch thank you notes using the view
+        notes_res = supabase.from_("thank_you_notes_view").select("*").eq(
+            "finder_id", target_user_id
+        ).order("created_at", desc=True).execute()
+        
+        return {"notes": notes_res.data or []}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to fetch thank you notes: {str(e)}")
+
 # ============= Include Routers =============
 # Register all API routers with the main app
 app.include_router(auth_router)
@@ -1934,6 +2441,10 @@ app.include_router(onboarding_router)
 app.include_router(claims_router) 
 app.include_router(conversations_router)
 app.include_router(backup_router)
+app.include_router(badges_router)
+app.include_router(handover_router)
+app.include_router(badges_router)
+app.include_router(handover_router)
 
 # ============= Health Check & Root =============
 @app.get("/health")

@@ -8,12 +8,10 @@ import {
   Save,
   X,
   Loader2,
-  FileText,
-  CheckCircle,
-  HelpCircle,
   Camera,
   Settings,
   Bell,
+  HelpCircle, // Kept for StatCard logic, though StatCard is removed
   ChevronRight,
   LogOut,
 } from "lucide-react";
@@ -22,19 +20,10 @@ import { FaceDetector, FilesetResolver } from "@mediapipe/tasks-vision";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
-const StatCard = ({ label, value, icon: Icon }) => (
-  <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] p-4 sm:p-6 rounded-xl shadow-sm flex items-center gap-4">
-    <Icon className="w-6 h-6 sm:w-8 sm:h-8 text-primary-600 flex-shrink-0" />
-    <div>
-      <p className="text-xl sm:text-2xl font-bold text-neutral-800 dark:text-white">
-        {value}
-      </p>
-      <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
-        {label}
-      </p>
-    </div>
-  </div>
-);
+import BadgeList from "../../../components/BadgeList";
+import ThankYouNotes from "../../../components/ThankYouNotes";
+
+// --- StatCard Component Definition Removed ---
 
 const MenuItem = ({ icon: Icon, label, onClick }) => (
   <button
@@ -51,38 +40,9 @@ const MenuItem = ({ icon: Icon, label, onClick }) => (
   </button>
 );
 
-const StatCardSkeleton = () => (
-  <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] p-4 sm:p-6 rounded-xl shadow-sm flex items-center gap-4">
-    <Skeleton circle width={32} height={32} />
-    <div>
-      <Skeleton height={28} width={50} />
-      <Skeleton height={20} width={100} />
-    </div>
-  </div>
-);
+// --- StatCardSkeleton Component Definition Removed ---
 
-const PostItemSkeleton = () => (
-  <div className="flex items-center gap-3 sm:gap-4 py-3">
-    <Skeleton
-      width={40}
-      height={40}
-      sm:width={48}
-      sm:height={48}
-      className="rounded-md"
-    />
-    <div className="flex-grow min-w-0">
-      <Skeleton height={20} width="70%" />
-      <Skeleton height={16} width="50%" className="mt-1" />
-    </div>
-    <Skeleton
-      height={22}
-      width={60}
-      sm:width={80}
-      borderRadius="999px"
-      className="flex-shrink-0"
-    />
-  </div>
-);
+// --- PostItemSkeleton Component Definition Removed ---
 
 const UserProfilePageSkeleton = () => (
   <div className="max-w-4xl mx-auto py-6 sm:py-8 px-4 space-y-6 sm:space-y-8">
@@ -125,25 +85,10 @@ const UserProfilePageSkeleton = () => (
         />
       </div>
     </div>
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-      <StatCardSkeleton />
-      <StatCardSkeleton />
-      <StatCardSkeleton />
-    </div>
-    <div>
-      <Skeleton
-        height={24}
-        sm:height={28}
-        width={200}
-        sm:width={250}
-        className="mb-4"
-      />
-      <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-3 sm:p-4 divide-y divide-neutral-200 dark:divide-[#3a3a3a]">
-        {[...Array(3)].map((_, i) => (
-          <PostItemSkeleton key={i} />
-        ))}
-      </div>
-    </div>
+
+    {/* --- Skeleton Stats Grid Removed --- */}
+
+    {/* --- Skeleton Post List Removed --- */}
   </div>
 );
 
@@ -272,7 +217,8 @@ const CameraModal = ({
 export default function UserProfilePage({ user }) {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState([]); // Logic Kept
+  const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -321,20 +267,24 @@ export default function UserProfilePage({ user }) {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [profileRes, postsRes] = await Promise.all([
+        const [profileRes, postsRes, badgesRes] = await Promise.all([
           supabase.from("profiles").select("*").eq("id", user.id).single(),
-          supabase
+          supabase // Logic Kept
             .from("items")
             .select("*")
             .eq("user_id", user.id)
             .order("created_at", { ascending: false }),
+          apiClient
+            .get(`/api/badges/user/${user.id}/badges`)
+            .catch(() => ({ badges: [] })),
         ]);
 
         if (profileRes.error) throw profileRes.error;
-        if (postsRes.error) throw postsRes.error;
+        if (postsRes.error) throw postsRes.error; // Logic Kept
 
         setProfile(profileRes.data);
-        setPosts(postsRes.data || []);
+        setPosts(postsRes.data || []); // Logic Kept
+        setBadges(badgesRes.badges || []);
         setFullName(profileRes.data.full_name || "");
         setAvatarUrl(profileRes.data.avatar_url || "");
       } catch (err) {
@@ -358,7 +308,6 @@ export default function UserProfilePage({ user }) {
     let imageUrl = null;
 
     try {
-      // Validate that the file is a valid image
       if (!file || !file.type.startsWith("image/")) {
         throw new Error("Invalid file type");
       }
@@ -366,7 +315,6 @@ export default function UserProfilePage({ user }) {
       const image = new Image();
       imageUrl = URL.createObjectURL(file);
 
-      // Wait for image to load with proper error handling
       await new Promise((resolve, reject) => {
         image.onload = () => resolve();
         image.onerror = (e) => {
@@ -376,7 +324,6 @@ export default function UserProfilePage({ user }) {
         image.src = imageUrl;
       });
 
-      // Run face detection
       const detections = faceDetector.detect(image);
       const confidentDetections = detections.detections.filter(
         (detection) => detection.categories[0].score > 0.5
@@ -405,7 +352,6 @@ export default function UserProfilePage({ user }) {
       });
       console.error("Image processing error:", err);
     } finally {
-      // Clean up the temporary URL
       if (imageUrl) {
         URL.revokeObjectURL(imageUrl);
       }
@@ -486,6 +432,7 @@ export default function UserProfilePage({ user }) {
     }
   };
 
+  // --- Stats logic kept as requested ---
   const totalPosts = posts.length;
   const foundItems = posts.filter(
     (p) => p.status?.toLowerCase() === "found"
@@ -635,86 +582,14 @@ export default function UserProfilePage({ user }) {
         <MenuItem icon={LogOut} label="Sign Out" onClick={handleSignOut} />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-        <StatCard label="Total Posts" value={totalPosts} icon={FileText} />
-        <StatCard
-          label="Items You Found"
-          value={foundItems}
-          icon={HelpCircle}
-        />
-        <StatCard
-          label="Items Recovered"
-          value={recoveredItems}
-          icon={CheckCircle}
-        />
+      {/* Badges Section */}
+      <div>
+        <BadgeList badges={badges} isOwnProfile={true} />
       </div>
 
+      {/* Thank You Notes Section */}
       <div>
-        <h2 className="text-xl sm:text-2xl font-bold text-neutral-800 dark:text-white mb-4">
-          Your Recent Posts
-        </h2>
-        {posts.length > 0 ? (
-          <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-3 sm:p-4 divide-y divide-neutral-200 dark:divide-[#3a3a3a]">
-            {posts.slice(0, 5).map((post) => (
-              <div
-                key={post.id}
-                className="flex items-center gap-3 sm:gap-4 py-3"
-              >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-neutral-100 dark:bg-neutral-800 rounded-md flex-shrink-0 flex items-center justify-center overflow-hidden">
-                  {post.image_url ? (
-                    <img
-                      src={post.image_url}
-                      alt={post.title || "Item image"}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.preventDefault();
-                        e.target.onerror = null;
-                        e.target.src =
-                          'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23999" font-size="12">' +
-                          (post.category || "Item") +
-                          "</text></svg>";
-                      }}
-                    />
-                  ) : (
-                    <span className="text-xs text-neutral-500 px-1 text-center">
-                      {post.category}
-                    </span>
-                  )}
-                </div>
-                <div className="flex-grow min-w-0">
-                  <p className="font-medium text-neutral-800 dark:text-white truncate">
-                    {post.title || "Untitled Post"}
-                  </p>
-                  <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
-                    {new Date(post.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
-                    post.moderation_status === "approved"
-                      ? "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400"
-                      : post.moderation_status === "recovered"
-                      ? "bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-400"
-                      : post.moderation_status === "pending_return"
-                      ? "bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-400"
-                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-400"
-                  }`}
-                >
-                  {post.moderation_status
-                    ? post.moderation_status.charAt(0).toUpperCase() +
-                      post.moderation_status.slice(1).replace("_", " ")
-                    : "Unknown"}
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center p-8 sm:p-12 bg-white dark:bg-[#2a2a2a] border-2 border-dashed border-neutral-200 dark:border-[#3a3a3a] rounded-xl">
-            <p className="text-neutral-500 dark:text-neutral-400">
-              You haven't posted any items yet.
-            </p>
-          </div>
-        )}
+        <ThankYouNotes userId={user?.id} />
       </div>
     </div>
   );

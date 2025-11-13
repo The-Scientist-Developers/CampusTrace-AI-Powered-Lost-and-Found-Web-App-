@@ -64,6 +64,7 @@ export default function PostNewItem() {
   const [imagePreview, setImagePreview] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -75,11 +76,57 @@ export default function PostNewItem() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+    if (!file) return;
+
+    // Set image preview immediately
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+
+    // Trigger AI analysis
+    setIsAnalyzingImage(true);
+    const toastId = toast.loading("🤖 AI is analyzing your image...");
+
+    try {
+      const formData = new FormData();
+      formData.append("image_file", file);
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/items/ai/suggest-details-from-image`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("AI analysis failed");
+      }
+
+      const data = await response.json();
+
+      // Auto-fill title and category with AI suggestions
+      setTitle(data.suggestedTitle);
+      setCategory(data.suggestedCategory);
+
+      toast.success("✨ AI suggestions applied! Feel free to edit them.", {
+        id: toastId,
+      });
+    } catch (error) {
+      console.error("AI analysis error:", error);
+      toast.error("AI analysis failed. Please fill details manually.", {
+        id: toastId,
+      });
+    } finally {
+      setIsAnalyzingImage(false);
     }
   };
 
@@ -284,6 +331,12 @@ export default function PostNewItem() {
             >
               <Tag className="w-4 h-4 text-primary-500" />
               What did you {status.toLowerCase()}? *
+              {isAnalyzingImage && (
+                <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1 animate-pulse ml-auto">
+                  <Sparkles className="w-3 h-3" />
+                  AI analyzing...
+                </span>
+              )}
             </label>
             <input
               type="text"
@@ -291,7 +344,8 @@ export default function PostNewItem() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors"
+              disabled={isAnalyzingImage}
+              className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors disabled:opacity-60"
               placeholder="e.g., Black Backpack, iPhone 13"
             />
           </div>
@@ -310,16 +364,23 @@ export default function PostNewItem() {
             >
               <FileText className="w-4 h-4 text-primary-500" />
               Category
+              {isAnalyzingImage && (
+                <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1 animate-pulse ml-auto">
+                  <Sparkles className="w-3 h-3" />
+                  AI analyzing...
+                </span>
+              )}
             </label>
             <select
               id="category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors"
+              disabled={isAnalyzingImage}
+              className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors disabled:opacity-60"
             >
-              <option value="Electronics"> Electronics</option>
+              <option value="Electronics">Electronics</option>
               <option value="Documents">Documents</option>
-              <option value="Clothing"> Clothing</option>
+              <option value="Clothing">Clothing</option>
               <option value="Accessories"> Accessories</option>
               <option value="Other"> Other</option>
             </select>
