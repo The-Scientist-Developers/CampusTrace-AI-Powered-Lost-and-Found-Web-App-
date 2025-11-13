@@ -63,83 +63,89 @@ const DesktopSidebar = ({ profile, notificationCount, messageCount }) => {
 
   return (
     <aside
-      className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 flex-col border-r z-40"
+      className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 flex-col"
       style={{
         backgroundColor: isDark ? "#1a1a1a" : "#ffffff",
-        borderRightColor: isDark ? "#262626" : "#dbdbdb",
+        borderRight: `1px solid ${isDark ? "#262626" : "#dbdbdb"}`,
+        zIndex: 40,
       }}
     >
-      {/* Logo with Pacifico Font (Instagram style) */}
-      <div className="p-6 pt-8 pb-4">
-        <h1
-          className="text-3xl font-['Pacifico'] tracking-tight"
-          style={{
-            color: isDark ? "#ffffff" : "#000000",
-            letterSpacing: "-0.5px",
-          }}
-        >
-          CampusTrace
-        </h1>
+      {/* Logo Section */}
+      <div className="px-6 py-6 mb-2">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm overflow-hidden">
+            <img
+              src="/Icon.svg" // ← Place your uploaded image in public/assets/
+              alt="CampusTrace Logo"
+              className="w-full h-full object-cover"
+            />
+          </div>
+
+          {/* Wordmark */}
+          <h1
+            className="text-xl font-['Inter'] tracking-tight"
+            style={{
+              color: isDark ? "#ffffff" : "#111111",
+              fontWeight: "600",
+              letterSpacing: "-0.025em",
+              fontSize: "20px",
+            }}
+          >
+            Campus
+            <span style={{ color: primaryColor, fontWeight: "700" }}>
+              Trace
+            </span>
+          </h1>
+        </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-2">
+      <nav className="flex-1 px-3 overflow-y-auto">
         <ul className="space-y-1">
           {navItems.map((item) => (
             <li key={item.path}>
               <NavLink
                 to={item.path}
                 end={item.exact}
-                className={({ isActive }) =>
-                  `flex items-center gap-4 px-3 py-3 rounded-lg transition-all duration-200 group ${
-                    isActive ? "font-bold" : "font-normal hover:bg-opacity-10"
-                  }`
-                }
+                className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group"
                 style={({ isActive }) => ({
                   color: isActive
-                    ? primaryColor
+                    ? isDark
+                      ? "#ffffff"
+                      : "#000000"
                     : isDark
-                    ? "#a8a8a8"
-                    : "#737373",
+                    ? "#6b7280"
+                    : "#6b7280",
                   backgroundColor: isActive
                     ? isDark
-                      ? primaryColor + "20"
-                      : primaryColor + "10"
+                      ? primaryColor + "15"
+                      : primaryColor + "08"
                     : "transparent",
+                  fontWeight: isActive ? "500" : "400",
+                  borderLeft: isActive
+                    ? `4px solid ${primaryColor}`
+                    : "4px solid transparent",
                 })}
-                onMouseEnter={(e) => {
-                  if (!e.currentTarget.classList.contains("font-bold")) {
-                    e.currentTarget.style.backgroundColor = isDark
-                      ? "rgba(255, 255, 255, 0.05)"
-                      : "rgba(0, 0, 0, 0.05)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  const isActive =
-                    e.currentTarget.getAttribute("aria-current") === "page";
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = "transparent";
-                  } else {
-                    e.currentTarget.style.backgroundColor = isDark
-                      ? primaryColor + "20"
-                      : primaryColor + "10";
-                  }
-                }}
               >
                 {({ isActive }) => (
                   <>
-                    <div className="relative">
+                    <div className="relative flex-shrink-0">
                       <item.icon
-                        size={28}
-                        strokeWidth={isActive ? 2.5 : 2}
-                        className="transition-transform group-hover:scale-110"
+                        size={22}
+                        strokeWidth={isActive ? 2 : 1.5}
+                        style={{
+                          color: isActive ? primaryColor : "inherit",
+                        }}
                       />
                       {item.count > 0 && (
                         <span
-                          className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold text-white rounded-full px-1"
-                          style={{ backgroundColor: "#ff3250" }}
+                          className="absolute -top-2 -right-2 min-w-[22px] h-[22px] flex items-center justify-center text-xs font-medium text-white rounded-full px-1.5"
+                          style={{
+                            backgroundColor: "#ef4444",
+                            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                          }}
                         >
-                          {item.count > 9 ? "9+" : item.count}
+                          {item.count > 99 ? "99+" : item.count}
                         </span>
                       )}
                     </div>
@@ -152,64 +158,60 @@ const DesktopSidebar = ({ profile, notificationCount, messageCount }) => {
         </ul>
       </nav>
 
-      {/* Bottom Section - Minimal */}
+      {/* Bottom Section */}
       <div
-        className="p-3 border-t space-y-1"
-        style={{ borderTopColor: isDark ? "#262626" : "#dbdbdb" }}
+        className="px-3 py-4 space-y-1"
+        style={{
+          borderTop: `1px solid ${isDark ? "#262626" : "#dbdbdb"}`,
+        }}
       >
         <NavLink
           to="/dashboard/settings"
-          className="flex items-center gap-4 px-3 py-3 rounded-lg transition-all duration-200"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200"
           style={({ isActive }) => ({
-            color: isActive ? primaryColor : isDark ? "#a8a8a8" : "#737373",
-            fontWeight: isActive ? "bold" : "normal",
+            color: isActive
+              ? isDark
+                ? "#ffffff"
+                : "#000000"
+              : isDark
+              ? "#6b7280"
+              : "#6b7280",
             backgroundColor: isActive
               ? isDark
-                ? primaryColor + "20"
-                : primaryColor + "10"
+                ? primaryColor + "15"
+                : primaryColor + "08"
               : "transparent",
+            fontWeight: isActive ? "500" : "400",
+            borderLeft: isActive
+              ? `4px solid ${primaryColor}`
+              : "4px solid transparent",
           })}
-          onMouseEnter={(e) => {
-            const isActive =
-              e.currentTarget.getAttribute("aria-current") === "page";
-            if (!isActive) {
-              e.currentTarget.style.backgroundColor = isDark
-                ? "rgba(255, 255, 255, 0.05)"
-                : "rgba(0, 0, 0, 0.05)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            const isActive =
-              e.currentTarget.getAttribute("aria-current") === "page";
-            if (!isActive) {
-              e.currentTarget.style.backgroundColor = "transparent";
-            } else {
-              e.currentTarget.style.backgroundColor = isDark
-                ? primaryColor + "20"
-                : primaryColor + "10";
-            }
-          }}
         >
-          <Settings size={28} strokeWidth={2} />
+          <Settings size={22} strokeWidth={1.5} />
           <span className="text-base">Settings</span>
         </NavLink>
 
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-4 px-3 py-3 rounded-lg transition-all duration-200"
-          style={{ color: isDark ? "#a8a8a8" : "#737373" }}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200"
+          style={{
+            color: isDark ? "#6b7280" : "#6b7280",
+            backgroundColor: "transparent",
+            border: "none",
+            borderLeft: "4px solid transparent",
+          }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = isDark
-              ? "rgba(255, 255, 255, 0.05)"
-              : "rgba(0, 0, 0, 0.05)";
-            e.currentTarget.style.color = isDark ? "#ffffff" : "#000000";
+            e.currentTarget.style.backgroundColor = "rgba(239, 68, 68, 0.05)";
+            e.currentTarget.style.color = "#ef4444";
+            e.currentTarget.style.borderLeftColor = "#ef4444";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.backgroundColor = "transparent";
-            e.currentTarget.style.color = isDark ? "#a8a8a8" : "#737373";
+            e.currentTarget.style.color = isDark ? "#6b7280" : "#6b7280";
+            e.currentTarget.style.borderLeftColor = "transparent";
           }}
         >
-          <LogOut size={28} strokeWidth={2} />
+          <LogOut size={22} strokeWidth={1.5} />
           <span className="text-base">Log out</span>
         </button>
       </div>

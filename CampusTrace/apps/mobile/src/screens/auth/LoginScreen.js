@@ -716,7 +716,8 @@ const LoginScreen = ({ navigation }) => {
       marginTop: 32,
       fontSize: fontSizes.small || 14,
       color: themeColors.textSecondary,
-      fontWeight: "600",
+      fontWeight: "700",
+      letterSpacing: -0.5,
     },
   });
 

@@ -34,8 +34,9 @@ export default function AdminMobileHeader({
           <h1
             className="text-xl font-bold text-neutral-900 dark:text-white"
             style={{
-              fontFamily: '"Pacifico", cursive',
+              fontFamily: '"Poppins", sans-serif',
               letterSpacing: "-0.5px",
+              fontWeight: "700",
             }}
           >
             {siteName || "CampusTrace"}

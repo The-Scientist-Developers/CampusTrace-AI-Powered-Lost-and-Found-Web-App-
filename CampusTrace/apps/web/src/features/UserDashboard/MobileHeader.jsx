@@ -7,16 +7,16 @@ import { useTheme } from "../../contexts/ThemeContext";
 const FontLoader = () => {
   useEffect(() => {
     // Check if the font link already exists
-    const fontId = "google-font-pacifico";
+    const fontId = "google-font-poppins";
     if (document.getElementById(fontId)) {
       return;
     }
 
-    // Create and append the link tag for Pacifico font (script/cursive style)
+    // Create and append the link tag for Poppins font (Facebook-style clean bold font)
     const link = document.createElement("link");
     link.id = fontId;
     link.href =
-      "https://fonts.googleapis.com/css2?family=Pacifico&display=swap";
+      "https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap";
     link.rel = "stylesheet";
     document.head.appendChild(link);
   }, []);
@@ -126,7 +126,7 @@ const MobileHeader = ({ notificationCount = 0, messageCount = 0, profile }) => {
 
   return (
     <>
-      {/* This component will load the 'Pacifico' font */}
+      {/* This component will load the 'Poppins' font */}
       <FontLoader />
       <header
         className="sticky top-0 left-0 right-0 border-b z-40 md:hidden shadow-sm"
@@ -140,10 +140,10 @@ const MobileHeader = ({ notificationCount = 0, messageCount = 0, profile }) => {
           {/* Dynamic Header Content */}
           {pageConfig.type === "logo" ? (
             <h1
-              className="font-['Pacifico'] tracking-tight leading-9"
+              className="font-['Poppins'] tracking-tight leading-9"
               style={{
-                fontSize: "32px",
-                fontWeight: "400",
+                fontSize: "24px",
+                fontWeight: "600",
                 color: isDark ? "#ffffff" : "#000000",
                 letterSpacing: "-0.5px",
                 lineHeight: "36px",

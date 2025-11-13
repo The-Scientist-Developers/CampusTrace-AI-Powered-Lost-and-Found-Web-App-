@@ -171,7 +171,7 @@ export default function RegisterUniversityPage() {
               <span
                 className="text-xl sm:text-xl md:text-2xl font-bold text-neutral-800 dark:text-white"
                 style={{
-                  fontFamily: '"Inter", sans-serif',
+                  fontFamily: '"Poppins", sans-serif',
                   fontWeight: 700,
                   letterSpacing: "-0.02em",
                 }}

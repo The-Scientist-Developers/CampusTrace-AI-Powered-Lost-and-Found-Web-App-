@@ -109,7 +109,7 @@ export default function AboutUsPage() {
               <span
                 className="text-2xl sm:text-2xl md:text-3xl font-bold text-neutral-800 dark:text-white"
                 style={{
-                  fontFamily: '"Inter", sans-serif',
+                  fontFamily: '"Poppins", sans-serif',
                   fontWeight: 700,
                   letterSpacing: "-0.02em",
                 }}

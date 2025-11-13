@@ -1329,7 +1329,7 @@ export default function LandingPage() {
                 whileHover={{ scale: 1.05 }}
                 className="text-2xl sm:text-2xl md:text-3xl font-bold text-neutral-800 dark:text-white"
                 style={{
-                  fontFamily: '"Inter", sans-serif',
+                  fontFamily: '"Poppins", sans-serif',
                   fontWeight: 700,
                   letterSpacing: "-0.02em",
                 }}
@@ -1504,7 +1504,7 @@ export default function LandingPage() {
                       <span
                         className="text-2xl font-semibold text-neutral-800 dark:text-white"
                         style={{
-                          fontFamily: '"Inter", sans-serif',
+                          fontFamily: '"Poppins", sans-serif',
                           fontWeight: 600,
                           letterSpacing: "-0.02em",
                         }}
@@ -1524,7 +1524,7 @@ export default function LandingPage() {
                       <span
                         className="text-2xl font-semibold text-neutral-800 dark:text-white"
                         style={{
-                          fontFamily: '"Inter", sans-serif',
+                          fontFamily: '"Poppins", sans-serif',
                           fontWeight: 600,
                           letterSpacing: "-0.02em",
                         }}
@@ -1545,7 +1545,7 @@ export default function LandingPage() {
                   onClick={() => setMobileMenuOpen(false)}
                   className="block mt-8 px-8 py-3 bg-primary-600 text-white text-base font-medium rounded-md hover:bg-primary-700 transition-colors"
                   style={{
-                    fontFamily: '"Inter", sans-serif',
+                    fontFamily: '"Poppins", sans-serif',
                     fontWeight: 500,
                     letterSpacing: "-0.01em",
                   }}
@@ -2019,7 +2019,7 @@ export default function LandingPage() {
                 />
                 <span
                   style={{
-                    fontFamily: '"Inter", sans-serif',
+                    fontFamily: '"Poppins", sans-serif',
                     fontWeight: 700,
                     letterSpacing: "-0.02em",
                   }}

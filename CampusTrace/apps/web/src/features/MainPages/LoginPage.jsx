@@ -694,7 +694,7 @@ export default function LoginPage() {
               <span
                 className="text-2xl font-bold text-neutral-900 dark:text-white"
                 style={{
-                  fontFamily: '"Inter", sans-serif',
+                  fontFamily: '"Poppins", sans-serif',
                   fontWeight: 700,
                   letterSpacing: "-0.02em",
                 }}
@@ -761,7 +761,7 @@ export default function LoginPage() {
                 <h1
                   className="text-3xl sm:text-2xl font-bold text-neutral-900 dark:text-white"
                   style={{
-                    fontFamily: '"Inter", sans-serif',
+                    fontFamily: '"Poppins", sans-serif',
                     fontWeight: 700,
                     letterSpacing: "-0.02em",
                   }}

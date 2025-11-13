@@ -904,16 +904,16 @@ const createStyles = (colors) => {
       ...shadowStyle,
     },
     appName: {
-      fontSize: 28,
-      fontWeight: "400",
+      fontSize: 24,
+      fontWeight: "700",
       color: colors.text,
       fontFamily: Platform.select({
-        ios: "SnellRoundhand-Bold",
-        android: "cursive",
-        web: "cursive",
+        ios: "System",
+        android: "sans-serif",
+        web: "Poppins, sans-serif",
       }),
       letterSpacing: -0.5,
-      lineHeight: 32,
+      lineHeight: 28,
     },
     headerIcons: {
       flexDirection: "row",
