@@ -11,6 +11,8 @@ import {
   ScrollView,
   Linking,
   Image,
+  Modal,
+  FlatList,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -103,6 +105,11 @@ const LoginScreen = ({ navigation }) => {
   // NEW: State for University ID Image
   const [idImage, setIdImage] = useState(null); // Will store { uri, name, type }
 
+  // NEW: State for University Selection
+  const [universities, setUniversities] = useState([]);
+  const [selectedUniversity, setSelectedUniversity] = useState(null);
+  const [showUniversityPicker, setShowUniversityPicker] = useState(false);
+
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [cooldownTime, setCooldownTime] = useState(0);
   const [lastAttemptTime, setLastAttemptTime] = useState(null);
@@ -128,7 +135,28 @@ const LoginScreen = ({ navigation }) => {
   useEffect(() => {
     loadSavedEmail();
     loadSavedAccounts();
+    fetchUniversities();
   }, []);
+
+  const fetchUniversities = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/public/universities`);
+      const data = await response.json();
+      if (response.ok && data.universities) {
+        setUniversities(data.universities);
+        // Auto-select first university if only one exists
+        if (data.universities.length === 1) {
+          setSelectedUniversity(data.universities[0]);
+        }
+      }
+    } catch (error) {
+      console.log("Error fetching universities:", error);
+      Alert.alert(
+        "Error",
+        "Could not load universities. Please check your connection."
+      );
+    }
+  };
 
   useEffect(() => {
     if (cooldownTime > 0) {
@@ -280,8 +308,13 @@ const LoginScreen = ({ navigation }) => {
       if (!fullName) {
         newErrors.fullName = "Full name is required";
       }
-      if (registerType === "manual" && !idImage) {
-        newErrors.idImage = "University ID photo is required";
+      if (registerType === "manual") {
+        if (!idImage) {
+          newErrors.idImage = "University ID photo is required";
+        }
+        if (!selectedUniversity) {
+          newErrors.university = "Please select your university";
+        }
       }
       if (!confirmPassword) {
         newErrors.confirmPassword = "Please confirm your password";
@@ -354,39 +387,55 @@ const LoginScreen = ({ navigation }) => {
 
     try {
       if (registerType === "regular") {
-        const supabase = getSupabaseClient();
-        const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          options: {
-            data: {
-              full_name: fullName.trim(),
-            },
+        // Regular signup via mobile-specific endpoint (no CAPTCHA required)
+        const response = await fetch(`${API_BASE_URL}/api/auth/signup-mobile`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
+          body: JSON.stringify({
+            full_name: fullName.trim(),
+            email: email.trim(),
+            password: password,
+            captchaToken: "mobile-bypass", // Not validated on mobile endpoint
+          }),
         });
-        if (error) throw error;
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            responseData.detail || responseData.message || "Sign up failed"
+          );
+        }
+
         Alert.alert(
           "Success",
           "Account created! Please check your email to verify your account.",
           [{ text: "OK", onPress: () => toggleForm(true) }]
         );
       } else {
-        // --- Manual Signup with FormData ---
+        // --- Manual Signup with FormData (mobile-specific endpoint) ---
+        if (!selectedUniversity) {
+          throw new Error("Please select your university");
+        }
+
         const formData = new FormData();
         formData.append("full_name", fullName.trim());
         formData.append("email", email.trim());
         formData.append("password", password);
+        formData.append("university_id", selectedUniversity.id.toString());
 
         // Append the image file
-        formData.append("university_id_image", {
+        formData.append("id_file", {
           uri: idImage.uri,
           name: idImage.name,
           type: idImage.type,
         });
 
-        // Use fetch for multipart/form-data
+        // Use mobile-specific endpoint (no CAPTCHA required)
         const response = await fetch(
-          `${API_BASE_URL}/api/auth/register-manual`,
+          `${API_BASE_URL}/api/auth/signup-manual-mobile`,
           {
             method: "POST",
             body: formData,
@@ -862,6 +911,72 @@ const LoginScreen = ({ navigation }) => {
       color: themeColors.success,
       fontWeight: "600",
     },
+    // Modal styles
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      justifyContent: "flex-end",
+    },
+    modalContent: {
+      backgroundColor: themeColors.surface,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      maxHeight: "70%",
+      paddingBottom: Platform.OS === "ios" ? 34 : 20,
+    },
+    modalHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: themeColors.border,
+    },
+    modalTitle: {
+      fontSize: fontSizes.lg || 18,
+      fontWeight: "700",
+      color: themeColors.text,
+    },
+    modalCloseButton: {
+      width: 32,
+      height: 32,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    modalCloseText: {
+      fontSize: 32,
+      color: themeColors.textSecondary,
+      lineHeight: 32,
+    },
+    universityItem: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: themeColors.border,
+    },
+    universityItemSelected: {
+      backgroundColor: `${themeColors.primary}15`,
+    },
+    universityItemText: {
+      fontSize: fontSizes.base || 16,
+      color: themeColors.text,
+      flex: 1,
+    },
+    universityItemTextSelected: {
+      color: themeColors.primary,
+      fontWeight: "600",
+    },
+    emptyList: {
+      padding: 40,
+      alignItems: "center",
+    },
+    emptyListText: {
+      fontSize: fontSizes.base || 16,
+      color: themeColors.textSecondary,
+      textAlign: "center",
+    },
   });
 
   return (
@@ -1045,6 +1160,49 @@ const LoginScreen = ({ navigation }) => {
                   </View>
                 )}
               </View>
+
+              {/* University Selection (Manual Sign Up Only) */}
+              {!isLogin && registerType === "manual" && (
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.idUploadLabel}>
+                    Select Your University
+                  </Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.inputContainer,
+                      errors.university &&
+                        touched.university &&
+                        styles.inputError,
+                    ]}
+                    onPress={() => setShowUniversityPicker(true)}
+                  >
+                    <User
+                      size={20}
+                      color={themeColors.textSecondary}
+                      style={styles.inputIcon}
+                    />
+                    <Text
+                      style={[
+                        styles.input,
+                        !selectedUniversity && {
+                          color: themeColors.textSecondary,
+                        },
+                      ]}
+                    >
+                      {selectedUniversity
+                        ? selectedUniversity.name
+                        : "Choose university..."}
+                    </Text>
+                    <ChevronRight size={20} color={themeColors.textSecondary} />
+                  </TouchableOpacity>
+                  {errors.university && touched.university && (
+                    <View style={styles.errorContainer}>
+                      <AlertCircle size={14} color={themeColors.error} />
+                      <Text style={styles.errorText}>{errors.university}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
 
               {/* University/Student ID Upload (Manual Sign Up Only) */}
               {!isLogin && registerType === "manual" && (
@@ -1267,6 +1425,66 @@ const LoginScreen = ({ navigation }) => {
           <Text style={styles.metaText}>CampusTrace</Text>
         </View>
       </ScrollView>
+
+      {/* University Picker Modal */}
+      <Modal
+        visible={showUniversityPicker}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowUniversityPicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Your University</Text>
+              <TouchableOpacity
+                onPress={() => setShowUniversityPicker(false)}
+                style={styles.modalCloseButton}
+              >
+                <Text style={styles.modalCloseText}>×</Text>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={universities}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.universityItem,
+                    selectedUniversity?.id === item.id &&
+                      styles.universityItemSelected,
+                  ]}
+                  onPress={() => {
+                    setSelectedUniversity(item);
+                    setShowUniversityPicker(false);
+                    setErrors((prev) => ({ ...prev, university: "" }));
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.universityItemText,
+                      selectedUniversity?.id === item.id &&
+                        styles.universityItemTextSelected,
+                    ]}
+                  >
+                    {item.name}
+                  </Text>
+                  {selectedUniversity?.id === item.id && (
+                    <CheckCircle size={20} color={themeColors.primary} />
+                  )}
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <View style={styles.emptyList}>
+                  <Text style={styles.emptyListText}>
+                    No universities available. Please contact support.
+                  </Text>
+                </View>
+              }
+            />
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };

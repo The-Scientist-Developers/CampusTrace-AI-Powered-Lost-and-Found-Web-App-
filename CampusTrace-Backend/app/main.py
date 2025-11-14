@@ -198,6 +198,7 @@ class StatusUpdate(BaseModel):
 
 # ============= Routers =============
 auth_router = APIRouter(prefix="/api/auth", tags=["Authentication"])
+public_router = APIRouter(prefix="/api/public", tags=["Public"])
 item_router = APIRouter(prefix="/api/items", tags=["Items"])
 admin_router = APIRouter(prefix="/admin", tags=["Admin"])
 profile_router = APIRouter(prefix="/api/profile", tags=["Profile"])
@@ -795,6 +796,252 @@ async def signup_user(payload: SignupRequest, request: Request):
             raise HTTPException(status_code=400, detail="Password is too weak. Please use a stronger password.")
         else:
             raise HTTPException(status_code=400, detail=f"Signup failed: {str(exc)}")
+
+@auth_router.post("/signup-mobile")
+async def signup_user_mobile(payload: SignupRequest, request: Request):
+    """
+    Handle signup for mobile app users with university email domains.
+    No CAPTCHA verification required for mobile apps.
+    Automatically verified if domain is registered.
+    """
+    # Skip CAPTCHA verification for mobile
+    
+    # Verify that email domain is registered
+    domain = payload.email.split("@")[-1]
+    domain_res = supabase.table("allowed_domains").select("university_id").eq("domain_name", domain).single().execute()
+    if not domain_res.data:
+        raise HTTPException(status_code=400, detail="This email domain is not registered on CampusTrace.")
+    
+    try:
+        # Prepare redirect URL for email confirmation
+        redirect_url = None
+        if settings.EMAIL_CONFIRM_REDIRECT:
+            if isinstance(settings.EMAIL_CONFIRM_REDIRECT, list):
+                redirect_url = settings.EMAIL_CONFIRM_REDIRECT[0]
+            else:
+                redirect_url = settings.EMAIL_CONFIRM_REDIRECT
+
+        university_id = domain_res.data["university_id"]
+
+        signup_options = {
+            "email": payload.email,
+            "password": payload.password,
+            "options": {
+                "data": {
+                    "full_name": payload.full_name,
+                    "university_id": university_id,
+                    "is_verified": True,  # Auto-verified by domain
+                    "role": "member"
+                }
+            }
+        }
+        
+        # Add email redirect only if configured
+        if redirect_url:
+            signup_options["options"]["email_redirect_to"] = redirect_url
+        
+        result = supabase.auth.sign_up(signup_options)
+        
+        print(f"Mobile signup result: {result}")
+        
+        if result.user:
+            # Check if user already confirmed
+            if hasattr(result.user, 'confirmed_at') and result.user.confirmed_at:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="An account with this email already exists. Please sign in instead."
+                )
+            
+            # Check if user has no identities (already exists but unconfirmed)
+            if hasattr(result.user, 'identities') and not result.user.identities:
+                raise HTTPException(
+                    status_code=400,
+                    detail="An account with this email already exists. Please check your email to confirm your account."
+                )
+            
+            # Fallback: ensure profile exists (trigger should handle this)
+            supabase.table("profiles").upsert({
+                "id": result.user.id,
+                "full_name": payload.full_name,
+                "university_id": domain_res.data["university_id"],
+                "role": "member",
+                "is_verified": True
+            }).execute()
+            
+            return {"message": "Check your inbox to confirm your email before signing in."}
+        else:
+            raise HTTPException(
+                status_code=400, 
+                detail="Unable to create account. An account with this email may already exist."
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as exc:
+        print(f"Mobile signup failure - Full exception: {exc}")
+        error_message = str(exc).lower()
+        
+        # Handle common signup errors
+        if "user already registered" in error_message:
+            raise HTTPException(
+                status_code=400, 
+                detail="An account with this email already exists. Please sign in instead."
+            )
+        elif "invalid email" in error_message:
+            raise HTTPException(status_code=400, detail="Invalid email address.")
+        elif "weak password" in error_message:
+            raise HTTPException(status_code=400, detail="Password is too weak. Please use a stronger password.")
+        else:
+            raise HTTPException(status_code=400, detail=f"Signup failed: {str(exc)}")
+
+@auth_router.post("/signup-manual-mobile")
+async def signup_manual_mobile(
+    request: Request,
+    full_name: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+    university_id: int = Form(...),
+    id_file: UploadFile = File(...)
+):
+    """
+    Handle signup for mobile app users with personal emails (not university domain).
+    No CAPTCHA verification required for mobile apps.
+    Requires manual verification by admin using uploaded ID.
+    """
+    # Skip CAPTCHA verification for mobile
+    
+    user = None
+    try:
+        # Check if user already exists
+        user_exists_res = supabase.from_("profiles").select("id").eq("email", email).execute()
+        if user_exists_res.data:
+            raise HTTPException(status_code=400, detail="A user with this email already exists.")
+
+        # Prepare redirect URL for email confirmation
+        redirect_url = None
+        if settings.PENDING_APPROVAL_REDIRECT_URL:
+            if isinstance(settings.PENDING_APPROVAL_REDIRECT_URL, list):
+                redirect_url = settings.PENDING_APPROVAL_REDIRECT_URL[0]
+            else:
+                redirect_url = settings.PENDING_APPROVAL_REDIRECT_URL
+
+        # Create user with metadata (will trigger profile creation)
+        signup_options = {
+            "email": email,
+            "password": password,
+            "options": {
+                "data": {
+                    "full_name": full_name,
+                    "university_id": university_id,
+                    "is_verified": False,
+                    "role": "member"
+                }
+            }
+        }
+        
+        # Add email redirect only if URL is configured
+        if redirect_url:
+            signup_options["options"]["email_redirect_to"] = redirect_url
+        
+        sign_up_res = supabase.auth.sign_up(signup_options)
+        
+        if not sign_up_res.user:
+            raise Exception("Failed to create user in Auth.")
+        
+        user = sign_up_res.user
+
+        # Fallback: ensure profile exists (trigger should handle this)
+        supabase.table("profiles").upsert({
+            "id": user.id,
+            "full_name": full_name,
+            "university_id": university_id,
+            "role": "member",
+            "is_verified": False 
+        }).execute()
+
+        # Process and upload the ID image
+        file_bytes = await id_file.read()
+        
+        max_id_size = settings.MAX_ID_IMAGE_SIZE
+        
+        # Resize image if it's too large
+        if len(file_bytes) > max_id_size:
+            file_bytes = process_image_efficiently(file_bytes)
+        
+        file_suffix = Path(id_file.filename or "").suffix
+        file_path = f"manual_verifications/{user.id}/{uuid4().hex}{file_suffix}"
+        
+        # Upload to Supabase storage
+        supabase.storage.from_("other_images").upload(
+            path=file_path,
+            file=file_bytes,
+            file_options={"content-type": id_file.content_type or "application/octet-stream"}
+        )
+        id_image_url = supabase.storage.from_("other_images").get_public_url(file_path)
+
+        # Create verification record for admin review
+        supabase.table("user_verifications").insert({
+            "user_id": user.id,
+            "university_id": university_id,
+            "id_image_url": id_image_url,
+            "status": "pending"
+        }).execute()
+
+        # Notify all admins of the university about new verification request
+        admins_res = supabase.table("profiles").select("id").eq("university_id", university_id).eq("role", "admin").execute()
+        
+        if admins_res.data:
+            message = f"New manual verification request from {full_name} is awaiting review."
+            for admin in admins_res.data:
+                create_notification(
+                    recipient_id=admin['id'],
+                    university_id=university_id,
+                    message=message,
+                    link_to="/admin/manual-verification",
+                    type='verification'
+                )
+
+        return {"message": "Registration successful! Please confirm your email. Your account will be usable after an admin approves your ID."}
+
+    except HTTPException as http_exc:
+        # Clean up user if created
+        if user:
+            try:
+                supabase.auth.admin.delete_user(user.id)
+            except Exception as delete_e:
+                print(f"Failed to clean up user during signup error: {delete_e}")
+        raise http_exc
+    except Exception as e:
+        traceback.print_exc()
+        # Rollback: delete user on any error
+        if user:
+            try:
+                supabase.auth.admin.delete_user(user.id)
+            except Exception as delete_e:
+                print(f"Failed to clean up user during signup error: {delete_e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============= Public Routes (No Auth Required) =============
+@public_router.get("/universities")
+async def get_universities():
+    """
+    Get list of all active universities for signup selection.
+    Public endpoint - no authentication required.
+    """
+    try:
+        universities_res = supabase.table("universities").select(
+            "id, name"
+        ).eq("status", "active").order("name").execute()
+        
+        return {
+            "universities": universities_res.data or []
+        }
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to fetch universities: {str(e)}")
+
+# Register public router with app
+app.include_router(public_router)
 
 # ============= Item Routes =============
 @item_router.get("")
