@@ -859,14 +859,23 @@ const MobileAppSection = () => {
 
               <div className="space-y-3 sm:space-y-4">
                 <a
-                  href="#"
+                  href="https://expo.dev/artifacts/eas/5VFnDbF2zGrkoefh3uq9tU.apk"
                   className="block w-full py-3.5 sm:py-4 px-4 sm:px-6 bg-white text-primary-600 rounded-xl font-bold text-center hover:bg-neutral-100 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 text-sm sm:text-base"
                   onClick={(e) => {
-                    e.preventDefault();
-                    alert(
-                      "APK download will be available soon! Contact your university administrator for early access."
+                    const confirmed = window.confirm(
+                      "⚠️ IMPORTANT SECURITY NOTICE\n\n" +
+                        "You are about to download the CampusTrace APK file.\n\n" +
+                        "Before installing:\n" +
+                        "1. Enable 'Install from Unknown Sources' in your Android settings\n" +
+                        "2. This APK is safe and built by the CampusTrace team\n" +
+                        "3. Your device may show a warning - this is normal for APK files\n\n" +
+                        "Do you want to proceed with the download?"
                     );
+                    if (!confirmed) {
+                      e.preventDefault();
+                    }
                   }}
+                  download
                 >
                   <div className="flex items-center justify-center gap-2">
                     <DownloadIcon className="w-5 h-5" />
