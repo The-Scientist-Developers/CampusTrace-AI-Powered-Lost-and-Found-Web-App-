@@ -1,7 +1,7 @@
 export default {
   expo: {
     name: "CampusTrace",
-    slug: "campustrace-mobile",
+    slug: "campustrace",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
