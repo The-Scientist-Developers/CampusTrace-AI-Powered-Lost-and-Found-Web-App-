@@ -859,7 +859,7 @@ const MobileAppSection = () => {
 
               <div className="space-y-3 sm:space-y-4">
                 <a
-                  href="https://expo.dev/artifacts/eas/5VFnDbF2zGrkoefh3uq9tU.apk"
+                  href="https://expo.dev/artifacts/eas/5Fz1uzKQiPgRk4C8CtmVQ2.apk"
                   className="block w-full py-3.5 sm:py-4 px-4 sm:px-6 bg-white text-primary-600 rounded-xl font-bold text-center hover:bg-neutral-100 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 text-sm sm:text-base"
                   onClick={(e) => {
                     const confirmed = window.confirm(

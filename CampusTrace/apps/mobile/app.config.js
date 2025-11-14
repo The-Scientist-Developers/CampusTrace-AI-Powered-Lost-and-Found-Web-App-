@@ -11,7 +11,7 @@ export default ({ config }) => {
     slug: "campustrace-monorepo",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/icon.png",
+    icon: "./assets/Icon.png",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     splash: {
@@ -26,7 +26,7 @@ export default ({ config }) => {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/adaptive-icon.png",
+        foregroundImage: "./assets/Icon.png",
         backgroundColor: "#ffffff",
       },
       edgeToEdgeEnabled: true,
