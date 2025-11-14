@@ -13,6 +13,7 @@ import {
   Image,
   Modal,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -25,23 +26,22 @@ import {
   CheckCircle,
   ChevronRight,
   ChevronLeft,
-  Hash,
-  UploadCloud, // Added for file upload
-  Camera, // Added for camera
+  UploadCloud,
+  Camera,
+  X,
 } from "lucide-react-native";
 import { getSupabaseClient } from "@campustrace/core";
 import { useTheme } from "../../contexts/ThemeContext";
 import LoadingScreen from "../../components/LoadingScreen";
-import { apiClient, API_BASE_URL } from "../../utils/apiClient"; // Make sure API_BASE_URL is exported from your client
-import * as ImagePicker from "expo-image-picker"; // Import ImagePicker
+import { API_BASE_URL } from "../../utils/apiClient";
+import * as ImagePicker from "expo-image-picker";
 import Svg, {
-  Path,
-  Circle,
   Rect,
   Defs,
   LinearGradient,
   Stop,
   G,
+  Circle,
   Line,
 } from "react-native-svg";
 
@@ -89,7 +89,6 @@ const LoginScreen = ({ navigation }) => {
   const { colors, fontSizes, isDark } = useTheme();
   const [isLogin, setIsLogin] = useState(true);
   const [fullName, setFullName] = useState("");
-  const [universityId, setUniversityId] = useState(""); // Kept for validation logic, but field is now image
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -100,23 +99,25 @@ const LoginScreen = ({ navigation }) => {
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
 
+  // Register type: "regular" or "manual"
   const [registerType, setRegisterType] = useState("regular");
 
-  // NEW: State for University ID Image
-  const [idImage, setIdImage] = useState(null); // Will store { uri, name, type }
-
-  // NEW: State for University Selection
+  // Manual registration states
+  const [idImage, setIdImage] = useState(null);
   const [universities, setUniversities] = useState([]);
   const [selectedUniversity, setSelectedUniversity] = useState(null);
   const [showUniversityPicker, setShowUniversityPicker] = useState(false);
 
+  // Rate limiting states
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [cooldownTime, setCooldownTime] = useState(0);
   const [lastAttemptTime, setLastAttemptTime] = useState(null);
 
+  // Saved accounts states
   const [savedAccounts, setSavedAccounts] = useState([]);
   const [showSavedAccounts, setShowSavedAccounts] = useState(true);
 
+  // Password strength states
   const [passwordStrength, setPasswordStrength] = useState({
     hasMinLength: false,
     hasUpperCase: false,
@@ -144,7 +145,6 @@ const LoginScreen = ({ navigation }) => {
       const data = await response.json();
       if (response.ok && data.universities) {
         setUniversities(data.universities);
-        // Auto-select first university if only one exists
         if (data.universities.length === 1) {
           setSelectedUniversity(data.universities[0]);
         }
@@ -356,9 +356,17 @@ const LoginScreen = ({ navigation }) => {
 
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("full_name, avatar_url")
+        .select("full_name, avatar_url, is_verified")
         .eq("id", result.data.user.id)
         .single();
+
+      // Check if user is verified
+      if (profileData && profileData.is_verified === false) {
+        // Sign them out and navigate to pending approval
+        await supabase.auth.signOut();
+        navigation.navigate("PendingApproval");
+        return;
+      }
 
       const userName =
         profileData?.full_name || result.data?.user?.user_metadata?.full_name;
@@ -370,8 +378,6 @@ const LoginScreen = ({ navigation }) => {
       setLoginAttempts(0);
       setCooldownTime(0);
       setLastAttemptTime(null);
-
-      // Alert.alert("Success", "Logged in successfully!"); // Let AuthNavigator handle it
     } catch (error) {
       setLoginAttempts((prev) => prev + 1);
       setLastAttemptTime(Date.now());
@@ -387,7 +393,7 @@ const LoginScreen = ({ navigation }) => {
 
     try {
       if (registerType === "regular") {
-        // Regular signup via mobile-specific endpoint (no CAPTCHA required)
+        // Regular signup
         const response = await fetch(`${API_BASE_URL}/api/auth/signup-mobile`, {
           method: "POST",
           headers: {
@@ -397,16 +403,44 @@ const LoginScreen = ({ navigation }) => {
             full_name: fullName.trim(),
             email: email.trim(),
             password: password,
-            captchaToken: "mobile-bypass", // Not validated on mobile endpoint
+            captchaToken: "mobile-bypass",
           }),
         });
 
         const responseData = await response.json();
 
         if (!response.ok) {
-          throw new Error(
-            responseData.detail || responseData.message || "Sign up failed"
-          );
+          // Extract the error message
+          const errorMsg =
+            responseData.detail || responseData.message || "Sign up failed";
+
+          // Check if it's a domain not registered error
+          if (
+            errorMsg.toLowerCase().includes("not registered") ||
+            errorMsg.toLowerCase().includes("domain")
+          ) {
+            const domain = email.split("@")[1];
+            Alert.alert(
+              "Email Domain Not Registered",
+              `The email domain "${domain}" is not registered with CampusTrace.\n\n` +
+                `Options:\n` +
+                `1. Use your official university email address\n` +
+                `2. Or tap "Manual (University ID)" above to register with a personal email and your university ID photo`,
+              [{ text: "OK" }]
+            );
+          } else if (errorMsg.toLowerCase().includes("already exists")) {
+            Alert.alert(
+              "Account Already Exists",
+              "An account with this email already exists. Please sign in instead.",
+              [
+                { text: "Cancel", style: "cancel" },
+                { text: "Go to Login", onPress: () => toggleForm(true) },
+              ]
+            );
+          } else {
+            Alert.alert("Sign Up Failed", errorMsg);
+          }
+          return;
         }
 
         Alert.alert(
@@ -415,7 +449,7 @@ const LoginScreen = ({ navigation }) => {
           [{ text: "OK", onPress: () => toggleForm(true) }]
         );
       } else {
-        // --- Manual Signup with FormData (mobile-specific endpoint) ---
+        // Manual signup
         if (!selectedUniversity) {
           throw new Error("Please select your university");
         }
@@ -426,14 +460,12 @@ const LoginScreen = ({ navigation }) => {
         formData.append("password", password);
         formData.append("university_id", selectedUniversity.id.toString());
 
-        // Append the image file
         formData.append("id_file", {
           uri: idImage.uri,
           name: idImage.name,
           type: idImage.type,
         });
 
-        // Use mobile-specific endpoint (no CAPTCHA required)
         const response = await fetch(
           `${API_BASE_URL}/api/auth/signup-manual-mobile`,
           {
@@ -445,10 +477,23 @@ const LoginScreen = ({ navigation }) => {
         const responseData = await response.json();
 
         if (!response.ok) {
-          throw new Error(responseData.detail || "An error occurred");
+          const errorMsg = responseData.detail || "An error occurred";
+
+          // Handle specific errors for manual registration
+          if (errorMsg.toLowerCase().includes("already exists")) {
+            Alert.alert(
+              "Account Already Exists",
+              "An account with this email already exists.",
+              [{ text: "OK" }]
+            );
+          } else if (errorMsg.toLowerCase().includes("university")) {
+            Alert.alert("Invalid University", errorMsg, [{ text: "OK" }]);
+          } else {
+            Alert.alert("Registration Failed", errorMsg, [{ text: "OK" }]);
+          }
+          return;
         }
 
-        // Navigate to Pending Approval screen on success
         navigation.navigate("PendingApproval");
       }
 
@@ -456,9 +501,10 @@ const LoginScreen = ({ navigation }) => {
       setCooldownTime(0);
       setLastAttemptTime(null);
     } catch (error) {
+      console.error("Signup error:", error);
       Alert.alert(
         "Sign Up Failed",
-        error.message || "Could not complete registration."
+        error.message || "Could not complete registration. Please try again."
       );
     } finally {
       setLoading(false);
@@ -490,7 +536,6 @@ const LoginScreen = ({ navigation }) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
   };
 
-  // --- NEW: Image Picker Functions ---
   const handleImagePick = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
@@ -513,7 +558,7 @@ const LoginScreen = ({ navigation }) => {
       const fileName = uri.split("/").pop();
       const fileType = `image/${fileName.split(".").pop()}`;
       setIdImage({ uri, name: fileName, type: fileType });
-      setErrors((prev) => ({ ...prev, idImage: null })); // Clear error
+      setErrors((prev) => ({ ...prev, idImage: null }));
     }
   };
 
@@ -538,10 +583,9 @@ const LoginScreen = ({ navigation }) => {
       const fileName = uri.split("/").pop();
       const fileType = `image/${fileName.split(".").pop()}`;
       setIdImage({ uri, name: fileName, type: fileType });
-      setErrors((prev) => ({ ...prev, idImage: null })); // Clear error
+      setErrors((prev) => ({ ...prev, idImage: null }));
     }
   };
-  // --- END: Image Picker Functions ---
 
   const getPasswordStrengthScore = () => {
     return Object.values(passwordStrength).filter(Boolean).length;
@@ -566,11 +610,11 @@ const LoginScreen = ({ navigation }) => {
     setErrors({});
     setTouched({});
     setFullName("");
-    setUniversityId("");
     setPassword("");
     setConfirmPassword("");
-    setIdImage(null); // Clear image
+    setIdImage(null);
     setRegisterType("regular");
+    setSelectedUniversity(null);
   };
 
   if (initialLoading) {
@@ -857,7 +901,6 @@ const LoginScreen = ({ navigation }) => {
       fontWeight: "500",
       color: themeColors.textSecondary,
     },
-    // --- NEW STYLES FOR ID UPLOAD ---
     idUploadContainer: {
       marginBottom: 12,
     },
@@ -901,17 +944,24 @@ const LoginScreen = ({ navigation }) => {
       alignItems: "center",
       marginTop: 12,
       overflow: "hidden",
+      position: "relative",
     },
     idImagePreview: {
       width: "100%",
       height: "100%",
       resizeMode: "cover",
     },
-    idImagePreviewText: {
-      color: themeColors.success,
-      fontWeight: "600",
+    removeImageButton: {
+      position: "absolute",
+      top: 8,
+      right: 8,
+      backgroundColor: "rgba(0, 0, 0, 0.6)",
+      borderRadius: 20,
+      width: 32,
+      height: 32,
+      justifyContent: "center",
+      alignItems: "center",
     },
-    // Modal styles
     modalOverlay: {
       flex: 1,
       backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -1129,7 +1179,6 @@ const LoginScreen = ({ navigation }) => {
                 </>
               )}
 
-              {/* Email Input */}
               <View style={styles.inputWrapper}>
                 <View
                   style={[
@@ -1161,7 +1210,6 @@ const LoginScreen = ({ navigation }) => {
                 )}
               </View>
 
-              {/* University Selection (Manual Sign Up Only) */}
               {!isLogin && registerType === "manual" && (
                 <View style={styles.inputWrapper}>
                   <Text style={styles.idUploadLabel}>
@@ -1204,7 +1252,6 @@ const LoginScreen = ({ navigation }) => {
                 </View>
               )}
 
-              {/* University/Student ID Upload (Manual Sign Up Only) */}
               {!isLogin && registerType === "manual" && (
                 <View style={styles.idUploadContainer}>
                   <Text style={styles.idUploadLabel}>University ID Photo</Text>
@@ -1230,6 +1277,12 @@ const LoginScreen = ({ navigation }) => {
                         source={{ uri: idImage.uri }}
                         style={styles.idImagePreview}
                       />
+                      <TouchableOpacity
+                        style={styles.removeImageButton}
+                        onPress={() => setIdImage(null)}
+                      >
+                        <X size={20} color="#FFFFFF" />
+                      </TouchableOpacity>
                     </View>
                   )}
                   {errors.idImage && touched.idImage && (
@@ -1241,7 +1294,6 @@ const LoginScreen = ({ navigation }) => {
                 </View>
               )}
 
-              {/* Password Input */}
               <View style={styles.inputWrapper}>
                 <View
                   style={[
@@ -1282,7 +1334,6 @@ const LoginScreen = ({ navigation }) => {
                 )}
               </View>
 
-              {/* Confirm Password (Sign Up Only) */}
               {!isLogin && (
                 <View style={styles.inputWrapper}>
                   <View
@@ -1331,7 +1382,6 @@ const LoginScreen = ({ navigation }) => {
                 </View>
               )}
 
-              {/* Password Strength Indicator (Sign Up Only) */}
               {!isLogin && password.length > 0 && (
                 <View style={styles.passwordStrength}>
                   <View style={styles.strengthHeader}>
@@ -1394,13 +1444,17 @@ const LoginScreen = ({ navigation }) => {
                 onPress={isLogin ? handleLogin : handleSignUp}
                 disabled={loading || cooldownTime > 0}
               >
-                <Text style={styles.buttonText}>
-                  {cooldownTime > 0
-                    ? `Wait ${cooldownTime}s`
-                    : isLogin
-                    ? "Log In"
-                    : "Sign Up"}
-                </Text>
+                {loading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.buttonText}>
+                    {cooldownTime > 0
+                      ? `Wait ${cooldownTime}s`
+                      : isLogin
+                      ? "Log In"
+                      : "Sign Up"}
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           )}
@@ -1426,7 +1480,6 @@ const LoginScreen = ({ navigation }) => {
         </View>
       </ScrollView>
 
-      {/* University Picker Modal */}
       <Modal
         visible={showUniversityPicker}
         transparent={true}

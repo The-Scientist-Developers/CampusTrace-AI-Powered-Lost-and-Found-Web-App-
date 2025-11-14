@@ -268,6 +268,7 @@ def create_notification(recipient_id: str, university_id: int, message: str, lin
     Types: 'general', 'claim', 'moderation', 'verification', 'message', etc.
     """
     try:
+        # 1. (Existing) Create the in-app notification
         supabase.table("notifications").insert({
             "recipient_id": recipient_id,
             "university_id": university_id,
@@ -275,9 +276,71 @@ def create_notification(recipient_id: str, university_id: int, message: str, lin
             "link_to": link_to,
             "type": type,
         }).execute()
-        print(f"Notification created for user {recipient_id}")
+        print(f"In-app notification created for user {recipient_id}")
+
+        # 2. (NEW) Trigger a push notification asynchronously
+        asyncio.create_task(
+            send_push_notification(recipient_id, message, type, link_to)
+        )
+
     except Exception as e:
         print(f"Error creating notification: {e}")
+
+# === ADD THIS NEW ASYNC FUNCTION ===
+async def send_push_notification(recipient_id: str, message: str, notification_type: str, link_to: Optional[str] = None):
+    """
+    Fetches user's push token and sends a push notification via Expo.
+    """
+    try:
+        # Get user's push token and notification preferences
+        profile_res = supabase.table("profiles").select(
+            "push_token, message_notifications, claim_notifications, moderation_notifications"
+        ).eq("id", recipient_id).single().execute()
+
+        if not profile_res.data or not profile_res.data.get("push_token"):
+            print(f"No push token for user {recipient_id}, skipping push.")
+            return
+
+        profile = profile_res.data
+        push_token = profile["push_token"]
+
+        # Check user preferences (based on your profiles table)
+        if notification_type == 'message' and not profile.get('message_notifications', True):
+            print(f"User {recipient_id} has message push notifications disabled.")
+            return
+        if notification_type in ['claim', 'claim_response'] and not profile.get('claim_notifications', True):
+            print(f"User {recipient_id} has claim push notifications disabled.")
+            return
+
+        # Prepare the push message payload
+        push_payload = {
+            "to": push_token,
+            "sound": "default",
+            "title": "CampusTrace", # You can customize this
+            "body": message,
+            "data": { "url": link_to } # Send link_to in data payload
+        }
+
+        # Send the request to Expo's push API
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://api.expo.dev/v2/push/send",
+                json=push_payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "Accept-Encoding": "gzip, deflate",
+                    # You can add an Expo Access Token here for security if needed
+                },
+            )
+
+        response.raise_for_status() # Raises an error if status code is 4xx/5xx
+        print(f"Push notification sent successfully to user {recipient_id}. Response: {response.json()}")
+
+    except httpx.HTTPStatusError as e:
+        print(f"Error sending push notification to {recipient_id}: {e.response.text}")
+    except Exception as e:
+        print(f"General error in send_push_notification: {e}")
 
 async def generate_ai_tags(title: str, description: str) -> Optional[List[str]]:
     """
@@ -806,11 +869,24 @@ async def signup_user_mobile(payload: SignupRequest, request: Request):
     """
     # Skip CAPTCHA verification for mobile
     
-    # Verify that email domain is registered
-    domain = payload.email.split("@")[-1]
-    domain_res = supabase.table("allowed_domains").select("university_id").eq("domain_name", domain).single().execute()
-    if not domain_res.data:
-        raise HTTPException(status_code=400, detail="This email domain is not registered on CampusTrace.")
+    # Extract and validate email domain
+    email_parts = payload.email.split("@")
+    if len(email_parts) != 2:
+        raise HTTPException(
+            status_code=400,
+            detail="Please enter a valid email address."
+        )
+    
+    domain = email_parts[1].lower()
+    
+    # Check if domain is registered (use execute() without single() to avoid exception)
+    domain_res = supabase.table("allowed_domains").select("university_id").eq("domain_name", domain).execute()
+    
+    if not domain_res.data or len(domain_res.data) == 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"The email domain '{domain}' is not registered with CampusTrace. Please use your official university email address, or register manually using the 'Manual (University ID)' option with a personal email and your university ID photo."
+        )
     
     try:
         # Prepare redirect URL for email confirmation
@@ -863,7 +939,7 @@ async def signup_user_mobile(payload: SignupRequest, request: Request):
             supabase.table("profiles").upsert({
                 "id": result.user.id,
                 "full_name": payload.full_name,
-                "university_id": domain_res.data["university_id"],
+                "university_id": university_id,
                 "role": "member",
                 "is_verified": True
             }).execute()
@@ -894,6 +970,7 @@ async def signup_user_mobile(payload: SignupRequest, request: Request):
         else:
             raise HTTPException(status_code=400, detail=f"Signup failed: {str(exc)}")
 
+
 @auth_router.post("/signup-manual-mobile")
 async def signup_manual_mobile(
     request: Request,
@@ -916,6 +993,11 @@ async def signup_manual_mobile(
         user_exists_res = supabase.from_("profiles").select("id").eq("email", email).execute()
         if user_exists_res.data:
             raise HTTPException(status_code=400, detail="A user with this email already exists.")
+
+        # Verify university exists
+        university_check = supabase.table("universities").select("id").eq("id", university_id).maybeSingle().execute()
+        if not university_check.data:
+            raise HTTPException(status_code=400, detail="Invalid university selected.")
 
         # Prepare redirect URL for email confirmation
         redirect_url = None
@@ -2439,7 +2521,7 @@ async def get_dashboard_summary(user_id: str = Depends(get_current_user_id)):
             # Get matches for the most recent lost item
             lost_item_id = user_lost_items.data[0]["id"]
             try:
-                matches_res = supabase.rpc('get_ai_matches_for_item', {
+                matches_res = supabase.rpc('find_matches_for_lost_item', {
                     'p_item_id': lost_item_id,
                     'p_limit': 3
                 }).execute()

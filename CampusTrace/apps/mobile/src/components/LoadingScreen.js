@@ -6,7 +6,6 @@ import {
   Animated,
   Platform,
   Dimensions,
-  Image,
 } from "react-native";
 import Svg, {
   Defs,
@@ -71,12 +70,11 @@ const CampusTraceIcon = ({ width = 80, height = 80 }) => (
 const LoadingScreen = () => {
   const { colors, isDark } = useTheme();
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.5)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const fadeAnimBottom = useRef(new Animated.Value(0)).current;
-  const progressAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Instagram-style entrance animation
+    // Simple entrance animation like Instagram
     Animated.parallel([
       Animated.spring(scaleAnim, {
         toValue: 1,
@@ -91,23 +89,7 @@ const LoadingScreen = () => {
         useNativeDriver: true,
         delay: 100,
       }),
-    ]).start(() => {
-      // Start the pulsing animation AFTER the entrance animation completes
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(scaleAnim, {
-            toValue: 1.05,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scaleAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    });
+    ]).start();
 
     // Bottom text fade in
     Animated.timing(fadeAnimBottom, {
@@ -116,21 +98,7 @@ const LoadingScreen = () => {
       useNativeDriver: true,
       delay: 800,
     }).start();
-
-    // Loading bar animation (Instagram style)
-    Animated.loop(
-      Animated.timing(progressAnim, {
-        toValue: 1,
-        duration: 1500,
-        useNativeDriver: true,
-      })
-    ).start();
   }, []);
-
-  const progressTranslate = progressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-200, 200],
-  });
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -148,7 +116,7 @@ const LoadingScreen = () => {
           <CampusTraceIcon width={96} height={96} />
         </View>
 
-        {/* Brand Name with Inter-style font */}
+        {/* Brand Name */}
         <Text
           style={[
             styles.appName,
@@ -160,26 +128,6 @@ const LoadingScreen = () => {
         >
           CampusTrace
         </Text>
-
-        {/* Instagram-style loading bar */}
-        <View style={styles.loadingBarContainer}>
-          <View
-            style={[
-              styles.loadingBarBg,
-              { backgroundColor: isDark ? "#3a3a3a" : "#e0e0e0" },
-            ]}
-          >
-            <Animated.View
-              style={[
-                styles.loadingBar,
-                {
-                  backgroundColor: colors.primary,
-                  transform: [{ translateX: progressTranslate }],
-                },
-              ]}
-            />
-          </View>
-        </View>
       </Animated.View>
 
       {/* Bottom text like Instagram's "from Meta" */}
@@ -203,8 +151,6 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: "center",
-    // position: "absolute", // REMOVED
-    // top: height / 2 - 120, // REMOVED
   },
   logoImage: {
     width: 96,
@@ -217,7 +163,6 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "700",
     letterSpacing: -0.5,
-    marginBottom: 32,
     ...Platform.select({
       ios: {
         fontFamily: "System",
@@ -228,20 +173,6 @@ const styles = StyleSheet.create({
         fontWeight: "700",
       },
     }),
-  },
-  loadingBarContainer: {
-    width: 192,
-    marginTop: 8,
-  },
-  loadingBarBg: {
-    height: 4,
-    borderRadius: 2,
-    overflow: "hidden",
-  },
-  loadingBar: {
-    width: 96,
-    height: 4,
-    borderRadius: 2,
   },
   bottomContainer: {
     position: "absolute",
