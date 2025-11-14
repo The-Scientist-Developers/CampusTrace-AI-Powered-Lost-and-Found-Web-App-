@@ -12,6 +12,10 @@ import {
   Animated,
   Dimensions,
   Platform,
+  Modal,
+  TextInput,
+  Pressable,
+  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -29,12 +33,18 @@ import {
   X,
   Camera,
   RotateCcw,
+  ShieldCheck,
+  Loader2,
+  Eye,
+  MapPin,
+  Calendar,
 } from "lucide-react-native";
 import { getSupabaseClient } from "@campustrace/core";
 import { Swipeable } from "react-native-gesture-handler";
 import { useFocusEffect } from "@react-navigation/native";
 import SimpleLoadingScreen from "../../components/SimpleLoadingScreen";
 import { useTheme } from "../../contexts/ThemeContext";
+import { apiClient } from "../../utils/apiClient";
 
 const { width } = Dimensions.get("window");
 const CARD_MARGIN = 16;
@@ -96,6 +106,15 @@ const MyPostsScreen = ({ navigation }) => {
   const [receivedClaims, setReceivedClaims] = useState([]);
 
   const openSwipeableRef = useRef(null);
+
+  const [isHandoverModalVisible, setIsHandoverModalVisible] = useState(false);
+  const [selectedHandoverItem, setSelectedHandoverItem] = useState(null);
+  const [handoverCode, setHandoverCode] = useState("");
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [completeError, setCompleteError] = useState("");
+
+  const [isViewModalVisible, setIsViewModalVisible] = useState(false);
+  const [selectedViewItem, setSelectedViewItem] = useState(null);
 
   // Fetch user first
   useEffect(() => {
@@ -196,6 +215,11 @@ const MyPostsScreen = ({ navigation }) => {
     );
   };
 
+  const openViewModal = (item) => {
+    setSelectedViewItem(item);
+    setIsViewModalVisible(true);
+  };
+
   const handleMarkRecovered = (item) => {
     Alert.alert(
       "Mark as Recovered",
@@ -224,6 +248,41 @@ const MyPostsScreen = ({ navigation }) => {
         },
       ]
     );
+  };
+
+  const openHandoverModal = (item) => {
+    setSelectedHandoverItem(item);
+    setHandoverCode("");
+    setCompleteError("");
+    setIsCompleting(false);
+    setIsHandoverModalVisible(true);
+  };
+
+  const handleCompleteHandover = async () => {
+    if (handoverCode.length !== 4) {
+      setCompleteError("Code must be 4 digits.");
+      return;
+    }
+    setIsCompleting(true);
+    setCompleteError("");
+    try {
+      const formData = new FormData();
+      formData.append("code", handoverCode);
+      const { data } = await apiClient.post(
+        `/handover/items/${selectedHandoverItem.id}/complete-handover`,
+        formData
+      );
+      // Close modal and refresh
+      setIsHandoverModalVisible(false);
+      onRefresh();
+    } catch (error) {
+      console.error("Error completing handover:", error);
+      setCompleteError(
+        error.response?.data?.detail || "Invalid code or error."
+      );
+    } finally {
+      setIsCompleting(false);
+    }
   };
 
   const handleEditPost = (item) => {
@@ -313,6 +372,8 @@ const MyPostsScreen = ({ navigation }) => {
           onDelete={handleDeletePost}
           onEdit={handleEditPost}
           onMarkRecovered={handleMarkRecovered}
+          onOpenHandover={openHandoverModal}
+          onView={openViewModal}
           openSwipeableRef={openSwipeableRef}
           colors={colors}
           fontSizes={fontSizes}
@@ -510,6 +571,278 @@ const MyPostsScreen = ({ navigation }) => {
         }
         ListEmptyComponent={renderEmptyComponent}
       />
+
+      {/* Handover Modal */}
+      <Modal
+        transparent={true}
+        visible={isHandoverModalVisible}
+        animationType="fade"
+        onRequestClose={() => setIsHandoverModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[styles.modalContainer, { backgroundColor: colors.card }]}
+          >
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
+              Complete Handover
+            </Text>
+            <Text
+              style={[styles.modalSubtitle, { color: colors.textSecondary }]}
+            >
+              Enter the 4-digit code from the claimant for "
+              {selectedHandoverItem?.title}".
+            </Text>
+            <TextInput
+              style={[
+                styles.handoverInput,
+                { color: colors.text, borderColor: colors.border },
+              ]}
+              placeholder="1234"
+              placeholderTextColor={colors.textSecondary}
+              keyboardType="number-pad"
+              maxLength={4}
+              value={handoverCode}
+              onChangeText={setHandoverCode}
+            />
+            {completeError && (
+              <Text style={styles.errorText}>{completeError}</Text>
+            )}
+            <Pressable
+              onPress={handleCompleteHandover}
+              disabled={isCompleting || handoverCode.length !== 4}
+              style={({ pressed }) => [
+                styles.modalButton,
+                { backgroundColor: colors.success },
+                (isCompleting || handoverCode.length !== 4) &&
+                  styles.disabledButton,
+                pressed && styles.pressedButton,
+              ]}
+            >
+              {isCompleting ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <>
+                  <ShieldCheck size={18} color="#FFFFFF" />
+                  <Text style={styles.modalButtonText}> Verify Code</Text>
+                </>
+              )}
+            </Pressable>
+            <Pressable
+              onPress={() => setIsHandoverModalVisible(false)}
+              style={({ pressed }) => [
+                styles.modalButton,
+                { backgroundColor: colors.border, marginTop: 10 },
+                pressed && styles.pressedButton,
+              ]}
+            >
+              <Text style={[styles.modalButtonText, { color: colors.text }]}>
+                Cancel
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* View Post Modal */}
+      <Modal
+        transparent={true}
+        visible={isViewModalVisible}
+        animationType="slide"
+        onRequestClose={() => setIsViewModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.viewModalContainer,
+              { backgroundColor: colors.surface },
+            ]}
+          >
+            <View
+              style={[
+                styles.viewModalHeader,
+                { borderBottomColor: colors.border },
+              ]}
+            >
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Post Details
+              </Text>
+              <TouchableOpacity
+                onPress={() => setIsViewModalVisible(false)}
+                style={styles.closeButton}
+              >
+                <X size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.viewModalContent}>
+              {selectedViewItem && (
+                <>
+                  {/* Image */}
+                  <View style={styles.viewImageContainer}>
+                    {selectedViewItem.image_url ? (
+                      <Image
+                        source={{ uri: selectedViewItem.image_url }}
+                        style={styles.viewImage}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <View
+                        style={[
+                          styles.viewImagePlaceholder,
+                          { backgroundColor: colors.background },
+                        ]}
+                      >
+                        <Camera size={48} color={colors.textSecondary} />
+                        <Text
+                          style={[
+                            styles.noImageText,
+                            { color: colors.textSecondary },
+                          ]}
+                        >
+                          No Image
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Title */}
+                  <Text style={[styles.viewTitle, { color: colors.text }]}>
+                    {selectedViewItem.title}
+                  </Text>
+
+                  {/* Badges */}
+                  <View style={styles.viewBadgeRow}>
+                    <StatusBadge
+                      status={selectedViewItem.moderation_status}
+                      styles={styles}
+                    />
+                    <TypeBadge type={selectedViewItem.status} styles={styles} />
+                  </View>
+
+                  {/* Info Grid */}
+                  <View style={styles.viewInfoGrid}>
+                    <View
+                      style={[
+                        styles.viewInfoItem,
+                        { backgroundColor: colors.background },
+                      ]}
+                    >
+                      <MapPin size={18} color={colors.textSecondary} />
+                      <View style={styles.viewInfoTextContainer}>
+                        <Text
+                          style={[
+                            styles.viewInfoLabel,
+                            { color: colors.textSecondary },
+                          ]}
+                        >
+                          Location
+                        </Text>
+                        <Text
+                          style={[styles.viewInfoValue, { color: colors.text }]}
+                        >
+                          {selectedViewItem.location || "N/A"}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View
+                      style={[
+                        styles.viewInfoItem,
+                        { backgroundColor: colors.background },
+                      ]}
+                    >
+                      <Calendar size={18} color={colors.textSecondary} />
+                      <View style={styles.viewInfoTextContainer}>
+                        <Text
+                          style={[
+                            styles.viewInfoLabel,
+                            { color: colors.textSecondary },
+                          ]}
+                        >
+                          Date Posted
+                        </Text>
+                        <Text
+                          style={[styles.viewInfoValue, { color: colors.text }]}
+                        >
+                          {new Date(
+                            selectedViewItem.created_at
+                          ).toLocaleDateString()}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Description */}
+                  <View
+                    style={[
+                      styles.viewDescriptionContainer,
+                      { backgroundColor: colors.background },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.viewDescriptionLabel,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      DESCRIPTION
+                    </Text>
+                    <Text
+                      style={[
+                        styles.viewDescriptionText,
+                        { color: colors.text },
+                      ]}
+                    >
+                      {selectedViewItem.description ||
+                        "No description provided."}
+                    </Text>
+                  </View>
+
+                  {/* AI Tags */}
+                  {selectedViewItem.ai_tags &&
+                    selectedViewItem.ai_tags.length > 0 && (
+                      <View
+                        style={[
+                          styles.viewDescriptionContainer,
+                          { backgroundColor: colors.background },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.viewDescriptionLabel,
+                            { color: colors.textSecondary },
+                          ]}
+                        >
+                          AI GENERATED TAGS
+                        </Text>
+                        <View style={styles.viewTagsContainer}>
+                          {selectedViewItem.ai_tags.map((tag, index) => (
+                            <View
+                              key={index}
+                              style={[
+                                styles.viewTag,
+                                { backgroundColor: colors.primary + "20" },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.viewTagText,
+                                  { color: colors.primary },
+                                ]}
+                              >
+                                {tag}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    )}
+                </>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -523,6 +856,8 @@ const SwipeablePostCard = ({
   onDelete,
   onEdit,
   onMarkRecovered,
+  onOpenHandover,
+  onView,
   openSwipeableRef,
   colors,
   fontSizes,
@@ -560,6 +895,9 @@ const SwipeablePostCard = ({
       <PostCard
         item={item}
         onMarkRecovered={() => onMarkRecovered(item)}
+        onOpenHandover={() => onOpenHandover(item)}
+        onView={() => onView(item)}
+        onDelete={() => onDelete(item)}
         colors={colors}
         fontSizes={fontSizes}
         styles={styles}
@@ -603,7 +941,16 @@ const TabButton = ({
   </TouchableOpacity>
 );
 
-const PostCard = ({ item, onMarkRecovered, colors, fontSizes, styles }) => (
+const PostCard = ({
+  item,
+  onMarkRecovered,
+  onOpenHandover,
+  onView,
+  onDelete,
+  colors,
+  fontSizes,
+  styles,
+}) => (
   <View
     style={[
       styles.card,
@@ -622,8 +969,37 @@ const PostCard = ({ item, onMarkRecovered, colors, fontSizes, styles }) => (
         </View>
         <Text style={styles.cardTimestamp}>{getTimeAgo(item.created_at)}</Text>
       </View>
+      {/* Action buttons in header */}
+      <View style={styles.cardActions}>
+        <TouchableOpacity
+          onPress={onView}
+          style={[
+            styles.iconButton,
+            { backgroundColor: colors.primary + "10" },
+          ]}
+        >
+          <Eye size={18} color={colors.primary} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={onDelete}
+          style={[styles.iconButton, { backgroundColor: "#EF444410" }]}
+        >
+          <Trash2 size={18} color="#EF4444" />
+        </TouchableOpacity>
+      </View>
     </View>
-    {item.moderation_status === "approved" && item.status === "Lost" && (
+    {item.moderation_status === "pending_return" ? (
+      <TouchableOpacity
+        style={[
+          styles.claimButton,
+          { backgroundColor: colors.success || "#10B981" },
+        ]}
+        onPress={onOpenHandover}
+      >
+        <ShieldCheck size={16} color="#FFFFFF" />
+        <Text style={styles.claimButtonText}>Complete Handover</Text>
+      </TouchableOpacity>
+    ) : item.moderation_status === "approved" && item.status === "Lost" ? (
       <TouchableOpacity
         style={[
           styles.recoverButton,
@@ -637,13 +1013,12 @@ const PostCard = ({ item, onMarkRecovered, colors, fontSizes, styles }) => (
         <PackageCheck size={16} color={colors.primary} />
         <Text style={styles.recoverButtonText}>Mark as Recovered</Text>
       </TouchableOpacity>
-    )}
-    {item.moderation_status === "recovered" && (
+    ) : item.moderation_status === "recovered" ? (
       <View style={[styles.recoveredBanner, { backgroundColor: "#10B98110" }]}>
         <CheckCircle size={16} color="#10B981" />
         <Text style={styles.recoveredBannerText}>Recovered!</Text>
       </View>
-    )}
+    ) : null}
   </View>
 );
 
@@ -1239,6 +1614,197 @@ const createStyles = (colors, fontSizes) => {
       color: colors.textSecondary,
       marginTop: 2,
       textAlign: "center",
+    },
+    // Modal Styles
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.6)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    modalContainer: {
+      width: "90%",
+      borderRadius: 12,
+      padding: 20,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: "bold",
+    },
+    modalSubtitle: {
+      fontSize: 14,
+      marginTop: 8,
+      marginBottom: 16,
+    },
+    handoverInput: {
+      fontSize: 24,
+      fontWeight: "bold",
+      textAlign: "center",
+      letterSpacing: 10,
+      borderWidth: 1,
+      borderRadius: 8,
+      paddingVertical: 12,
+      marginBottom: 10,
+    },
+    errorText: {
+      color: "#E53E3E",
+      fontSize: 14,
+      textAlign: "center",
+      marginBottom: 10,
+    },
+    modalButton: {
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      paddingVertical: 12,
+      borderRadius: 8,
+    },
+    modalButtonText: {
+      color: "#FFFFFF",
+      fontSize: 16,
+      fontWeight: "600",
+      marginLeft: 8,
+    },
+    disabledButton: {
+      opacity: 0.5,
+    },
+    pressedButton: {
+      opacity: 0.8,
+    },
+    claimButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      paddingVertical: cardPadding,
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+    },
+    claimButtonText: {
+      color: "#FFFFFF",
+      fontSize: fontSizes.small,
+      fontWeight: "600",
+    },
+    // Card Actions
+    cardActions: {
+      flexDirection: "row",
+      gap: 6,
+      marginLeft: 8,
+    },
+    iconButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 8,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    // View Modal Styles
+    viewModalContainer: {
+      width: "100%",
+      height: "90%",
+      marginTop: "auto",
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      overflow: "hidden",
+    },
+    viewModalHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: 16,
+      borderBottomWidth: 1,
+    },
+    closeButton: {
+      padding: 4,
+    },
+    viewModalContent: {
+      flex: 1,
+      padding: 16,
+    },
+    viewImageContainer: {
+      width: "100%",
+      height: 250,
+      borderRadius: 12,
+      overflow: "hidden",
+      marginBottom: 16,
+    },
+    viewImage: {
+      width: "100%",
+      height: "100%",
+    },
+    viewImagePlaceholder: {
+      width: "100%",
+      height: "100%",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    noImageText: {
+      marginTop: 8,
+      fontSize: fontSizes.small,
+    },
+    viewTitle: {
+      fontSize: fontSizes.xlarge,
+      fontWeight: "bold",
+      marginBottom: 12,
+    },
+    viewBadgeRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginBottom: 16,
+    },
+    viewInfoGrid: {
+      gap: 12,
+      marginBottom: 16,
+    },
+    viewInfoItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: 12,
+      borderRadius: 8,
+      gap: 12,
+    },
+    viewInfoTextContainer: {
+      flex: 1,
+    },
+    viewInfoLabel: {
+      fontSize: fontSizes.tiny,
+      textTransform: "uppercase",
+      marginBottom: 2,
+    },
+    viewInfoValue: {
+      fontSize: fontSizes.base,
+      fontWeight: "600",
+    },
+    viewDescriptionContainer: {
+      padding: 16,
+      borderRadius: 12,
+      marginBottom: 16,
+    },
+    viewDescriptionLabel: {
+      fontSize: fontSizes.tiny,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+      marginBottom: 8,
+    },
+    viewDescriptionText: {
+      fontSize: fontSizes.base,
+      lineHeight: 22,
+    },
+    viewTagsContainer: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginTop: 8,
+    },
+    viewTag: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
+    },
+    viewTagText: {
+      fontSize: fontSizes.small,
+      fontWeight: "600",
     },
   });
 };

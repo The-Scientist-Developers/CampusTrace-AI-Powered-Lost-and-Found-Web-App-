@@ -129,40 +129,50 @@ const MobileHeader = ({ notificationCount = 0, messageCount = 0, profile }) => {
       {/* This component will load the 'Poppins' font */}
       <FontLoader />
       <header
-        className="sticky top-0 left-0 right-0 border-b z-40 md:hidden shadow-sm"
+        className="sticky top-0 left-0 right-0 border-b z-50 md:hidden"
         style={{
-          backgroundColor: isDark ? "#2a2a2a" : "#ffffff",
-          borderBottomColor: isDark ? "#3a3a3a" : "#dbdbdb",
-          borderBottomWidth: "0.5px",
+          backgroundColor: isDark ? "#1a1a1a" : "#ffffff",
+          borderBottomColor: isDark ? "#2a2a2a" : "#e5e7eb",
+          borderBottomWidth: "1px",
+          boxShadow: isDark
+            ? "0 1px 3px 0 rgba(0, 0, 0, 0.3)"
+            : "0 1px 3px 0 rgba(0, 0, 0, 0.05)",
         }}
       >
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center justify-between px-5 py-3.5">
           {/* Dynamic Header Content */}
           {pageConfig.type === "logo" ? (
             <h1
-              className="font-['Poppins'] tracking-tight leading-9"
+              className="font-['Poppins'] tracking-tight"
               style={{
-                fontSize: "24px",
-                fontWeight: "600",
+                fontSize: "26px",
+                fontWeight: "700",
                 color: isDark ? "#ffffff" : "#000000",
-                letterSpacing: "-0.5px",
-                lineHeight: "36px",
+                letterSpacing: "-0.6px",
+                lineHeight: "32px",
               }}
             >
               CampusTrace
             </h1>
           ) : (
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <h2
-                className="text-xl font-semibold leading-tight"
-                style={{ color: isDark ? "#ffffff" : "#000000" }}
+                className="text-xl font-bold leading-tight truncate"
+                style={{
+                  color: isDark ? "#ffffff" : "#000000",
+                  fontSize: "20px",
+                  fontWeight: "700",
+                }}
               >
                 {pageConfig.title}
               </h2>
               {pageConfig.subtitle && (
                 <p
-                  className="text-xs mt-0.5"
-                  style={{ color: isDark ? "#9CA3AF" : "#6B7280" }}
+                  className="text-xs mt-1 truncate"
+                  style={{
+                    color: isDark ? "#9CA3AF" : "#6B7280",
+                    fontSize: "13px",
+                  }}
                 >
                   {pageConfig.subtitle}
                 </p>
@@ -172,42 +182,78 @@ const MobileHeader = ({ notificationCount = 0, messageCount = 0, profile }) => {
 
           {/* Action Icons - Only show on dashboard home */}
           {pageConfig.showActions && (
-            <div className="flex items-center gap-5">
+            <div className="flex items-center gap-4">
               {/* Notifications - Heart Icon */}
               <button
                 onClick={() => navigate("/dashboard/notifications")}
-                className="relative p-1 transition-opacity hover:opacity-70"
+                className="relative p-2 transition-all duration-200 active:scale-95 hover:opacity-80"
                 aria-label="Notifications"
+                style={{
+                  minWidth: "44px",
+                  minHeight: "44px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
               >
                 <Heart
-                  size={26}
+                  size={24}
                   style={{ color: primaryColor }}
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                 />
                 {notificationCount > 0 && (
                   <span
-                    className="absolute top-0.5 right-0.5 text-white text-xs font-bold rounded-full w-2 h-2 flex items-center justify-center"
-                    style={{ backgroundColor: "#FF3250" }}
-                  />
+                    className="absolute text-white text-xs font-bold rounded-full flex items-center justify-center"
+                    style={{
+                      backgroundColor: "#FF3250",
+                      top: "6px",
+                      right: "6px",
+                      minWidth: "18px",
+                      height: "18px",
+                      padding: "0 4px",
+                      fontSize: "10px",
+                      boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+                    }}
+                  >
+                    {notificationCount > 9 ? "9+" : notificationCount}
+                  </span>
                 )}
               </button>
 
               {/* Messages - Send Icon */}
               <button
                 onClick={() => navigate("/dashboard/messages")}
-                className="relative p-1 transition-opacity hover:opacity-70"
+                className="relative p-2 transition-all duration-200 active:scale-95 hover:opacity-80"
                 aria-label="Messages"
+                style={{
+                  minWidth: "44px",
+                  minHeight: "44px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
               >
                 <Send
-                  size={26}
+                  size={24}
                   style={{ color: primaryColor }}
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                 />
                 {messageCount > 0 && (
                   <span
-                    className="absolute top-0.5 right-0.5 text-white text-xs font-bold rounded-full w-2 h-2 flex items-center justify-center"
-                    style={{ backgroundColor: "#FF3250" }}
-                  />
+                    className="absolute text-white text-xs font-bold rounded-full flex items-center justify-center"
+                    style={{
+                      backgroundColor: "#FF3250",
+                      top: "6px",
+                      right: "6px",
+                      minWidth: "18px",
+                      height: "18px",
+                      padding: "0 4px",
+                      fontSize: "10px",
+                      boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+                    }}
+                  >
+                    {messageCount > 9 ? "9+" : messageCount}
+                  </span>
                 )}
               </button>
             </div>

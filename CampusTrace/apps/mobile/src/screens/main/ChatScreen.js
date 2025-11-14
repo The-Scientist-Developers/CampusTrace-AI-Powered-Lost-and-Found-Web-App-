@@ -2,50 +2,188 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
+  FlatList,
   TextInput,
-  ScrollView,
   TouchableOpacity,
-  Image,
+  StyleSheet,
+  ActivityIndicator,
+  Pressable,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
-  StyleSheet,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft, Send, MessageCircle } from "lucide-react-native";
-import { getSupabaseClient } from "@campustrace/core";
-import SimpleLoadingScreen from "../../components/SimpleLoadingScreen";
 import { useTheme } from "../../contexts/ThemeContext";
+import { getSupabaseClient } from "@campustrace/core";
+import { apiClient } from "../../utils/apiClient";
+import { useRoute } from "@react-navigation/native";
+import {
+  KeyRound,
+  Loader2,
+  AlertCircle,
+  Send,
+  ArrowLeft,
+} from "lucide-react-native";
 
-const ChatScreen = ({ route, navigation }) => {
+// --- Handover Controls Component ---
+const HandoverControls = ({ user, conversationDetails, onCodeGenerated }) => {
   const { colors } = useTheme();
-  const { conversationId } = route.params;
-  const [conversation, setConversation] = useState(null);
+  const [handoverCode, setHandoverCode] = useState(null);
+  const [codeLoading, setCodeLoading] = useState(false);
+  const [handoverError, setHandoverError] = useState(null);
+
+  const isClaimant = user?.id === conversationDetails.claimant_id;
+  const isPendingReturn =
+    conversationDetails.item?.moderation_status === "pending_return";
+
+  if (!isClaimant || !isPendingReturn) {
+    return null; // Don't show controls if not claimant or not pending
+  }
+
+  const handleStartHandover = async () => {
+    if (!conversationDetails?.item_id) return;
+    setCodeLoading(true);
+    setHandoverError(null);
+    setHandoverCode(null);
+    try {
+      const { data } = await apiClient.post(
+        `/handover/items/${conversationDetails.item_id}/start-handover`
+      );
+      setHandoverCode(data.code);
+      onCodeGenerated(data.code); // Pass code up
+    } catch (error) {
+      console.error("Error starting handover:", error);
+      setHandoverError(
+        error.response?.data?.detail || "Could not start handover."
+      );
+    } finally {
+      setCodeLoading(false);
+    }
+  };
+
+  if (handoverCode) {
+    return (
+      <View
+        style={[
+          styles.handoverContainer,
+          { backgroundColor: colors.primary, borderColor: colors.primary },
+        ]}
+      >
+        <Text style={styles.handoverTitle}>Your Handover Code:</Text>
+        <Text style={styles.handoverCode}>{handoverCode}</Text>
+        <Text style={styles.handoverSubtitle}>
+          Show this 4-digit code to the finder to complete the handover.
+        </Text>
+      </View>
+    );
+  }
+
+  if (handoverError) {
+    return (
+      <View
+        style={[
+          styles.handoverContainer,
+          { backgroundColor: colors.error, borderColor: colors.error },
+        ]}
+      >
+        <AlertCircle size={18} color="#FFFFFF" />
+        <Text style={styles.handoverError}>{handoverError}</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.handoverContainer, { borderColor: colors.border }]}>
+      <TouchableOpacity
+        onPress={handleStartHandover}
+        disabled={codeLoading}
+        style={[
+          styles.handoverButton,
+          { backgroundColor: colors.primary },
+          codeLoading && styles.disabledButton,
+        ]}
+      >
+        {codeLoading ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <KeyRound size={18} color="#FFFFFF" />
+        )}
+        <Text style={styles.handoverButtonText}>
+          Start Secure Handover (Get Code)
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+// --- Main Chat Screen Component ---
+const ChatScreen = ({ navigation }) => {
+  const { colors } = useTheme();
+  const route = useRoute();
+  const { conversationId, itemTitle, itemStatus } = route.params || {};
+
+  const [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [sending, setSending] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
-  const scrollViewRef = useRef(null);
-  const supabase = getSupabaseClient();
+  const [conversationDetails, setConversationDetails] = useState(null);
+  const [isSending, setIsSending] = useState(false);
 
+  // Get user
   useEffect(() => {
-    getCurrentUser();
+    const supabase = getSupabaseClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
   }, []);
 
+  // Fetch conversation details and initial messages
   useEffect(() => {
-    if (user?.id && conversationId) {
-      fetchConversation();
-      fetchMessages();
+    if (!conversationId) {
+      setLoading(false);
+      return;
     }
-  }, [user?.id, conversationId]);
 
-  // Real-time message subscription
+    const fetchConversation = async () => {
+      try {
+        setLoading(true);
+        const supabase = getSupabaseClient();
+
+        // Fetch conversation details (to know who is finder/claimant)
+        const { data: convoData, error: convoError } = await supabase
+          .from("conversations")
+          .select("*, item:items(id, title, moderation_status)")
+          .eq("id", conversationId)
+          .single();
+
+        if (convoError) throw convoError;
+        setConversationDetails(convoData);
+
+        // Fetch messages
+        const { data: msgData, error: msgError } = await supabase
+          .from("messages")
+          .select("*, sender:profiles(id, full_name, avatar_url)")
+          .eq("conversation_id", conversationId)
+          .order("created_at", { ascending: false }); // Fetch in reverse for FlatList
+
+        if (msgError) throw msgError;
+        setMessages(msgData || []);
+      } catch (error) {
+        console.error("Error fetching conversation:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchConversation();
+  }, [conversationId]);
+
+  // Set up real-time subscription for new messages
   useEffect(() => {
     if (!conversationId) return;
 
-    const channel = supabase
-      .channel(`messages_${conversationId}`)
+    const supabase = getSupabaseClient();
+    const subscription = supabase
+      .channel(`chat_${conversationId}`)
       .on(
         "postgres_changes",
         {
@@ -54,351 +192,159 @@ const ChatScreen = ({ route, navigation }) => {
           table: "messages",
           filter: `conversation_id=eq.${conversationId}`,
         },
-        (payload) => {
-          if (payload.new) {
-            setMessages((currentMessages) => [...currentMessages, payload.new]);
-            // Auto-scroll to bottom on new message
-            setTimeout(() => {
-              scrollViewRef.current?.scrollToEnd({ animated: true });
-            }, 100);
+        async (payload) => {
+          // Manually fetch the new message with sender details
+          const { data: newMsg, error } = await supabase
+            .from("messages")
+            .select("*, sender:profiles(id, full_name, avatar_url)")
+            .eq("id", payload.new.id)
+            .single();
+
+          if (newMsg && !error) {
+            setMessages((prevMessages) => [newMsg, ...prevMessages]);
           }
         }
       )
-      .subscribe((status, err) => {
-        if (err) {
-          console.error(
-            `Subscription error for messages_${conversationId}:`,
-            err
-          );
-        } else {
-          console.log(
-            `Subscribed to messages_${conversationId} status: ${status}`
-          );
-        }
-      });
+      .subscribe();
 
     return () => {
-      console.log(`Unsubscribing from messages_${conversationId}`);
-      supabase.removeChannel(channel);
+      supabase.removeChannel(subscription);
     };
   }, [conversationId]);
 
-  const getCurrentUser = async () => {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setUser(user);
-    } catch (error) {
-      console.error("Error getting user:", error);
-    }
-  };
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !user || !conversationId || isSending) return;
 
-  const fetchConversation = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("conversations")
-        .select(
-          `
-            id,
-            item:items(id, title, image_url, status),
-            finder:profiles!conversations_finder_id_fkey(id, full_name, avatar_url),
-            claimant:profiles!conversations_claimant_id_fkey(id, full_name, avatar_url)
-          `
-        )
-        .eq("id", conversationId)
-        .single();
-
-      if (error) throw error;
-      setConversation(data);
-    } catch (error) {
-      console.error("Error fetching conversation:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchMessages = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("messages")
-        .select("*")
-        .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-      setMessages(data || []);
-
-      // Scroll to bottom after loading messages
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: false });
-      }, 100);
-    } catch (error) {
-      console.error("Error fetching messages:", error);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (newMessage.trim() === "" || sending) return;
-
-    setSending(true);
-    const messageToSend = newMessage;
-    setNewMessage(""); // Clear input optimistically
+    setIsSending(true);
+    const supabase = getSupabaseClient();
+    const content = newMessage.trim();
+    setNewMessage("");
 
     try {
-      const { error } = await supabase.from("messages").insert({
+      // Insert new message
+      await supabase.from("messages").insert({
         conversation_id: conversationId,
         sender_id: user.id,
-        content: messageToSend,
+        content: content,
       });
-
-      if (error) throw error;
     } catch (error) {
       console.error("Error sending message:", error);
-      setNewMessage(messageToSend); // Restore message on failure
+      setNewMessage(content); // Put text back on error
     } finally {
-      setSending(false);
+      setIsSending(false);
     }
   };
 
-  const formatTime = (timestamp) => {
-    if (!timestamp) return "";
-    try {
-      const date = new Date(timestamp);
-      return date.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      });
-    } catch (e) {
-      console.error("Error formatting time:", e);
-      return "--:--";
-    }
+  const renderMessageItem = ({ item }) => {
+    const isMyMessage = item.sender_id === user?.id;
+    return (
+      <View
+        style={[
+          styles.messageRow,
+          isMyMessage ? styles.myMessageRow : styles.otherMessageRow,
+        ]}
+      >
+        <View
+          style={[
+            styles.messageBubble,
+            isMyMessage
+              ? { backgroundColor: colors.primary }
+              : { backgroundColor: colors.card },
+          ]}
+        >
+          <Text
+            style={
+              isMyMessage
+                ? styles.myMessageText
+                : [styles.otherMessageText, { color: colors.text }]
+            }
+          >
+            {item.content}
+          </Text>
+        </View>
+      </View>
+    );
   };
 
   if (loading) {
-    return <SimpleLoadingScreen />;
-  }
-
-  if (!conversation) {
     return (
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}
       >
-        <View style={styles.errorContainer}>
-          <Text style={[styles.errorText, { color: colors.error }]}>
-            Conversation not found
-          </Text>
-        </View>
+        <ActivityIndicator
+          style={{ flex: 1 }}
+          size="large"
+          color={colors.primary}
+        />
       </SafeAreaView>
     );
   }
 
-  const otherUser =
-    conversation.finder?.id === user.id
-      ? conversation.claimant
-      : conversation.finder;
-
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
-      edges={["top"]}
     >
       <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
         {/* Header */}
-        <View
-          style={[
-            styles.header,
-            {
-              backgroundColor: colors.surface,
-              borderBottomColor: colors.border,
-            },
-          ]}
-        >
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <ArrowLeft color={colors.text} size={24} />
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <ArrowLeft size={24} color={colors.primary} />
           </TouchableOpacity>
-
-          <Image
-            source={{
-              uri:
-                otherUser?.avatar_url ||
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                  otherUser?.full_name || "?"
-                )}&background=6366f1&color=fff`,
-            }}
-            style={styles.avatar}
-          />
-
-          <View style={styles.headerInfo}>
-            <Text
-              style={[styles.headerName, { color: colors.text }]}
-              numberOfLines={1}
-            >
-              {otherUser?.full_name || "Unknown User"}
-            </Text>
-            <Text
-              style={[styles.headerSubtext, { color: colors.textSecondary }]}
-              numberOfLines={1}
-            >
-              Regarding: {conversation.item?.title || "Unknown Item"}
-            </Text>
-          </View>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            {itemTitle || "Chat"}
+          </Text>
+          <View style={{ width: 24 }} />
         </View>
 
-        {/* Item Info Bar */}
-        {conversation.item?.status && (
-          <View
-            style={[
-              styles.itemInfoBar,
-              {
-                backgroundColor: colors.surface,
-                borderBottomColor: colors.border,
-              },
-            ]}
-          >
-            <Text style={styles.itemEmoji}>
-              {conversation.item.status === "lost" ? "🔍" : "📦"}
-            </Text>
-            <Text
-              style={[styles.itemInfoText, { color: colors.textSecondary }]}
-              numberOfLines={1}
-            >
-              {conversation.item.status === "lost" ? "Lost" : "Found"} Item:{" "}
-              {conversation.item.title}
-            </Text>
-          </View>
+        {/* Chat Messages */}
+        <FlatList
+          data={messages}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderMessageItem}
+          inverted
+          style={styles.messageList}
+        />
+
+        {/* Handover Controls */}
+        {conversationDetails && (
+          <HandoverControls
+            user={user}
+            conversationDetails={conversationDetails}
+            onCodeGenerated={(code) => {
+              // Optionally send code as a system message
+            }}
+          />
         )}
 
-        {/* Messages */}
-        <ScrollView
-          ref={scrollViewRef}
-          style={[
-            styles.messagesContainer,
-            { backgroundColor: colors.background },
-          ]}
-          contentContainerStyle={styles.messagesContent}
-          onContentSizeChange={() =>
-            scrollViewRef.current?.scrollToEnd({ animated: true })
-          }
-        >
-          {messages.length === 0 ? (
-            <View style={styles.emptyState}>
-              <MessageCircle size={64} color={colors.border} />
-              <Text style={[styles.emptyStateText, { color: colors.text }]}>
-                No messages yet
-              </Text>
-              <Text
-                style={[
-                  styles.emptyStateSubtext,
-                  { color: colors.textSecondary },
-                ]}
-              >
-                Start the conversation!
-              </Text>
-            </View>
-          ) : (
-            messages.map((msg) => (
-              <View
-                key={msg.id}
-                style={[
-                  styles.messageWrapper,
-                  msg.sender_id === user.id
-                    ? styles.messageWrapperSent
-                    : styles.messageWrapperReceived,
-                ]}
-              >
-                <View
-                  style={[
-                    styles.messageBubble,
-                    msg.sender_id === user.id
-                      ? {
-                          ...styles.messageBubbleSent,
-                          backgroundColor: colors.primary,
-                        }
-                      : {
-                          ...styles.messageBubbleReceived,
-                          backgroundColor: colors.card,
-                          borderColor: colors.border,
-                        },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.messageText,
-                      msg.sender_id === user.id
-                        ? styles.messageTextSent
-                        : { ...styles.messageTextReceived, color: colors.text },
-                    ]}
-                  >
-                    {msg.content}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.messageTime,
-                      msg.sender_id === user.id
-                        ? styles.messageTimeSent
-                        : {
-                            ...styles.messageTimeReceived,
-                            color: colors.textSecondary,
-                          },
-                    ]}
-                  >
-                    {formatTime(msg.created_at)}
-                  </Text>
-                </View>
-              </View>
-            ))
-          )}
-        </ScrollView>
-
-        {/* Input Footer */}
-        <View
-          style={[
-            styles.footer,
-            { backgroundColor: colors.surface, borderTopColor: colors.border },
-          ]}
-        >
+        {/* Message Input */}
+        <View style={[styles.inputContainer, { borderColor: colors.border }]}>
           <TextInput
             style={[
-              styles.input,
-              {
-                backgroundColor: colors.background,
-                borderColor: colors.border,
-                color: colors.text,
-              },
+              styles.textInput,
+              { color: colors.text, borderColor: colors.border },
             ]}
             value={newMessage}
             onChangeText={setNewMessage}
             placeholder="Type a message..."
-            placeholderTextColor={colors.textTertiary}
-            multiline
-            maxLength={1000}
-            editable={!sending}
+            placeholderTextColor={colors.textSecondary}
           />
           <TouchableOpacity
-            onPress={handleSubmit}
-            disabled={!newMessage.trim() || sending}
+            onPress={handleSendMessage}
+            disabled={isSending || !newMessage.trim()}
             style={[
               styles.sendButton,
               { backgroundColor: colors.primary },
-              (!newMessage.trim() || sending) && {
-                ...styles.sendButtonDisabled,
-                opacity: 0.5,
-              },
+              (isSending || !newMessage.trim()) && styles.disabledButton,
             ]}
           >
-            {sending ? (
-              <ActivityIndicator size="small" color="white" />
+            {isSending ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Send color="white" size={20} />
+              <Send size={20} color="#FFFFFF" />
             )}
           </TouchableOpacity>
         </View>
@@ -407,193 +353,114 @@ const ChatScreen = ({ route, navigation }) => {
   );
 };
 
+// --- Styles ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: "#6b7280",
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  errorText: {
-    fontSize: 16,
-    color: "#ef4444",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#ffffff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-  },
-  backButton: {
-    padding: 4,
-    marginRight: 12,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
-  },
-  headerInfo: {
-    flex: 1,
-  },
-  headerName: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#111827",
-  },
-  headerSubtext: {
-    fontSize: 12,
-    color: "#6b7280",
-    marginTop: 2,
-  },
-  itemInfoBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: "#f3f4f6",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-  },
-  itemEmoji: {
-    fontSize: 18,
-    marginRight: 8,
-  },
-  itemInfoText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#2563eb",
-  },
-  messagesContainer: {
-    flex: 1,
-    backgroundColor: "#f9fafb",
-  },
-  messagesContent: {
+    justifyContent: "space-between",
     padding: 16,
-    flexGrow: 1,
+    borderBottomWidth: 1,
   },
-  emptyState: {
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  messageList: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 48,
+    paddingHorizontal: 10,
   },
-  emptyStateText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#6b7280",
-    marginTop: 16,
+  messageRow: {
+    marginVertical: 4,
+    flexDirection: "row",
   },
-  emptyStateSubtext: {
-    fontSize: 14,
-    color: "#9ca3af",
-    marginTop: 4,
+  myMessageRow: {
+    justifyContent: "flex-end",
   },
-  messageWrapper: {
-    marginBottom: 12,
-  },
-  messageWrapperSent: {
-    alignItems: "flex-end",
-  },
-  messageWrapperReceived: {
-    alignItems: "flex-start",
+  otherMessageRow: {
+    justifyContent: "flex-start",
   },
   messageBubble: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 20,
     maxWidth: "80%",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
   },
-  messageBubbleSent: {
-    backgroundColor: "#2563eb",
-    borderBottomRightRadius: 4,
+  myMessageText: {
+    color: "#FFFFFF",
+    fontSize: 15,
   },
-  messageBubbleReceived: {
-    backgroundColor: "#ffffff",
-    borderBottomLeftRadius: 4,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
+  otherMessageText: {
+    fontSize: 15,
   },
-  messageText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  messageTextSent: {
-    color: "#ffffff",
-  },
-  messageTextReceived: {
-    color: "#111827",
-  },
-  messageTime: {
-    fontSize: 10,
-    marginTop: 4,
-    textAlign: "right",
-  },
-  messageTimeSent: {
-    color: "rgba(255, 255, 255, 0.7)",
-  },
-  messageTimeReceived: {
-    color: "#9ca3af",
-  },
-  footer: {
+  inputContainer: {
     flexDirection: "row",
-    alignItems: "flex-end",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#ffffff",
+    alignItems: "center",
+    padding: 10,
     borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
   },
-  input: {
+  textInput: {
     flex: 1,
-    maxHeight: 100,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    marginRight: 12,
-    backgroundColor: "#f3f4f6",
-    borderRadius: 20,
-    fontSize: 14,
-    color: "#111827",
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    marginRight: 10,
   },
   sendButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#2563eb",
     justifyContent: "center",
     alignItems: "center",
   },
-  sendButtonDisabled: {
+  disabledButton: {
     opacity: 0.5,
+  },
+  // Handover Styles
+  handoverContainer: {
+    padding: 16,
+    borderTopWidth: 1,
+  },
+  handoverButton: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  handoverButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+    marginLeft: 8,
+  },
+  handoverTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+  },
+  handoverCode: {
+    fontSize: 40,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    textAlign: "center",
+    marginVertical: 10,
+    letterSpacing: 5,
+  },
+  handoverSubtitle: {
+    fontSize: 14,
+    color: "#FFFFFF",
+    textAlign: "center",
+  },
+  handoverError: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    marginLeft: 8,
   },
 });
 

@@ -1,5 +1,5 @@
 import { StatusBar } from "expo-status-bar";
-import { View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator, LogBox } from "react-native";
 import { useEffect, useState } from "react";
 import { NavigationContainer, useNavigation } from "@react-navigation/native";
 import Constants from "expo-constants";
@@ -11,6 +11,13 @@ import * as Notifications from "expo-notifications";
 
 import AuthNavigator from "./src/navigation/AuthNavigator";
 import MainNavigator from "./src/navigation/MainNavigator";
+
+// Suppress known warnings for Expo Go limitations
+LogBox.ignoreLogs([
+  "expo-notifications: Android Push notifications",
+  "setLayoutAnimationEnabledExperimental",
+  "expo-notifications functionality is not fully supported in Expo Go",
+]);
 
 function AppContent() {
   const [isLoading, setIsLoading] = useState(true);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { supabase } from "../../../api/apiClient";
+import { supabase, apiClient } from "../../../api/apiClient";
 import { toast } from "react-hot-toast";
 import { API_BASE_URL } from "../../../api/apiClient";
 import {
@@ -23,11 +23,12 @@ import {
   Camera,
   Eye,
   Tag,
+  ShieldCheck,
 } from "lucide-react";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
-const apiClient = {
+const localApiClient = {
   async getAccessToken() {
     const { data } = await supabase.auth.getSession();
     return data?.session?.access_token || null;
@@ -324,22 +325,30 @@ const PostCard = ({ post, onDelete, onMarkRecovered, hasClaims, onClick }) => {
     (post.status === "Lost" && post.moderation_status === "approved");
 
   return (
-    <div
-      onClick={() => onClick(post)}
-      className="group relative bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer"
-    >
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(post.id);
-        }}
-        className="absolute top-3 right-3 z-10 p-2 bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur-sm text-neutral-600 dark:text-gray-400 rounded-lg
-                  opacity-0 group-hover:opacity-100 transition-all duration-200
-                  hover:bg-red-500 hover:text-white hover:scale-110"
-        title="Delete Post"
-      >
-        <Trash2 className="w-4 h-4" />
-      </button>
+    <div className="group relative bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+      {/* Action buttons - always visible */}
+      <div className="absolute top-3 right-3 z-10 flex gap-2">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick(post);
+          }}
+          className="p-2 bg-primary-100 dark:bg-primary-500/20 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-500/30 transition-all duration-200 hover:scale-110"
+          title="View Details"
+        >
+          <Eye className="w-4 h-4" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(post.id);
+          }}
+          className="p-2 bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-500/30 transition-all duration-200 hover:scale-110"
+          title="Delete Post"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
 
       {hasClaims && (
         <div className="absolute top-3 left-3 z-10 px-2.5 py-1 bg-primary-600 text-white rounded-full text-xs font-semibold flex items-center gap-1.5 animate-pulse">
@@ -410,18 +419,68 @@ const PostCard = ({ post, onDelete, onMarkRecovered, hasClaims, onClick }) => {
 
           <StatusBadge status={post.moderation_status} />
 
-          {canRecover && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation(); // Prevent modal from opening
-                onMarkRecovered(post.id);
-              }}
-              className="w-full py-2.5 bg-blue-600 text-white font-semibold rounded-lg text-sm hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 group"
+          {/* --- Handover / Recover --- */}
+          {post.moderation_status === "pending_return" ? (
+            <div
+              className="mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+              onClick={(e) => e.stopPropagation()}
             >
-              <Package className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              Mark as Recovered
-            </button>
+              <h4 className="font-semibold text-gray-800 dark:text-gray-100">
+                Complete Handover
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                Enter the 4-digit code from the claimant to mark this item as
+                recovered.
+              </p>
+              <div className="flex gap-2 mt-3">
+                <input
+                  type="tel"
+                  maxLength="4"
+                  placeholder="1234"
+                  value={handoverCode}
+                  onChange={(e) =>
+                    setHandoverCode(e.target.value.replace(/[^0-9]/g, ""))
+                  }
+                  className="block w-24 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCompleteHandover(post.id);
+                  }}
+                  disabled={isCompleting || handoverCode.length !== 4}
+                  className="flex justify-center items-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-gray-900"
+                >
+                  {isCompleting ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <ShieldCheck className="h-5 w-5" />
+                  )}
+                  <span className="ml-2">Verify</span>
+                </button>
+              </div>
+              {completeError && (
+                <p className="text-sm text-red-600 dark:text-red-400 mt-2">
+                  {completeError}
+                </p>
+              )}
+            </div>
+          ) : (
+            canRecover && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent modal from opening
+                  onMarkRecovered(post.id);
+                }}
+                className="mt-4 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600 dark:focus:ring-offset-gray-900"
+              >
+                {post.moderation_status === "recovered"
+                  ? "Recovered"
+                  : "Mark as Recovered"}
+              </button>
+            )
           )}
+          {/* --- End Handover / Recover --- */}
         </div>
       </div>
     </div>
@@ -473,11 +532,14 @@ export default function MyPostsPage({ user }) {
   const [postStatusFilter, setPostStatusFilter] = useState("active");
   const [error, setError] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null); // <-- State for modal
+  const [handoverCode, setHandoverCode] = useState("");
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [completeError, setCompleteError] = useState("");
 
   const fetchClaims = async (foundItems) => {
     if (foundItems.length === 0) return;
     try {
-      const token = await apiClient.getAccessToken();
+      const token = await localApiClient.getAccessToken();
       const claimsPromises = foundItems.map((item) =>
         fetch(`${API_BASE_URL}/api/claims/item/${item.id}`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -568,7 +630,7 @@ export default function MyPostsPage({ user }) {
       `${isApproved ? "Approving" : "Rejecting"} claim...`
     );
     try {
-      await apiClient.respondToClaim(claimId, isApproved);
+      await localApiClient.respondToClaim(claimId, isApproved);
       toast.success(`Claim has been ${isApproved ? "approved" : "rejected"}.`, {
         id: toastId,
       });
@@ -586,11 +648,39 @@ export default function MyPostsPage({ user }) {
 
     const toastId = toast.loading("Marking as recovered...");
     try {
-      await apiClient.markAsRecovered(itemId);
+      await localApiClient.markAsRecovered(itemId);
       toast.success("Item marked as recovered!", { id: toastId });
       fetchPosts(); // Refetch to update UI
     } catch (error) {
       toast.error(error.message, { id: toastId });
+    }
+  };
+
+  const handleCompleteHandover = async (itemId) => {
+    if (handoverCode.length !== 4) {
+      setCompleteError("Code must be 4 digits.");
+      return;
+    }
+    setIsCompleting(true);
+    setCompleteError("");
+    try {
+      const formData = new FormData();
+      formData.append("code", handoverCode);
+      const { data } = await apiClient.post(
+        `/handover/items/${itemId}/complete-handover`,
+        formData
+      );
+      // Refresh items to show "Recovered" status
+      fetchPosts();
+      setHandoverCode(""); // Clear code
+      toast.success("Item marked as recovered!");
+    } catch (error) {
+      console.error("Error completing handover:", error);
+      setCompleteError(
+        error.response?.data?.detail || "Invalid code or error."
+      );
+    } finally {
+      setIsCompleting(false);
     }
   };
 

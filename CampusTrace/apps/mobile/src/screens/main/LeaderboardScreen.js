@@ -7,13 +7,30 @@ import {
   ActivityIndicator,
   Image,
   RefreshControl,
-  FlatList, // Use FlatList for better performance
+  FlatList,
+  Animated,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Trophy, Award, Star, User } from "lucide-react-native";
-import { apiClient } from "@campustrace/core"; // This will work after you fix packages/core/src/index.js
+import {
+  Trophy,
+  Award,
+  Star,
+  User,
+  Crown,
+  Medal,
+  Zap,
+  TrendingUp,
+} from "lucide-react-native";
+import { apiClient } from "@campustrace/core";
 import SimpleLoadingScreen from "../../components/SimpleLoadingScreen";
 import { useTheme } from "../../contexts/ThemeContext";
+import {
+  Spacing,
+  BorderRadius,
+  Typography,
+  getShadow,
+} from "../../constants/designSystem";
 
 const BRAND_COLOR = "#1877F2";
 
@@ -57,7 +74,7 @@ const LeaderboardScreen = () => {
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      {/* Header */}
+      {/* Standardized Header */}
       <View
         style={[
           styles.header,
@@ -68,7 +85,7 @@ const LeaderboardScreen = () => {
           Leaderboard
         </Text>
         <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-          Top users who helped return the most items
+          Top heroes who reunited items with their owners
         </Text>
       </View>
 
@@ -111,16 +128,43 @@ const LeaderboardScreen = () => {
 };
 
 const LeaderboardRow = ({ user, rank, colors }) => {
+  const scaleAnim = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      tension: 50,
+      friction: 7,
+      delay: rank * 50, // Stagger animation
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
   const getRankIcon = () => {
     if (rank === 1)
-      return <Trophy size={24} color="#FFD700" strokeWidth={2.5} />;
+      return (
+        <View style={styles.crownContainer}>
+          <Crown size={28} color="#FFD700" fill="#FFD700" strokeWidth={2} />
+        </View>
+      );
     if (rank === 2)
-      return <Award size={24} color="#C0C0C0" strokeWidth={2.5} />;
-    if (rank === 3) return <Star size={24} color="#CD7F32" strokeWidth={2.5} />;
+      return (
+        <View style={styles.medalContainer}>
+          <Medal size={26} color="#C0C0C0" fill="#C0C0C0" strokeWidth={2} />
+        </View>
+      );
+    if (rank === 3)
+      return (
+        <View style={styles.medalContainer}>
+          <Medal size={26} color="#CD7F32" fill="#CD7F32" strokeWidth={2} />
+        </View>
+      );
     return (
-      <Text style={[styles.rankNumber, { color: colors?.text || "#000000" }]}>
-        {rank}
-      </Text>
+      <View style={styles.rankBadge}>
+        <Text style={[styles.rankNumber, { color: colors?.text || "#000000" }]}>
+          {rank}
+        </Text>
+      </View>
     );
   };
 
@@ -131,14 +175,23 @@ const LeaderboardRow = ({ user, rank, colors }) => {
     return {};
   };
 
+  const getRankBorder = () => {
+    if (rank === 1) return { borderLeftColor: "#FFD700", borderLeftWidth: 4 };
+    if (rank === 2) return { borderLeftColor: "#C0C0C0", borderLeftWidth: 4 };
+    if (rank === 3) return { borderLeftColor: "#CD7F32", borderLeftWidth: 4 };
+    return {};
+  };
+
   return (
-    <View
+    <Animated.View
       style={[
         styles.leaderboardRow,
         getRankStyle(),
+        getRankBorder(),
         {
           backgroundColor: colors?.card || "#FFFFFF",
           borderColor: colors?.border || "#E5E7EB",
+          transform: [{ scale: scaleAnim }],
         },
       ]}
     >
@@ -157,45 +210,79 @@ const LeaderboardRow = ({ user, rank, colors }) => {
             <User size={24} color="#FFFFFF" />
           </View>
         )}
+        {rank <= 3 && (
+          <View
+            style={[
+              styles.topBadge,
+              {
+                backgroundColor:
+                  rank === 1 ? "#FFD700" : rank === 2 ? "#C0C0C0" : "#CD7F32",
+              },
+            ]}
+          >
+            <Text style={styles.topBadgeText}>TOP {rank}</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.userInfo}>
-        <Text style={[styles.userName, { color: colors?.text || "#000000" }]}>
+        <Text
+          style={[styles.userName, { color: colors?.text || "#000000" }]}
+          numberOfLines={1}
+        >
           {user.full_name || "Anonymous"}
         </Text>
-        <Text
-          style={[
-            styles.rankLabel,
-            { color: colors?.textSecondary || "#8E8E93" },
-          ]}
-        >
-          Rank {rank}
-        </Text>
+        <View style={styles.statsRow}>
+          <Zap
+            size={14}
+            color={colors?.warning || "#F59E0B"}
+            fill={colors?.warning || "#F59E0B"}
+          />
+          <Text
+            style={[
+              styles.rankLabel,
+              { color: colors?.textSecondary || "#8E8E93" },
+            ]}
+          >
+            {user.recovered_count || 0} items returned
+          </Text>
+        </View>
       </View>
 
       <View style={styles.scoreContainer}>
-        <Text
-          style={[styles.scoreValue, { color: colors?.primary || BRAND_COLOR }]}
+        <View
+          style={[
+            styles.scoreBadge,
+            { backgroundColor: colors?.primary + "15" || BRAND_COLOR + "15" },
+          ]}
         >
-          {user.recovered_count || 0}
-        </Text>
+          <TrendingUp size={16} color={colors?.primary || BRAND_COLOR} />
+          <Text
+            style={[
+              styles.scoreValue,
+              { color: colors?.primary || BRAND_COLOR },
+            ]}
+          >
+            {user.recovered_count || 0}
+          </Text>
+        </View>
         <Text
           style={[
             styles.scoreLabel,
             { color: colors?.textSecondary || "#8E8E93" },
           ]}
         >
-          Returned
+          Points
         </Text>
       </View>
-    </View>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF", // Changed to white to match other pages
+    backgroundColor: "#FFFFFF",
   },
   loadingContainer: {
     flex: 1,
@@ -208,23 +295,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#606770",
   },
-  // Header
+  // Enhanced Header
   header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.lg,
     backgroundColor: "#FFFFFF",
-    borderBottomWidth: 0.5,
+    borderBottomWidth: 1,
     borderBottomColor: "#DBDBDB",
+    ...getShadow("sm"),
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
+    ...Typography.h2,
     color: "#000000",
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
-    fontSize: 14,
+    ...Typography.bodySmall,
     color: "#6B7280",
-    marginTop: 4,
+    marginTop: Spacing.xs,
+    fontWeight: "400",
+    lineHeight: 20,
   },
   scrollView: {
     flex: 1,
@@ -252,78 +342,126 @@ const styles = StyleSheet.create({
   leaderboardRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    marginHorizontal: Spacing.md,
+    marginVertical: Spacing.xs,
     backgroundColor: "#FFFFFF",
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#F0F0F0", // Lighter border
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
+    ...getShadow("sm"),
   },
   topRankGold: {
     backgroundColor: "#FFFBF0",
+    ...getShadow("md"),
   },
   topRankSilver: {
-    backgroundColor: "#F8F8F8",
+    backgroundColor: "#F8F9FA",
+    ...getShadow("md"),
   },
   topRankBronze: {
     backgroundColor: "#FFF5F0",
+    ...getShadow("md"),
   },
   rankContainer: {
-    width: 40,
+    width: 48,
     alignItems: "center",
     justifyContent: "center",
+    marginRight: Spacing.sm,
+  },
+  rankBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.full,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
   },
   rankNumber: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#8E8E93",
+    ...Typography.h5,
+    color: "#6B7280",
+  },
+  crownContainer: {
+    transform: [{ rotate: "-15deg" }],
+  },
+  medalContainer: {
+    // Medal styling
   },
   avatarContainer: {
-    marginLeft: 12,
+    position: "relative",
+    marginRight: Spacing.md,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: BorderRadius.full,
+    borderWidth: 3,
+    borderColor: "#FFFFFF",
   },
   avatarPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: BorderRadius.full,
     backgroundColor: BRAND_COLOR,
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 3,
+    borderColor: "#FFFFFF",
   },
-  avatarText: {
-    fontSize: 20,
-    fontWeight: "bold",
+  topBadge: {
+    position: "absolute",
+    bottom: -4,
+    right: -4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  topBadgeText: {
+    fontSize: 9,
+    fontWeight: "800",
     color: "#FFFFFF",
+    letterSpacing: 0.5,
   },
   userInfo: {
     flex: 1,
-    marginLeft: 12,
   },
   userName: {
-    fontSize: 16,
+    ...Typography.body,
     fontWeight: "600",
     color: "#000000",
-    marginBottom: 2,
+    marginBottom: Spacing.xs,
+  },
+  statsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
   },
   rankLabel: {
-    fontSize: 13,
+    ...Typography.caption,
     color: "#8E8E93",
   },
   scoreContainer: {
     alignItems: "flex-end",
   },
+  scoreBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    marginBottom: Spacing.xs,
+  },
   scoreValue: {
-    fontSize: 20,
-    fontWeight: "bold",
+    ...Typography.h5,
     color: BRAND_COLOR,
   },
   scoreLabel: {
-    fontSize: 12,
+    ...Typography.caption,
     color: "#8E8E93",
-    marginTop: 2,
   },
 });
 

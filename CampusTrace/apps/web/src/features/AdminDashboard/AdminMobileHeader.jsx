@@ -27,21 +27,38 @@ export default function AdminMobileHeader({
   };
 
   return (
-    <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white dark:bg-[#1a1a1a] border-b border-neutral-200 dark:border-[#3a3a3a] z-50">
-      <div className="h-full px-4 flex items-center justify-between">
+    <header
+      className="lg:hidden fixed top-0 left-0 right-0 bg-white dark:bg-[#1a1a1a] border-b border-neutral-200 dark:border-[#2a2a2a] z-50"
+      style={{
+        boxShadow:
+          theme === "dark"
+            ? "0 1px 3px 0 rgba(0, 0, 0, 0.3)"
+            : "0 1px 3px 0 rgba(0, 0, 0, 0.05)",
+      }}
+    >
+      <div className="h-16 px-5 flex items-center justify-between">
         {/* Left: Site Name/Branding */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <h1
-            className="text-xl font-bold text-neutral-900 dark:text-white"
+            className="text-2xl font-bold text-neutral-900 dark:text-white"
             style={{
               fontFamily: '"Poppins", sans-serif',
-              letterSpacing: "-0.5px",
+              letterSpacing: "-0.6px",
               fontWeight: "700",
             }}
           >
             {siteName || "CampusTrace"}
           </h1>
-          <span className="text-xs font-semibold px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded">
+          <span
+            className="text-xs font-bold px-2.5 py-1 rounded-md"
+            style={{
+              backgroundColor:
+                theme === "dark"
+                  ? "rgba(99, 102, 241, 0.2)"
+                  : "rgba(99, 102, 241, 0.1)",
+              color: theme === "dark" ? "#A5B4FC" : "#4F46E5",
+            }}
+          >
             Admin
           </span>
         </div>
@@ -51,7 +68,11 @@ export default function AdminMobileHeader({
           {/* Dark Mode Toggle */}
           <button
             onClick={toggleTheme}
-            className="p-2 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+            className="p-2.5 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-all duration-200 active:scale-95"
+            style={{
+              minWidth: "44px",
+              minHeight: "44px",
+            }}
           >
             {theme === "light" ? (
               <Moon className="w-5 h-5" />
@@ -63,13 +84,24 @@ export default function AdminMobileHeader({
           {/* Notifications */}
           <button
             onClick={() => navigate("/admin/notifications")}
-            className="p-2 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg relative transition-colors"
+            className="p-2.5 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg relative transition-all duration-200 active:scale-95"
+            style={{
+              minWidth: "44px",
+              minHeight: "44px",
+            }}
           >
             <Bell className="w-5 h-5" />
             {notificationCount > 0 && (
               <span
-                className="absolute top-0 right-0 min-w-[18px] h-[18px] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1"
-                style={{ backgroundColor: primaryColor }}
+                className="absolute text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1.5"
+                style={{
+                  backgroundColor: primaryColor,
+                  top: "4px",
+                  right: "4px",
+                  minWidth: "20px",
+                  height: "20px",
+                  boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+                }}
               >
                 {notificationCount > 9 ? "9+" : notificationCount}
               </span>
@@ -79,14 +111,17 @@ export default function AdminMobileHeader({
           {/* Moderate Button */}
           <button
             onClick={() => navigate("/admin/post-moderation")}
-            className="px-3 py-1.5 text-white font-semibold text-sm rounded-lg flex items-center gap-1.5 transition-colors shadow-sm"
-            style={{ backgroundColor: primaryColor }}
+            className="px-4 py-2.5 text-white font-bold text-sm rounded-lg flex items-center gap-2 transition-all duration-200 active:scale-95 shadow-sm hover:shadow-md"
+            style={{
+              backgroundColor: primaryColor,
+              minHeight: "44px",
+            }}
           >
             <ShieldCheck className="w-4 h-4" />
-            <span>Mod</span>
+            <span>Moderate</span>
             {pendingPostsCount > 0 && (
               <span
-                className="ml-1 px-1.5 py-0.5 bg-white text-xs font-bold rounded-full"
+                className="ml-0.5 px-2 py-0.5 bg-white text-xs font-bold rounded-full"
                 style={{ color: primaryColor }}
               >
                 {pendingPostsCount > 9 ? "9+" : pendingPostsCount}
@@ -97,8 +132,8 @@ export default function AdminMobileHeader({
       </div>
 
       {/* Page Title Bar */}
-      <div className="px-4 py-2 bg-neutral-50 dark:bg-[#0a0a0a] border-b border-neutral-200 dark:border-[#3a3a3a]">
-        <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+      <div className="px-5 py-3 bg-neutral-50 dark:bg-[#0f0f0f] border-t border-neutral-200 dark:border-[#2a2a2a]">
+        <h2 className="text-sm font-bold text-neutral-700 dark:text-neutral-300 tracking-wide uppercase">
           {getPageTitle()}
         </h2>
       </div>

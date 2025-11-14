@@ -48,6 +48,12 @@ import * as ImagePicker from "expo-image-picker";
 import SimpleLoadingScreen from "../../components/SimpleLoadingScreen";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../../contexts/ThemeContext";
+import {
+  Spacing,
+  BorderRadius,
+  Typography,
+  getShadow,
+} from "../../constants/designSystem";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 const BRAND_COLOR = "#1877F2";
@@ -1605,21 +1611,35 @@ const createStyles = (colors) =>
       color: colors.textSecondary,
     },
     header: {
-      paddingHorizontal: 16,
-      paddingVertical: 12,
+      paddingHorizontal: 20,
+      paddingVertical: 16,
       backgroundColor: colors.surface,
-      borderBottomWidth: 0.5,
+      borderBottomWidth: 1,
       borderBottomColor: colors.border,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.shadow || "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 3,
+        },
+        android: {
+          elevation: 3,
+        },
+      }),
     },
     headerTitle: {
-      fontSize: 24,
-      fontWeight: "bold",
+      fontSize: 26,
+      fontWeight: "700",
       color: colors.text,
+      letterSpacing: -0.5,
     },
     headerSubtitle: {
       fontSize: 14,
       color: colors.textSecondary,
       marginTop: 4,
+      fontWeight: "400",
+      lineHeight: 20,
     },
     searchContainer: {
       flexDirection: "row",
@@ -1767,17 +1787,18 @@ const createStyles = (colors) =>
       alignItems: "center",
     },
 
-    // Marketplace Grid Styles
+    // Marketplace Grid Styles - Enhanced
     marketplaceCard: {
-      width: (screenWidth - 32) / 2,
-      marginBottom: 12,
+      width: (screenWidth - 40) / 2, // Better spacing
+      marginBottom: Spacing.md,
     },
     marketplaceItem: {
       backgroundColor: colors.card,
-      borderRadius: 8,
+      borderRadius: BorderRadius.lg,
       overflow: "hidden",
       borderWidth: 1,
       borderColor: colors.border,
+      ...getShadow("sm"),
     },
     marketplaceImageContainer: {
       width: "100%",

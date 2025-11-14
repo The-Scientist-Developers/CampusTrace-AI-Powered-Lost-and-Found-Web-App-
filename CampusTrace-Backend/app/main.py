@@ -1188,21 +1188,50 @@ async def get_leaderboard(user_id: str = Depends(get_current_user_id)):
     Returns top 10 users ranked by successful returns.
     """
     try:
+        # Get user's university with timeout protection
         profile_res = supabase.table("profiles").select("university_id").eq("id", user_id).single().execute()
         if not profile_res.data:
             raise HTTPException(status_code=404, detail="User profile not found.")
         
-        university_id = profile_res.data['university_id']
+        university_id = profile_res.data.get('university_id')
+        if not university_id:
+            # Return empty leaderboard if no university set
+            return []
 
-        leaderboard_res = supabase.rpc('get_leaderboard_for_university', {
-            'p_university_id': university_id,
-            'p_limit': 10
-        }).execute()
-        
-        return leaderboard_res.data
+        # Try RPC first, fallback to direct query if it fails
+        try:
+            leaderboard_res = supabase.rpc('get_leaderboard_for_university', {
+                'p_university_id': university_id,
+                'p_limit': 10
+            }).execute()
+            
+            return leaderboard_res.data if leaderboard_res.data else []
+        except Exception as rpc_error:
+            # Log the specific RPC error and try fallback
+            print(f"Leaderboard RPC error (trying fallback): {str(rpc_error)}")
+            
+            # Fallback: Direct query approach
+            try:
+                # Get profiles from same university with their stats
+                profiles_res = supabase.table("profiles")\
+                    .select("id, full_name, email, avatar_url, successful_returns")\
+                    .eq("university_id", university_id)\
+                    .order("successful_returns", desc=True)\
+                    .limit(10)\
+                    .execute()
+                
+                return profiles_res.data if profiles_res.data else []
+            except Exception as fallback_error:
+                print(f"Leaderboard fallback error: {str(fallback_error)}")
+                return []
+            
+    except HTTPException:
+        raise
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        print(f"Leaderboard error: {str(e)}")
+        # Return empty leaderboard gracefully instead of 500 error
+        return []
 
 @item_router.post("/generate-description")
 async def generate_description(payload: DescriptionRequest):
@@ -2463,12 +2492,16 @@ async def get_dashboard_summary(user_id: str = Depends(get_current_user_id)):
     Optimized for fast dashboard loading.
     """
     try:
-        # Get user's university
-        profile_res = supabase.table("profiles").select("university_id, full_name").eq("id", user_id).single().execute()
-        if not profile_res.data:
-            raise HTTPException(status_code=404, detail="User profile not found.")
-        
-        university_id = profile_res.data['university_id']
+        # Get user's university with error handling
+        try:
+            profile_res = supabase.table("profiles").select("university_id, full_name").eq("id", user_id).single().execute()
+            if not profile_res.data:
+                raise HTTPException(status_code=404, detail="User profile not found.")
+            
+            university_id = profile_res.data.get('university_id')
+        except Exception as profile_error:
+            print(f"Dashboard profile error: {str(profile_error)}")
+            raise HTTPException(status_code=500, detail="Failed to fetch user profile")
         
         # 1. Get user's recent posts (5 most recent for display)
         my_posts_res = supabase.table("items").select("*").eq("user_id", user_id).order(
@@ -2523,7 +2556,10 @@ async def get_dashboard_summary(user_id: str = Depends(get_current_user_id)):
             try:
                 matches_res = supabase.rpc('find_matches_for_lost_item', {
                     'p_item_id': lost_item_id,
-                    'p_limit': 3
+                    'p_match_count': 3,
+                    'p_text_weight': 0.4,
+                    'p_image_weight': 0.6,
+                    'p_match_threshold': 0.7
                 }).execute()
                 ai_matches = matches_res.data or []
             except Exception as match_err:
@@ -2543,9 +2579,25 @@ async def get_dashboard_summary(user_id: str = Depends(get_current_user_id)):
             "unreadNotifications": unread_notif_res.count or 0,
             "aiMatches": ai_matches
         }
+    except HTTPException:
+        raise
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to fetch dashboard summary: {str(e)}")
+        print(f"Dashboard summary error: {str(e)}")
+        # Return minimal data instead of crashing
+        return {
+            "myRecentPosts": [],
+            "allMyPosts": [],
+            "recentActivity": [],
+            "userStats": {
+                "found": 0,
+                "lost": 0,
+                "pending": 0,
+                "recovered": 0
+            },
+            "unreadNotifications": 0,
+            "aiMatches": []
+        }
 
 # ============= Badge Routes (Task 2) =============
 @badges_router.get("/user/{target_user_id}/badges")
@@ -2555,15 +2607,34 @@ async def get_user_badges(target_user_id: str, user_id: str = Depends(get_curren
     Returns badge details with earned timestamp.
     """
     try:
-        # Fetch user badges with badge details using the view
-        badges_res = supabase.from_("user_badges_view").select("*").eq(
-            "user_id", target_user_id
-        ).order("earned_at", desc=True).execute()
-        
-        return {"badges": badges_res.data or []}
+        # Try to fetch user badges using the view
+        try:
+            badges_res = supabase.from_("user_badges_view").select("*").eq(
+                "user_id", target_user_id
+            ).order("earned_at", desc=True).execute()
+            
+            return {"badges": badges_res.data or []}
+        except Exception as view_error:
+            # If view doesn't exist, try direct table query as fallback
+            print(f"Badges view error (trying fallback): {str(view_error)}")
+            
+            try:
+                # Fallback: Direct query from user_badges table with join
+                badges_res = supabase.table("user_badges").select(
+                    "*, badges(name, description, icon_url, criteria)"
+                ).eq("user_id", target_user_id).order("earned_at", desc=True).execute()
+                
+                return {"badges": badges_res.data or []}
+            except Exception as fallback_error:
+                print(f"Badges fallback error: {str(fallback_error)}")
+                # Return empty array instead of crashing
+                return {"badges": []}
+                
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to fetch user badges: {str(e)}")
+        print(f"Badges error: {str(e)}")
+        # Return empty array gracefully instead of 500 error
+        return {"badges": []}
 
 @badges_router.get("/all")
 async def get_all_badges(user_id: str = Depends(get_current_user_id)):
@@ -2749,15 +2820,34 @@ async def get_user_thank_you_notes(target_user_id: str, user_id: str = Depends(g
     Get all thank you notes received by a user.
     """
     try:
-        # Fetch thank you notes using the view
-        notes_res = supabase.from_("thank_you_notes_view").select("*").eq(
-            "finder_id", target_user_id
-        ).order("created_at", desc=True).execute()
-        
-        return {"notes": notes_res.data or []}
+        # Try to fetch thank you notes using the view
+        try:
+            notes_res = supabase.from_("thank_you_notes_view").select("*").eq(
+                "finder_id", target_user_id
+            ).order("created_at", desc=True).execute()
+            
+            return {"notes": notes_res.data or []}
+        except Exception as view_error:
+            # If view doesn't exist, try direct table query as fallback
+            print(f"Thank you notes view error (trying fallback): {str(view_error)}")
+            
+            try:
+                # Fallback: Direct query from thank_you_notes table
+                notes_res = supabase.table("thank_you_notes").select(
+                    "*, items(title, category), profiles!thank_you_notes_sender_id_fkey(full_name, email)"
+                ).eq("finder_id", target_user_id).order("created_at", desc=True).execute()
+                
+                return {"notes": notes_res.data or []}
+            except Exception as fallback_error:
+                print(f"Thank you notes fallback error: {str(fallback_error)}")
+                # Return empty array instead of crashing
+                return {"notes": []}
+                
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to fetch thank you notes: {str(e)}")
+        print(f"Thank you notes error: {str(e)}")
+        # Return empty array gracefully instead of 500 error
+        return {"notes": []}
 
 # ============= Include Routers =============
 # Register all API routers with the main app

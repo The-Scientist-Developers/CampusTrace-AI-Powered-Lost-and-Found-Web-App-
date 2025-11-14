@@ -15,6 +15,16 @@ Notifications.setNotificationHandler({
 export async function registerForPushNotificationsAsync() {
   let token;
 
+  // Check if running in Expo Go (development)
+  const isExpoGo = Constants.appOwnership === "expo";
+
+  if (isExpoGo) {
+    console.log(
+      "📱 Running in Expo Go - Push notifications limited in development"
+    );
+    // Still continue to set up local notifications
+  }
+
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("default", {
       name: "default",
@@ -34,6 +44,12 @@ export async function registerForPushNotificationsAsync() {
 
   if (finalStatus !== "granted") {
     console.warn("Failed to get push token: Permission not granted.");
+    return;
+  }
+
+  // Skip token registration in Expo Go to avoid warnings
+  if (isExpoGo) {
+    console.log("⚠️ Skipping push token registration in Expo Go");
     return;
   }
 

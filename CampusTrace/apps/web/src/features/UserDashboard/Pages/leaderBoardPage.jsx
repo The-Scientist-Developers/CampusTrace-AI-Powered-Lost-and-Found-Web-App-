@@ -31,51 +31,103 @@ const LeaderboardPageSkeleton = () => (
 );
 
 const LeaderboardRow = ({ user, rank }) => {
-  const rankColor = {
-    1: "text-yellow-400",
-    2: "text-gray-400",
-    3: "text-yellow-600",
-  };
+  const [isAnimated, setIsAnimated] = React.useState(false);
 
-  const RankIcon = ({ rank }) => {
-    if (rank === 1) return <Trophy className={`w-6 h-6 ${rankColor[rank]}`} />;
-    if (rank === 2) return <Award className={`w-6 h-6 ${rankColor[rank]}`} />;
-    if (rank === 3) return <Star className={`w-6 h-6 ${rankColor[rank]}`} />;
+  React.useEffect(() => {
+    const timer = setTimeout(() => setIsAnimated(true), rank * 50);
+    return () => clearTimeout(timer);
+  }, [rank]);
+
+  const getRankBadge = () => {
+    if (rank === 1) {
+      return (
+        <div className="relative">
+          <Trophy className="w-7 h-7 text-yellow-400 fill-yellow-400 transform -rotate-12" />
+        </div>
+      );
+    }
+    if (rank === 2) {
+      return <Award className="w-7 h-7 text-gray-400 fill-gray-400" />;
+    }
+    if (rank === 3) {
+      return <Star className="w-7 h-7 text-yellow-600 fill-yellow-600" />;
+    }
     return (
-      <span className="font-semibold text-neutral-400 dark:text-neutral-500 w-6 text-center">
-        {rank}
-      </span>
+      <div className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+        <span className="font-bold text-neutral-600 dark:text-neutral-400">
+          {rank}
+        </span>
+      </div>
     );
   };
 
+  const getRowStyle = () => {
+    if (rank === 1)
+      return "bg-gradient-to-r from-yellow-50 to-transparent dark:from-yellow-900/10 border-l-4 border-yellow-400";
+    if (rank === 2)
+      return "bg-gradient-to-r from-gray-50 to-transparent dark:from-gray-800/10 border-l-4 border-gray-400";
+    if (rank === 3)
+      return "bg-gradient-to-r from-orange-50 to-transparent dark:from-orange-900/10 border-l-4 border-yellow-600";
+    return "";
+  };
+
   return (
-    <div className="flex items-center gap-4 p-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/20 transition-colors">
-      <div className="w-8 text-center">
-        <RankIcon rank={rank} />
+    <div
+      className={`flex items-center gap-4 p-5 hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-all duration-300 ${getRowStyle()} ${
+        isAnimated ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+      }`}
+      style={{ transitionDelay: `${rank * 50}ms` }}
+    >
+      <div className="w-10 flex justify-center">{getRankBadge()}</div>
+
+      <div className="relative">
+        <img
+          src={
+            user.avatar_url ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(
+              user.full_name
+            )}&background=eef2ff&color=4338ca`
+          }
+          alt={user.full_name}
+          className="w-14 h-14 rounded-full object-cover border-3 border-white dark:border-neutral-700 shadow-md"
+        />
+        {rank <= 3 && (
+          <div
+            className={`absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold text-white border-2 border-white dark:border-neutral-800 ${
+              rank === 1
+                ? "bg-yellow-400"
+                : rank === 2
+                ? "bg-gray-400"
+                : "bg-yellow-600"
+            }`}
+          >
+            TOP {rank}
+          </div>
+        )}
       </div>
-      <img
-        src={
-          user.avatar_url ||
-          `https://ui-avatars.com/api/?name=${encodeURIComponent(
-            user.full_name
-          )}&background=eef2ff&color=4338ca`
-        }
-        alt={user.full_name}
-        className="w-12 h-12 rounded-full object-cover"
-      />
-      <div className="flex-grow">
-        <p className="font-semibold text-neutral-800 dark:text-white">
+
+      <div className="flex-grow min-w-0">
+        <p className="font-bold text-lg text-neutral-800 dark:text-white truncate">
           {user.full_name}
         </p>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          Rank {rank}
-        </p>
+        <div className="flex items-center gap-2 mt-1">
+          <Shield className="w-4 h-4 text-primary-500" />
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+            {user.recovered_count} items reunited
+          </p>
+        </div>
       </div>
+
       <div className="text-right">
-        <p className="font-bold text-lg text-primary-600 dark:text-primary-400">
-          {user.recovered_count}
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800">
+          <Trophy className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+          <span className="font-bold text-xl text-primary-600 dark:text-primary-400">
+            {user.recovered_count}
+          </span>
+        </div>
+        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+          Points
         </p>
-        <p className="text-xs text-neutral-500">Items Returned</p>
       </div>
     </div>
   );
@@ -118,27 +170,36 @@ export default function LeaderboardPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8 animate-fadeIn">
+    <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8 animate-fadeIn">
+      {/* Enhanced Header */}
       <div className="text-center mb-12">
-        <Trophy className="mx-auto h-12 w-12 text-primary-600 mb-4" />
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-neutral-800 dark:text-white">
-          Community Leaderboard
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 mb-6 shadow-lg">
+          <Trophy className="w-10 h-10 text-white" strokeWidth={2.5} />
+        </div>
+        <h1 className="text-4xl sm:text-5xl font-extrabold text-neutral-800 dark:text-white mb-4">
+          🏆 Leaderboard
         </h1>
-        <p className="mt-4 text-lg text-neutral-500 dark:text-neutral-400">
-          Top users who have helped return the most items on campus.
+        <p className="text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto">
+          Top heroes who reunited items with their owners
         </p>
       </div>
 
-      <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm divide-y divide-neutral-200 dark:divide-[#3a3a3a]">
+      {/* Leaderboard Card */}
+      <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-2xl shadow-lg overflow-hidden">
         {leaderboard.length > 0 ? (
-          leaderboard.map((user, index) => (
-            <LeaderboardRow key={user.user_id} user={user} rank={index + 1} />
-          ))
+          <div className="divide-y divide-neutral-200 dark:divide-[#3a3a3a]">
+            {leaderboard.map((user, index) => (
+              <LeaderboardRow key={user.user_id} user={user} rank={index + 1} />
+            ))}
+          </div>
         ) : (
-          <div className="p-12 text-center text-neutral-500">
-            <p>
-              The leaderboard is currently empty. Be the first to return an
-              item!
+          <div className="p-16 text-center">
+            <Trophy className="mx-auto h-16 w-16 text-neutral-300 dark:text-neutral-600 mb-4" />
+            <h3 className="text-xl font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
+              No Heroes Yet
+            </h3>
+            <p className="text-neutral-500 dark:text-neutral-400">
+              Be the first to return an item and claim the top spot!
             </p>
           </div>
         )}

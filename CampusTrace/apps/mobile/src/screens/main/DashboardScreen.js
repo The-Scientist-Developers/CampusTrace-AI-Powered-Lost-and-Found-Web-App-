@@ -30,10 +30,16 @@ import {
 } from "@campustrace/core";
 import SimpleLoadingScreen from "../../components/SimpleLoadingScreen";
 import { useTheme } from "../../contexts/ThemeContext";
+import {
+  Spacing,
+  BorderRadius,
+  Typography,
+  getShadow,
+} from "../../constants/designSystem";
 
 const { width } = Dimensions.get("window");
-const CARD_WIDTH = width / 2 - 24;
-const HORIZONTAL_CARD_WIDTH = width * 0.7;
+const CARD_WIDTH = width / 2 - 28; // Adjusted for better spacing
+const HORIZONTAL_CARD_WIDTH = width * 0.75; // Slightly larger for better content display
 
 const DashboardScreen = ({ navigation }) => {
   const { colors, fontSizes } = useTheme();
@@ -254,7 +260,7 @@ const DashboardScreen = ({ navigation }) => {
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      {/* Instagram-style Header */}
+      {/* Instagram-style Header - Enhanced */}
       <View
         style={[
           styles.header,
@@ -262,22 +268,48 @@ const DashboardScreen = ({ navigation }) => {
         ]}
       >
         <Text style={[styles.appName, { color: colors.text }]}>
-          CampusTrace
+          Campustrace
         </Text>
         <View style={styles.headerIcons}>
           <TouchableOpacity
             style={styles.headerIconButton}
             onPress={() => navigation.navigate("Notifications")}
+            activeOpacity={0.7}
           >
-            <Feather name="heart" size={24} color={colors.primary} />
-            {/* Optional notification dot */}
-            {/* <View style={styles.notificationDot} /> */}
+            <Feather
+              name="heart"
+              size={24}
+              color={colors.primary}
+              strokeWidth={2.5}
+            />
+            {/* Notification badge - uncomment and pass count when available */}
+            {/* {notificationCount > 0 && (
+              <View style={styles.notificationDot}>
+                <Text style={styles.notificationCount}>
+                  {notificationCount > 9 ? "9+" : notificationCount}
+                </Text>
+              </View>
+            )} */}
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.headerIconButton}
             onPress={() => navigation.navigate("Messages")}
+            activeOpacity={0.7}
           >
-            <Feather name="send" size={24} color={colors.primary} />
+            <Feather
+              name="send"
+              size={24}
+              color={colors.primary}
+              strokeWidth={2.5}
+            />
+            {/* Message badge - uncomment and pass count when available */}
+            {/* {messageCount > 0 && (
+              <View style={styles.notificationDot}>
+                <Text style={styles.notificationCount}>
+                  {messageCount > 9 ? "9+" : messageCount}
+                </Text>
+              </View>
+            )} */}
           </TouchableOpacity>
         </View>
       </View>
@@ -886,46 +918,72 @@ const createStyles = (colors) => {
       color: colors.textSecondary,
     },
 
-    // Instagram-style Header
+    // Instagram-style Header - Enhanced for Production
     header: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
-      paddingHorizontal: 16,
-      paddingVertical: 8,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
       backgroundColor: colors.surface,
-      borderBottomWidth: 0.5,
+      borderBottomWidth: 1,
       borderBottomColor: colors.border,
       ...shadowStyle,
+      minHeight: 60,
     },
     appName: {
-      fontSize: 24,
+      fontSize: 26,
       fontWeight: "700",
       color: colors.text,
       fontFamily: Platform.select({
         ios: "System",
-        android: "sans-serif",
+        android: "sans-serif-medium",
         web: "Poppins, sans-serif",
       }),
-      letterSpacing: -0.5,
-      lineHeight: 28,
+      letterSpacing: -0.6,
+      lineHeight: 32,
     },
     headerIcons: {
       flexDirection: "row",
-      gap: 16,
+      gap: 12,
+      alignItems: "center",
     },
     headerIconButton: {
-      padding: 4,
+      padding: 8,
       position: "relative",
+      minWidth: 44,
+      minHeight: 44,
+      justifyContent: "center",
+      alignItems: "center",
+      borderRadius: 22,
     },
     notificationDot: {
       position: "absolute",
-      top: 2,
-      right: 2,
-      width: 8,
-      height: 8,
-      borderRadius: 4,
+      top: 6,
+      right: 6,
+      minWidth: 20,
+      height: 20,
+      borderRadius: 10,
       backgroundColor: "#FF3250",
+      justifyContent: "center",
+      alignItems: "center",
+      ...Platform.select({
+        ios: {
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 3,
+        },
+        android: {
+          elevation: 4,
+        },
+      }),
+    },
+    notificationCount: {
+      color: "#FFFFFF",
+      fontSize: 10,
+      fontWeight: "700",
+      textAlign: "center",
     },
 
     scrollView: {
@@ -949,6 +1007,186 @@ const createStyles = (colors) => {
       color: colors.text,
     },
     statsContainer: {
+      padding: Spacing.xl,
+      gap: Spacing.md,
+      backgroundColor: colors.background,
+    },
+    statsRow: {
+      flexDirection: "row",
+      gap: Spacing.md,
+    },
+    statCard: {
+      flex: 1,
+      backgroundColor: colors.surface,
+      borderRadius: BorderRadius.lg,
+      padding: Spacing.lg,
+      alignItems: "center",
+      ...getShadow("md"),
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    statIconContainer: {
+      width: 56,
+      height: 56,
+      borderRadius: BorderRadius.xl,
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: Spacing.md,
+    },
+    statValue: {
+      ...Typography.h2,
+      color: colors.text,
+      marginBottom: Spacing.xs,
+    },
+    statLabel: {
+      ...Typography.bodySmall,
+      color: colors.textSecondary,
+      textAlign: "center",
+    },
+    section: {
+      paddingHorizontal: Spacing.xl,
+      paddingVertical: Spacing.lg,
+      backgroundColor: colors.background,
+    },
+    sectionHeaderRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: Spacing.sm,
+    },
+    sectionTitle: {
+      ...Typography.h4,
+      color: colors.text,
+      marginLeft: Spacing.xs,
+    },
+    sectionSubtitle: {
+      ...Typography.bodySmall,
+      color: colors.textSecondary,
+      marginBottom: Spacing.lg,
+    },
+    viewAllText: {
+      ...Typography.button,
+      fontSize: 14,
+      color: colors.primary,
+    },
+    itemCard: {
+      width: HORIZONTAL_CARD_WIDTH,
+      backgroundColor: colors.surface,
+      borderRadius: BorderRadius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginRight: Spacing.md,
+      overflow: "hidden",
+      ...getShadow("sm"),
+    },
+    chartCard: {
+      backgroundColor: colors.surface,
+      borderRadius: BorderRadius.lg,
+      padding: Spacing.lg,
+      marginBottom: Spacing.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...getShadow("sm"),
+    },
+    chartTitle: {
+      ...Typography.h5,
+      color: colors.text,
+      marginBottom: Spacing.lg,
+    },
+    emptyStateContainer: {
+      backgroundColor: colors.surface,
+      borderRadius: BorderRadius.lg,
+      padding: Spacing.xxxl,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    emptyStateIconContainer: {
+      width: 80,
+      height: 80,
+      borderRadius: BorderRadius.full,
+      backgroundColor: colors.background,
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: Spacing.lg,
+    },
+    emptyStateTitle: {
+      ...Typography.h4,
+      color: colors.text,
+      marginBottom: Spacing.sm,
+      textAlign: "center",
+    },
+    emptyStateDescription: {
+      ...Typography.body,
+      color: colors.textSecondary,
+      textAlign: "center",
+      marginBottom: Spacing.lg,
+    },
+    emptyStateButton: {
+      backgroundColor: colors.primary,
+      paddingHorizontal: Spacing.xl,
+      paddingVertical: Spacing.md,
+      borderRadius: BorderRadius.md,
+      minHeight: 48,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    emptyStateButtonText: {
+      ...Typography.button,
+      color: "#FFFFFF",
+    },
+    activityItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: Spacing.lg,
+      backgroundColor: colors.surface,
+      borderRadius: BorderRadius.md,
+      marginBottom: Spacing.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...getShadow("sm"),
+    },
+    activityItemImage: {
+      width: 56,
+      height: 56,
+      borderRadius: BorderRadius.md,
+    },
+    activityContent: {
+      flex: 1,
+      marginLeft: Spacing.md,
+    },
+    activityTitle: {
+      ...Typography.body,
+      fontWeight: "600",
+      color: colors.text,
+      marginBottom: Spacing.xs,
+    },
+    activityUser: {
+      ...Typography.bodySmall,
+      color: colors.textSecondary,
+      marginBottom: Spacing.xs,
+    },
+    activityTime: {
+      ...Typography.caption,
+      color: colors.textTertiary,
+    },
+    welcomeSection: {
+      paddingHorizontal: Spacing.xl,
+      paddingTop: Spacing.xl,
+      paddingBottom: Spacing.md,
+      backgroundColor: colors.surface,
+    },
+    greeting: {
+      ...Typography.body,
+      color: colors.textSecondary,
+      marginBottom: Spacing.xs,
+    },
+    userName: {
+      ...Typography.h2,
+      color: colors.text,
+    },
+    // Continue with remaining styles...
+    statsContainerOld: {
       padding: 16,
       gap: 12,
       backgroundColor: colors.surface,

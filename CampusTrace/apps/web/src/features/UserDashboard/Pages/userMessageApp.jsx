@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { supabase } from "../../../api/apiClient";
+import { supabase, apiClient } from "../../../api/apiClient";
 import { API_BASE_URL } from "../../../api/apiClient";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -10,6 +10,8 @@ import {
   Search,
   X, // Keep X for search clear
   Trash2, // Import Trash icon
+  KeyRound,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -201,7 +203,7 @@ const MessagesPage = ({ user }) => {
             </h2>
             {filteredConversations.length > 0 && (
               <span className="px-2 py-1 text-xs font-medium bg-primary-100 dark:bg-[#2a2a2a] text-primary-700 dark:text-white rounded-full">
-              {/* // <span className="px-2 py-1 text-xs font-medium bg-primary-100 dark:bg-primary-500/20 text-primary-700 dark:text-primary-400 rounded-full"> */}
+                {/* // <span className="px-2 py-1 text-xs font-medium bg-primary-100 dark:bg-primary-500/20 text-primary-700 dark:text-primary-400 rounded-full"> */}
                 {filteredConversations.length}
               </span>
             )}
@@ -263,11 +265,11 @@ const MessagesPage = ({ user }) => {
                     className={`flex items-center p-4 gap-3 cursor-pointer border-b border-neutral-100 dark:border-[#2a2a2a] transition-all relative group ${
                       // Keep relative and group
                       convo.id.toString() === conversationId
-                      ? "bg-neutral-100 dark:bg-[#2a2a2a] border-l-4 border-l-primary-600"
-                      : "hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
+                        ? "bg-neutral-100 dark:bg-[#2a2a2a] border-l-4 border-l-primary-600"
+                        : "hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
 
-                        // ? "bg-primary-50 dark:bg-primary-500/10 border-l-4 border-l-primary-600"
-                        // : "hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
+                      // ? "bg-primary-50 dark:bg-primary-500/10 border-l-4 border-l-primary-600"
+                      // : "hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
                     }`}
                   >
                     <img
@@ -373,6 +375,9 @@ const ChatWindow = ({ conversation, user }) => {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const navigate = useNavigate();
+  const [handoverCode, setHandoverCode] = useState(null);
+  const [codeLoading, setCodeLoading] = useState(false);
+  const [handoverError, setHandoverError] = useState(null);
 
   // Add null check for user prop
   if (!user) {
@@ -474,6 +479,26 @@ const ChatWindow = ({ conversation, user }) => {
     }
   }, [messages]);
 
+  const handleStartHandover = async () => {
+    if (!conversation?.item?.id) return;
+    setCodeLoading(true);
+    setHandoverError(null);
+    setHandoverCode(null);
+    try {
+      const { data } = await apiClient.post(
+        `/handover/items/${conversation.item.id}/start-handover`
+      );
+      setHandoverCode(data.code);
+    } catch (error) {
+      console.error("Error starting handover:", error);
+      setHandoverError(
+        error.response?.data?.detail || "Could not start handover."
+      );
+    } finally {
+      setCodeLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (newMessage.trim() === "" || sending) return;
@@ -528,6 +553,62 @@ const ChatWindow = ({ conversation, user }) => {
       console.error("Error formatting time:", e);
       return "--:--"; // Fallback
     }
+  };
+
+  const isClaimant = user?.id === conversation.claimant?.id;
+  const isPendingReturn =
+    conversation.item?.moderation_status === "pending_return";
+
+  const HandoverControls = () => {
+    if (!isClaimant || !isPendingReturn) {
+      return null; // Don't show controls if not claimant or not pending
+    }
+
+    if (handoverCode) {
+      return (
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/30">
+          <h3 className="font-bold text-lg text-blue-800 dark:text-blue-200">
+            Your Handover Code:
+          </h3>
+          <p className="font-mono text-4xl font-bold tracking-widest text-center py-4 text-blue-900 dark:text-blue-100">
+            {handoverCode}
+          </p>
+          <p className="text-sm text-blue-700 dark:text-blue-300 text-center">
+            Show this 4-digit code to the finder to complete the handover.
+          </p>
+        </div>
+      );
+    }
+
+    if (handoverError) {
+      return (
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-red-50 dark:bg-red-900/30">
+          <div className="flex items-center">
+            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+            <p className="ml-2 text-sm text-red-700 dark:text-red-300">
+              {handoverError}
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+        <button
+          onClick={handleStartHandover}
+          disabled={codeLoading}
+          className="w-full flex justify-center items-center gap-2 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 dark:focus:ring-offset-gray-900"
+        >
+          {codeLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <KeyRound className="h-5 w-5" />
+          )}
+          Start Secure Handover (Get Code)
+        </button>
+      </div>
+    );
   };
 
   return (
@@ -626,6 +707,8 @@ const ChatWindow = ({ conversation, user }) => {
         )}
         <div ref={messagesEndRef} /> {/* For scrolling */}
       </div>
+
+      <HandoverControls />
 
       <footer className="p-4 border-t border-neutral-200 dark:border-[#2a2a2a] bg-white dark:bg-[#1a1a1a]">
         <form onSubmit={handleSubmit} className="flex items-center gap-3">

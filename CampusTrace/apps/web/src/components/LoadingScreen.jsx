@@ -21,11 +21,7 @@ export default function LoadingScreen() {
         }}
         className="flex flex-col items-center"
       >
-        <motion.img
-          src={logo}
-          alt="CampusTrace"
-          className="w-24 h-24 mb-6"
-        />
+        <motion.img src={logo} alt="CampusTrace" className="w-24 h-24 mb-6" />
 
         {/* Brand name with Inter font */}
         <motion.h1

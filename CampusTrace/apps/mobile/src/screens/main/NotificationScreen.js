@@ -17,6 +17,7 @@ import {
   AlertCircle,
   Info,
   Package,
+  Trash2,
 } from "lucide-react-native";
 import { getSupabaseClient } from "@campustrace/core";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -158,6 +159,28 @@ const NotificationScreen = ({ navigation }) => {
     }
   };
 
+  const handleDeleteNotification = async (notificationId) => {
+    try {
+      const supabase = getSupabaseClient();
+
+      // Optimistically update UI
+      setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+
+      // Delete from Supabase
+      const { error } = await supabase
+        .from("notifications")
+        .delete()
+        .eq("id", notificationId)
+        .eq("recipient_id", user.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+      // Revert on error
+      fetchNotifications();
+    }
+  };
+
   if (loading && !refreshing) {
     return <SimpleLoadingScreen />;
   }
@@ -189,6 +212,7 @@ const NotificationScreen = ({ navigation }) => {
           <NotificationItem
             notification={item}
             onPress={() => handleNotificationPress(item)}
+            onDelete={() => handleDeleteNotification(item.id)}
             colors={colors}
           />
         )}
@@ -223,9 +247,9 @@ const NotificationScreen = ({ navigation }) => {
 };
 
 // ====================
-// NotificationItem Component (simplified like web-app)
+// NotificationItem Component (with delete button)
 // ====================
-const NotificationItem = ({ notification, onPress, colors }) => {
+const NotificationItem = ({ notification, onPress, onDelete, colors }) => {
   const { type, message, created_at, status } = notification;
   const is_read = status === "read";
 
@@ -268,43 +292,60 @@ const NotificationItem = ({ notification, onPress, colors }) => {
   }
 
   return (
-    <TouchableOpacity
+    <View
       style={[
         styles.notificationItem,
         { backgroundColor: colors.card, borderBottomColor: colors.border },
         !is_read && { backgroundColor: colors.surface },
       ]}
-      onPress={onPress}
     >
-      {/* Icon */}
-      <View style={[styles.iconContainer, { backgroundColor: iconColor }]}>
-        <Icon size={24} color="#FFFFFF" />
-      </View>
+      <TouchableOpacity
+        style={styles.notificationTouchable}
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
+        {/* Icon */}
+        <View style={[styles.iconContainer, { backgroundColor: iconColor }]}>
+          <Icon size={24} color="#FFFFFF" />
+        </View>
 
-      {/* Content */}
-      <View style={styles.notificationContent}>
-        <Text
-          style={[
-            styles.notificationTitle,
-            { color: colors.text },
-            !is_read && { fontWeight: "700" },
-          ]}
-          numberOfLines={3}
-        >
-          {message || "New notification"}
-        </Text>
-        <Text style={[styles.timestamp, { color: colors.textSecondary }]}>
-          {created_at ? getTimeAgo(created_at) : ""}
-        </Text>
-      </View>
+        {/* Content */}
+        <View style={styles.notificationContent}>
+          <Text
+            style={[
+              styles.notificationTitle,
+              { color: colors.text },
+              !is_read && { fontWeight: "700" },
+            ]}
+            numberOfLines={3}
+          >
+            {message || "New notification"}
+          </Text>
+          <Text style={[styles.timestamp, { color: colors.textSecondary }]}>
+            {created_at ? getTimeAgo(created_at) : ""}
+          </Text>
+        </View>
 
-      {/* Unread Indicator */}
-      {!is_read && (
-        <View
-          style={[styles.unreadIndicator, { backgroundColor: colors.primary }]}
-        />
-      )}
-    </TouchableOpacity>
+        {/* Unread Indicator */}
+        {!is_read && (
+          <View
+            style={[
+              styles.unreadIndicator,
+              { backgroundColor: colors.primary },
+            ]}
+          />
+        )}
+      </TouchableOpacity>
+
+      {/* Delete Button */}
+      <TouchableOpacity
+        style={[styles.deleteButton, { backgroundColor: colors.surface }]}
+        onPress={onDelete}
+        activeOpacity={0.7}
+      >
+        <Trash2 size={20} color={colors.error || "#EF4444"} />
+      </TouchableOpacity>
+    </View>
   );
 };
 
@@ -317,21 +358,24 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: "#FFFFFF",
-    borderBottomWidth: 0.5,
+    borderBottomWidth: 1,
     borderBottomColor: "#DBDBDB",
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: 26,
+    fontWeight: "700",
     color: "#000000",
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: 14,
     color: "#6B7280",
     marginTop: 4,
+    fontWeight: "400",
+    lineHeight: 20,
   },
   loadingContainer: {
     flex: 1,
@@ -367,15 +411,27 @@ const styles = StyleSheet.create({
   },
   notificationItem: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    paddingVertical: 16, // Increased padding
-    paddingHorizontal: 16,
+    alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 0.5,
     borderBottomColor: "#F0F0F0", // Lighter border
   },
   notificationItemUnread: {
     backgroundColor: "#F0F8FF", // Light blue for unread
+  },
+  notificationTouchable: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+  },
+  deleteButton: {
+    padding: 12,
+    marginRight: 8,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
   },
   iconContainer: {
     width: 48,

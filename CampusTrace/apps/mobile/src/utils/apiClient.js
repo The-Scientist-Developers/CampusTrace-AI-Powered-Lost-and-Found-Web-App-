@@ -57,7 +57,7 @@ const getApiBaseUrl = () => {
         "❌ [API] You MUST set EXPO_PUBLIC_API_URL in your .env file!"
       );
       console.error(
-        "❌ [API] Example: EXPO_PUBLIC_API_URL=http://10.0.0.40:8000"
+        "❌ [API] Example: EXPO_PUBLIC_API_URL=http://10.0.0.37:8081"
       );
       console.error("❌ [API] Falling back to localhost (THIS WILL NOT WORK)");
     }
@@ -156,9 +156,22 @@ export const apiClient = {
         throw new Error(`Request failed: ${errorText}`);
       }
 
-      const data = await response.json();
-      console.log(`✅ [GET] ${url} success`);
-      return data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        console.log(`✅ [GET] ${url} success`);
+        return data;
+      } else {
+        // Server returned HTML or other non-JSON content
+        const text = await response.text();
+        console.error(
+          `❌ [GET] ${url} returned non-JSON:`,
+          text.substring(0, 200)
+        );
+        throw new Error(
+          "Server returned HTML instead of JSON. Backend may be down or misconfigured."
+        );
+      }
     } catch (error) {
       console.error(`❌ [GET] ${url} error:`, error.message);
 
