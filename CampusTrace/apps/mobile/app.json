@@ -1,12 +1,11 @@
 {
   "expo": {
     "name": "CampusTrace",
-    "slug": "campustrace-mobile",
+    "slug": "campustrace-monorepo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -22,17 +21,15 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
       "package": "com.campustrace.mobile"
     },
     "web": {
-      "favicon": "./assets/favicon.png",
-      "bundler": "metro"
+      "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "apiUrl": "EXPO_PUBLIC_API_URL",
-      "supabaseUrl": "EXPO_PUBLIC_SUPABASE_URL",
-      "supabaseAnonKey": "EXPO_PUBLIC_SUPABASE_ANON_KEY"
+      "eas": {
+        "projectId": "8d3dfad3-5b4f-4fea-ab86-59762edd8083"
+      }
     }
   }
 }

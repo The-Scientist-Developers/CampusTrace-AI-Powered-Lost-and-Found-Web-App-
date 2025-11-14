@@ -101,20 +101,24 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-// --- Stat Card (Styled like RN layout) ---
-const StatCard = ({ icon: Icon, label, value, color }) => {
+// --- Enhanced Stat Card with Gradient (Matching Mobile) ---
+const StatCard = ({ icon: Icon, label, value, color, gradient }) => {
   return (
-    <div className="flex-1 bg-white dark:bg-[#2a2a2a] rounded-xl p-4 items-center border border-neutral-200 dark:border-[#3a3a3a]">
+    <div className="flex-1 bg-white dark:bg-[#2a2a2a] rounded-2xl p-5 flex flex-col items-center border border-neutral-200 dark:border-[#3a3a3a] shadow-sm hover:shadow-md transition-shadow duration-200">
       <div
-        className={`w-12 h-12 rounded-full flex items-center justify-center mb-2`}
-        style={{ backgroundColor: color + "15" }}
+        className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 shadow-sm"
+        style={{
+          background: `linear-gradient(135deg, ${gradient[0]}, ${gradient[1]})`,
+        }}
       >
-        <Icon className="w-6 h-6" style={{ color: color }} />
+        <Icon className="w-7 h-7 text-white" />
       </div>
-      <p className="text-3xl font-bold text-neutral-800 dark:text-white">
+      <p className="text-3xl font-bold text-neutral-800 dark:text-white mb-1">
         {value}
       </p>
-      <p className="text-xs text-neutral-500 dark:text-neutral-400">{label}</p>
+      <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+        {label}
+      </p>
     </div>
   );
 };
@@ -134,65 +138,89 @@ const ItemImage = ({ imageUrl, className }) => (
   </div>
 );
 
-// --- Item Card (Styled like RN layout) ---
+// --- Enhanced Item Card with Modern Styling ---
 const ItemCard = ({ item, onPress }) => (
   <button
     onClick={onPress}
-    className="w-[70vw] sm:w-64 bg-white dark:bg-[#2a2a2a] rounded-xl border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden flex-shrink-0 snap-start"
+    className="w-[70vw] sm:w-64 bg-white dark:bg-[#2a2a2a] rounded-2xl border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden flex-shrink-0 snap-start shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
   >
-    <ItemImage imageUrl={item.image_url} className="w-full aspect-square" />
-    <div className="p-3">
-      <h3 className="text-sm font-semibold text-neutral-800 dark:text-white mb-2 h-10 line-clamp-2">
-        {item.title}
-      </h3>
-      <div className="flex justify-between items-center">
-        <StatusBadge status={item.moderation_status} />
+    <div className="relative">
+      <ItemImage imageUrl={item.image_url} className="w-full aspect-square" />
+      <div className="absolute top-3 left-3">
         <span
-          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+          className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg ${
             item.status === "Lost"
-              ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-              : "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
+              ? "bg-red-500 text-white"
+              : "bg-green-500 text-white"
           }`}
         >
           {item.status}
         </span>
       </div>
     </div>
-  </button>
-);
-
-// --- Match Card (Styled like RN layout) ---
-const MatchCard = ({ item, onPress }) => (
-  <button
-    onClick={onPress}
-    className="w-[70vw] sm:w-64 bg-white dark:bg-[#2a2a2a] rounded-xl border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden flex-shrink-0 snap-start relative"
-  >
-    {item.match_score && (
-      <div className="absolute top-2 left-2 z-10 bg-black/70 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md">
-        {Math.round(item.match_score)}% Match
-      </div>
-    )}
-    <ItemImage imageUrl={item.image_url} className="w-full aspect-square" />
-    <div className="p-3">
-      <h3 className="text-sm font-semibold text-neutral-800 dark:text-white mb-2 truncate">
+    <div className="p-4">
+      <h3 className="text-sm font-bold text-neutral-800 dark:text-white mb-2 h-10 line-clamp-2">
         {item.title}
       </h3>
       <div className="flex justify-between items-center">
-        <span className="text-xs text-neutral-500 dark:text-neutral-400">
-          {item.category}
-        </span>
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400">
-          Found
+        <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+          <Tag className="w-3 h-3" />
+          <span>{item.category}</span>
+        </div>
+        <span className="text-xs text-neutral-400 dark:text-neutral-500">
+          {timeAgo(item.created_at)}
         </span>
       </div>
     </div>
   </button>
 );
 
-// --- Activity Item (Styled like RN layout) ---
+// --- Enhanced Match Card with Modern Styling ---
+const MatchCard = ({ item, onPress }) => {
+  const matchPercentage = item.match_score ? Math.round(item.match_score) : 0;
+  const matchColor =
+    matchPercentage >= 80
+      ? "#10B981"
+      : matchPercentage >= 60
+      ? "#F59E0B"
+      : "#6B7280";
+
+  return (
+    <button
+      onClick={onPress}
+      className="w-[50vw] sm:w-48 bg-white dark:bg-[#2a2a2a] rounded-2xl border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden flex-shrink-0 snap-start shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
+    >
+      <div className="p-3 pb-2">
+        <div className="flex items-center justify-between mb-2">
+          <div
+            className="px-2.5 py-1 rounded-lg text-xs font-bold text-white shadow-sm"
+            style={{ backgroundColor: matchColor }}
+          >
+            {matchPercentage}%
+          </div>
+          <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+            Match
+          </span>
+        </div>
+      </div>
+      <ItemImage imageUrl={item.image_url} className="w-full aspect-square" />
+      <div className="p-3">
+        <h3 className="text-sm font-bold text-neutral-800 dark:text-white mb-1 truncate">
+          {item.title}
+        </h3>
+        <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+          {item.location || "Campus"}
+        </p>
+      </div>
+    </button>
+  );
+};
+
+// --- Enhanced Activity Item with Modern Styling ---
 const ActivityItem = ({ item, onPress }) => {
-  const statusColor =
-    item.status === "Lost" ? "text-red-500" : "text-green-500";
+  const statusIcon = item.status === "Lost" ? AlertCircle : CheckCircle;
+  const statusColor = item.status === "Lost" ? "#EF4444" : "#10B981";
+  const StatusIcon = statusIcon;
   const posterName =
     item.profiles?.full_name ||
     (item.profiles?.email ? item.profiles.email.split("@")[0] : "Anonymous");
@@ -200,61 +228,97 @@ const ActivityItem = ({ item, onPress }) => {
   return (
     <button
       onClick={onPress}
-      className="flex items-center gap-3 p-3 w-full text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
+      className="flex items-center gap-3 p-4 w-full text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors duration-150"
     >
-      <ItemImage
-        imageUrl={item.image_url}
-        className="w-12 h-12 rounded-lg flex-shrink-0"
-      />
+      <div className="relative flex-shrink-0">
+        <ItemImage
+          imageUrl={item.image_url}
+          className="w-14 h-14 rounded-xl shadow-sm"
+        />
+        <div
+          className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white dark:border-[#2a2a2a] flex items-center justify-center"
+          style={{ backgroundColor: statusColor }}
+        >
+          <StatusIcon className="w-3 h-3 text-white" />
+        </div>
+      </div>
       <div className="flex-1 min-w-0">
-        <h4 className="text-sm font-semibold text-neutral-800 dark:text-white truncate">
-          {item.title}
-        </h4>
+        <div className="flex items-center justify-between mb-1">
+          <h4 className="text-sm font-bold text-neutral-800 dark:text-white truncate">
+            {item.title}
+          </h4>
+          <StatusIcon
+            className="w-4 h-4 flex-shrink-0 ml-2"
+            style={{ color: statusColor }}
+          />
+        </div>
         <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
           {posterName}
         </p>
-        <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
-          {timeAgo(item.created_at)}
-          {" · "}
-          <span className={statusColor}>{item.status}</span>
-        </p>
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-xs text-neutral-400 dark:text-neutral-500">
+            {timeAgo(item.created_at)}
+          </span>
+          <span
+            className="px-2 py-0.5 rounded-md text-xs font-medium"
+            style={{
+              backgroundColor: statusColor + "15",
+              color: statusColor,
+            }}
+          >
+            {item.category}
+          </span>
+        </div>
       </div>
       <ChevronRight className="w-5 h-5 text-neutral-400 dark:text-neutral-500 flex-shrink-0" />
     </button>
   );
 };
 
-// --- Empty State (Styled like RN layout) ---
+// --- Enhanced Empty State with Modern Styling ---
 const EmptyState = ({
   icon: Icon,
   title,
   description,
   buttonText,
   onButtonClick,
-}) => (
-  <div className="text-center p-8 bg-white dark:bg-[#2a2a2a] rounded-xl border border-neutral-200 dark:border-[#3a3a3a] my-3">
-    <div className="w-14 h-14 bg-neutral-100 dark:bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-4">
-      <Icon className="w-7 h-7 text-neutral-400 dark:text-neutral-500" />
-    </div>
-    <h3 className="text-base font-semibold text-neutral-800 dark:text-white mb-1">
-      {title}
-    </h3>
-    {description && (
-      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4 max-w-xs mx-auto">
-        {description}
-      </p>
-    )}
-    {buttonText && (
-      <button
-        onClick={onButtonClick}
-        className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
+}) => {
+  const { theme } = useTheme();
+  const primaryColor = theme === "light" ? "#1877F2" : "#38bdf8";
+
+  return (
+    <div className="text-center p-10 bg-white dark:bg-[#2a2a2a] rounded-2xl border border-neutral-200 dark:border-[#3a3a3a] shadow-sm">
+      <div
+        className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
+        style={{
+          background: `linear-gradient(135deg, ${primaryColor}15, ${primaryColor}05)`,
+        }}
       >
-        <Plus className="w-4 h-4" />
-        {buttonText}
-      </button>
-    )}
-  </div>
-);
+        <Icon className="w-9 h-9" style={{ color: primaryColor }} />
+      </div>
+      <h3 className="text-lg font-bold text-neutral-800 dark:text-white mb-2">
+        {title}
+      </h3>
+      {description && (
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-5 max-w-xs mx-auto leading-relaxed">
+          {description}
+        </p>
+      )}
+      {buttonText && (
+        <button
+          onClick={onButtonClick}
+          className="inline-flex items-center gap-2 px-6 py-3 text-white text-sm font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+          style={{
+            background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}DD)`,
+          }}
+        >
+          <Plus className="w-4 h-4" />
+          {buttonText}
+        </button>
+      )}
+    </div>
+  );
+};
 
 // --- Chart Tooltip (from web) ---
 const CustomTooltip = ({ active, payload, label }) => {
@@ -483,6 +547,18 @@ const DashboardSkeleton = () => (
   </div>
 );
 
+// ==================== Theme Color Helper ====================
+const getThemeColors = (colorMode) => {
+  const colorMap = {
+    default: { primary: "#1877F2", light: "#60A5FA", dark: "#1565D8" },
+    blue: { primary: "#3B82F6", light: "#60A5FA", dark: "#2563EB" },
+    purple: { primary: "#A855F7", light: "#C084FC", dark: "#9333EA" },
+    pink: { primary: "#EC4899", light: "#F472B6", dark: "#DB2777" },
+    green: { primary: "#22C55E", light: "#4ADE80", dark: "#16A34A" },
+  };
+  return colorMap[colorMode] || colorMap.default;
+};
+
 // ==================== Main Page Component ====================
 export default function UserMainPage({ user }) {
   const [myRecentPosts, setMyRecentPosts] = useState([]);
@@ -492,8 +568,9 @@ export default function UserMainPage({ user }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
-  const { theme } = useTheme(); // Kept useTheme import
-  const primaryColor = theme === "light" ? "#1877F2" : "#38bdf8"; // Using brand colors
+  const { theme, colorMode } = useTheme();
+  const themeColors = getThemeColors(colorMode);
+  const primaryColor = themeColors.primary;
 
   const [stats, setStats] = useState({
     totalItems: 0,
@@ -771,167 +848,218 @@ export default function UserMainPage({ user }) {
     );
   }
 
-  // This is the main content, now matching the RN layout
+  // This is the main content, now matching the RN layout with modern design
   return (
-    <div className="bg-neutral-50 dark:bg-[#1a1a1a]">
-      {/* Welcome Section */}
-      <div className="p-4 bg-white dark:bg-[#242424]">
-        <h2 className="text-base text-neutral-500 dark:text-neutral-400">
-          Welcome back!
-        </h2>
+    <div className="bg-neutral-50 dark:bg-[#1a1a1a] min-h-screen pb-6">
+      {/* Modern Welcome Card with Theme-Responsive Gradient */}
+      <div className="p-4 md:p-6">
+        <div
+          className="rounded-2xl p-6 shadow-lg relative overflow-hidden"
+          style={{
+            background: `linear-gradient(135deg, ${themeColors.primary}, ${themeColors.dark})`,
+          }}
+        >
+          <div className="relative z-10">
+            <h2 className="text-2xl font-bold text-white mb-2">
+              Welcome back! 👋
+            </h2>
+            <p className="text-white/90 text-sm font-medium">
+              {stats.lostItems > 0
+                ? `You have ${stats.lostItems} active lost item${
+                    stats.lostItems > 1 ? "s" : ""
+                  }`
+                : "Everything looks good today!"}
+            </p>
+          </div>
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-20">
+            <Package className="w-20 h-20 text-white" />
+          </div>
+        </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="p-4 bg-white dark:bg-[#242424] border-b border-neutral-200 dark:border-neutral-700">
-        <div className="flex gap-3">
+      {/* Enhanced Stats Grid */}
+      <div className="px-4 md:px-6 mb-6">
+        <h3 className="text-xl font-bold text-neutral-800 dark:text-white mb-4">
+          Quick Overview
+        </h3>
+        <div className="grid grid-cols-2 gap-3 md:gap-4">
           <StatCard
             icon={Package}
             label="Total Items"
             value={stats.totalItems}
             color={primaryColor}
+            gradient={[themeColors.primary, themeColors.light]}
           />
           <StatCard
             icon={AlertCircle}
-            label="Lost Items"
+            label="Lost"
             value={stats.lostItems}
             color="#EF4444"
+            gradient={["#EF4444", "#F87171"]}
           />
-        </div>
-        <div className="flex gap-3 mt-3">
           <StatCard
             icon={CheckCircle}
-            label="Found Items"
+            label="Found"
             value={stats.foundItems}
             color="#10B981"
+            gradient={["#10B981", "#34D399"]}
           />
           <StatCard
             icon={Activity}
             label="Recovered"
             value={stats.recoveredItems}
-            color="#3B82F6"
+            color="#F59E0B"
+            gradient={["#F59E0B", "#FCD34D"]}
           />
         </div>
       </div>
 
-      {/* Charts Section */}
-      <div className="p-4 bg-white dark:bg-[#242424] mt-2">
-        <h3 className="text-lg font-semibold text-neutral-800 dark:text-white">
-          Your Activity
-        </h3>
-        <ChartCard
-          title="Weekly Activity"
-          data={chartData.weekly}
-          type="area"
-        />
-        <ChartCard
-          title="Top Categories"
-          data={chartData.categories}
-          type="bar"
-        />
-      </div>
-
-      {/* AI-Powered Matches */}
-      <div className="p-4 bg-white dark:bg-[#242424] mt-2">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5" style={{ color: primaryColor }} />
-          <h3 className="text-lg font-semibold text-neutral-800 dark:text-white">
-            AI-Powered Matches
+      {/* Charts Section with Modern Styling */}
+      {(chartData.weekly.length > 0 || chartData.categories.length > 0) && (
+        <div className="px-4 md:px-6 mb-6">
+          <h3 className="text-xl font-bold text-neutral-800 dark:text-white mb-4">
+            Activity Insights
           </h3>
+          {chartData.weekly.length > 0 && (
+            <ChartCard title="This Week" data={chartData.weekly} type="area" />
+          )}
+          {chartData.categories.length > 0 && (
+            <ChartCard
+              title="Top Categories"
+              data={chartData.categories}
+              type="bar"
+            />
+          )}
         </div>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-          Smart matching for your lost items
-        </p>
+      )}
 
-        {myLostItem ? (
-          <div>
-            {/* Your Latest Lost Item Card */}
-            <div className="bg-neutral-50 dark:bg-neutral-900/50 rounded-xl p-4 border border-neutral-200 dark:border-neutral-700">
-              <h4 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-3">
-                Your Latest Lost Item
-              </h4>
-              <div className="flex gap-3">
-                <ItemImage
-                  imageUrl={myLostItem.image_url}
-                  className="w-20 h-20 rounded-lg flex-shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <h5 className="text-base font-bold text-neutral-800 dark:text-white truncate">
-                    {myLostItem.title}
-                  </h5>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-2 mt-1">
-                    {myLostItem.description}
-                  </p>
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-neutral-100 dark:bg-neutral-700 rounded-full text-xs font-medium text-neutral-600 dark:text-neutral-300">
-                      <Tag className="w-3 h-3" />
-                      {myLostItem.category}
-                    </span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full text-xs font-medium">
-                      <AlertCircle className="w-3 h-3" />
-                      Lost
-                    </span>
+      {/* AI-Powered Matches with Theme-Responsive Header */}
+      <div className="px-4 md:px-6 mb-6">
+        <div className="bg-white dark:bg-[#2a2a2a] rounded-2xl p-5 border border-neutral-200 dark:border-[#3a3a3a] shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm"
+              style={{
+                background: `linear-gradient(135deg, ${themeColors.primary}, ${themeColors.light})`,
+              }}
+            >
+              <Sparkles className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-neutral-800 dark:text-white">
+                Smart Matching
+              </h3>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                AI-powered suggestions
+              </p>
+            </div>
+          </div>
+
+          {myLostItem ? (
+            <div>
+              {/* Your Latest Lost Item Card with Modern Gradient */}
+              <div
+                className="rounded-xl p-4 mb-4 border border-red-200 dark:border-red-900/30"
+                style={{
+                  background:
+                    theme === "light"
+                      ? "linear-gradient(135deg, #FEF2F2, #FEE2E2)"
+                      : "rgba(239, 68, 68, 0.1)",
+                }}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-500" />
+                    <h4 className="text-sm font-bold text-red-600 dark:text-red-400">
+                      Your Lost Item
+                    </h4>
+                  </div>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                    {timeAgo(myLostItem.created_at)}
+                  </span>
+                </div>
+                <div className="flex gap-3">
+                  <ItemImage
+                    imageUrl={myLostItem.image_url}
+                    className="w-20 h-20 rounded-xl flex-shrink-0 shadow-sm"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <h5 className="text-base font-bold text-neutral-800 dark:text-white truncate">
+                      {myLostItem.title}
+                    </h5>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2 mt-1">
+                      {myLostItem.description}
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-white dark:bg-neutral-800 rounded-lg text-xs font-medium text-neutral-700 dark:text-neutral-300 shadow-sm">
+                        <Tag className="w-3 h-3" />
+                        {myLostItem.category}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Matches List */}
-            {possibleMatches.length > 0 ? (
-              <div className="mt-4">
-                <h4 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-2">
-                  Possible Matches Found ({possibleMatches.length})
-                </h4>
-                <div className="flex gap-3 overflow-x-auto snap-x py-2 -mx-4 px-4">
-                  {possibleMatches.map((item) => (
-                    <MatchCard
-                      key={item.id}
-                      item={item}
-                      onPress={() =>
-                        navigate("/dashboard/browse-all", {
-                          state: { itemId: item.id },
-                        })
-                      }
-                    />
-                  ))}
+              {/* Matches List */}
+              {possibleMatches.length > 0 ? (
+                <div>
+                  <h4 className="text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-3">
+                    {possibleMatches.length} Possible Match
+                    {possibleMatches.length !== 1 ? "es" : ""}
+                  </h4>
+                  <div className="flex gap-3 overflow-x-auto snap-x py-2 -mx-5 px-5 scrollbar-hide">
+                    {possibleMatches.map((item) => (
+                      <MatchCard
+                        key={item.id}
+                        item={item}
+                        onPress={() =>
+                          navigate("/dashboard/browse-all", {
+                            state: { itemId: item.id },
+                          })
+                        }
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <EmptyState
-                icon={HelpCircle}
-                title="No matches found yet"
-                description="Our AI is continuously searching. We'll show potential matches here."
-              />
-            )}
-          </div>
-        ) : (
-          <EmptyState
-            icon={Package}
-            title="No active lost items"
-            description="If you lose something, post it here to enable AI-powered matching."
-            buttonText="Post Lost Item"
-            onButtonClick={() => navigate("/dashboard/post-new")}
-          />
-        )}
+              ) : (
+                <EmptyState
+                  icon={HelpCircle}
+                  title="Searching for matches..."
+                  description="We'll notify you when we find something"
+                />
+              )}
+            </div>
+          ) : (
+            <EmptyState
+              icon={Package}
+              title="No active lost items"
+              description="Report a lost item to enable smart matching"
+              buttonText="Report Lost Item"
+              onButtonClick={() => navigate("/dashboard/post-new")}
+            />
+          )}
+        </div>
       </div>
 
-      {/* My Recent Posts */}
-      <div className="p-4 bg-white dark:bg-[#242424] mt-2">
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="text-lg font-semibold text-neutral-800 dark:text-white">
-            My Recent Posts
+      {/* My Active Posts with Modern Styling */}
+      <div className="px-4 md:px-6 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-neutral-800 dark:text-white">
+            My Active Posts
           </h3>
           {myRecentPosts.length > 0 && (
             <Link
               to="/dashboard/my-posts"
-              className="text-sm font-semibold"
+              className="flex items-center gap-1 text-sm font-semibold hover:opacity-80 transition-opacity"
               style={{ color: primaryColor }}
             >
-              View all
+              See all
+              <ArrowRight className="w-4 h-4" />
             </Link>
           )}
         </div>
         {myRecentPosts.length > 0 ? (
-          <div className="flex gap-3 overflow-x-auto snap-x py-2 -mx-4 px-4">
+          <div className="flex gap-3 overflow-x-auto snap-x py-2 -mx-4 px-4 md:-mx-6 md:px-6 scrollbar-hide">
             {myRecentPosts.map((item) => (
               <ItemCard
                 key={item.id}
@@ -946,22 +1074,30 @@ export default function UserMainPage({ user }) {
           </div>
         ) : (
           <EmptyState
-            icon={EyeOff}
-            title="No active posts"
-            description="Items you post will appear here. Start by reporting a lost or found item."
-            buttonText="Post New Item"
+            icon={Plus}
+            title="No active posts yet"
+            description="Start by reporting a lost or found item"
+            buttonText="Create Post"
             onButtonClick={() => navigate("/dashboard/post-new")}
           />
         )}
       </div>
 
-      {/* Recent Activity */}
-      <div className="p-4 bg-white dark:bg-[#242424] mt-2 pb-6">
-        <h3 className="text-lg font-semibold text-neutral-800 dark:text-white mb-2">
-          Recent Community Activity
-        </h3>
+      {/* Community Feed with Modern Styling */}
+      <div className="px-4 md:px-6 mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-neutral-800 dark:text-white">
+            Community Feed
+          </h3>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+            <span className="text-sm font-semibold text-green-600 dark:text-green-400">
+              Live
+            </span>
+          </div>
+        </div>
         {communityActivity.length > 0 ? (
-          <div className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-700 border-t border-b border-neutral-100 dark:border-neutral-700">
+          <div className="bg-white dark:bg-[#2a2a2a] rounded-2xl border border-neutral-200 dark:border-[#3a3a3a] shadow-sm overflow-hidden divide-y divide-neutral-100 dark:divide-neutral-700">
             {communityActivity.slice(0, 5).map((item) => (
               <ActivityItem
                 key={item.id}
@@ -976,9 +1112,9 @@ export default function UserMainPage({ user }) {
           </div>
         ) : (
           <EmptyState
-            icon={Clock}
+            icon={Activity}
             title="No recent activity"
-            description="Approved posts from others on your campus will show up here."
+            description="Check back later for updates"
           />
         )}
       </div>

@@ -68,7 +68,8 @@ const getApiBaseUrl = () => {
   }
 
   // 4. Production - use deployed backend
-  const productionUrl = "https://campustrace-production.up.railway.app";
+  const productionUrl =
+    "https://campustrace-ai-powered-lost-and-found-bcho.onrender.com";
   console.log("📡 [API] Production mode, using:", productionUrl);
   return productionUrl;
 };
