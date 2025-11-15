@@ -673,7 +673,7 @@ const ItemDetailsModal = memo(
                     onPress={() => onClaim(item)}
                   >
                     <Send size={20} color="#FFF" />
-                    <Text style={styles.claimButtonText}>Claim This Item</Text>
+                    <Text style={styles.claimButtonText}>Claim Item</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
@@ -684,7 +684,7 @@ const ItemDetailsModal = memo(
                   onPress={handleStartConversation}
                 >
                   <MessageCircle size={20} color="#FFF" />
-                  <Text style={styles.messageButtonText}>Message Poster</Text>
+                  <Text style={styles.messageButtonText}>Message</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -701,6 +701,14 @@ const ClaimModal = memo(
   ({ visible, item, onClose, onSubmit, colors, styles }) => {
     const [verificationMessage, setVerificationMessage] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Reset state when modal closes
+    useEffect(() => {
+      if (!visible) {
+        setVerificationMessage("");
+        setIsSubmitting(false);
+      }
+    }, [visible]);
 
     const handleSubmit = async () => {
       if (!verificationMessage.trim()) {
@@ -727,89 +735,100 @@ const ClaimModal = memo(
     return (
       <Modal
         visible={visible}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={onClose}
+        hardwareAccelerated={true}
+        statusBarTranslucent={true}
       >
-        <View
-          style={[
-            styles.modalOverlay,
-            { backgroundColor: colors.overlay || "rgba(0,0,0,0.5)" },
-          ]}
+        <TouchableOpacity
+          style={[styles.modalOverlay, { backgroundColor: "rgba(0,0,0,0.6)" }]}
+          activeOpacity={1}
+          onPress={onClose}
         >
-          <View
-            style={[styles.claimModalContent, { backgroundColor: colors.card }]}
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
           >
-            <Text style={[styles.claimModalTitle, { color: colors.text }]}>
-              Claim Item: {item?.title}
-            </Text>
-            <Text
+            <View
               style={[
-                styles.claimModalSubtitle,
-                { color: colors.textSecondary },
+                styles.claimModalContent,
+                { backgroundColor: colors.card },
               ]}
             >
-              To verify ownership, please describe a unique detail only you
-              would know.
-            </Text>
-
-            <TextInput
-              style={[
-                styles.claimInput,
-                {
-                  backgroundColor: colors.background,
-                  borderColor: colors.border,
-                  color: colors.text,
-                },
-              ]}
-              placeholder="Enter your secret detail here..."
-              placeholderTextColor={colors.textTertiary}
-              multiline
-              numberOfLines={5}
-              value={verificationMessage}
-              onChangeText={setVerificationMessage}
-              editable={!isSubmitting}
-              textAlignVertical="top"
-            />
-
-            <View style={styles.claimModalButtons}>
-              <TouchableOpacity
+              <Text style={[styles.claimModalTitle, { color: colors.text }]}>
+                Claim This Item
+              </Text>
+              <Text
                 style={[
-                  styles.cancelButton,
+                  styles.claimModalSubtitle,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                Describe a unique detail only the owner would know
+              </Text>
+
+              <TextInput
+                style={[
+                  styles.claimInput,
                   {
-                    backgroundColor: colors.surface,
+                    backgroundColor: colors.background,
                     borderColor: colors.border,
+                    color: colors.text,
                   },
                 ]}
-                onPress={onClose}
-                disabled={isSubmitting}
-              >
-                <Text style={[styles.cancelButtonText, { color: colors.text }]}>
-                  Cancel
-                </Text>
-              </TouchableOpacity>
+                placeholder="e.g., What's inside the wallet? What color is the lining?"
+                placeholderTextColor={colors.textTertiary}
+                multiline
+                numberOfLines={6}
+                value={verificationMessage}
+                onChangeText={setVerificationMessage}
+                editable={!isSubmitting}
+                textAlignVertical="top"
+                autoFocus={false}
+              />
 
-              <TouchableOpacity
-                style={[
-                  styles.submitButton,
-                  { backgroundColor: colors.primary },
-                  isSubmitting && { ...styles.disabledButton, opacity: 0.5 },
-                ]}
-                onPress={handleSubmit}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <ActivityIndicator size="small" color="#FFF" />
-                ) : (
-                  <>
-                    <Send size={18} color="#FFF" />
-                    <Text style={styles.submitButtonText}>Submit Claim</Text>
-                  </>
-                )}
-              </TouchableOpacity>
+              <View style={styles.claimModalButtons}>
+                <TouchableOpacity
+                  style={[
+                    styles.cancelButton,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                  onPress={onClose}
+                  disabled={isSubmitting}
+                >
+                  <Text
+                    style={[styles.cancelButtonText, { color: colors.text }]}
+                  >
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.submitButton,
+                    { backgroundColor: colors.primary },
+                    isSubmitting && { ...styles.disabledButton, opacity: 0.5 },
+                  ]}
+                  onPress={handleSubmit}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <>
+                      <Send size={20} color="#FFF" />
+                      <Text style={styles.submitButtonText}>Submit Claim</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     );
   }
@@ -1147,7 +1166,7 @@ const BrowseScreen = () => {
 
     if (!token) throw new Error("Authentication required");
 
-    const response = await fetch(`${API_BASE_URL}/api/claims/create`, {
+    const response = await fetch(`${API_BASE_URL}/api/claims/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1505,9 +1524,12 @@ const BrowseScreen = () => {
       />
 
       <ItemDetailsModal
-        visible={!!selectedItem}
+        visible={!!selectedItem && !showClaim}
         item={selectedItem}
-        onClose={() => setSelectedItem(null)}
+        onClose={() => {
+          setSelectedItem(null);
+          setShowClaim(false);
+        }}
         onClaim={(item) => {
           setShowClaim(true);
         }}
@@ -1518,9 +1540,11 @@ const BrowseScreen = () => {
       />
 
       <ClaimModal
-        visible={showClaim}
+        visible={showClaim && !!selectedItem}
         item={selectedItem}
-        onClose={() => setShowClaim(false)}
+        onClose={() => {
+          setShowClaim(false);
+        }}
         onSubmit={submitClaim}
         colors={colors}
         styles={styles}
@@ -1853,7 +1877,8 @@ const createStyles = (colors) =>
     modalOverlay: {
       flex: 1,
       backgroundColor: colors.overlay || "rgba(0, 0, 0, 0.5)",
-      justifyContent: "flex-end",
+      justifyContent: "center",
+      alignItems: "center",
       padding: 0,
     },
     modalContent: {
@@ -2180,60 +2205,69 @@ const createStyles = (colors) =>
     // Claim Modal Styles
     claimModalContent: {
       backgroundColor: colors.card,
-      borderRadius: 16,
-      padding: 20,
-      width: "90%",
-      maxWidth: 400,
+      borderRadius: 20,
+      padding: 24,
+      margin: 20,
+      width: screenWidth - 40,
+      maxWidth: 500,
+      alignSelf: "center",
+      ...getShadow("lg"),
     },
     claimModalTitle: {
-      fontSize: 20,
-      fontWeight: "600",
+      fontSize: 22,
+      fontWeight: "700",
       color: colors.text,
       marginBottom: 8,
+      textAlign: "center",
     },
     claimModalSubtitle: {
       fontSize: 14,
       color: colors.textSecondary,
-      marginBottom: 16,
+      marginBottom: 20,
       lineHeight: 20,
+      textAlign: "center",
     },
     claimInput: {
-      borderWidth: 1,
+      borderWidth: 1.5,
       borderColor: colors.border,
-      borderRadius: 8,
-      padding: 12,
-      fontSize: 14,
-      minHeight: 120,
-      marginBottom: 20,
+      borderRadius: 12,
+      padding: 16,
+      fontSize: 15,
+      minHeight: 140,
+      marginBottom: 24,
       color: colors.text,
       backgroundColor: colors.background,
+      textAlignVertical: "top",
     },
     claimModalButtons: {
       flexDirection: "row",
       gap: 12,
+      marginTop: 4,
     },
     cancelButton: {
       flex: 1,
-      paddingVertical: 12,
+      paddingVertical: 14,
       alignItems: "center",
-      borderWidth: 1,
+      borderWidth: 1.5,
       borderColor: colors.border,
-      borderRadius: 8,
+      borderRadius: 12,
+      backgroundColor: colors.surface,
     },
     cancelButtonText: {
-      fontSize: 15,
-      color: colors.textSecondary,
-      fontWeight: "500",
+      fontSize: 16,
+      color: colors.text,
+      fontWeight: "600",
     },
     submitButton: {
       flex: 1,
       flexDirection: "row",
       justifyContent: "center",
       alignItems: "center",
-      gap: 6,
+      gap: 8,
       backgroundColor: BRAND_COLOR,
-      paddingVertical: 12,
-      borderRadius: 8,
+      paddingVertical: 14,
+      borderRadius: 12,
+      ...getShadow("md"),
     },
     submitButtonText: {
       color: "#FFFFFF",

@@ -102,6 +102,9 @@ const ConfirmEmailPage = lazy(() =>
 const AdminBackupPage = lazy(() =>
   import("./features/AdminDashboard/Pages/adminBackupPage.jsx")
 );
+const HandoverPage = lazy(() =>
+  import("./features/UserDashboard/Pages/HandoverPage.jsx")
+);
 
 function PrivateRouter({ children, isLoading, session }) {
   if (isLoading) return <LoadingScreen />;
@@ -348,6 +351,10 @@ function AppContent() {
                 <Route
                   path="help"
                   element={<HelpPage user={session?.user} />}
+                />
+                <Route
+                  path="handover/:itemId"
+                  element={<HandoverPage user={session?.user} />}
                 />
               </Route>
 

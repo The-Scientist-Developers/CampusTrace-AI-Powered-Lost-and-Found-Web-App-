@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Pressable,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -18,10 +18,10 @@ import { apiClient } from "../../utils/apiClient";
 import { useRoute } from "@react-navigation/native";
 import {
   KeyRound,
-  Loader2,
   AlertCircle,
   Send,
   ArrowLeft,
+  User,
 } from "lucide-react-native";
 
 // --- Handover Controls Component ---
@@ -97,13 +97,12 @@ const HandoverControls = ({
   }
 
   return (
-    <View style={[styles.handoverContainer, { borderColor: colors.border }]}>
+    <View style={dynamicStyles.handoverContainer}>
       <TouchableOpacity
         onPress={handleStartHandover}
         disabled={codeLoading}
         style={[
-          styles.handoverButton,
-          { backgroundColor: colors.primary },
+          dynamicStyles.handoverButton,
           codeLoading && styles.disabledButton,
         ]}
       >
@@ -112,8 +111,8 @@ const HandoverControls = ({
         ) : (
           <KeyRound size={18} color="#FFFFFF" />
         )}
-        <Text style={styles.handoverButtonText}>
-          Start Secure Handover (Get Code)
+        <Text style={dynamicStyles.handoverButtonText}>
+          Start Secure Handover (Get Code) Start Secure Handover (Get Code)
         </Text>
       </TouchableOpacity>
     </View>
@@ -136,16 +135,21 @@ const ChatScreen = ({ navigation }) => {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      paddingHorizontal: 20,
-      paddingVertical: 16,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
       backgroundColor: colors.surface,
-      borderBottomWidth: 0,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
     },
     headerTitle: {
-      fontSize: 22,
-      fontWeight: "700",
-      letterSpacing: -0.5,
+      fontSize: 16,
+      fontWeight: "600",
       color: colors.text,
+    },
+    headerSubtitle: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginTop: 2,
     },
     messageList: {
       flex: 1,
@@ -251,6 +255,7 @@ const ChatScreen = ({ navigation }) => {
   const [user, setUser] = useState(null);
   const [conversationDetails, setConversationDetails] = useState(null);
   const [isSending, setIsSending] = useState(false);
+  const [otherUser, setOtherUser] = useState(null);
 
   // Get user
   useEffect(() => {
@@ -281,6 +286,23 @@ const ChatScreen = ({ navigation }) => {
 
         if (convoError) throw convoError;
         setConversationDetails(convoData);
+
+        // Determine the other user in the conversation
+        const otherUserId =
+          convoData.user1_id === user?.id
+            ? convoData.user2_id
+            : convoData.user1_id;
+
+        // Fetch other user's profile
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url")
+          .eq("id", otherUserId)
+          .single();
+
+        if (!profileError && profileData) {
+          setOtherUser(profileData);
+        }
 
         // Fetch messages
         const { data: msgData, error: msgError } = await supabase
@@ -361,6 +383,8 @@ const ChatScreen = ({ navigation }) => {
 
   const renderMessageItem = ({ item }) => {
     const isMyMessage = item.sender_id === user?.id;
+    const showAvatar = !isMyMessage && otherUser;
+
     return (
       <View
         style={[
@@ -368,6 +392,25 @@ const ChatScreen = ({ navigation }) => {
           isMyMessage ? styles.myMessageRow : styles.otherMessageRow,
         ]}
       >
+        {showAvatar && (
+          <View style={styles.avatarContainer}>
+            {otherUser.avatar_url ? (
+              <Image
+                source={{ uri: otherUser.avatar_url }}
+                style={styles.avatar}
+              />
+            ) : (
+              <View
+                style={[
+                  styles.avatarPlaceholder,
+                  { backgroundColor: colors.primary },
+                ]}
+              >
+                <User size={16} color="#FFFFFF" />
+              </View>
+            )}
+          </View>
+        )}
         <View
           style={[
             dynamicStyles.messageBubble,
@@ -416,7 +459,50 @@ const ChatScreen = ({ navigation }) => {
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <ArrowLeft size={24} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={dynamicStyles.headerTitle}>{itemTitle || "Chat"}</Text>
+
+          <View style={styles.headerCenter}>
+            {otherUser && (
+              <View style={styles.headerUserInfo}>
+                {otherUser.avatar_url ? (
+                  <Image
+                    source={{ uri: otherUser.avatar_url }}
+                    style={styles.headerAvatar}
+                  />
+                ) : (
+                  <View
+                    style={[
+                      styles.headerAvatarPlaceholder,
+                      { backgroundColor: colors.primary },
+                    ]}
+                  >
+                    <User size={20} color="#FFFFFF" />
+                  </View>
+                )}
+                <View style={styles.headerTextContainer}>
+                  <Text style={dynamicStyles.headerTitle} numberOfLines={1}>
+                    {otherUser.full_name}
+                  </Text>
+                  {itemTitle && (
+                    <Text
+                      style={[
+                        dynamicStyles.headerSubtitle,
+                        { color: colors.textSecondary },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      About: {itemTitle}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            )}
+            {!otherUser && (
+              <Text style={dynamicStyles.headerTitle}>
+                {itemTitle || "Chat"}
+              </Text>
+            )}
+          </View>
+
           <View style={{ width: 24 }} />
         </View>
 
@@ -496,12 +582,57 @@ const styles = StyleSheet.create({
   messageRow: {
     marginVertical: 4,
     flexDirection: "row",
+    alignItems: "flex-end",
+    paddingHorizontal: 4,
   },
   myMessageRow: {
     justifyContent: "flex-end",
   },
   otherMessageRow: {
     justifyContent: "flex-start",
+  },
+  avatarContainer: {
+    marginRight: 8,
+    marginBottom: 2,
+  },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  avatarPlaceholder: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerUserInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    maxWidth: "100%",
+  },
+  headerAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  headerAvatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  headerTextContainer: {
+    flex: 1,
   },
   messageBubble: {
     paddingVertical: 10,

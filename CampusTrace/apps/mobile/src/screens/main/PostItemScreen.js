@@ -80,6 +80,53 @@ export default function PostItemScreen({ navigation, route }) {
     }
   }, [itemToEdit]);
 
+  const showImagePickerOptions = () => {
+    Alert.alert(
+      "Add Photo",
+      "Choose an option",
+      [
+        {
+          text: "Take Photo",
+          onPress: takePhoto,
+        },
+        {
+          text: "Choose from Gallery",
+          onPress: pickImage,
+        },
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const takePhoto = async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      Alert.alert(
+        "Permission Required",
+        "Permission to access camera is required!"
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      const uri = result.assets[0].uri;
+      setNewImageUri(uri);
+      setImageUri(uri);
+      await analyzeImageWithAI(uri);
+    }
+  };
+
   const pickImage = async () => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -93,7 +140,7 @@ export default function PostItemScreen({ navigation, route }) {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.Images, // Fixed deprecated MediaTypeOptions
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8,
@@ -101,12 +148,15 @@ export default function PostItemScreen({ navigation, route }) {
 
     if (!result.canceled) {
       const uri = result.assets[0].uri;
-      setNewImageUri(uri); // Set the new local URI
-      setImageUri(uri); // Show the new image in preview
-
-      // Automatically analyze the image with AI
+      setNewImageUri(uri);
+      setImageUri(uri);
       await analyzeImageWithAI(uri);
     }
+  };
+
+  const removeImage = () => {
+    setImageUri(null);
+    setNewImageUri(null);
   };
 
   const analyzeImageWithAI = async (uri) => {
@@ -187,11 +237,6 @@ export default function PostItemScreen({ navigation, route }) {
     } finally {
       setIsAnalyzingImage(false);
     }
-  };
-
-  const removeImage = () => {
-    setImageUri(null);
-    setNewImageUri(null);
   };
 
   const handleImproveDescription = async () => {
@@ -687,7 +732,7 @@ export default function PostItemScreen({ navigation, route }) {
                 </View>
               ) : (
                 <TouchableOpacity
-                  onPress={pickImage}
+                  onPress={showImagePickerOptions}
                   style={[
                     styles.uploadButton,
                     {
@@ -700,7 +745,7 @@ export default function PostItemScreen({ navigation, route }) {
                   <Text
                     style={[styles.uploadButtonText, { color: colors.text }]}
                   >
-                    Tap to upload
+                    Tap to add photo
                   </Text>
                   <Text
                     style={[
@@ -708,7 +753,7 @@ export default function PostItemScreen({ navigation, route }) {
                       { color: colors.textSecondary },
                     ]}
                   >
-                    PNG, JPG, GIF up to 10MB
+                    Take photo or choose from gallery
                   </Text>
                 </TouchableOpacity>
               )}

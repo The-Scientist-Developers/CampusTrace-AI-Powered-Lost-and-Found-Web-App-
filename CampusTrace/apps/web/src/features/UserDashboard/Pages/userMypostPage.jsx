@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase, apiClient } from "../../../api/apiClient";
 import { toast } from "react-hot-toast";
 import { API_BASE_URL } from "../../../api/apiClient";
@@ -272,57 +273,91 @@ const MyPostPreviewModal = ({ item, onClose }) => {
   );
 };
 
-const ClaimCard = ({ claim, onRespond, item }) => (
-  <div className="bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-[#1a1a1a] dark:to-[#1f1f1f] rounded-xl p-5 border border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-all">
-    <div className="flex items-start gap-4">
-      <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center flex-shrink-0">
-        <User className="w-6 h-6 text-primary-600 dark:text-primary-400" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-neutral-800 dark:text-white">
-              {claim.claimant.full_name || claim.claimant.email}
-            </p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-              Submitted {new Date(claim.created_at).toLocaleDateString()}
-            </p>
-          </div>
-          <div className="flex gap-2 flex-shrink-0">
-            <button
-              onClick={() => onRespond(claim.id, true)}
-              className="p-2 bg-green-100 dark:bg-green-500/10 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-500/20 transition-colors group"
-              title="Approve Claim"
-            >
-              <Check className="w-4 h-4 group-hover:scale-110 transition-transform" />
-            </button>
-            <button
-              onClick={() => onRespond(claim.id, false)}
-              className="p-2 bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-500/20 transition-colors group"
-              title="Reject Claim"
-            >
-              <X className="w-4 h-4 group-hover:scale-110 transition-transform" />
-            </button>
-          </div>
+const ClaimCard = ({ claim, onRespond, item, onStartHandover, navigate }) => {
+  const isApproved = claim.status === "approved";
+  const isPending = claim.status === "pending";
+
+  return (
+    <div className="bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-[#1a1a1a] dark:to-[#1f1f1f] rounded-xl p-5 border border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-all">
+      <div className="flex items-start gap-4">
+        <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center flex-shrink-0">
+          <User className="w-6 h-6 text-primary-600 dark:text-primary-400" />
         </div>
-        <div className="mt-3 p-3 bg-white dark:bg-[#2a2a2a] rounded-lg border-l-4 border-primary-500">
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">
-            Verification Details
-          </p>
-          <p className="text-sm text-neutral-700 dark:text-neutral-300 italic">
-            "{claim.verification_message}"
-          </p>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-neutral-800 dark:text-white">
+                {claim.claimant.full_name || claim.claimant.email}
+              </p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                Submitted {new Date(claim.created_at).toLocaleDateString()}
+              </p>
+              {isApproved && (
+                <span className="inline-flex items-center gap-1 mt-2 px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full">
+                  <CheckCircle className="w-3 h-3" />
+                  Approved
+                </span>
+              )}
+            </div>
+            {isPending && (
+              <div className="flex gap-2 flex-shrink-0">
+                <button
+                  onClick={() => onRespond(claim.id, true)}
+                  className="p-2 bg-green-100 dark:bg-green-500/10 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-500/20 transition-colors group"
+                  title="Approve Claim"
+                >
+                  <Check className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                </button>
+                <button
+                  onClick={() => onRespond(claim.id, false)}
+                  className="p-2 bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-500/20 transition-colors group"
+                  title="Reject Claim"
+                >
+                  <X className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="mt-3 p-3 bg-white dark:bg-[#2a2a2a] rounded-lg border-l-4 border-primary-500">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">
+              Verification Details
+            </p>
+            <p className="text-sm text-neutral-700 dark:text-neutral-300 italic">
+              "{claim.verification_message}"
+            </p>
+          </div>
+          {isApproved && item.moderation_status === "pending_return" && (
+            <button
+              onClick={() =>
+                navigate(`/dashboard/handover/${item.id}?role=finder`)
+              }
+              className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              Verify Handover Code
+            </button>
+          )}
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-const PostCard = ({ post, onDelete, onMarkRecovered, hasClaims, onClick }) => {
+const PostCard = ({
+  post,
+  onDelete,
+  onMarkRecovered,
+  hasClaims,
+  onClick,
+  onStartHandover,
+  onVerifyHandover,
+}) => {
   const isLost = post.status?.toLowerCase() === "lost";
   const canRecover =
     post.moderation_status === "pending_return" ||
     (post.status === "Lost" && post.moderation_status === "approved");
+  const isPendingReturn = post.moderation_status === "pending_return";
+  const isFoundItem = post.status?.toLowerCase() === "found";
 
   return (
     <div className="group relative bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
@@ -419,66 +454,30 @@ const PostCard = ({ post, onDelete, onMarkRecovered, hasClaims, onClick }) => {
 
           <StatusBadge status={post.moderation_status} />
 
-          {/* --- Handover / Recover --- */}
-          {post.moderation_status === "pending_return" ? (
-            <div
-              className="mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
-              onClick={(e) => e.stopPropagation()}
+          {/* --- Handover / Recover Buttons --- */}
+          {isPendingReturn && isFoundItem && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onVerifyHandover(post.id);
+              }}
+              className="w-full mt-4 flex items-center justify-center gap-2 rounded-lg border-2 border-green-600 bg-green-50 dark:bg-green-900/20 px-4 py-3 text-sm font-semibold text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
             >
-              <h4 className="font-semibold text-gray-800 dark:text-gray-100">
-                Complete Handover
-              </h4>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                Enter the 4-digit code from the claimant to mark this item as
-                recovered.
-              </p>
-              <div className="flex gap-2 mt-3">
-                <input
-                  type="tel"
-                  maxLength="4"
-                  placeholder="1234"
-                  value={handoverCode}
-                  onChange={(e) =>
-                    setHandoverCode(e.target.value.replace(/[^0-9]/g, ""))
-                  }
-                  className="block w-24 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-                />
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCompleteHandover(post.id);
-                  }}
-                  disabled={isCompleting || handoverCode.length !== 4}
-                  className="flex justify-center items-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-gray-900"
-                >
-                  {isCompleting ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <ShieldCheck className="h-5 w-5" />
-                  )}
-                  <span className="ml-2">Verify</span>
-                </button>
-              </div>
-              {completeError && (
-                <p className="text-sm text-red-600 dark:text-red-400 mt-2">
-                  {completeError}
-                </p>
-              )}
-            </div>
-          ) : (
-            canRecover && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent modal from opening
-                  onMarkRecovered(post.id);
-                }}
-                className="mt-4 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600 dark:focus:ring-offset-gray-900"
-              >
-                {post.moderation_status === "recovered"
-                  ? "Recovered"
-                  : "Mark as Recovered"}
-              </button>
-            )
+              <ShieldCheck className="w-4 h-4" />
+              Verify Handover Code
+            </button>
+          )}
+
+          {canRecover && !isPendingReturn && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onMarkRecovered(post.id);
+              }}
+              className="w-full mt-4 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-600 transition-colors"
+            >
+              Mark as Recovered
+            </button>
           )}
           {/* --- End Handover / Recover --- */}
         </div>
@@ -525,16 +524,14 @@ const ClaimCardSkeleton = () => (
 );
 
 export default function MyPostsPage({ user }) {
+  const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [claims, setClaims] = useState({});
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("myPosts");
   const [postStatusFilter, setPostStatusFilter] = useState("active");
   const [error, setError] = useState(null);
-  const [selectedItem, setSelectedItem] = useState(null); // <-- State for modal
-  const [handoverCode, setHandoverCode] = useState("");
-  const [isCompleting, setIsCompleting] = useState(false);
-  const [completeError, setCompleteError] = useState("");
+  const [selectedItem, setSelectedItem] = useState(null);
 
   const fetchClaims = async (foundItems) => {
     if (foundItems.length === 0) return;
@@ -656,32 +653,12 @@ export default function MyPostsPage({ user }) {
     }
   };
 
-  const handleCompleteHandover = async (itemId) => {
-    if (handoverCode.length !== 4) {
-      setCompleteError("Code must be 4 digits.");
-      return;
-    }
-    setIsCompleting(true);
-    setCompleteError("");
-    try {
-      const formData = new FormData();
-      formData.append("code", handoverCode);
-      const { data } = await apiClient.post(
-        `/handover/items/${itemId}/complete-handover`,
-        formData
-      );
-      // Refresh items to show "Recovered" status
-      fetchPosts();
-      setHandoverCode(""); // Clear code
-      toast.success("Item marked as recovered!");
-    } catch (error) {
-      console.error("Error completing handover:", error);
-      setCompleteError(
-        error.response?.data?.detail || "Invalid code or error."
-      );
-    } finally {
-      setIsCompleting(false);
-    }
+  const handleStartHandover = (itemId) => {
+    navigate(`/dashboard/handover/${itemId}?role=claimant`);
+  };
+
+  const handleVerifyHandover = (itemId) => {
+    navigate(`/dashboard/handover/${itemId}?role=finder`);
   };
 
   // Calculate stats
@@ -901,9 +878,11 @@ export default function MyPostsPage({ user }) {
                   <PostCard
                     key={post.id}
                     post={post}
-                    onClick={setSelectedItem} // <-- Pass setter to card
+                    onClick={setSelectedItem}
                     onDelete={handleDeletePost}
                     onMarkRecovered={handleMarkAsRecovered}
+                    onStartHandover={handleStartHandover}
+                    onVerifyHandover={handleVerifyHandover}
                     hasClaims={claims[post.id]?.length > 0}
                   />
                 ))}
@@ -967,7 +946,9 @@ export default function MyPostsPage({ user }) {
                         key={claim.id}
                         claim={claim}
                         onRespond={handleRespondToClaim}
+                        onStartHandover={handleStartHandover}
                         item={post}
+                        navigate={navigate}
                       />
                     ))}
                   </div>

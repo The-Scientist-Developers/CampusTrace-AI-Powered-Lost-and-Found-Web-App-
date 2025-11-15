@@ -130,6 +130,15 @@ export default function PostNewItem() {
     }
   };
 
+  const handleCameraCapture = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Use the same handler as file upload
+    const fakeEvent = { target: { files: [file] } };
+    await handleImageChange(fakeEvent);
+  };
+
   const removeImage = () => {
     setImageFile(null);
     setImagePreview("");
@@ -289,7 +298,7 @@ export default function PostNewItem() {
           I Lost Something
         </button>
         <button
-          type_button
+          type="button"
           onClick={() => setStatus("Found")}
           className={`px-6 py-2.5 rounded-full font-medium transition-all ${
             status === "Found"
@@ -477,7 +486,7 @@ export default function PostNewItem() {
           <div>
             <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
               <ImageIcon className="w-4 h-4 text-primary-500" />
-              Upload Photo (Optional)
+              Add Photo (Optional)
             </label>
             <div className="mt-2">
               {imagePreview ? (
@@ -501,28 +510,48 @@ export default function PostNewItem() {
                   </div>
                 </div>
               ) : (
-                <label
-                  htmlFor="image-upload"
-                  className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-xl cursor-pointer hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-all"
-                >
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <UploadCloud className="w-10 h-10 mb-3 text-neutral-400" />
-                    <p className="mb-2 text-sm text-neutral-700 dark:text-neutral-300">
-                      <span className="font-semibold">Click to upload</span> or
-                      drag and drop
-                    </p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      PNG, JPG, GIF up to 10MB
-                    </p>
-                  </div>
-                  <input
-                    type="file"
-                    id="image-upload"
-                    onChange={handleImageChange}
-                    accept="image/*"
-                    className="hidden"
-                  />
-                </label>
+                <div className="space-y-3">
+                  {/* Camera Capture Button */}
+                  <label
+                    htmlFor="camera-capture"
+                    className="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-primary-500 text-primary-600 dark:text-primary-400 rounded-xl cursor-pointer hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-all font-medium"
+                  >
+                    <Camera className="w-5 h-5" />
+                    Take Photo with Camera
+                    <input
+                      type="file"
+                      id="camera-capture"
+                      onChange={handleCameraCapture}
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                    />
+                  </label>
+
+                  {/* File Upload Area */}
+                  <label
+                    htmlFor="image-upload"
+                    className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-xl cursor-pointer hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-all"
+                  >
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <UploadCloud className="w-10 h-10 mb-3 text-neutral-400" />
+                      <p className="mb-2 text-sm text-neutral-700 dark:text-neutral-300">
+                        <span className="font-semibold">Click to upload</span>{" "}
+                        or drag and drop
+                      </p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                        PNG, JPG, GIF up to 10MB
+                      </p>
+                    </div>
+                    <input
+                      type="file"
+                      id="image-upload"
+                      onChange={handleImageChange}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                  </label>
+                </div>
               )}
             </div>
           </div>

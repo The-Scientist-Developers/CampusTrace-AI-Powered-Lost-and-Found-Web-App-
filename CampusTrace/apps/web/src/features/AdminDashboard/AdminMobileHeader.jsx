@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Bell, Moon, Sun, ShieldCheck } from "lucide-react";
+import { Bell, Moon, Sun, ShieldCheck, User } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 
 export default function AdminMobileHeader({
@@ -57,6 +57,19 @@ export default function AdminMobileHeader({
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
+          {/* Switch to User View */}
+          <button
+            onClick={() => navigate("/dashboard")}
+            className="p-2.5 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-all duration-200 active:scale-95"
+            style={{
+              minWidth: "44px",
+              minHeight: "44px",
+            }}
+            title="Switch to User View"
+          >
+            <User className="w-5 h-5" />
+          </button>
+
           {/* Dark Mode Toggle */}
           <button
             onClick={toggleTheme}

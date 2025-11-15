@@ -405,6 +405,41 @@ export default function AdminSettingsPage({ user }) {
         </div>
       </SectionCard>
 
+      {/* Switch to User View Section */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-neutral-800 dark:text-white mb-2">
+              Switch to User View
+            </h3>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+              View the app as a regular user to see what your community
+              experiences. You can return to admin view anytime from your
+              profile.
+            </p>
+            <button
+              onClick={() => (window.location.href = "/dashboard")}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg transition-colors shadow-sm hover:shadow-md"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+              Switch to User View
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="mt-8">
         <SubmitButton
           onClick={handleSaveSettings}

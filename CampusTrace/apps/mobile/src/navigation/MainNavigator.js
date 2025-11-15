@@ -22,6 +22,7 @@ import MessagesScreen from "../screens/main/MessagesScreen";
 import NotificationScreen from "../screens/main/NotificationScreen";
 import ChatScreen from "../screens/main/ChatScreen";
 import MyPostsScreen from "../screens/main/MyPostsScreen";
+import HandoverScreen from "../screens/main/HandoverScreen";
 
 // --- IMPORT NEW SCREENS ---
 import SettingsScreen from "../screens/main/SettingsScreen";
@@ -42,6 +43,7 @@ function DashboardStack() {
       <Stack.Screen name="Notifications" component={NotificationScreen} />
       <Stack.Screen name="MyPosts" component={MyPostsScreen} />
       <Stack.Screen name="Chat" component={ChatScreen} />
+      <Stack.Screen name="Handover" component={HandoverScreen} />
     </Stack.Navigator>
   );
 }

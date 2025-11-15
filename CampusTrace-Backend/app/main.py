@@ -23,6 +23,7 @@ from app.config import get_settings
 from app.dependencies import get_current_user_id, get_admin_university_id, supabase
 from app import jina_embedding_util
 from app.push_notification_service import PushNotificationService
+from app.routers import handover
 
 # Load application settings and initialize global variables
 settings = get_settings()
@@ -2971,3 +2972,102 @@ async def get_push_notification_status(user_id: str = Depends(get_current_user_i
 
 # Include push notification router
 app.include_router(push_router)
+
+
+# ============= Handover Endpoints =============
+import random
+import string
+from datetime import timedelta
+
+def generate_handover_code() -> str:
+    """Generate a random 4-digit handover code."""
+    return ''.join(random.choices(string.digits, k=4))
+
+
+@handover_router.post("/items/{item_id}/start-handover")
+async def start_handover(
+    item_id: int,
+    user_id: str = Depends(get_current_user_id)
+):
+    """
+    Start the handover process by generating a verification code.
+    Only the claimant can start the handover.
+    """
+    try:
+        # Get the item and verify it's in pending_return status
+        item_response = supabase.table("items").select("*").eq("id", item_id).single().execute()
+        
+        if not item_response.data:
+            raise HTTPException(status_code=404, detail="Item not found")
+        
+        item = item_response.data
+        
+        # Verify item is in pending_return status
+        if item.get("moderation_status") != "pending_return":
+            raise HTTPException(
+                status_code=400,
+                detail="Item must be in pending_return status to start handover"
+            )
+        
+        # Get the claim to verify user is the claimant
+        claim_response = supabase.table("claims").select("*").eq("item_id", item_id).eq("status", "approved").single().execute()
+        
+        if not claim_response.data:
+            raise HTTPException(status_code=404, detail="No approved claim found for this item")
+        
+        claim = claim_response.data
+        
+        if claim.get("claimant_id") != user_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Only the claimant can start the handover process"
+            )
+        
+        # Generate handover code
+        code = generate_handover_code()
+        expires_at = datetime.utcnow() + timedelta(hours=24)
+        
+        # Store the handover code
+        handover_data = {
+            "item_id": item_id,
+            "code": code,
+            "claimant_id": user_id,
+            "expires_at": expires_at.isoformat(),
+            "verified": False,
+            "created_at": datetime.utcnow().isoformat()
+        }
+        
+        # Check if handover record already exists
+        existing_handover = supabase.table("handovers").select("*").eq("item_id", item_id).eq("verified", False).execute()
+        
+        if existing_handover.data:
+            # Update existing handover
+            supabase.table("handovers").update({
+                "code": code,
+                "expires_at": expires_at.isoformat(),
+                "created_at": datetime.utcnow().isoformat()
+            }).eq("id", existing_handover.data[0]["id"]).execute()
+        else:
+            # Create new handover record
+            supabase.table("handovers").insert(handover_data).execute()
+        
+        return {
+            "code": code,
+            "expires_at": expires_at.isoformat(),
+            "item_id": item_id,
+            "message": "Handover code generated successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error starting handover: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to start handover: {str(e)}")
+
+
+# Include handover router
+app.include_router(handover_router)
+
+
+# Include handover router from separate file
+app.include_router(handover.router)
