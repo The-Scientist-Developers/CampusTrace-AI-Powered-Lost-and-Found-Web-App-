@@ -20,17 +20,13 @@ import {
   LogOut,
   ChevronRight,
   Award,
-  Heart,
-} from "lucide-react-native"; // Removed unused icons (FileText, CheckCircle, Package, Shield)
+} from "lucide-react-native"; // Removed unused icons (FileText, CheckCircle, Package, Shield, Heart)
 import { getSupabaseClient } from "@campustrace/core";
 import { useTheme } from "../../contexts/ThemeContext";
 import { apiClient } from "../../utils/apiClient";
 
 // Lazy load heavy components
 const BadgeList = React.lazy(() => import("../../components/BadgeList"));
-const ThankYouNotes = React.lazy(() =>
-  import("../../components/ThankYouNotes")
-);
 
 const ProfileScreen = ({ navigation }) => {
   const { colors, fontSizes } = useTheme();
@@ -272,15 +268,6 @@ const ProfileScreen = ({ navigation }) => {
       borderBottomWidth: 1,
       borderColor: colors.border,
     },
-    thankYouNotesSection: {
-      paddingVertical: 20,
-      paddingHorizontal: 16,
-      backgroundColor: colors.background,
-      marginBottom: 8,
-      borderTopWidth: 1,
-      borderBottomWidth: 1,
-      borderColor: colors.border,
-    },
     sectionHeader: {
       flexDirection: "row",
       alignItems: "center",
@@ -398,15 +385,6 @@ const ProfileScreen = ({ navigation }) => {
               <Text style={dynamicStyles.sectionTitle}>Badges</Text>
             </View>
             <BadgeList badges={badges} colors={colors} />
-          </View>
-
-          {/* Thank You Notes Section */}
-          <View style={dynamicStyles.thankYouNotesSection}>
-            <View style={dynamicStyles.sectionHeader}>
-              <Heart size={24} color={colors.primary} />
-              <Text style={dynamicStyles.sectionTitle}>Thank You Notes</Text>
-            </View>
-            <ThankYouNotes userId={user?.id} colors={colors} />
           </View>
 
           {/* --- Recent Posts Removed --- */}

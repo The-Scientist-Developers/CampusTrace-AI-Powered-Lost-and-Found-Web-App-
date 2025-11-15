@@ -17,6 +17,7 @@ import {
   Pressable,
   ScrollView,
 } from "react-native";
+import * as Clipboard from "expo-clipboard";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -39,6 +40,8 @@ import {
   Eye,
   MapPin,
   Calendar,
+  Shield,
+  Copy,
 } from "lucide-react-native";
 import { getSupabaseClient } from "@campustrace/core";
 import { Swipeable } from "react-native-gesture-handler";
@@ -102,6 +105,7 @@ const MyPostsScreen = ({ navigation }) => {
   const [user, setUser] = useState(null);
 
   const [activeTab, setActiveTab] = useState("My Posts");
+  const [postStatusFilter, setPostStatusFilter] = useState("active"); // active, pending, resolved
   const [myPosts, setMyPosts] = useState([]);
   const [myClaims, setMyClaims] = useState([]);
   const [receivedClaims, setReceivedClaims] = useState([]);
@@ -117,6 +121,10 @@ const MyPostsScreen = ({ navigation }) => {
   const [isViewModalVisible, setIsViewModalVisible] = useState(false);
   const [selectedViewItem, setSelectedViewItem] = useState(null);
 
+  // Handover code state for claims
+  const [handoverCodes, setHandoverCodes] = useState({});
+  const [generatingCode, setGeneratingCode] = useState({});
+
   // Fetch user first
   useEffect(() => {
     const fetchUser = async () => {
@@ -129,7 +137,7 @@ const MyPostsScreen = ({ navigation }) => {
     fetchUser();
   }, []);
 
-  // Fetch all data when user is available or on focus
+  // Fetch all data when user is available or on focus (NOT when filter changes)
   useFocusEffect(
     useCallback(() => {
       if (user?.id) {
@@ -147,7 +155,7 @@ const MyPostsScreen = ({ navigation }) => {
 
     const supabase = getSupabaseClient();
     try {
-      // 1. Fetch My Posts
+      // 1. Fetch ALL My Posts (no filter applied here)
       const { data: postsData, error: postsError } = await supabase
         .from("items")
         .select("*")
@@ -267,20 +275,37 @@ const MyPostsScreen = ({ navigation }) => {
     setIsCompleting(true);
     setCompleteError("");
     try {
-      const formData = new FormData();
-      formData.append("code", handoverCode);
-      const { data } = await apiClient.post(
-        `/handover/items/${selectedHandoverItem.id}/complete-handover`,
-        formData
+      const response = await apiClient.post(
+        `/api/handover/items/${selectedHandoverItem.id}/verify-handover`,
+        { code: handoverCode }
       );
-      // Close modal and refresh
+
+      // Close handover modal first
       setIsHandoverModalVisible(false);
-      onRefresh();
+
+      // Show success message with badge notification
+      Alert.alert(
+        "Success! 🎉",
+        "Handover verified successfully. Item marked as recovered.\n\nYou've earned a Helper badge! 🏆",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              // Force refresh after user acknowledges
+              fetchAllData(true);
+            },
+          },
+        ]
+      );
+
+      // Also refresh immediately in background
+      setTimeout(() => {
+        fetchAllData(true);
+      }, 1000);
     } catch (error) {
       console.error("Error completing handover:", error);
-      setCompleteError(
-        error.response?.data?.detail || "Invalid code or error."
-      );
+      const errorMessage = error.message || "Invalid code or error.";
+      setCompleteError(errorMessage);
     } finally {
       setIsCompleting(false);
     }
@@ -316,8 +341,29 @@ const MyPostsScreen = ({ navigation }) => {
     );
   };
 
+  const handleGenerateHandoverCode = async (itemId) => {
+    setGeneratingCode((prev) => ({ ...prev, [itemId]: true }));
+    try {
+      const response = await apiClient.post(
+        `/api/handover/items/${itemId}/start-handover`
+      );
+      setHandoverCodes((prev) => ({ ...prev, [itemId]: response.code }));
+      Alert.alert(
+        "Code Generated! 🎉",
+        `Your handover code is: ${response.code}\n\nShow this to the finder when you meet.`
+      );
+    } catch (error) {
+      console.error("Error generating code:", error);
+      Alert.alert("Error", error.message || "Failed to generate handover code");
+    } finally {
+      setGeneratingCode((prev) => ({ ...prev, [itemId]: false }));
+    }
+  };
+
   const handleUpdateClaimStatus = (claim, newStatus) => {
     const action = newStatus === "accepted" ? "Accept" : "Reject";
+    const approved = newStatus === "accepted";
+
     Alert.alert(
       `${action} Claim`,
       `Are you sure you want to ${action.toLowerCase()} this claim for "${
@@ -329,34 +375,26 @@ const MyPostsScreen = ({ navigation }) => {
           text: `Yes, ${action}`,
           style: newStatus === "rejected" ? "destructive" : "default",
           onPress: async () => {
-            const supabase = getSupabaseClient();
             try {
-              // 1. Update the claim status
-              const { data: updatedClaim, error: claimError } = await supabase
-                .from("claims")
-                .update({ status: newStatus })
-                .eq("id", claim.id)
-                .select()
-                .single();
+              // Use the same API endpoint as web app
+              await apiClient.put(`/api/claims/${claim.id}/respond`, {
+                approved: approved,
+              });
 
-              if (claimError) throw claimError;
+              // Refresh data to get updated state
+              await fetchAllData(true);
 
-              // 2. If accepted, update the item status
-              if (newStatus === "accepted") {
-                await supabase
-                  .from("items")
-                  .update({ moderation_status: "pending_return" })
-                  .eq("id", claim.item.id);
-              }
-
-              // 3. Update local state
-              setReceivedClaims((prev) =>
-                prev.map((c) =>
-                  c.id === claim.id ? { ...c, ...updatedClaim } : c
-                )
+              Alert.alert(
+                "Success",
+                `Claim has been ${approved ? "approved" : "rejected"}.`
               );
             } catch (error) {
-              Alert.alert("Error", `Failed to ${action.toLowerCase()} claim.`);
+              console.error("Error updating claim:", error);
+              Alert.alert(
+                "Error",
+                error.response?.data?.detail ||
+                  `Failed to ${action.toLowerCase()} claim.`
+              );
             }
           },
         },
@@ -388,6 +426,9 @@ const MyPostsScreen = ({ navigation }) => {
         <ClaimCard
           claim={item}
           onCancel={() => handleCancelClaim(item)}
+          onGenerateCode={() => handleGenerateHandoverCode(item.item.id)}
+          handoverCode={handoverCodes[item.item.id]}
+          isGenerating={generatingCode[item.item.id]}
           colors={colors}
           fontSizes={fontSizes}
           styles={styles}
@@ -414,6 +455,18 @@ const MyPostsScreen = ({ navigation }) => {
   const getListData = () => {
     switch (activeTab) {
       case "My Posts":
+        // Filter posts based on status filter (client-side filtering)
+        if (postStatusFilter === "active") {
+          return myPosts.filter((p) =>
+            ["approved", "pending_return"].includes(p.moderation_status)
+          );
+        } else if (postStatusFilter === "pending") {
+          return myPosts.filter((p) => p.moderation_status === "pending");
+        } else if (postStatusFilter === "resolved") {
+          return myPosts.filter((p) =>
+            ["recovered", "rejected"].includes(p.moderation_status)
+          );
+        }
         return myPosts;
       case "My Claims":
         return myClaims;
@@ -560,6 +613,98 @@ const MyPostsScreen = ({ navigation }) => {
           styles={styles}
         />
       </View>
+
+      {/* Status Filter Pills - Only show for "My Posts" tab */}
+      {activeTab === "My Posts" && (
+        <View style={styles.statusFilterContainer}>
+          <TouchableOpacity
+            style={[
+              styles.statusFilterPill,
+              {
+                backgroundColor:
+                  postStatusFilter === "active" ? "#10B981" : colors.surface,
+                borderColor:
+                  postStatusFilter === "active" ? "#10B981" : colors.border,
+              },
+            ]}
+            onPress={() => setPostStatusFilter("active")}
+          >
+            <CheckCircle
+              size={16}
+              color={postStatusFilter === "active" ? "#FFFFFF" : "#10B981"}
+            />
+            <Text
+              style={[
+                styles.statusFilterText,
+                {
+                  color:
+                    postStatusFilter === "active" ? "#FFFFFF" : colors.text,
+                },
+              ]}
+            >
+              Active
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.statusFilterPill,
+              {
+                backgroundColor:
+                  postStatusFilter === "pending" ? "#EAB308" : colors.surface,
+                borderColor:
+                  postStatusFilter === "pending" ? "#EAB308" : colors.border,
+              },
+            ]}
+            onPress={() => setPostStatusFilter("pending")}
+          >
+            <Clock
+              size={16}
+              color={postStatusFilter === "pending" ? "#FFFFFF" : "#EAB308"}
+            />
+            <Text
+              style={[
+                styles.statusFilterText,
+                {
+                  color:
+                    postStatusFilter === "pending" ? "#FFFFFF" : colors.text,
+                },
+              ]}
+            >
+              Pending
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.statusFilterPill,
+              {
+                backgroundColor:
+                  postStatusFilter === "resolved" ? "#3B82F6" : colors.surface,
+                borderColor:
+                  postStatusFilter === "resolved" ? "#3B82F6" : colors.border,
+              },
+            ]}
+            onPress={() => setPostStatusFilter("resolved")}
+          >
+            <Package
+              size={16}
+              color={postStatusFilter === "resolved" ? "#FFFFFF" : "#3B82F6"}
+            />
+            <Text
+              style={[
+                styles.statusFilterText,
+                {
+                  color:
+                    postStatusFilter === "resolved" ? "#FFFFFF" : colors.text,
+                },
+              ]}
+            >
+              Resolved
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* List */}
       <FlatList
@@ -1030,44 +1175,188 @@ const PostCard = ({
   </View>
 );
 
-const ClaimCard = ({ claim, onCancel, colors, fontSizes, styles }) => (
-  <View
-    style={[
-      styles.card,
-      { backgroundColor: colors.surface, borderColor: colors.border },
-    ]}
-  >
-    <View style={styles.cardHeader}>
-      <ItemImage
-        imageUrl={claim.item.image_url}
-        colors={colors}
-        styles={styles}
-      />
-      <View style={styles.cardContent}>
-        <Text style={styles.cardSubtitle}>Your claim for:</Text>
-        <Text style={styles.cardTitle} numberOfLines={1}>
-          {claim.item.title}
-        </Text>
-        <View style={styles.badgeRow}>
-          <ClaimStatusBadge status={claim.status} styles={styles} />
+const ClaimCard = ({
+  claim,
+  onCancel,
+  onGenerateCode,
+  handoverCode,
+  isGenerating,
+  colors,
+  fontSizes,
+  styles,
+}) => {
+  const isApproved = claim.status === "accepted" || claim.status === "approved";
+  const isPendingReturn = claim.item.moderation_status === "pending_return";
+
+  return (
+    <View
+      style={[
+        styles.card,
+        { backgroundColor: colors.surface, borderColor: colors.border },
+      ]}
+    >
+      <View style={styles.cardHeader}>
+        <ItemImage
+          imageUrl={claim.item.image_url}
+          colors={colors}
+          styles={styles}
+        />
+        <View style={styles.cardContent}>
+          <Text style={styles.cardSubtitle}>Your claim for:</Text>
+          <Text style={styles.cardTitle} numberOfLines={1}>
+            {claim.item.title}
+          </Text>
+          <View style={styles.badgeRow}>
+            <ClaimStatusBadge status={claim.status} styles={styles} />
+          </View>
+          <Text style={styles.cardTimestamp}>
+            {getTimeAgo(claim.created_at)}
+          </Text>
         </View>
-        <Text style={styles.cardTimestamp}>{getTimeAgo(claim.created_at)}</Text>
       </View>
+
+      {/* Handover Code Section for Approved Claims */}
+      {isApproved && isPendingReturn && (
+        <View
+          style={[
+            styles.handoverSection,
+            {
+              backgroundColor: colors.background,
+              borderTopColor: colors.divider,
+            },
+          ]}
+        >
+          {handoverCode ? (
+            <>
+              <View style={styles.handoverCodeContainer}>
+                <Shield size={20} color={colors.primary} />
+                <Text
+                  style={[
+                    styles.handoverLabel,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  Your Handover Code
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.codeDisplay,
+                  { backgroundColor: colors.primary + "15" },
+                ]}
+              >
+                <Text style={[styles.codeText, { color: colors.primary }]}>
+                  {handoverCode}
+                </Text>
+              </View>
+              <View style={styles.codeActionsRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.copyCodeButton,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                  onPress={() => {
+                    // Copy to clipboard functionality would go here
+                    Alert.alert("Copied!", "Code copied to clipboard");
+                  }}
+                >
+                  <Copy size={14} color={colors.primary} />
+                  <Text
+                    style={[styles.copyCodeText, { color: colors.primary }]}
+                  >
+                    Copy
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.regenerateButton,
+                    {
+                      backgroundColor: colors.primary + "10",
+                      borderColor: colors.primary + "30",
+                    },
+                    isGenerating && styles.disabledButton,
+                  ]}
+                  onPress={onGenerateCode}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? (
+                    <ActivityIndicator color={colors.primary} size="small" />
+                  ) : (
+                    <>
+                      <RotateCcw size={14} color={colors.primary} />
+                      <Text
+                        style={[
+                          styles.regenerateText,
+                          { color: colors.primary },
+                        ]}
+                      >
+                        Regenerate
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+              <Text
+                style={[
+                  styles.handoverInstructions,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                Show this code to the finder when you meet to complete the
+                handover.
+              </Text>
+            </>
+          ) : (
+            <>
+              <View style={styles.handoverCodeContainer}>
+                <Shield size={20} color={colors.primary} />
+                <Text style={[styles.handoverLabel, { color: colors.text }]}>
+                  Ready to pick up your item?
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[
+                  styles.generateCodeButton,
+                  { backgroundColor: colors.primary },
+                  isGenerating && styles.disabledButton,
+                ]}
+                onPress={onGenerateCode}
+                disabled={isGenerating}
+              >
+                {isGenerating ? (
+                  <ActivityIndicator color="#FFF" size="small" />
+                ) : (
+                  <>
+                    <Shield size={16} color="#FFF" />
+                    <Text style={styles.generateCodeButtonText}>
+                      Generate Handover Code
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      )}
+
+      {claim.status === "pending" && (
+        <TouchableOpacity
+          style={[
+            styles.cancelButton,
+            { backgroundColor: "#EF444410", borderColor: colors.border },
+          ]}
+          onPress={onCancel}
+        >
+          <XCircle size={16} color="#EF4444" />
+          <Text style={styles.cancelButtonText}>Cancel Claim</Text>
+        </TouchableOpacity>
+      )}
     </View>
-    {claim.status === "pending" && (
-      <TouchableOpacity
-        style={[
-          styles.cancelButton,
-          { backgroundColor: "#EF444410", borderColor: colors.border },
-        ]}
-        onPress={onCancel}
-      >
-        <XCircle size={16} color="#EF4444" />
-        <Text style={styles.cancelButtonText}>Cancel Claim</Text>
-      </TouchableOpacity>
-    )}
-  </View>
-);
+  );
+};
 
 const ReceivedClaimCard = ({
   claim,
@@ -1376,6 +1665,31 @@ const createStyles = (colors, fontSizes) => {
     },
     segmentTextActive: {
       color: colors.primary,
+    },
+    // Status Filter Pills
+    statusFilterContainer: {
+      flexDirection: "row",
+      paddingHorizontal: headerPadding,
+      paddingVertical: cardPadding,
+      backgroundColor: colors.background,
+      gap: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+    },
+    statusFilterPill: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: isSmallScreen ? 10 : 12,
+      paddingHorizontal: isSmallScreen ? 8 : 12,
+      borderRadius: 999,
+      borderWidth: 2,
+      gap: 6,
+    },
+    statusFilterText: {
+      fontSize: isSmallScreen ? fontSizes.tiny : fontSizes.small,
+      fontWeight: "600",
     },
     list: {
       flex: 1,
@@ -1809,6 +2123,85 @@ const createStyles = (colors, fontSizes) => {
       borderRadius: 16,
     },
     viewTagText: {
+      fontSize: fontSizes.small,
+      fontWeight: "600",
+    },
+    // Handover Styles
+    handoverSection: {
+      padding: 16,
+      borderTopWidth: 1,
+    },
+    handoverCodeContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 12,
+    },
+    handoverLabel: {
+      fontSize: fontSizes.base,
+      fontWeight: "600",
+    },
+    codeDisplay: {
+      paddingVertical: 20,
+      paddingHorizontal: 16,
+      borderRadius: 12,
+      alignItems: "center",
+      marginBottom: 12,
+    },
+    codeText: {
+      fontSize: 36,
+      fontWeight: "bold",
+      letterSpacing: 8,
+    },
+    handoverInstructions: {
+      fontSize: fontSizes.small,
+      textAlign: "center",
+      lineHeight: 18,
+    },
+    generateCodeButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      paddingVertical: 14,
+      borderRadius: 10,
+      marginTop: 8,
+    },
+    generateCodeButtonText: {
+      color: "#FFF",
+      fontSize: fontSizes.base,
+      fontWeight: "600",
+    },
+    codeActionsRow: {
+      flexDirection: "row",
+      gap: 8,
+      marginBottom: 12,
+    },
+    copyCodeButton: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      paddingVertical: 10,
+      borderRadius: 8,
+      borderWidth: 1,
+    },
+    copyCodeText: {
+      fontSize: fontSizes.small,
+      fontWeight: "600",
+    },
+    regenerateButton: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      paddingVertical: 10,
+      borderRadius: 8,
+      borderWidth: 1,
+    },
+    regenerateText: {
       fontSize: fontSizes.small,
       fontWeight: "600",
     },

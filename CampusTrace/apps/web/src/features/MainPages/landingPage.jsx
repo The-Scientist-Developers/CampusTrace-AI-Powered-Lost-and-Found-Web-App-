@@ -1125,6 +1125,12 @@ export default function LandingPage() {
         "Claim items with a unique detail. Once approved, securely chat in-app with the finder/claimant to arrange the return without sharing personal contact info initially.",
     },
     {
+      icon: ShieldCheck,
+      title: "Secure Handover System",
+      description:
+        "Complete item returns safely with our verification code system. Claimants generate a 4-digit code, finders verify it in person, and both parties get confirmation. Finders earn Helper badges for successful returns!",
+    },
+    {
       icon: FilePlus,
       title: "AI-Enhanced Posting",
       description:

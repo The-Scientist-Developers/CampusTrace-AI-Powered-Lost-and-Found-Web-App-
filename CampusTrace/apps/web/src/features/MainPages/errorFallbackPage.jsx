@@ -1,5 +1,4 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import { AlertTriangle, Home, RefreshCw } from "lucide-react";
 
 export default function ErrorFallback({ error }) {
@@ -34,13 +33,13 @@ export default function ErrorFallback({ error }) {
               <RefreshCw className="w-4 h-4 mr-2" />
               Try Again
             </button>
-            <Link
-              to="/"
+            <button
+              onClick={() => (window.location.href = "/")}
               className="inline-flex items-center justify-center w-full px-6 py-3 bg-neutral-200 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200 font-semibold text-sm rounded-lg hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-colors duration-200"
             >
               <Home className="w-4 h-4 mr-2" />
               Go Home
-            </Link>
+            </button>
           </div>
         </div>
       </div>

@@ -10,7 +10,7 @@ import string
 from datetime import datetime, timedelta
 from app.dependencies import get_current_user_id, supabase
 
-router = APIRouter(prefix="/handover", tags=["Handover"])
+router = APIRouter(prefix="/api/handover", tags=["Handover"])
 
 
 class HandoverCodeResponse(BaseModel):
@@ -84,18 +84,34 @@ async def start_handover(
         }
         
         # Check if handover record already exists
-        existing_handover = supabase.table("handovers").select("*").eq("item_id", item_id).eq("verified", False).execute()
+        existing_handover = supabase.table("handovers").select("*").eq("item_id", item_id).order("created_at", desc=True).execute()
         
+        # Find the most recent unverified handover
+        unverified_handover = None
         if existing_handover.data:
-            # Update existing handover
-            supabase.table("handovers").update({
-                "code": code,
-                "expires_at": expires_at.isoformat(),
-                "created_at": datetime.utcnow().isoformat()
-            }).eq("id", existing_handover.data[0]["id"]).execute()
+            for h in existing_handover.data:
+                if not h.get("verified", False):
+                    unverified_handover = h
+                    break
+        
+        if unverified_handover:
+            # Delete old handover and create new one (workaround for RLS UPDATE policy)
+            print(f"Deleting existing handover {unverified_handover['id']} and creating new one with code: {code}")
+            try:
+                # Try to delete the old handover
+                delete_result = supabase.table("handovers").delete().eq("id", unverified_handover["id"]).execute()
+                print(f"Delete result: {delete_result.data}")
+            except Exception as e:
+                print(f"Could not delete old handover (will create new anyway): {e}")
+            
+            # Create new handover record
+            insert_result = supabase.table("handovers").insert(handover_data).execute()
+            print(f"Insert result: {insert_result.data}")
         else:
             # Create new handover record
-            supabase.table("handovers").insert(handover_data).execute()
+            print(f"Creating new handover with code: {code}")
+            insert_result = supabase.table("handovers").insert(handover_data).execute()
+            print(f"Insert result: {insert_result.data}")
         
         return {
             "code": code,
@@ -137,16 +153,38 @@ async def verify_handover(
                 detail="Only the item owner can verify the handover code"
             )
         
-        # Get the handover record
-        handover_response = supabase.table("handovers").select("*").eq("item_id", item_id).eq("verified", False).single().execute()
+        # Get the handover record - order by created_at desc to get the latest one
+        handover_response = supabase.table("handovers").select("*").eq("item_id", item_id).order("created_at", desc=True).execute()
         
-        if not handover_response.data:
+        print(f"Handover query response for item {item_id}: {handover_response.data}")
+        
+        if not handover_response.data or len(handover_response.data) == 0:
+            # Additional debug info
+            print(f"No handover found. User ID: {user_id}, Item ID: {item_id}")
             raise HTTPException(status_code=404, detail="No active handover found for this item")
         
-        handover = handover_response.data
+        # Get the most recent unverified handover
+        handover = None
+        has_verified_handover = False
+        for h in handover_response.data:
+            if not h.get("verified", False):
+                handover = h
+                break
+            else:
+                has_verified_handover = True
+        
+        if not handover:
+            if has_verified_handover:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="This handover has already been completed. The claimant needs to start a new handover if needed."
+                )
+            else:
+                raise HTTPException(status_code=404, detail="No active handover found for this item")
         
         # Check if code has expired
-        expires_at = datetime.fromisoformat(handover["expires_at"].replace('Z', '+00:00'))
+        expires_at_str = handover["expires_at"].replace('Z', '').replace('+00:00', '')
+        expires_at = datetime.fromisoformat(expires_at_str)
         if datetime.utcnow() > expires_at:
             raise HTTPException(status_code=400, detail="Handover code has expired")
         
@@ -161,15 +199,58 @@ async def verify_handover(
             "verified_by": user_id
         }).eq("id", handover["id"]).execute()
         
-        # Update item status to returned
+        # Update item status to recovered
         supabase.table("items").update({
-            "moderation_status": "returned",
-            "updated_at": datetime.utcnow().isoformat()
+            "moderation_status": "recovered"
         }).eq("id", item_id).execute()
+        
+        # Mark the approved claim as resolved/completed
+        try:
+            supabase.table("claims").update({
+                "status": "resolved",
+                "resolved_at": datetime.utcnow().isoformat()
+            }).eq("item_id", item_id).eq("status", "approved").execute()
+            print(f"✅ Marked claim as resolved for item {item_id}")
+        except Exception as e:
+            print(f"⚠️ Error marking claim as resolved: {e}")
+        
+        # Credit the finder with +1 return count for leaderboard
+        try:
+            # Get current profile
+            profile_response = supabase.table("profiles").select("returns_count").eq("id", user_id).single().execute()
+            
+            if profile_response.data:
+                current_count = profile_response.data.get("returns_count", 0) or 0
+                new_count = current_count + 1
+                
+                # Update returns count
+                supabase.table("profiles").update({
+                    "returns_count": new_count
+                }).eq("id", user_id).execute()
+                print(f"✅ Credited finder {user_id} with return count: {current_count} -> {new_count}")
+        except Exception as e:
+            print(f"⚠️ Error updating return count: {e}")
+        
+        # Award badge to the finder (item owner)
+        try:
+            # Check if finder already has the "Helper" badge
+            existing_badge = supabase.table("user_badges").select("*").eq("user_id", user_id).eq("badge_type", "helper").execute()
+            
+            if not existing_badge.data or len(existing_badge.data) == 0:
+                # Award the Helper badge
+                supabase.table("user_badges").insert({
+                    "user_id": user_id,
+                    "badge_type": "helper",
+                    "earned_at": datetime.utcnow().isoformat()
+                }).execute()
+                print(f"✅ Awarded Helper badge to user {user_id}")
+        except Exception as e:
+            print(f"⚠️ Error awarding badge: {e}")
+            # Don't fail the handover if badge awarding fails
         
         return {
             "success": True,
-            "message": "Handover verified successfully. Item marked as returned.",
+            "message": "Handover verified successfully. Item marked as recovered.",
             "item_id": item_id
         }
         

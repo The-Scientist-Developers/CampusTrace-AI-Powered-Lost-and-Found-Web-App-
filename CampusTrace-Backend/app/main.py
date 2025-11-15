@@ -23,7 +23,6 @@ from app.config import get_settings
 from app.dependencies import get_current_user_id, get_admin_university_id, supabase
 from app import jina_embedding_util
 from app.push_notification_service import PushNotificationService
-from app.routers import handover
 
 # Load application settings and initialize global variables
 settings = get_settings()
@@ -1898,7 +1897,7 @@ async def delete_conversation(conversation_id: int, user_id: str = Depends(get_c
         raise HTTPException(status_code=500, detail=f"An error occurred while deleting the conversation: {str(e)}")
 
 # ============= Claims Routes =============
-@claims_router.post("/create")
+@claims_router.post("/")
 async def submit_claim(payload: ClaimCreate, claimant_id: str = Depends(get_current_user_id)):
     """
     Submit a claim for a 'Found' item.
@@ -2775,6 +2774,142 @@ async def complete_handover(item_id: str, code: str = Form(...), user_id: str = 
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to complete handover: {str(e)}")
 
+class VerifyHandoverRequest(BaseModel):
+    code: str
+
+@handover_router.post("/items/{item_id}/verify-handover")
+async def verify_handover(
+    item_id: int,
+    request: VerifyHandoverRequest,
+    user_id: str = Depends(get_current_user_id)
+):
+    """
+    Verify handover code (finder/item owner only).
+    Checks the code stored in items table and marks item as returned.
+    """
+    try:
+        # Get the item
+        item_response = supabase.table("items").select("*").eq("id", item_id).single().execute()
+        
+        if not item_response.data:
+            raise HTTPException(status_code=404, detail="Item not found")
+        
+        item = item_response.data
+        
+        # Verify user is the item owner
+        if item.get("user_id") != user_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Only the item owner can verify the handover code"
+            )
+        
+        # Check if item has a handover code
+        if not item.get("handover_code"):
+            raise HTTPException(status_code=404, detail="No active handover found for this item")
+        
+        # Verify the code
+        if item["handover_code"] != request.code:
+            raise HTTPException(status_code=400, detail="Invalid handover code")
+        
+        # Clear the handover code and update item status
+        supabase.table("items").update({
+            "handover_code": None,
+            "moderation_status": "recovered"
+        }).eq("id", item_id).execute()
+        
+        print(f"✅ Handover verified for item {item_id}")
+        
+        return {
+            "success": True,
+            "message": "Handover verified successfully. Item marked as returned.",
+            "item_id": item_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error verifying handover: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to verify handover: {str(e)}")
+
+# Simple claims endpoint for mobile app
+# Note: Using the claims_router defined at the top of the file
+
+class UpdateClaimRequest(BaseModel):
+    claim_id: Optional[int] = None
+    status: str  # "accepted" or "rejected"
+
+@claims_router.post("/create")
+async def update_claim_legacy(
+    request: UpdateClaimRequest,
+    user_id: str = Depends(get_current_user_id)
+):
+    """Legacy endpoint for mobile app - redirects to update_claim_status"""
+    return await update_claim_status(request.claim_id, request, user_id)
+
+@claims_router.put("/{claim_id}/status")
+async def update_claim_status(
+    claim_id: int,
+    request: UpdateClaimRequest,
+    user_id: str = Depends(get_current_user_id)
+):
+    """
+    Update claim status (accept or reject).
+    """
+    try:
+        # Use claim_id from path or request body
+        actual_claim_id = claim_id or request.claim_id
+        if not actual_claim_id:
+            raise HTTPException(status_code=400, detail="claim_id is required")
+        
+        # Get the claim
+        claim_response = supabase.table("claims").select("*, item:items(*)").eq("id", actual_claim_id).single().execute()
+        
+        if not claim_response.data:
+            raise HTTPException(status_code=404, detail="Claim not found")
+        
+        claim = claim_response.data
+        
+        # Verify user is the item owner (finder)
+        if claim["item"]["user_id"] != user_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Only the item owner can update claim status"
+            )
+        
+        # Update claim status
+        new_status = request.status
+        supabase.table("claims").update({"status": new_status}).eq("id", actual_claim_id).execute()
+        
+        # If accepted, update item status to pending_return
+        if new_status == "accepted":
+            try:
+                supabase.table("items").update({
+                    "moderation_status": "pending_return"
+                }).eq("id", claim["item_id"]).execute()
+                print(f"✅ Item {claim['item_id']} status updated to pending_return")
+            except Exception as item_error:
+                print(f"⚠️ Could not update item status: {item_error}")
+                # Continue anyway - claim status was updated
+        
+        print(f"✅ Claim {actual_claim_id} {new_status}")
+        
+        return {
+            "success": True,
+            "message": f"Claim {new_status} successfully",
+            "claim_id": actual_claim_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error updating claim: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to update claim: {str(e)}")
+
+# Include claims router
+app.include_router(claims_router)
+
 @handover_router.post("/items/{item_id}/thank-you")
 async def send_thank_you_note(
     item_id: str, 
@@ -3065,9 +3200,49 @@ async def start_handover(
         raise HTTPException(status_code=500, detail=f"Failed to start handover: {str(e)}")
 
 
+@app.get("/api/items/leaderboard")
+async def get_leaderboard(user_id: str = Depends(get_current_user_id)):
+    """
+    Get leaderboard of users with most successful returns.
+    Returns users sorted by returns_count (items successfully returned to owners).
+    """
+    try:
+        # Get current user's profile to filter by university
+        user_profile = supabase.table("profiles").select("university_id").eq("id", user_id).single().execute()
+        
+        if not user_profile.data:
+            raise HTTPException(status_code=404, detail="User profile not found")
+        
+        university_id = user_profile.data.get("university_id")
+        
+        # Get top users by returns_count from the same university
+        leaderboard_response = supabase.table("profiles").select(
+            "id, full_name, avatar_url, returns_count"
+        ).eq("university_id", university_id).order(
+            "returns_count", desc=True
+        ).limit(50).execute()
+        
+        # Filter out users with 0 returns and format response
+        leaderboard = []
+        for user in leaderboard_response.data:
+            returns_count = user.get("returns_count") or 0
+            if returns_count > 0:
+                leaderboard.append({
+                    "id": user["id"],
+                    "full_name": user.get("full_name", "Anonymous"),
+                    "avatar_url": user.get("avatar_url"),
+                    "recovered_count": returns_count  # Frontend expects this field name
+                })
+        
+        return leaderboard
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching leaderboard: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch leaderboard: {str(e)}")
+
+
 # Include handover router
 app.include_router(handover_router)
 
-
-# Include handover router from separate file
-app.include_router(handover.router)

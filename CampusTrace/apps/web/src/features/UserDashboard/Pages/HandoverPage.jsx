@@ -121,9 +121,9 @@ const HandoverPage = () => {
       }
 
       toast.success(
-        "Item handover verified! The item has been marked as returned."
+        "Item handover verified! The item has been marked as returned. You've earned credit on the leaderboard!"
       );
-      setTimeout(() => navigate("/dashboard/my-posts"), 2000);
+      setTimeout(() => navigate("/dashboard/my-posts"), 1500);
     } catch (err) {
       setError(err.message);
       toast.error(err.message);
@@ -180,13 +180,27 @@ const HandoverPage = () => {
                         {handoverCode || handoverData?.code}
                       </p>
                     </div>
-                    <button
-                      onClick={copyToClipboard}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-100 dark:bg-neutral-800 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-                    >
-                      <Copy className="w-4 h-4" />
-                      <span className="font-medium">Copy Code</span>
-                    </button>
+                    <div className="flex gap-3 justify-center">
+                      <button
+                        onClick={copyToClipboard}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-100 dark:bg-neutral-800 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                      >
+                        <Copy className="w-4 h-4" />
+                        <span className="font-medium">Copy Code</span>
+                      </button>
+                      <button
+                        onClick={generateHandoverCode}
+                        disabled={loading}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary-100 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loading ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Shield className="w-4 h-4" />
+                        )}
+                        <span className="font-medium">Regenerate</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800 rounded-lg">

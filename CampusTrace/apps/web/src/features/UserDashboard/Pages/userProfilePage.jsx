@@ -21,7 +21,6 @@ import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
 import BadgeList from "../../../components/BadgeList";
-import ThankYouNotes from "../../../components/ThankYouNotes";
 
 // --- StatCard Component Definition Removed ---
 
@@ -585,11 +584,6 @@ export default function UserProfilePage({ user }) {
       {/* Badges Section */}
       <div>
         <BadgeList badges={badges} isOwnProfile={true} />
-      </div>
-
-      {/* Thank You Notes Section */}
-      <div>
-        <ThankYouNotes userId={user?.id} />
       </div>
     </div>
   );

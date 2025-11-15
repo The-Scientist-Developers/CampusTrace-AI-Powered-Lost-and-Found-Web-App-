@@ -25,6 +25,8 @@ import {
   Eye,
   Tag,
   ShieldCheck,
+  Copy,
+  RotateCcw,
 } from "lucide-react";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -527,11 +529,14 @@ export default function MyPostsPage({ user }) {
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [claims, setClaims] = useState({});
+  const [myClaims, setMyClaims] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("myPosts");
   const [postStatusFilter, setPostStatusFilter] = useState("active");
   const [error, setError] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [handoverCodes, setHandoverCodes] = useState({});
+  const [generatingCode, setGeneratingCode] = useState({});
 
   const fetchClaims = async (foundItems) => {
     if (foundItems.length === 0) return;
@@ -596,11 +601,35 @@ export default function MyPostsPage({ user }) {
     }
   }, [user, postStatusFilter]);
 
+  const fetchMyClaims = useCallback(async () => {
+    if (!user?.id) return;
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("claims")
+        .select("*, item:items(*)")
+        .eq("claimant_id", user.id)
+        .neq("status", "resolved") // Exclude resolved claims
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setMyClaims(data || []);
+    } catch (err) {
+      console.error("Error fetching my claims:", err);
+      toast.error("Failed to load your claims.");
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (activeTab === "myPosts") {
       fetchPosts();
+    } else if (activeTab === "myClaims") {
+      fetchMyClaims();
     }
-  }, [fetchPosts, activeTab]);
+  }, [fetchPosts, fetchMyClaims, activeTab]);
 
   const handleDeletePost = async (postId) => {
     if (
@@ -661,6 +690,44 @@ export default function MyPostsPage({ user }) {
     navigate(`/dashboard/handover/${itemId}?role=finder`);
   };
 
+  const handleGenerateHandoverCode = async (itemId) => {
+    setGeneratingCode((prev) => ({ ...prev, [itemId]: true }));
+    const toastId = toast.loading("Generating handover code...");
+
+    try {
+      const token = await localApiClient.getAccessToken();
+      const response = await fetch(
+        `${API_BASE_URL}/api/handover/items/${itemId}/start-handover`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to generate handover code");
+      }
+
+      const data = await response.json();
+      setHandoverCodes((prev) => ({ ...prev, [itemId]: data.code }));
+
+      toast.success(
+        `Handover code generated: ${data.code}\n\nShow this code to the finder when you meet.`,
+        { id: toastId, duration: 6000 }
+      );
+    } catch (error) {
+      console.error("Error generating handover code:", error);
+      toast.error(error.message || "Failed to generate handover code", {
+        id: toastId,
+      });
+    } finally {
+      setGeneratingCode((prev) => ({ ...prev, [itemId]: false }));
+    }
+  };
+
   // Calculate stats
   const activeCount = posts.filter((p) =>
     ["approved", "pending_return"].includes(p.moderation_status)
@@ -675,6 +742,7 @@ export default function MyPostsPage({ user }) {
     (acc, claimList) => acc + (claimList?.length || 0),
     0
   );
+  const myClaimsCount = myClaims.length;
 
   if (loading) {
     return (
@@ -792,7 +860,7 @@ export default function MyPostsPage({ user }) {
           <div className="flex">
             <button
               onClick={() => setActiveTab("myPosts")}
-              className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 rounded-tl-xl rounded-bl-xl relative
+              className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 rounded-tl-xl relative
                 ${
                   activeTab === "myPosts"
                     ? "text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10"
@@ -809,6 +877,29 @@ export default function MyPostsPage({ user }) {
             </button>
 
             <button
+              onClick={() => setActiveTab("myClaims")}
+              className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative
+                ${
+                  activeTab === "myClaims"
+                    ? "text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10"
+                    : "text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                }`}
+            >
+              <span className="flex items-center justify-center gap-2">
+                <Send className="w-4 h-4" />
+                My Claims
+                {myClaimsCount > 0 && (
+                  <span className="ml-2 px-2 py-0.5 bg-primary-600 text-white text-xs rounded-full">
+                    {myClaimsCount}
+                  </span>
+                )}
+              </span>
+              {activeTab === "myClaims" && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-primary-400" />
+              )}
+            </button>
+
+            <button
               onClick={() => setActiveTab("claims")}
               className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 rounded-tr-xl rounded-br-xl relative
                 ${
@@ -819,7 +910,7 @@ export default function MyPostsPage({ user }) {
             >
               <span className="flex items-center justify-center gap-2">
                 <MessageSquare className="w-4 h-4" />
-                Claims on My Items
+                Received Claims
                 {claimsCount > 0 && (
                   <span className="ml-2 px-2 py-0.5 bg-primary-600 text-white text-xs rounded-full">
                     {claimsCount}
@@ -889,6 +980,168 @@ export default function MyPostsPage({ user }) {
               </div>
             )}
           </>
+        ) : activeTab === "myClaims" ? (
+          <div className="space-y-4">
+            {myClaims.length === 0 ? (
+              <div className="text-center p-16 bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl">
+                <Send className="w-16 h-16 text-neutral-300 dark:text-neutral-600 mx-auto mb-4" />
+                <p className="text-neutral-500 dark:text-gray-400 text-lg font-medium mb-2">
+                  No claims submitted
+                </p>
+                <p className="text-neutral-400 dark:text-neutral-500 text-sm">
+                  Claims you make on found items will appear here
+                </p>
+              </div>
+            ) : (
+              myClaims.map((claim) => (
+                <div
+                  key={claim.id}
+                  className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden"
+                >
+                  <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100 dark:bg-gradient-to-r dark:from-[#2a2a2a] dark:to-[#2e2e2e] border-b border-neutral-200 dark:border-neutral-700">
+                    <div className="flex items-center gap-4">
+                      {claim.item?.image_url ? (
+                        <img
+                          src={claim.item.image_url}
+                          alt={claim.item.title}
+                          className="w-16 h-16 object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-neutral-200 dark:bg-neutral-700 rounded-lg flex items-center justify-center">
+                          <Camera className="w-8 h-8 text-neutral-400 dark:text-neutral-500" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
+                          {claim.item?.title || "Unknown Item"}
+                        </h3>
+                        <div className="flex items-center gap-4 mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3.5 h-3.5" />
+                            {claim.item?.location || "N/A"}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3.5 h-3.5" />
+                            {new Date(claim.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${
+                            claim.status === "approved"
+                              ? "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400 border-green-200 dark:border-green-800"
+                              : claim.status === "rejected"
+                              ? "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400 border-red-200 dark:border-red-800"
+                              : "bg-yellow-100 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800"
+                          }`}
+                        >
+                          {claim.status === "approved" && (
+                            <CheckCircle className="w-3.5 h-3.5" />
+                          )}
+                          {claim.status === "rejected" && (
+                            <XCircle className="w-3.5 h-3.5" />
+                          )}
+                          {claim.status === "pending" && (
+                            <Clock className="w-3.5 h-3.5" />
+                          )}
+                          {claim.status.charAt(0).toUpperCase() +
+                            claim.status.slice(1)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-6">
+                    <div className="bg-neutral-50 dark:bg-[#1a1a1a] rounded-lg p-4 border-l-4 border-primary-500 mb-4">
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">
+                        Your Verification Message
+                      </p>
+                      <p className="text-sm text-neutral-700 dark:text-neutral-300 italic">
+                        "{claim.verification_message}"
+                      </p>
+                    </div>
+
+                    {claim.status === "approved" && (
+                      <div className="space-y-3">
+                        {handoverCodes[claim.item.id] ? (
+                          <div className="bg-green-50 dark:bg-green-900/10 border-2 border-green-500 rounded-xl p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-xs text-green-700 dark:text-green-400 uppercase tracking-wider font-semibold">
+                                Your Handover Code
+                              </p>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(
+                                    handoverCodes[claim.item.id]
+                                  );
+                                  toast.success("Code copied to clipboard!");
+                                }}
+                                className="p-1.5 hover:bg-green-100 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                                title="Copy code"
+                              >
+                                <Copy className="w-4 h-4 text-green-700 dark:text-green-400" />
+                              </button>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-4xl font-bold text-green-700 dark:text-green-400 tracking-widest mb-2">
+                                {handoverCodes[claim.item.id]}
+                              </p>
+                              <p className="text-xs text-green-600 dark:text-green-500">
+                                Show this code to the finder when you meet
+                              </p>
+                            </div>
+                            <button
+                              onClick={() =>
+                                handleGenerateHandoverCode(claim.item.id)
+                              }
+                              disabled={generatingCode[claim.item.id]}
+                              className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
+                            >
+                              {generatingCode[claim.item.id] ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  Regenerating...
+                                </>
+                              ) : (
+                                <>
+                                  <RotateCcw className="w-4 h-4" />
+                                  Regenerate Code
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              handleGenerateHandoverCode(claim.item.id)
+                            }
+                            disabled={generatingCode[claim.item.id]}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium disabled:opacity-50"
+                          >
+                            {generatingCode[claim.item.id] ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Generating...
+                              </>
+                            ) : (
+                              <>
+                                <ShieldCheck className="w-4 h-4" />
+                                Generate Handover Code
+                              </>
+                            )}
+                          </button>
+                        )}
+                        <p className="text-xs text-center text-neutral-500 dark:text-neutral-400">
+                          Generate a code to securely complete the handover with
+                          the finder
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         ) : (
           <div className="space-y-6">
             {posts
