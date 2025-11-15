@@ -108,6 +108,8 @@ const SettingToggle = ({
 const SettingsScreen = ({ navigation }) => {
   const {
     isDark,
+    themeMode,
+    setTheme,
     toggleTheme,
     colorMode,
     changeColorMode,
@@ -468,34 +470,124 @@ const SettingsScreen = ({ navigation }) => {
               description="Customize your visual experience."
               colors={colors}
             >
-              {/* Dark/Light Mode Toggle */}
-              <View style={styles.toggleRow}>
-                <View style={styles.toggleTextContainer}>
-                  <View style={styles.iconLabelRow}>
-                    {isDark ? (
-                      <Moon size={20} color={colors.primary} />
-                    ) : (
-                      <Sun size={20} color={colors.primary} />
-                    )}
-                    <Text style={[styles.toggleLabel, { color: colors.text }]}>
-                      {isDark ? "Dark Mode" : "Light Mode"}
-                    </Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.toggleDescription,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    Switch between light and dark themes
+              {/* Theme Mode Selector */}
+              <View style={styles.themeModeSection}>
+                <View style={styles.iconLabelRow}>
+                  {isDark ? (
+                    <Moon size={20} color={colors.primary} />
+                  ) : (
+                    <Sun size={20} color={colors.primary} />
+                  )}
+                  <Text style={[styles.toggleLabel, { color: colors.text }]}>
+                    Theme Mode
                   </Text>
                 </View>
-                <Switch
-                  value={isDark}
-                  onValueChange={toggleTheme}
-                  trackColor={{ false: "#E5E7EB", true: colors.primary }}
-                  thumbColor={"#FFFFFF"}
-                />
+                <Text
+                  style={[
+                    styles.toggleDescription,
+                    { color: colors.textSecondary, marginBottom: 12 },
+                  ]}
+                >
+                  Choose your preferred theme or follow system settings
+                </Text>
+
+                <View style={styles.themeModeGrid}>
+                  <TouchableOpacity
+                    style={[
+                      styles.themeModeButton,
+                      {
+                        backgroundColor:
+                          themeMode === "system"
+                            ? colors.primary
+                            : colors.surface,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                    onPress={() => setTheme("system")}
+                  >
+                    <Text
+                      style={[
+                        styles.themeModeIcon,
+                        {
+                          color:
+                            themeMode === "system" ? "#FFFFFF" : colors.text,
+                        },
+                      ]}
+                    >
+                      ⚙️
+                    </Text>
+                    <Text
+                      style={[
+                        styles.themeModeLabel,
+                        {
+                          color:
+                            themeMode === "system" ? "#FFFFFF" : colors.text,
+                        },
+                      ]}
+                    >
+                      System
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.themeModeButton,
+                      {
+                        backgroundColor:
+                          themeMode === "light"
+                            ? colors.primary
+                            : colors.surface,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                    onPress={() => setTheme("light")}
+                  >
+                    <Sun
+                      size={24}
+                      color={themeMode === "light" ? "#FFFFFF" : colors.text}
+                    />
+                    <Text
+                      style={[
+                        styles.themeModeLabel,
+                        {
+                          color:
+                            themeMode === "light" ? "#FFFFFF" : colors.text,
+                        },
+                      ]}
+                    >
+                      Light
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.themeModeButton,
+                      {
+                        backgroundColor:
+                          themeMode === "dark"
+                            ? colors.primary
+                            : colors.surface,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                    onPress={() => setTheme("dark")}
+                  >
+                    <Moon
+                      size={24}
+                      color={themeMode === "dark" ? "#FFFFFF" : colors.text}
+                    />
+                    <Text
+                      style={[
+                        styles.themeModeLabel,
+                        {
+                          color: themeMode === "dark" ? "#FFFFFF" : colors.text,
+                        },
+                      ]}
+                    >
+                      Dark
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {/* Color Theme Picker */}
@@ -1200,6 +1292,33 @@ const styles = StyleSheet.create({
   fontSizeLabel: {
     fontSize: 11,
     fontWeight: "500",
+  },
+  themeModeSection: {
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  themeModeGrid: {
+    flexDirection: "row",
+    gap: 12,
+    justifyContent: "space-between",
+  },
+  themeModeButton: {
+    flex: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    gap: 8,
+  },
+  themeModeIcon: {
+    fontSize: 24,
+  },
+  themeModeLabel: {
+    fontSize: 13,
+    fontWeight: "600",
   },
 });
 

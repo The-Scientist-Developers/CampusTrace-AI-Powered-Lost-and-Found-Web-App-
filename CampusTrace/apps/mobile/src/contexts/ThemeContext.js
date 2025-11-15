@@ -92,6 +92,7 @@ export const FONT_SIZES = {
 
 export const ThemeProvider = ({ children }) => {
   const [isDark, setIsDark] = useState(false);
+  const [themeMode, setThemeMode] = useState("system"); // 'light', 'dark', or 'system'
   const [colorMode, setColorMode] = useState("blue");
   const [fontSize, setFontSize] = useState("medium");
   const [highContrast, setHighContrast] = useState(false);
@@ -103,9 +104,9 @@ export const ThemeProvider = ({ children }) => {
 
     // Listen for system theme changes
     const subscription = Appearance.addChangeListener(({ colorScheme }) => {
-      // Only auto-update if user hasn't manually set a preference
-      AsyncStorage.getItem("theme").then((savedTheme) => {
-        if (!savedTheme) {
+      // Auto-update if theme mode is set to 'system'
+      AsyncStorage.getItem("themeMode").then((savedThemeMode) => {
+        if (!savedThemeMode || savedThemeMode === "system") {
           setIsDark(colorScheme === "dark");
         }
       });
@@ -116,20 +117,23 @@ export const ThemeProvider = ({ children }) => {
 
   const loadPreferences = async () => {
     try {
-      const [savedTheme, savedColorMode, savedFontSize, savedContrast] =
+      const [savedThemeMode, savedColorMode, savedFontSize, savedContrast] =
         await Promise.all([
-          AsyncStorage.getItem("theme"),
+          AsyncStorage.getItem("themeMode"),
           AsyncStorage.getItem("colorMode"),
           AsyncStorage.getItem("fontSize"),
           AsyncStorage.getItem("highContrast"),
         ]);
 
-      // If no saved theme preference, use system theme
-      if (savedTheme) {
-        setIsDark(savedTheme === "dark");
-      } else {
+      const mode = savedThemeMode || "system";
+      setThemeMode(mode);
+
+      // Set isDark based on theme mode
+      if (mode === "system") {
         const systemColorScheme = Appearance.getColorScheme();
         setIsDark(systemColorScheme === "dark");
+      } else {
+        setIsDark(mode === "dark");
       }
 
       if (savedColorMode) setColorMode(savedColorMode);
@@ -142,10 +146,23 @@ export const ThemeProvider = ({ children }) => {
     }
   };
 
+  const setTheme = async (mode) => {
+    setThemeMode(mode);
+    await AsyncStorage.setItem("themeMode", mode);
+
+    if (mode === "system") {
+      const systemColorScheme = Appearance.getColorScheme();
+      setIsDark(systemColorScheme === "dark");
+    } else {
+      setIsDark(mode === "dark");
+    }
+  };
+
   const toggleTheme = async () => {
     const newTheme = !isDark;
     setIsDark(newTheme);
-    await AsyncStorage.setItem("theme", newTheme ? "dark" : "light");
+    setThemeMode(newTheme ? "dark" : "light");
+    await AsyncStorage.setItem("themeMode", newTheme ? "dark" : "light");
   };
 
   const changeColorMode = async (mode) => {
@@ -201,11 +218,13 @@ export const ThemeProvider = ({ children }) => {
 
   const theme = {
     isDark,
+    themeMode,
     colorMode,
     fontSize,
     highContrast,
     colors,
     fontSizes,
+    setTheme,
     toggleTheme,
     changeColorMode,
     changeFontSize,

@@ -22,6 +22,7 @@ from fastapi.concurrency import run_in_threadpool
 from app.config import get_settings
 from app.dependencies import get_current_user_id, get_admin_university_id, supabase
 from app import jina_embedding_util
+from app.push_notification_service import PushNotificationService
 
 # Load application settings and initialize global variables
 settings = get_settings()
@@ -209,6 +210,7 @@ conversations_router = APIRouter(prefix="/api/conversations", tags=["Conversatio
 backup_router = APIRouter(prefix="/api/backup", tags=["Backup & Restore"])
 badges_router = APIRouter(prefix="/api/badges", tags=["Badges"])
 handover_router = APIRouter(prefix="/api/handover", tags=["Handover"])
+push_router = APIRouter(prefix="/api/push", tags=["Push Notifications"])
 
 # ============= Helper Functions =============
 async def get_university_settings(university_id: int):
@@ -774,8 +776,14 @@ async def signup_user(payload: SignupRequest, request: Request):
     
     # Verify that email domain is registered
     domain = payload.email.split("@")[-1]
-    domain_res = supabase.table("allowed_domains").select("university_id").eq("domain_name", domain).single().execute()
-    if not domain_res.data:
+    try:
+        domain_res = supabase.table("allowed_domains").select("university_id").eq("domain_name", domain).single().execute()
+        if not domain_res.data:
+            raise HTTPException(status_code=400, detail="This email domain is not registered on CampusTrace.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error checking domain: {e}")
         raise HTTPException(status_code=400, detail="This email domain is not registered on CampusTrace.")
     
     try:
@@ -880,9 +888,18 @@ async def signup_user_mobile(payload: SignupRequest, request: Request):
     domain = email_parts[1].lower()
     
     # Check if domain is registered (use execute() without single() to avoid exception)
-    domain_res = supabase.table("allowed_domains").select("university_id").eq("domain_name", domain).execute()
-    
-    if not domain_res.data or len(domain_res.data) == 0:
+    try:
+        domain_res = supabase.table("allowed_domains").select("university_id").eq("domain_name", domain).execute()
+        
+        if not domain_res.data or not isinstance(domain_res.data, list) or len(domain_res.data) == 0:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"The email domain '{domain}' is not registered with CampusTrace. Please use your official university email address, or register manually using the 'Manual (University ID)' option with a personal email and your university ID photo."
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error checking domain: {e}")
         raise HTTPException(
             status_code=400, 
             detail=f"The email domain '{domain}' is not registered with CampusTrace. Please use your official university email address, or register manually using the 'Manual (University ID)' option with a personal email and your university ID photo."
@@ -2889,3 +2906,68 @@ def read_root():
         "docs": "/docs",
         "health": "/health"
     }
+
+
+# ============= Push Notification Endpoints =============
+@push_router.post("/test")
+async def send_test_push_notification(
+    title: str = "Test Notification",
+    body: str = "This is a test notification from CampusTrace!",
+    user_id: str = Depends(get_current_user_id)
+):
+    """
+    Send a test push notification to the current user.
+    Useful for testing if push notifications are working.
+    """
+    try:
+        success = await PushNotificationService.notify_user(
+            user_id=user_id,
+            title=title,
+            body=body,
+            data={"type": "test", "url": "/dashboard"}
+        )
+        
+        if success:
+            return {
+                "success": True,
+                "message": "Test notification sent successfully"
+            }
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Failed to send notification. Make sure you have a valid push token registered."
+            )
+            
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error sending test notification: {str(e)}"
+        )
+
+
+@push_router.get("/status")
+async def get_push_notification_status(user_id: str = Depends(get_current_user_id)):
+    """
+    Check if the current user has push notifications enabled.
+    Returns whether a push token is registered.
+    """
+    try:
+        response = supabase.table("profiles").select("push_token").eq("id", user_id).single().execute()
+        
+        has_token = bool(response.data and response.data.get("push_token"))
+        
+        return {
+            "enabled": has_token,
+            "message": "Push notifications are enabled" if has_token else "No push token registered",
+            "token_preview": response.data.get("push_token")[:30] + "..." if has_token else None
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error checking push notification status: {str(e)}"
+        )
+
+
+# Include push notification router
+app.include_router(push_router)
