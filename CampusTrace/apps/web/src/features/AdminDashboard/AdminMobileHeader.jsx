@@ -27,30 +27,22 @@ export default function AdminMobileHeader({
   };
 
   return (
-    <header
-      className="lg:hidden fixed top-0 left-0 right-0 bg-white dark:bg-[#1a1a1a] border-b border-neutral-200 dark:border-[#2a2a2a] z-50"
-      style={{
-        boxShadow:
-          theme === "dark"
-            ? "0 1px 3px 0 rgba(0, 0, 0, 0.3)"
-            : "0 1px 3px 0 rgba(0, 0, 0, 0.05)",
-      }}
-    >
+    <header className="lg:hidden fixed top-0 left-0 right-0 bg-white dark:bg-[#1a1a1a] z-50">
       <div className="h-16 px-5 flex items-center justify-between">
         {/* Left: Site Name/Branding */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <h1
-            className="text-2xl font-bold text-neutral-900 dark:text-white"
+            className="text-xl font-semibold text-neutral-900 dark:text-white"
             style={{
               fontFamily: '"Poppins", sans-serif',
-              letterSpacing: "-0.6px",
-              fontWeight: "700",
+              letterSpacing: "-0.3px",
+              fontWeight: "600",
             }}
           >
             {siteName || "CampusTrace"}
           </h1>
           <span
-            className="text-xs font-bold px-2.5 py-1 rounded-md"
+            className="text-xs font-semibold px-2 py-0.5 rounded-md"
             style={{
               backgroundColor:
                 theme === "dark"
@@ -132,8 +124,8 @@ export default function AdminMobileHeader({
       </div>
 
       {/* Page Title Bar */}
-      <div className="px-5 py-3 bg-neutral-50 dark:bg-[#0f0f0f] border-t border-neutral-200 dark:border-[#2a2a2a]">
-        <h2 className="text-sm font-bold text-neutral-700 dark:text-neutral-300 tracking-wide uppercase">
+      <div className="px-5 py-2.5 bg-neutral-50 dark:bg-[#0f0f0f]">
+        <h2 className="text-[22px] font-semibold text-neutral-700 dark:text-neutral-300">
           {getPageTitle()}
         </h2>
       </div>

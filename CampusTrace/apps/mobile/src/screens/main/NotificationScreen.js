@@ -9,6 +9,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   Bell,
   MessageCircle,
@@ -190,19 +191,26 @@ const NotificationScreen = ({ navigation }) => {
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       {/* Header */}
-      <View
-        style={[
-          styles.header,
-          { backgroundColor: colors.surface, borderBottomColor: colors.border },
-        ]}
+      <LinearGradient
+        colors={[colors.background, colors.background]}
+        style={styles.headerGradient}
       >
-        <Text style={[styles.headerTitle, { color: colors.text }]}>
-          Notifications
-        </Text>
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-          Stay updated with important alerts and messages
-        </Text>
-      </View>
+        <View
+          style={[
+            styles.header,
+            {
+              backgroundColor: "transparent",
+              borderBottomWidth: 0,
+              paddingTop: 16,
+              paddingBottom: 8,
+            },
+          ]}
+        >
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            Notifications
+          </Text>
+        </View>
+      </LinearGradient>
 
       {/* Notifications List */}
       <FlatList
@@ -357,25 +365,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFFFF",
   },
+  headerGradient: {
+    paddingBottom: 8,
+  },
   header: {
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#DBDBDB",
+    backgroundColor: "#FAFAFA",
+    borderBottomWidth: 0,
   },
   headerTitle: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: "700",
     color: "#000000",
     letterSpacing: -0.5,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginTop: 4,
-    fontWeight: "400",
-    lineHeight: 20,
   },
   loadingContainer: {
     flex: 1,

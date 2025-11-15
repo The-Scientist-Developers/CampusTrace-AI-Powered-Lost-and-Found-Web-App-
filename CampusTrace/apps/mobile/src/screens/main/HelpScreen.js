@@ -10,6 +10,7 @@ import {
   UIManager,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import { ChevronLeft, ChevronDown, HelpCircle } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 
@@ -96,23 +97,33 @@ const HelpScreen = ({ navigation }) => {
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       {/* Standard Header */}
-      <View
-        style={[
-          styles.header,
-          { backgroundColor: colors.surface, borderBottomColor: colors.border },
-        ]}
+      <LinearGradient
+        colors={[colors.background, colors.background]}
+        style={styles.headerGradient}
       >
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
+        <View
+          style={[
+            styles.header,
+            {
+              backgroundColor: "transparent",
+              borderBottomWidth: 0,
+              paddingTop: 16,
+              paddingBottom: 8,
+            },
+          ]}
         >
-          <ChevronLeft size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>
-          Help & Support
-        </Text>
-        <View style={{ width: 40 }} /> {/* Spacer */}
-      </View>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <ChevronLeft size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            Help & Support
+          </Text>
+          <View style={{ width: 40 }} /> {/* Spacer */}
+        </View>
+      </LinearGradient>
 
       <ScrollView style={styles.scrollView}>
         <View style={styles.subHeader}>
@@ -134,6 +145,9 @@ const HelpScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFFFFF" },
+  headerGradient: {
+    paddingBottom: 8,
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",

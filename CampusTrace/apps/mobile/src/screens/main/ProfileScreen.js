@@ -11,6 +11,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   User,
   Settings,
@@ -189,23 +190,26 @@ const ProfileScreen = ({ navigation }) => {
       flex: 1,
       backgroundColor: colors.background,
     },
+    headerGradient: {
+      paddingBottom: 8,
+    },
     header: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
-      paddingHorizontal: 16,
-      paddingVertical: 12,
+      paddingHorizontal: 20,
+      paddingVertical: 16,
       backgroundColor: colors.surface,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
+      borderBottomWidth: 0,
     },
     headerContent: {
       flex: 1,
     },
     headerTitle: {
-      fontSize: fontSizes.xl,
+      fontSize: 22,
       fontWeight: "700",
       color: colors.text,
+      letterSpacing: -0.5,
     },
     headerSubtitle: {
       fontSize: fontSizes.small,
@@ -219,10 +223,12 @@ const ProfileScreen = ({ navigation }) => {
     profileSection: {
       alignItems: "center",
       paddingVertical: 32,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.background,
       marginBottom: 8, // Enhanced UI: Added consistent spacing
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginHorizontal: 16,
+      borderRadius: 12,
     },
     avatarLarge: {
       width: 96,
@@ -260,7 +266,7 @@ const ProfileScreen = ({ navigation }) => {
     badgesSection: {
       paddingVertical: 20,
       paddingHorizontal: 16,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.background,
       marginBottom: 8,
       borderTopWidth: 1,
       borderBottomWidth: 1,
@@ -269,7 +275,7 @@ const ProfileScreen = ({ navigation }) => {
     thankYouNotesSection: {
       paddingVertical: 20,
       paddingHorizontal: 16,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.background,
       marginBottom: 8,
       borderTopWidth: 1,
       borderBottomWidth: 1,
@@ -288,7 +294,7 @@ const ProfileScreen = ({ navigation }) => {
     },
     // --- Removed Recent Posts Styles ---
     menuSection: {
-      backgroundColor: colors.surface,
+      backgroundColor: colors.background,
       marginBottom: 8,
       borderTopWidth: 1,
       borderBottomWidth: 1,
@@ -300,7 +306,7 @@ const ProfileScreen = ({ navigation }) => {
       alignItems: "center",
       paddingHorizontal: 16,
       paddingVertical: 16,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.background,
       borderBottomWidth: 0.5,
       borderBottomColor: colors.border,
     },
@@ -319,7 +325,7 @@ const ProfileScreen = ({ navigation }) => {
       alignItems: "center",
       justifyContent: "center",
       gap: 8,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.background,
       paddingVertical: 16,
       marginTop: 16,
       marginHorizontal: 16,
@@ -338,14 +344,26 @@ const ProfileScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={dynamicStyles.container}>
       {/* Header */}
-      <View style={dynamicStyles.header}>
-        <View style={dynamicStyles.headerContent}>
-          <Text style={dynamicStyles.headerTitle}>Profile</Text>
-          <Text style={dynamicStyles.headerSubtitle}>
-            Manage your account and view your activity
-          </Text>
+      <LinearGradient
+        colors={[colors.background, colors.background]}
+        style={dynamicStyles.headerGradient}
+      >
+        <View
+          style={[
+            dynamicStyles.header,
+            {
+              backgroundColor: "transparent",
+              borderBottomWidth: 0,
+              paddingTop: 16,
+              paddingBottom: 8,
+            },
+          ]}
+        >
+          <View style={dynamicStyles.headerContent}>
+            <Text style={dynamicStyles.headerTitle}>Profile</Text>
+          </View>
         </View>
-      </View>
+      </LinearGradient>
 
       {loading ? (
         <View style={dynamicStyles.loadingContainer}>

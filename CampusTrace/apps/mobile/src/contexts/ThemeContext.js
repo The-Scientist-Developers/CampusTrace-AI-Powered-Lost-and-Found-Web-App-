@@ -97,9 +97,21 @@ export const ThemeProvider = ({ children }) => {
   const [highContrast, setHighContrast] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load saved preferences
+  // Load saved preferences and listen to system theme changes
   useEffect(() => {
     loadPreferences();
+
+    // Listen for system theme changes
+    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      // Only auto-update if user hasn't manually set a preference
+      AsyncStorage.getItem("theme").then((savedTheme) => {
+        if (!savedTheme) {
+          setIsDark(colorScheme === "dark");
+        }
+      });
+    });
+
+    return () => subscription.remove();
   }, []);
 
   const loadPreferences = async () => {
@@ -112,7 +124,14 @@ export const ThemeProvider = ({ children }) => {
           AsyncStorage.getItem("highContrast"),
         ]);
 
-      if (savedTheme) setIsDark(savedTheme === "dark");
+      // If no saved theme preference, use system theme
+      if (savedTheme) {
+        setIsDark(savedTheme === "dark");
+      } else {
+        const systemColorScheme = Appearance.getColorScheme();
+        setIsDark(systemColorScheme === "dark");
+      }
+
       if (savedColorMode) setColorMode(savedColorMode);
       if (savedFontSize) setFontSize(savedFontSize);
       if (savedContrast) setHighContrast(savedContrast === "true");
@@ -152,19 +171,19 @@ export const ThemeProvider = ({ children }) => {
     primaryLight: THEME_COLORS[colorMode].light,
     primaryDark: THEME_COLORS[colorMode].dark,
 
-    // Background colors
-    background: highContrast ? "#000000" : isDark ? "#1A1A1A" : "#FFFFFF",
-    surface: highContrast ? "#000000" : isDark ? "#2A2A2A" : "#FAFAFA",
-    card: highContrast ? "#000000" : isDark ? "#2A2A2A" : "#FFFFFF",
+    // Background colors - Lighter dark gray matching the screenshot
+    background: highContrast ? "#000000" : isDark ? "#242424" : "#FFFFFF",
+    surface: highContrast ? "#000000" : isDark ? "#2E2E2E" : "#FAFAFA",
+    card: highContrast ? "#000000" : isDark ? "#2E2E2E" : "#FFFFFF",
 
     // Text colors
     text: highContrast ? "#FFFFFF" : isDark ? "#FFFFFF" : "#000000",
-    textSecondary: highContrast ? "#FFFFFF" : isDark ? "#9CA3AF" : "#6B7280",
-    textTertiary: highContrast ? "#FFFFFF" : isDark ? "#6B7280" : "#9CA3AF",
+    textSecondary: highContrast ? "#FFFFFF" : isDark ? "#A0A0A0" : "#6B7280",
+    textTertiary: highContrast ? "#FFFFFF" : isDark ? "#808080" : "#9CA3AF",
 
-    // Border colors
+    // Border colors - Subtle borders for dark mode
     border: highContrast ? "#FFFFFF" : isDark ? "#3A3A3A" : "#E5E7EB",
-    divider: highContrast ? "#FFFFFF" : isDark ? "#2A2A2A" : "#F3F4F6",
+    divider: highContrast ? "#FFFFFF" : isDark ? "#2E2E2E" : "#F3F4F6",
 
     // Status colors
     success: highContrast ? "#00FF00" : "#10B981",

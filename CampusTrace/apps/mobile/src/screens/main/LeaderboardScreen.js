@@ -12,6 +12,7 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   Trophy,
   Award,
@@ -74,20 +75,27 @@ const LeaderboardScreen = () => {
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      {/* Standardized Header */}
-      <View
-        style={[
-          styles.header,
-          { backgroundColor: colors.surface, borderBottomColor: colors.border },
-        ]}
+      {/* Header */}
+      <LinearGradient
+        colors={[colors.background, colors.background]}
+        style={styles.headerGradient}
       >
-        <Text style={[styles.headerTitle, { color: colors.text }]}>
-          Leaderboard
-        </Text>
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-          Top heroes who reunited items with their owners
-        </Text>
-      </View>
+        <View
+          style={[
+            styles.header,
+            {
+              backgroundColor: "transparent",
+              borderBottomWidth: 0,
+              paddingTop: 16,
+              paddingBottom: 8,
+            },
+          ]}
+        >
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            Leaderboard
+          </Text>
+        </View>
+      </LinearGradient>
 
       <FlatList
         data={leaderboard}
@@ -295,26 +303,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#606770",
   },
-  // Enhanced Header
+  headerGradient: {
+    paddingBottom: 8,
+  },
+  // Enhanced Header - Facebook-style consistency
   header: {
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.lg,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#DBDBDB",
-    ...getShadow("sm"),
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: "#FAFAFA",
+    borderBottomWidth: 0,
   },
   headerTitle: {
-    ...Typography.h2,
+    fontSize: 22,
+    fontWeight: "700",
     color: "#000000",
     letterSpacing: -0.5,
-  },
-  headerSubtitle: {
-    ...Typography.bodySmall,
-    color: "#6B7280",
-    marginTop: Spacing.xs,
-    fontWeight: "400",
-    lineHeight: 20,
   },
   scrollView: {
     flex: 1,

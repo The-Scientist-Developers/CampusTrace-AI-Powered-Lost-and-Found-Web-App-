@@ -25,7 +25,12 @@ import {
 } from "lucide-react-native";
 
 // --- Handover Controls Component ---
-const HandoverControls = ({ user, conversationDetails, onCodeGenerated }) => {
+const HandoverControls = ({
+  user,
+  conversationDetails,
+  onCodeGenerated,
+  dynamicStyles,
+}) => {
   const { colors } = useTheme();
   const [handoverCode, setHandoverCode] = useState(null);
   const [codeLoading, setCodeLoading] = useState(false);
@@ -64,13 +69,13 @@ const HandoverControls = ({ user, conversationDetails, onCodeGenerated }) => {
     return (
       <View
         style={[
-          styles.handoverContainer,
-          { backgroundColor: colors.primary, borderColor: colors.primary },
+          dynamicStyles.handoverContainer,
+          { backgroundColor: colors.primary },
         ]}
       >
-        <Text style={styles.handoverTitle}>Your Handover Code:</Text>
-        <Text style={styles.handoverCode}>{handoverCode}</Text>
-        <Text style={styles.handoverSubtitle}>
+        <Text style={dynamicStyles.handoverTitle}>Your Handover Code:</Text>
+        <Text style={dynamicStyles.handoverCode}>{handoverCode}</Text>
+        <Text style={dynamicStyles.handoverSubtitle}>
           Show this 4-digit code to the finder to complete the handover.
         </Text>
       </View>
@@ -81,12 +86,12 @@ const HandoverControls = ({ user, conversationDetails, onCodeGenerated }) => {
     return (
       <View
         style={[
-          styles.handoverContainer,
-          { backgroundColor: colors.error, borderColor: colors.error },
+          dynamicStyles.handoverContainer,
+          { backgroundColor: colors.error },
         ]}
       >
         <AlertCircle size={18} color="#FFFFFF" />
-        <Text style={styles.handoverError}>{handoverError}</Text>
+        <Text style={dynamicStyles.handoverError}>{handoverError}</Text>
       </View>
     );
   }
@@ -120,6 +125,125 @@ const ChatScreen = ({ navigation }) => {
   const { colors } = useTheme();
   const route = useRoute();
   const { conversationId, itemTitle, itemStatus } = route.params || {};
+
+  // Create dynamic styles with theme colors
+  const dynamicStyles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      backgroundColor: colors.surface,
+      borderBottomWidth: 0,
+    },
+    headerTitle: {
+      fontSize: 22,
+      fontWeight: "700",
+      letterSpacing: -0.5,
+      color: colors.text,
+    },
+    messageList: {
+      flex: 1,
+      paddingHorizontal: 10,
+      backgroundColor: colors.background,
+    },
+    inputContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: 10,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    textInput: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 20,
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      fontSize: 16,
+      marginRight: 10,
+      backgroundColor: colors.background,
+      color: colors.text,
+    },
+    sendButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: colors.primary,
+    },
+    messageBubble: {
+      paddingVertical: 10,
+      paddingHorizontal: 14,
+      borderRadius: 20,
+      maxWidth: "80%",
+    },
+    myMessageBubble: {
+      backgroundColor: colors.primary,
+    },
+    otherMessageBubble: {
+      backgroundColor: colors.card,
+    },
+    myMessageText: {
+      color: "#FFFFFF",
+      fontSize: 15,
+    },
+    otherMessageText: {
+      fontSize: 15,
+      color: colors.text,
+    },
+    handoverContainer: {
+      padding: 16,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    handoverButton: {
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      paddingVertical: 12,
+      borderRadius: 8,
+      backgroundColor: colors.primary,
+    },
+    handoverButtonText: {
+      color: "#FFFFFF",
+      fontSize: 16,
+      fontWeight: "600",
+      marginLeft: 8,
+    },
+    handoverTitle: {
+      fontSize: 16,
+      fontWeight: "bold",
+      color: "#FFFFFF",
+    },
+    handoverCode: {
+      fontSize: 40,
+      fontWeight: "bold",
+      color: "#FFFFFF",
+      textAlign: "center",
+      marginVertical: 10,
+      letterSpacing: 5,
+    },
+    handoverSubtitle: {
+      fontSize: 14,
+      color: "#FFFFFF",
+      textAlign: "center",
+    },
+    handoverError: {
+      color: "#FFFFFF",
+      fontSize: 14,
+      marginLeft: 8,
+    },
+  });
 
   const [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState([]);
@@ -246,17 +370,17 @@ const ChatScreen = ({ navigation }) => {
       >
         <View
           style={[
-            styles.messageBubble,
+            dynamicStyles.messageBubble,
             isMyMessage
-              ? { backgroundColor: colors.primary }
-              : { backgroundColor: colors.card },
+              ? dynamicStyles.myMessageBubble
+              : dynamicStyles.otherMessageBubble,
           ]}
         >
           <Text
             style={
               isMyMessage
-                ? styles.myMessageText
-                : [styles.otherMessageText, { color: colors.text }]
+                ? dynamicStyles.myMessageText
+                : dynamicStyles.otherMessageText
             }
           >
             {item.content}
@@ -281,22 +405,18 @@ const ChatScreen = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
-    >
+    <SafeAreaView style={dynamicStyles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
         {/* Header */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <View style={dynamicStyles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <ArrowLeft size={24} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            {itemTitle || "Chat"}
-          </Text>
+          <Text style={dynamicStyles.headerTitle}>{itemTitle || "Chat"}</Text>
           <View style={{ width: 24 }} />
         </View>
 
@@ -306,7 +426,7 @@ const ChatScreen = ({ navigation }) => {
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderMessageItem}
           inverted
-          style={styles.messageList}
+          style={dynamicStyles.messageList}
         />
 
         {/* Handover Controls */}
@@ -317,16 +437,14 @@ const ChatScreen = ({ navigation }) => {
             onCodeGenerated={(code) => {
               // Optionally send code as a system message
             }}
+            dynamicStyles={dynamicStyles}
           />
         )}
 
         {/* Message Input */}
-        <View style={[styles.inputContainer, { borderColor: colors.border }]}>
+        <View style={dynamicStyles.inputContainer}>
           <TextInput
-            style={[
-              styles.textInput,
-              { color: colors.text, borderColor: colors.border },
-            ]}
+            style={dynamicStyles.textInput}
             value={newMessage}
             onChangeText={setNewMessage}
             placeholder="Type a message..."
@@ -336,8 +454,7 @@ const ChatScreen = ({ navigation }) => {
             onPress={handleSendMessage}
             disabled={isSending || !newMessage.trim()}
             style={[
-              styles.sendButton,
-              { backgroundColor: colors.primary },
+              dynamicStyles.sendButton,
               (isSending || !newMessage.trim()) && styles.disabledButton,
             ]}
           >
@@ -362,12 +479,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 16,
-    borderBottomWidth: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: "#FAFAFA",
+    borderBottomWidth: 0,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 22,
+    fontWeight: "700",
+    letterSpacing: -0.5,
   },
   messageList: {
     flex: 1,

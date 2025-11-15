@@ -254,7 +254,7 @@ const DashboardScreen = ({ navigation }) => {
     >
       {/* Modern Header */}
       <LinearGradient
-        colors={[colors.surface, colors.background]}
+        colors={[colors.background, colors.background]}
         style={styles.headerGradient}
       >
         <View style={styles.header}>
@@ -269,7 +269,7 @@ const DashboardScreen = ({ navigation }) => {
               })}
             </Text>
             <Text style={[styles.appName, { color: colors.text }]}>
-              Dashboard
+              Campustrace
             </Text>
           </View>
           <View style={styles.headerIcons}>

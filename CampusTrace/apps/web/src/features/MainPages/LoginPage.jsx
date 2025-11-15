@@ -57,41 +57,32 @@ const InputField = ({
 }) => (
   <div className="space-y-2">
     {label && (
-      <label className="block text-base sm:text-sm font-medium text-neutral-700 dark:text-neutral-300">
+      <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
         {label}
       </label>
     )}
     <div className="relative">
-      <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-        <Icon
-          className={`h-5 w-5 sm:h-4 sm:w-4 transition-colors ${
-            error && touched
-              ? "text-red-500"
-              : "text-neutral-400 dark:text-neutral-500"
-          }`}
-        />
-      </div>
       <input
         {...props}
         type={isPassword ? (showPassword ? "text" : "password") : props.type}
-        className={`block w-full rounded-lg py-3 sm:py-2.5 pl-11 sm:pl-10 text-base sm:text-sm ${
-          isPassword ? "pr-11 sm:pr-10" : "pr-3"
-        } bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white border ${
+        className={`block w-full rounded-sm py-2 px-3 text-sm ${
+          isPassword ? "pr-10" : ""
+        } bg-neutral-50 dark:bg-neutral-900 text-neutral-900 dark:text-white border ${
           error && touched
-            ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-            : "border-neutral-200 dark:border-neutral-800 focus:border-primary-500 dark:focus:border-primary-500"
-        } placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-4 focus:ring-primary-500/10 dark:focus:ring-primary-500/20 transition-all duration-200`}
+            ? "border-red-500 focus:border-red-500"
+            : "border-neutral-300 dark:border-neutral-700 focus:border-neutral-400 dark:focus:border-neutral-600"
+        } placeholder:text-neutral-500 dark:placeholder:text-neutral-500 focus:outline-none transition-colors duration-150`}
       />
       {isPassword && (
         <button
           type="button"
           onClick={togglePassword}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300 transition-colors"
         >
           {showPassword ? (
-            <EyeOff className="w-5 h-5 sm:w-4 sm:h-4" />
+            <EyeOff className="w-4 h-4" />
           ) : (
-            <Eye className="w-5 h-5 sm:w-4 sm:h-4" />
+            <Eye className="w-4 h-4" />
           )}
         </button>
       )}
@@ -102,9 +93,9 @@ const InputField = ({
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          className="text-sm text-red-500 flex items-center gap-1.5"
+          className="text-xs text-red-500 flex items-center gap-1"
         >
-          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" /> {error}
+          <AlertCircle className="w-3 h-3 flex-shrink-0" /> {error}
         </motion.p>
       )}
     </AnimatePresence>
@@ -748,7 +739,7 @@ export default function LoginPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <div className="lg:hidden text-center mb-8">
+            <div className="lg:hidden text-center mb-6">
               <Link
                 to="/"
                 className="inline-flex flex-col items-center hover:opacity-80 transition-opacity"
@@ -756,10 +747,10 @@ export default function LoginPage() {
                 <img
                   src={logo}
                   alt="CampusTrace logo"
-                  className="mx-auto h-16 w-16 sm:h-12 sm:w-12 mb-4"
+                  className="mx-auto h-12 w-12 mb-3"
                 />
                 <h1
-                  className="text-3xl sm:text-2xl font-bold text-neutral-900 dark:text-white"
+                  className="text-xl font-bold text-neutral-900 dark:text-white"
                   style={{
                     fontFamily: '"Poppins", sans-serif',
                     fontWeight: 700,
@@ -772,15 +763,10 @@ export default function LoginPage() {
             </div>
 
             <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-neutral-200 dark:border-neutral-800 p-8">
-              <div className="text-center mb-8">
-                <h2 className="text-3xl sm:text-2xl font-bold text-neutral-900 dark:text-white">
-                  {isLogin ? "Welcome back" : "Create your account"}
+              <div className="text-center mb-6">
+                <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
+                  {isLogin ? "Sign In" : "Sign Up"}
                 </h2>
-                <p className="text-base sm:text-sm text-neutral-500 dark:text-neutral-400 mt-2">
-                  {isLogin
-                    ? "Enter your credentials to access your account"
-                    : "Sign up with your university email or ID"}
-                </p>
               </div>
 
               {cooldownTime > 0 && (

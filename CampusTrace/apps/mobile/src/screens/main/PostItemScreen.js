@@ -13,6 +13,7 @@ import {
   Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import {
   UploadCloud,
@@ -366,21 +367,21 @@ export default function PostItemScreen({ navigation, route }) {
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       {/* Header */}
-      <View
-        style={[
-          styles.header,
-          { backgroundColor: colors.surface, borderBottomColor: colors.border },
-        ]}
+      <LinearGradient
+        colors={[colors.background, colors.background]}
+        style={styles.headerGradient}
       >
-        <Text style={[styles.headerTitle, { color: colors.text }]}>
-          {isEditMode ? "Edit Item" : "Post Item"}
-        </Text>
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-          {isEditMode
-            ? "Update your item details"
-            : "Help others find their lost items"}
-        </Text>
-      </View>
+        <View
+          style={[
+            styles.header,
+            { backgroundColor: "transparent", borderBottomWidth: 0 },
+          ]}
+        >
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            {isEditMode ? "Edit Item" : "Post Item"}
+          </Text>
+        </View>
+      </LinearGradient>
 
       <ScrollView
         style={[styles.scrollView, { backgroundColor: colors.background }]}
@@ -832,20 +833,23 @@ export default function PostItemScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f9fafb",
-  },
-  // Header
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
     backgroundColor: "#FFFFFF",
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#DBDBDB",
+  },
+  headerGradient: {
+    paddingBottom: 8,
+  },
+  // Header - Facebook-style consistency
+  header: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: "#FAFAFA",
+    borderBottomWidth: 0,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: 22,
+    fontWeight: "700",
     color: "#000000",
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: 14,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,31 +10,14 @@ import {
   Alert,
   ScrollView,
   Linking,
-  Image,
-  Modal,
-  FlatList,
   ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  User,
-  AlertCircle,
-  CheckCircle,
-  ChevronRight,
-  ChevronLeft,
-  UploadCloud,
-  Camera,
-  X,
-} from "lucide-react-native";
+import { Eye, EyeOff } from "lucide-react-native";
 import { getSupabaseClient } from "@campustrace/core";
 import { useTheme } from "../../contexts/ThemeContext";
 import LoadingScreen from "../../components/LoadingScreen";
 import { API_BASE_URL } from "../../utils/apiClient";
-import * as ImagePicker from "expo-image-picker";
 import Svg, {
   Rect,
   Defs,
@@ -45,8 +28,8 @@ import Svg, {
   Line,
 } from "react-native-svg";
 
-// CampusTrace Icon Component
-const CampusTraceIcon = ({ width = 80, height = 80 }) => (
+// Smaller CampusTrace Icon Component
+const CampusTraceIcon = ({ width = 64, height = 64 }) => (
   <Svg width={width} height={height} viewBox="0 0 512 512">
     <Defs>
       <LinearGradient id="iconBlueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -86,45 +69,14 @@ const CampusTraceIcon = ({ width = 80, height = 80 }) => (
 );
 
 const LoginScreen = ({ navigation }) => {
-  const { colors, fontSizes, isDark } = useTheme();
+  const { colors, fontSizes } = useTheme();
   const [isLogin, setIsLogin] = useState(true);
-  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [errors, setErrors] = useState({});
-  const [touched, setTouched] = useState({});
-
-  // Register type: "regular" or "manual"
-  const [registerType, setRegisterType] = useState("regular");
-
-  // Manual registration states
-  const [idImage, setIdImage] = useState(null);
-  const [universities, setUniversities] = useState([]);
-  const [selectedUniversity, setSelectedUniversity] = useState(null);
-  const [showUniversityPicker, setShowUniversityPicker] = useState(false);
-
-  // Rate limiting states
-  const [loginAttempts, setLoginAttempts] = useState(0);
-  const [cooldownTime, setCooldownTime] = useState(0);
-  const [lastAttemptTime, setLastAttemptTime] = useState(null);
-
-  // Saved accounts states
-  const [savedAccounts, setSavedAccounts] = useState([]);
-  const [showSavedAccounts, setShowSavedAccounts] = useState(true);
-
-  // Password strength states
-  const [passwordStrength, setPasswordStrength] = useState({
-    hasMinLength: false,
-    hasUpperCase: false,
-    hasLowerCase: false,
-    hasNumber: false,
-    hasSpecialChar: false,
-  });
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -135,68 +87,7 @@ const LoginScreen = ({ navigation }) => {
 
   useEffect(() => {
     loadSavedEmail();
-    loadSavedAccounts();
-    fetchUniversities();
   }, []);
-
-  const fetchUniversities = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/public/universities`);
-      const data = await response.json();
-      if (response.ok && data.universities) {
-        setUniversities(data.universities);
-        if (data.universities.length === 1) {
-          setSelectedUniversity(data.universities[0]);
-        }
-      }
-    } catch (error) {
-      console.log("Error fetching universities:", error);
-      Alert.alert(
-        "Error",
-        "Could not load universities. Please check your connection."
-      );
-    }
-  };
-
-  useEffect(() => {
-    if (cooldownTime > 0) {
-      const timer = setTimeout(() => {
-        setCooldownTime((prev) => prev - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (cooldownTime === 0 && loginAttempts >= 5) {
-      setLoginAttempts(0);
-      setLastAttemptTime(null);
-    }
-  }, [cooldownTime, loginAttempts]);
-
-  useEffect(() => {
-    if (!isLogin && password) {
-      setPasswordStrength({
-        hasMinLength: password.length >= 6,
-        hasUpperCase: /[A-Z]/.test(password),
-        hasLowerCase: /[a-z]/.test(password),
-        hasNumber: /\d/.test(password),
-        hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
-      });
-    }
-  }, [password, isLogin]);
-
-  const loadSavedAccounts = async () => {
-    try {
-      const saved = await AsyncStorage.getItem("campustrace_saved_accounts");
-      if (saved) {
-        const accounts = JSON.parse(saved);
-        setSavedAccounts(accounts);
-        setShowSavedAccounts(accounts.length > 0 && isLogin);
-      } else {
-        setShowSavedAccounts(false);
-      }
-    } catch (error) {
-      console.log("Error loading saved accounts:", error);
-      setShowSavedAccounts(false);
-    }
-  };
 
   const loadSavedEmail = async () => {
     try {
@@ -215,134 +106,11 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
-  const saveAccount = async (email, fullName, avatarUrl = null) => {
-    try {
-      const saved = await AsyncStorage.getItem("campustrace_saved_accounts");
-      let accounts = saved ? JSON.parse(saved) : [];
-      accounts = accounts.filter((acc) => acc.email !== email);
-      accounts.unshift({
-        email,
-        fullName: fullName || email.split("@")[0],
-        avatarUrl: avatarUrl || null,
-        lastLogin: new Date().toISOString(),
-      });
-      accounts = accounts.slice(0, 3);
-      await AsyncStorage.setItem(
-        "campustrace_saved_accounts",
-        JSON.stringify(accounts)
-      );
-      setSavedAccounts(accounts);
-    } catch (error) {
-      console.log("Error saving account:", error);
-    }
-  };
-
-  const removeAccount = async (emailToRemove) => {
-    try {
-      const saved = await AsyncStorage.getItem("campustrace_saved_accounts");
-      if (saved) {
-        let accounts = JSON.parse(saved);
-        accounts = accounts.filter((acc) => acc.email !== emailToRemove);
-        await AsyncStorage.setItem(
-          "campustrace_saved_accounts",
-          JSON.stringify(accounts)
-        );
-        setSavedAccounts(accounts);
-        if (accounts.length === 0) {
-          setShowSavedAccounts(false);
-        }
-      }
-    } catch (error) {
-      console.log("Error removing account:", error);
-    }
-  };
-
-  const selectAccount = (account) => {
-    setEmail(account.email);
-    setShowSavedAccounts(false);
-  };
-
-  const checkRateLimit = () => {
-    const now = Date.now();
-    if (lastAttemptTime && now - lastAttemptTime > 15 * 60 * 1000) {
-      setLoginAttempts(0);
-      setLastAttemptTime(null);
-      return true;
-    }
-    if (cooldownTime > 0) {
-      Alert.alert(
-        "Too Many Attempts",
-        `Please wait ${cooldownTime} seconds before trying again.`,
-        [{ text: "OK" }]
-      );
-      return false;
-    }
-    if (loginAttempts >= 5) {
-      setCooldownTime(60);
-      Alert.alert(
-        "Too Many Attempts",
-        "Too many login attempts. Please wait 60 seconds.",
-        [{ text: "OK" }]
-      );
-      return false;
-    }
-    return true;
-  };
-
-  const validate = () => {
-    const newErrors = {};
-
-    if (!email) {
-      newErrors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = "Please enter a valid email";
-    }
-
-    if (!password) {
-      newErrors.password = "Password is required";
-    } else if (password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
-    }
-
-    if (!isLogin) {
-      if (!fullName) {
-        newErrors.fullName = "Full name is required";
-      }
-      if (registerType === "manual") {
-        if (!idImage) {
-          newErrors.idImage = "University ID photo is required";
-        }
-        if (!selectedUniversity) {
-          newErrors.university = "Please select your university";
-        }
-      }
-      if (!confirmPassword) {
-        newErrors.confirmPassword = "Please confirm your password";
-      } else if (confirmPassword !== password) {
-        newErrors.confirmPassword = "Passwords do not match";
-      }
-
-      const score = Object.values(passwordStrength).filter(Boolean).length;
-      if (score < 3) {
-        newErrors.password = "Please create a stronger password";
-      }
-    }
-
-    setErrors(newErrors);
-    setTouched({
-      email: true,
-      password: true,
-      fullName: !isLogin,
-      idImage: !isLogin && registerType === "manual",
-      confirmPassword: !isLogin,
-    });
-
-    return Object.keys(newErrors).length === 0;
-  };
-
   const handleLogin = async () => {
-    if (!validate()) return;
-    if (!checkRateLimit()) return;
+    if (!email || !password) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -354,33 +122,25 @@ const LoginScreen = ({ navigation }) => {
 
       if (result.error) throw result.error;
 
-      const { data: profileData } = await supabase
+      const supabaseClient = getSupabaseClient();
+      if (!supabaseClient) {
+        throw new Error("Unable to connect to authentication service");
+      }
+
+      const { data: profileData } = await supabaseClient
         .from("profiles")
-        .select("full_name, avatar_url, is_verified")
+        .select("is_verified")
         .eq("id", result.data.user.id)
         .single();
 
-      // Check if user is verified
       if (profileData && profileData.is_verified === false) {
-        // Sign them out and navigate to pending approval
-        await supabase.auth.signOut();
+        await supabaseClient.auth.signOut();
         navigation.navigate("PendingApproval");
         return;
       }
 
-      const userName =
-        profileData?.full_name || result.data?.user?.user_metadata?.full_name;
-      const avatarUrl = profileData?.avatar_url || null;
-
       await saveEmail(email);
-      await saveAccount(email, userName, avatarUrl);
-
-      setLoginAttempts(0);
-      setCooldownTime(0);
-      setLastAttemptTime(null);
     } catch (error) {
-      setLoginAttempts((prev) => prev + 1);
-      setLastAttemptTime(Date.now());
       Alert.alert("Error", error.message || "An error occurred");
     } finally {
       setLoading(false);
@@ -388,118 +148,66 @@ const LoginScreen = ({ navigation }) => {
   };
 
   const handleSignUp = async () => {
-    if (!validate()) return;
+    if (!email || !password || !fullName) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters");
+      return;
+    }
+
     setLoading(true);
-
     try {
-      if (registerType === "regular") {
-        // Regular signup
-        const response = await fetch(`${API_BASE_URL}/api/auth/signup-mobile`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            full_name: fullName.trim(),
-            email: email.trim(),
-            password: password,
-            captchaToken: "mobile-bypass",
-          }),
-        });
+      const response = await fetch(`${API_BASE_URL}/api/auth/signup-mobile`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          full_name: fullName.trim(),
+          email: email.trim(),
+          password: password,
+          captchaToken: "mobile-bypass",
+        }),
+      });
 
-        const responseData = await response.json();
+      const responseData = await response.json();
 
-        if (!response.ok) {
-          // Extract the error message
-          const errorMsg =
-            responseData.detail || responseData.message || "Sign up failed";
+      if (!response.ok) {
+        const errorMsg =
+          responseData.detail || responseData.message || "Sign up failed";
 
-          // Check if it's a domain not registered error
-          if (
-            errorMsg.toLowerCase().includes("not registered") ||
-            errorMsg.toLowerCase().includes("domain")
-          ) {
-            const domain = email.split("@")[1];
-            Alert.alert(
-              "Email Domain Not Registered",
-              `The email domain "${domain}" is not registered with CampusTrace.\n\n` +
-                `Options:\n` +
-                `1. Use your official university email address\n` +
-                `2. Or tap "Manual (University ID)" above to register with a personal email and your university ID photo`,
-              [{ text: "OK" }]
-            );
-          } else if (errorMsg.toLowerCase().includes("already exists")) {
-            Alert.alert(
-              "Account Already Exists",
-              "An account with this email already exists. Please sign in instead.",
-              [
-                { text: "Cancel", style: "cancel" },
-                { text: "Go to Login", onPress: () => toggleForm(true) },
-              ]
-            );
-          } else {
-            Alert.alert("Sign Up Failed", errorMsg);
-          }
-          return;
+        if (
+          errorMsg.toLowerCase().includes("not registered") ||
+          errorMsg.toLowerCase().includes("domain")
+        ) {
+          const domain = email.split("@")[1];
+          Alert.alert(
+            "Email Domain Not Registered",
+            `The email domain "${domain}" is not registered with CampusTrace. Please use your official university email address.`
+          );
+        } else if (errorMsg.toLowerCase().includes("already exists")) {
+          Alert.alert(
+            "Account Already Exists",
+            "An account with this email already exists. Please sign in instead.",
+            [
+              { text: "Cancel", style: "cancel" },
+              { text: "Go to Login", onPress: () => setIsLogin(true) },
+            ]
+          );
+        } else {
+          Alert.alert("Sign Up Failed", errorMsg);
         }
-
-        Alert.alert(
-          "Success",
-          "Account created! Please check your email to verify your account.",
-          [{ text: "OK", onPress: () => toggleForm(true) }]
-        );
-      } else {
-        // Manual signup
-        if (!selectedUniversity) {
-          throw new Error("Please select your university");
-        }
-
-        const formData = new FormData();
-        formData.append("full_name", fullName.trim());
-        formData.append("email", email.trim());
-        formData.append("password", password);
-        formData.append("university_id", selectedUniversity.id.toString());
-
-        formData.append("id_file", {
-          uri: idImage.uri,
-          name: idImage.name,
-          type: idImage.type,
-        });
-
-        const response = await fetch(
-          `${API_BASE_URL}/api/auth/signup-manual-mobile`,
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
-
-        const responseData = await response.json();
-
-        if (!response.ok) {
-          const errorMsg = responseData.detail || "An error occurred";
-
-          // Handle specific errors for manual registration
-          if (errorMsg.toLowerCase().includes("already exists")) {
-            Alert.alert(
-              "Account Already Exists",
-              "An account with this email already exists.",
-              [{ text: "OK" }]
-            );
-          } else if (errorMsg.toLowerCase().includes("university")) {
-            Alert.alert("Invalid University", errorMsg, [{ text: "OK" }]);
-          } else {
-            Alert.alert("Registration Failed", errorMsg, [{ text: "OK" }]);
-          }
-          return;
-        }
-
-        navigation.navigate("PendingApproval");
+        return;
       }
 
-      setLoginAttempts(0);
-      setCooldownTime(0);
-      setLastAttemptTime(null);
+      Alert.alert(
+        "Success",
+        "Account created! Please check your email to verify your account.",
+        [{ text: "OK", onPress: () => setIsLogin(true) }]
+      );
     } catch (error) {
       console.error("Signup error:", error);
       Alert.alert(
@@ -526,110 +234,17 @@ const LoginScreen = ({ navigation }) => {
     );
   };
 
-  const handleInput = (field, value) => {
-    if (field === "email") setEmail(value);
-    if (field === "password") setPassword(value);
-    if (field === "fullName") setFullName(value);
-    if (field === "confirmPassword") setConfirmPassword(value);
-
-    setErrors((prev) => ({ ...prev, [field]: "" }));
-    setTouched((prev) => ({ ...prev, [field]: true }));
-  };
-
-  const handleImagePick = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert(
-        "Permission Denied",
-        "Sorry, we need camera roll permissions to make this work!"
-      );
-      return;
-    }
-
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.7,
-    });
-
-    if (!result.canceled) {
-      const { uri } = result.assets[0];
-      const fileName = uri.split("/").pop();
-      const fileType = `image/${fileName.split(".").pop()}`;
-      setIdImage({ uri, name: fileName, type: fileType });
-      setErrors((prev) => ({ ...prev, idImage: null }));
-    }
-  };
-
-  const handleCameraCapture = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert(
-        "Permission Denied",
-        "Sorry, we need camera permissions to make this work!"
-      );
-      return;
-    }
-
-    let result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.7,
-    });
-
-    if (!result.canceled) {
-      const { uri } = result.assets[0];
-      const fileName = uri.split("/").pop();
-      const fileType = `image/${fileName.split(".").pop()}`;
-      setIdImage({ uri, name: fileName, type: fileType });
-      setErrors((prev) => ({ ...prev, idImage: null }));
-    }
-  };
-
-  const getPasswordStrengthScore = () => {
-    return Object.values(passwordStrength).filter(Boolean).length;
-  };
-
-  const getPasswordStrengthColor = () => {
-    const score = getPasswordStrengthScore();
-    if (score <= 2) return "#EF4444";
-    if (score <= 3) return "#F59E0B";
-    return "#10B981";
-  };
-
-  const getPasswordStrengthText = () => {
-    const score = getPasswordStrengthScore();
-    if (score <= 2) return "Weak";
-    if (score <= 3) return "Medium";
-    return "Strong";
-  };
-
-  const toggleForm = (login) => {
-    setIsLogin(login);
-    setErrors({});
-    setTouched({});
-    setFullName("");
-    setPassword("");
-    setConfirmPassword("");
-    setIdImage(null);
-    setRegisterType("regular");
-    setSelectedUniversity(null);
-  };
-
   if (initialLoading) {
     return <LoadingScreen />;
   }
 
   const themeColors = {
     background: colors.background || "#000000",
-    surface: colors.surface || "#1A1A1A",
-    border: colors.border || "#363636",
+    surface: colors.surface || "#121212",
+    border: colors.border || "#262626",
     text: colors.text || "#FFFFFF",
     textSecondary: colors.textSecondary || "#A8A8A8",
     primary: colors.primary || "#0095F6",
-    error: colors.error || "#ED4956",
-    success: colors.success || "#10B981",
   };
 
   const styles = StyleSheet.create({
@@ -639,393 +254,110 @@ const LoginScreen = ({ navigation }) => {
     },
     scrollContent: {
       flexGrow: 1,
-      justifyContent: "space-between",
-      padding: 24,
-      paddingTop: Platform.OS === "android" ? 40 : 60,
     },
-    mainContent: {
+    content: {
       flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      width: "100%",
-    },
-    backButton: {
-      position: "absolute",
-      top: Platform.OS === "android" ? 30 : 50,
-      left: 16,
-      zIndex: 10,
+      paddingHorizontal: 40,
+      paddingTop: Platform.OS === "android" ? 80 : 100,
+      paddingBottom: 40,
     },
     logoContainer: {
       alignItems: "center",
       marginBottom: 48,
     },
-    savedAccountsContainer: {
-      width: "100%",
-      alignItems: "center",
-    },
-    savedAccountItem: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      backgroundColor: "transparent",
-      borderWidth: 1,
-      borderColor: themeColors.border,
-      borderRadius: 12,
-      padding: 16,
-      marginBottom: 16,
-      width: "100%",
-    },
-    accountLeft: {
-      flexDirection: "row",
-      alignItems: "center",
-      flex: 1,
-    },
-    accountAvatar: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: themeColors.primary,
-      justifyContent: "center",
-      alignItems: "center",
-      marginRight: 16,
-      overflow: "hidden",
-    },
-    accountAvatarImage: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-    },
-    accountAvatarText: {
-      fontSize: 24,
-      fontWeight: "600",
-      color: themeColors.text,
-    },
-    accountInfo: {
-      flex: 1,
-    },
-    accountName: {
-      fontSize: fontSizes.base || 16,
-      fontWeight: "600",
-      color: themeColors.text,
-      marginBottom: 2,
-    },
-    accountEmail: {
-      fontSize: fontSizes.small || 14,
-      color: themeColors.textSecondary,
-    },
-    removeButton: {
-      padding: 8,
-    },
-    removeButtonText: {
-      fontSize: 24,
-      color: themeColors.textSecondary,
-      lineHeight: 24,
-      fontWeight: "bold",
-    },
-    useAnotherAccount: {
-      paddingVertical: 12,
-      alignItems: "center",
-      marginBottom: 16,
-    },
-    useAnotherAccountText: {
-      fontSize: fontSizes.base || 16,
-      color: themeColors.primary,
-      fontWeight: "600",
-    },
     formContainer: {
       width: "100%",
     },
-    inputWrapper: {
-      marginBottom: 12,
-    },
-    inputContainer: {
-      flexDirection: "row",
-      alignItems: "center",
+    input: {
       backgroundColor: themeColors.surface,
       borderWidth: 1,
       borderColor: themeColors.border,
-      borderRadius: 12,
-      paddingHorizontal: 14,
-      height: 52,
-    },
-    inputError: {
-      borderColor: themeColors.error,
-    },
-    inputIcon: {
-      marginRight: 12,
-    },
-    input: {
-      flex: 1,
-      fontSize: fontSizes.base || 16,
+      borderRadius: 3,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontSize: fontSizes?.base || 14,
       color: themeColors.text,
-      paddingVertical: 12,
+      marginBottom: 10,
+    },
+    passwordContainer: {
+      position: "relative",
+      marginBottom: 10,
+    },
+    passwordInput: {
+      backgroundColor: themeColors.surface,
+      borderWidth: 1,
+      borderColor: themeColors.border,
+      borderRadius: 3,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      paddingRight: 45,
+      fontSize: fontSizes?.base || 14,
+      color: themeColors.text,
     },
     eyeIcon: {
-      padding: 4,
+      position: "absolute",
+      right: 12,
+      top: 10,
     },
-    errorContainer: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginTop: 6,
-      paddingLeft: 4,
-    },
-    errorText: {
-      fontSize: fontSizes.small || 14,
-      color: themeColors.error,
-      marginLeft: 4,
-    },
-    passwordStrength: {
-      backgroundColor: "transparent",
+    loginButton: {
+      backgroundColor: themeColors.primary,
       borderRadius: 8,
-      paddingVertical: 12,
-      marginBottom: 12,
-    },
-    strengthHeader: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      marginBottom: 8,
-    },
-    strengthLabel: {
-      fontSize: fontSizes.small || 14,
-      color: themeColors.textSecondary,
-      fontWeight: "600",
-    },
-    strengthText: {
-      fontSize: fontSizes.small || 14,
-      fontWeight: "600",
-    },
-    requirements: {
-      gap: 6,
-    },
-    requirement: {
-      flexDirection: "row",
+      paddingVertical: 14,
       alignItems: "center",
-      gap: 8,
+      marginTop: 8,
+      marginBottom: 20,
     },
-    unmetCircle: {
-      width: 14,
-      height: 14,
-      borderRadius: 7,
-      borderWidth: 2,
-      borderColor: themeColors.border,
+    loginButtonDisabled: {
+      opacity: 0.5,
     },
-    requirementText: {
-      fontSize: fontSizes.small || 14,
-      color: themeColors.textSecondary,
-    },
-    requirementTextMet: {
-      color: themeColors.success,
+    loginButtonText: {
+      color: "#FFFFFF",
+      fontSize: fontSizes?.base || 14,
+      fontWeight: "600",
     },
     forgotPassword: {
-      alignSelf: "flex-end",
-      marginBottom: 20,
-      marginTop: 8,
+      alignItems: "center",
+      marginBottom: 40,
     },
     forgotPasswordText: {
-      fontSize: fontSizes.small || 14,
-      color: themeColors.primary,
-      fontWeight: "600",
+      color: themeColors.textSecondary,
+      fontSize: fontSizes?.small || 12,
     },
-    button: {
-      backgroundColor: themeColors.primary,
-      borderRadius: 12,
-      height: 48,
-      justifyContent: "center",
+    divider: {
+      flexDirection: "row",
       alignItems: "center",
-      marginTop: 8,
+      marginVertical: 30,
     },
-    buttonDisabled: {
+    dividerLine: {
+      flex: 1,
+      height: 1,
       backgroundColor: themeColors.border,
-      opacity: 0.6,
     },
-    buttonText: {
-      color: "#FFFFFF",
-      fontSize: fontSizes.base || 16,
-      fontWeight: "700",
+    dividerText: {
+      color: themeColors.textSecondary,
+      paddingHorizontal: 18,
+      fontSize: fontSizes?.small || 12,
+      fontWeight: "600",
     },
     footer: {
-      width: "100%",
+      borderTopWidth: 1,
+      borderTopColor: themeColors.border,
+      paddingVertical: 20,
       alignItems: "center",
-      paddingTop: 24,
     },
-    footerButton: {
-      borderWidth: 1,
-      borderColor: themeColors.primary,
-      borderRadius: 12,
-      height: 48,
-      justifyContent: "center",
-      alignItems: "center",
-      width: "100%",
+    footerText: {
+      color: themeColors.textSecondary,
+      fontSize: fontSizes?.small || 12,
     },
-    footerButtonText: {
+    footerLink: {
       color: themeColors.primary,
-      fontSize: fontSizes.base || 16,
-      fontWeight: "700",
+      fontWeight: "600",
     },
     metaText: {
-      marginTop: 32,
-      fontSize: fontSizes.small || 14,
-      color: themeColors.textSecondary,
-      fontWeight: "700",
-      letterSpacing: -0.5,
-    },
-    toggleContainer: {
-      flexDirection: "row",
-      backgroundColor: themeColors.surface,
-      borderRadius: 12,
-      padding: 4,
-      marginBottom: 20,
-      borderWidth: 1,
-      borderColor: themeColors.border,
-    },
-    toggleButton: {
-      flex: 1,
-      paddingVertical: 10,
-      borderRadius: 9,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    toggleButtonActive: {
-      backgroundColor: themeColors.primary,
-    },
-    toggleButtonInactive: {
-      backgroundColor: "transparent",
-    },
-    toggleTextActive: {
-      fontSize: fontSizes.small || 14,
-      fontWeight: "600",
-      color: "#FFFFFF",
-    },
-    toggleTextInactive: {
-      fontSize: fontSizes.small || 14,
-      fontWeight: "500",
-      color: themeColors.textSecondary,
-    },
-    idUploadContainer: {
-      marginBottom: 12,
-    },
-    idUploadLabel: {
-      fontSize: fontSizes.small || 14,
-      color: themeColors.textSecondary,
-      fontWeight: "600",
-      marginBottom: 8,
-      paddingLeft: 4,
-    },
-    idUploadButtons: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      gap: 12,
-    },
-    idUploadButton: {
-      flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: themeColors.surface,
-      borderWidth: 1,
-      borderColor: themeColors.border,
-      borderRadius: 12,
-      paddingVertical: 14,
-      gap: 8,
-    },
-    idUploadButtonText: {
-      color: themeColors.text,
-      fontSize: fontSizes.small || 14,
-      fontWeight: "600",
-    },
-    idImagePreviewContainer: {
-      width: "100%",
-      height: 150,
-      borderRadius: 12,
-      borderWidth: 2,
-      borderColor: themeColors.success,
-      backgroundColor: themeColors.surface,
-      justifyContent: "center",
-      alignItems: "center",
-      marginTop: 12,
-      overflow: "hidden",
-      position: "relative",
-    },
-    idImagePreview: {
-      width: "100%",
-      height: "100%",
-      resizeMode: "cover",
-    },
-    removeImageButton: {
-      position: "absolute",
-      top: 8,
-      right: 8,
-      backgroundColor: "rgba(0, 0, 0, 0.6)",
-      borderRadius: 20,
-      width: 32,
-      height: 32,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
-      justifyContent: "flex-end",
-    },
-    modalContent: {
-      backgroundColor: themeColors.surface,
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      maxHeight: "70%",
-      paddingBottom: Platform.OS === "ios" ? 34 : 20,
-    },
-    modalHeader: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      padding: 20,
-      borderBottomWidth: 1,
-      borderBottomColor: themeColors.border,
-    },
-    modalTitle: {
-      fontSize: fontSizes.lg || 18,
-      fontWeight: "700",
-      color: themeColors.text,
-    },
-    modalCloseButton: {
-      width: 32,
-      height: 32,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    modalCloseText: {
-      fontSize: 32,
-      color: themeColors.textSecondary,
-      lineHeight: 32,
-    },
-    universityItem: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      padding: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: themeColors.border,
-    },
-    universityItemSelected: {
-      backgroundColor: `${themeColors.primary}15`,
-    },
-    universityItemText: {
-      fontSize: fontSizes.base || 16,
-      color: themeColors.text,
-      flex: 1,
-    },
-    universityItemTextSelected: {
-      color: themeColors.primary,
-      fontWeight: "600",
-    },
-    emptyList: {
-      padding: 40,
-      alignItems: "center",
-    },
-    emptyListText: {
-      fontSize: fontSizes.base || 16,
-      color: themeColors.textSecondary,
       textAlign: "center",
+      color: themeColors.textSecondary,
+      fontSize: fontSizes?.small || 12,
+      marginTop: 40,
     },
   });
 
@@ -1039,543 +371,103 @@ const LoginScreen = ({ navigation }) => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {!showSavedAccounts && isLogin && savedAccounts.length > 0 && (
-          <TouchableOpacity
-            onPress={() => setShowSavedAccounts(true)}
-            style={styles.backButton}
-          >
-            <ChevronLeft size={28} color={themeColors.text} />
-          </TouchableOpacity>
-        )}
-
-        <View style={styles.mainContent}>
+        <View style={styles.content}>
+          {/* Logo */}
           <View style={styles.logoContainer}>
-            <CampusTraceIcon width={80} height={80} />
+            <CampusTraceIcon width={64} height={64} />
           </View>
 
-          {showSavedAccounts && isLogin && savedAccounts.length > 0 ? (
-            <View style={styles.savedAccountsContainer}>
-              {savedAccounts.map((account, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.savedAccountItem}
-                  onPress={() => selectAccount(account)}
-                >
-                  <View style={styles.accountLeft}>
-                    <View style={styles.accountAvatar}>
-                      {account.avatarUrl ? (
-                        <Image
-                          source={{ uri: account.avatarUrl }}
-                          style={styles.accountAvatarImage}
-                        />
-                      ) : (
-                        <Text style={styles.accountAvatarText}>
-                          {account.fullName.charAt(0).toUpperCase()}
-                        </Text>
-                      )}
-                    </View>
-                    <View style={styles.accountInfo}>
-                      <Text style={styles.accountName} numberOfLines={1}>
-                        {account.fullName}
-                      </Text>
-                      <Text style={styles.accountEmail} numberOfLines={1}>
-                        {account.email}
-                      </Text>
-                    </View>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => removeAccount(account.email)}
-                    style={styles.removeButton}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Text style={styles.removeButtonText}>×</Text>
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              ))}
+          {/* Form */}
+          <View style={styles.formContainer}>
+            {!isLogin && (
+              <TextInput
+                style={styles.input}
+                placeholder="Full Name"
+                placeholderTextColor={themeColors.textSecondary}
+                value={fullName}
+                onChangeText={setFullName}
+                autoCapitalize="words"
+              />
+            )}
+
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              placeholderTextColor={themeColors.textSecondary}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Password"
+                placeholderTextColor={themeColors.textSecondary}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+              />
               <TouchableOpacity
-                style={styles.useAnotherAccount}
-                onPress={() => setShowSavedAccounts(false)}
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeIcon}
               >
-                <Text style={styles.useAnotherAccountText}>
-                  Use another account
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.formContainer}>
-              {!isLogin && (
-                <>
-                  <View style={styles.toggleContainer}>
-                    <TouchableOpacity
-                      style={[
-                        styles.toggleButton,
-                        registerType === "regular"
-                          ? styles.toggleButtonActive
-                          : styles.toggleButtonInactive,
-                      ]}
-                      onPress={() => setRegisterType("regular")}
-                    >
-                      <Text
-                        style={
-                          registerType === "regular"
-                            ? styles.toggleTextActive
-                            : styles.toggleTextInactive
-                        }
-                      >
-                        Regular
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.toggleButton,
-                        registerType === "manual"
-                          ? styles.toggleButtonActive
-                          : styles.toggleButtonInactive,
-                      ]}
-                      onPress={() => setRegisterType("manual")}
-                    >
-                      <Text
-                        style={
-                          registerType === "manual"
-                            ? styles.toggleTextActive
-                            : styles.toggleTextInactive
-                        }
-                      >
-                        Manual (University ID)
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={styles.inputWrapper}>
-                    <View
-                      style={[
-                        styles.inputContainer,
-                        errors.fullName &&
-                          touched.fullName &&
-                          styles.inputError,
-                      ]}
-                    >
-                      <User
-                        size={20}
-                        color={themeColors.textSecondary}
-                        style={styles.inputIcon}
-                      />
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Full Name"
-                        placeholderTextColor={themeColors.textSecondary}
-                        value={fullName}
-                        onChangeText={(value) => handleInput("fullName", value)}
-                        autoCapitalize="words"
-                      />
-                    </View>
-                    {errors.fullName && touched.fullName && (
-                      <View style={styles.errorContainer}>
-                        <AlertCircle size={14} color={themeColors.error} />
-                        <Text style={styles.errorText}>{errors.fullName}</Text>
-                      </View>
-                    )}
-                  </View>
-                </>
-              )}
-
-              <View style={styles.inputWrapper}>
-                <View
-                  style={[
-                    styles.inputContainer,
-                    errors.email && touched.email && styles.inputError,
-                  ]}
-                >
-                  <Mail
-                    size={20}
-                    color={themeColors.textSecondary}
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Email"
-                    placeholderTextColor={themeColors.textSecondary}
-                    value={email}
-                    onChangeText={(value) => handleInput("email", value)}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                </View>
-                {errors.email && touched.email && (
-                  <View style={styles.errorContainer}>
-                    <AlertCircle size={14} color={themeColors.error} />
-                    <Text style={styles.errorText}>{errors.email}</Text>
-                  </View>
-                )}
-              </View>
-
-              {!isLogin && registerType === "manual" && (
-                <View style={styles.inputWrapper}>
-                  <Text style={styles.idUploadLabel}>
-                    Select Your University
-                  </Text>
-                  <TouchableOpacity
-                    style={[
-                      styles.inputContainer,
-                      errors.university &&
-                        touched.university &&
-                        styles.inputError,
-                    ]}
-                    onPress={() => setShowUniversityPicker(true)}
-                  >
-                    <User
-                      size={20}
-                      color={themeColors.textSecondary}
-                      style={styles.inputIcon}
-                    />
-                    <Text
-                      style={[
-                        styles.input,
-                        !selectedUniversity && {
-                          color: themeColors.textSecondary,
-                        },
-                      ]}
-                    >
-                      {selectedUniversity
-                        ? selectedUniversity.name
-                        : "Choose university..."}
-                    </Text>
-                    <ChevronRight size={20} color={themeColors.textSecondary} />
-                  </TouchableOpacity>
-                  {errors.university && touched.university && (
-                    <View style={styles.errorContainer}>
-                      <AlertCircle size={14} color={themeColors.error} />
-                      <Text style={styles.errorText}>{errors.university}</Text>
-                    </View>
-                  )}
-                </View>
-              )}
-
-              {!isLogin && registerType === "manual" && (
-                <View style={styles.idUploadContainer}>
-                  <Text style={styles.idUploadLabel}>University ID Photo</Text>
-                  <View style={styles.idUploadButtons}>
-                    <TouchableOpacity
-                      style={styles.idUploadButton}
-                      onPress={handleImagePick}
-                    >
-                      <UploadCloud size={18} color={themeColors.text} />
-                      <Text style={styles.idUploadButtonText}>Upload</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.idUploadButton}
-                      onPress={handleCameraCapture}
-                    >
-                      <Camera size={18} color={themeColors.text} />
-                      <Text style={styles.idUploadButtonText}>Take Photo</Text>
-                    </TouchableOpacity>
-                  </View>
-                  {idImage && (
-                    <View style={styles.idImagePreviewContainer}>
-                      <Image
-                        source={{ uri: idImage.uri }}
-                        style={styles.idImagePreview}
-                      />
-                      <TouchableOpacity
-                        style={styles.removeImageButton}
-                        onPress={() => setIdImage(null)}
-                      >
-                        <X size={20} color="#FFFFFF" />
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                  {errors.idImage && touched.idImage && (
-                    <View style={[styles.errorContainer, { marginTop: 8 }]}>
-                      <AlertCircle size={14} color={themeColors.error} />
-                      <Text style={styles.errorText}>{errors.idImage}</Text>
-                    </View>
-                  )}
-                </View>
-              )}
-
-              <View style={styles.inputWrapper}>
-                <View
-                  style={[
-                    styles.inputContainer,
-                    errors.password && touched.password && styles.inputError,
-                  ]}
-                >
-                  <Lock
-                    size={20}
-                    color={themeColors.textSecondary}
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Password"
-                    placeholderTextColor={themeColors.textSecondary}
-                    value={password}
-                    onChangeText={(value) => handleInput("password", value)}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={styles.eyeIcon}
-                  >
-                    {showPassword ? (
-                      <EyeOff size={20} color={themeColors.textSecondary} />
-                    ) : (
-                      <Eye size={20} color={themeColors.textSecondary} />
-                    )}
-                  </TouchableOpacity>
-                </View>
-                {errors.password && touched.password && (
-                  <View style={styles.errorContainer}>
-                    <AlertCircle size={14} color={themeColors.error} />
-                    <Text style={styles.errorText}>{errors.password}</Text>
-                  </View>
-                )}
-              </View>
-
-              {!isLogin && (
-                <View style={styles.inputWrapper}>
-                  <View
-                    style={[
-                      styles.inputContainer,
-                      errors.confirmPassword &&
-                        touched.confirmPassword &&
-                        styles.inputError,
-                    ]}
-                  >
-                    <Lock
-                      size={20}
-                      color={themeColors.textSecondary}
-                      style={styles.inputIcon}
-                    />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Confirm Password"
-                      placeholderTextColor={themeColors.textSecondary}
-                      value={confirmPassword}
-                      onChangeText={(value) =>
-                        handleInput("confirmPassword", value)
-                      }
-                      secureTextEntry={!showConfirm}
-                      autoCapitalize="none"
-                    />
-                    <TouchableOpacity
-                      onPress={() => setShowConfirm(!showConfirm)}
-                      style={styles.eyeIcon}
-                    >
-                      {showConfirm ? (
-                        <EyeOff size={20} color={themeColors.textSecondary} />
-                      ) : (
-                        <Eye size={20} color={themeColors.textSecondary} />
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                  {errors.confirmPassword && touched.confirmPassword && (
-                    <View style={styles.errorContainer}>
-                      <AlertCircle size={14} color={themeColors.error} />
-                      <Text style={styles.errorText}>
-                        {errors.confirmPassword}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              )}
-
-              {!isLogin && password.length > 0 && (
-                <View style={styles.passwordStrength}>
-                  <View style={styles.strengthHeader}>
-                    <Text style={styles.strengthLabel}>Password Strength:</Text>
-                    <Text
-                      style={[
-                        styles.strengthText,
-                        { color: getPasswordStrengthColor() },
-                      ]}
-                    >
-                      {getPasswordStrengthText()}
-                    </Text>
-                  </View>
-                  <View style={styles.requirements}>
-                    <PasswordRequirement
-                      met={passwordStrength.hasMinLength}
-                      text="At least 6 characters"
-                      colors={themeColors}
-                    />
-                    <PasswordRequirement
-                      met={passwordStrength.hasUpperCase}
-                      text="One uppercase letter"
-                      colors={themeColors}
-                    />
-                    <PasswordRequirement
-                      met={passwordStrength.hasLowerCase}
-                      text="One lowercase letter"
-                      colors={themeColors}
-                    />
-                    <PasswordRequirement
-                      met={passwordStrength.hasNumber}
-                      text="One number"
-                      colors={themeColors}
-                    />
-                    <PasswordRequirement
-                      met={passwordStrength.hasSpecialChar}
-                      text="One special character"
-                      colors={themeColors}
-                    />
-                  </View>
-                </View>
-              )}
-
-              {isLogin && (
-                <TouchableOpacity
-                  onPress={handleForgotPassword}
-                  style={styles.forgotPassword}
-                >
-                  <Text style={styles.forgotPasswordText}>
-                    Forgot password?
-                  </Text>
-                </TouchableOpacity>
-              )}
-
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  (loading || cooldownTime > 0) && styles.buttonDisabled,
-                ]}
-                onPress={isLogin ? handleLogin : handleSignUp}
-                disabled={loading || cooldownTime > 0}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                {showPassword ? (
+                  <EyeOff size={20} color={themeColors.textSecondary} />
                 ) : (
-                  <Text style={styles.buttonText}>
-                    {cooldownTime > 0
-                      ? `Wait ${cooldownTime}s`
-                      : isLogin
-                      ? "Log In"
-                      : "Sign Up"}
-                  </Text>
+                  <Eye size={20} color={themeColors.textSecondary} />
                 )}
               </TouchableOpacity>
             </View>
-          )}
+
+            <TouchableOpacity
+              style={[
+                styles.loginButton,
+                loading && styles.loginButtonDisabled,
+              ]}
+              onPress={isLogin ? handleLogin : handleSignUp}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.loginButtonText}>
+                  {isLogin ? "Log in" : "Sign up"}
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            {isLogin && (
+              <TouchableOpacity
+                onPress={handleForgotPassword}
+                style={styles.forgotPassword}
+              >
+                <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
+        {/* Footer */}
         <View style={styles.footer}>
-          <TouchableOpacity
-            style={styles.footerButton}
-            onPress={() => {
-              if (showSavedAccounts) {
-                toggleForm(false);
-                setShowSavedAccounts(false);
-              } else {
-                toggleForm(!isLogin);
-              }
-            }}
-          >
-            <Text style={styles.footerButtonText}>
-              {isLogin ? "Create new account" : "Log in"}
+          <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
+            <Text style={styles.footerText}>
+              {isLogin
+                ? "Don't have an account? "
+                : "Already have an account? "}
+              <Text style={styles.footerLink}>
+                {isLogin ? "Sign up" : "Log in"}
+              </Text>
             </Text>
           </TouchableOpacity>
-          <Text style={styles.metaText}>CampusTrace</Text>
         </View>
+
+        <Text style={styles.metaText}>CampusTrace</Text>
       </ScrollView>
-
-      <Modal
-        visible={showUniversityPicker}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowUniversityPicker(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Your University</Text>
-              <TouchableOpacity
-                onPress={() => setShowUniversityPicker(false)}
-                style={styles.modalCloseButton}
-              >
-                <Text style={styles.modalCloseText}>×</Text>
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={universities}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.universityItem,
-                    selectedUniversity?.id === item.id &&
-                      styles.universityItemSelected,
-                  ]}
-                  onPress={() => {
-                    setSelectedUniversity(item);
-                    setShowUniversityPicker(false);
-                    setErrors((prev) => ({ ...prev, university: "" }));
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.universityItemText,
-                      selectedUniversity?.id === item.id &&
-                        styles.universityItemTextSelected,
-                    ]}
-                  >
-                    {item.name}
-                  </Text>
-                  {selectedUniversity?.id === item.id && (
-                    <CheckCircle size={20} color={themeColors.primary} />
-                  )}
-                </TouchableOpacity>
-              )}
-              ListEmptyComponent={
-                <View style={styles.emptyList}>
-                  <Text style={styles.emptyListText}>
-                    No universities available. Please contact support.
-                  </Text>
-                </View>
-              }
-            />
-          </View>
-        </View>
-      </Modal>
     </KeyboardAvoidingView>
-  );
-};
-
-const PasswordRequirement = ({ met, text, colors }) => {
-  const styles = StyleSheet.create({
-    requirement: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-    },
-    unmetCircle: {
-      width: 14,
-      height: 14,
-      borderRadius: 7,
-      borderWidth: 2,
-      borderColor: colors.border,
-    },
-    requirementText: {
-      fontSize: 14,
-      color: colors.textSecondary,
-    },
-    requirementTextMet: {
-      color: colors.success,
-    },
-  });
-
-  return (
-    <View style={styles.requirement}>
-      {met ? (
-        <CheckCircle size={14} color={colors.success} />
-      ) : (
-        <View style={styles.unmetCircle} />
-      )}
-      <Text style={[styles.requirementText, met && styles.requirementTextMet]}>
-        {text}
-      </Text>
-    </View>
   );
 };
 

@@ -897,7 +897,7 @@ async def signup_user_mobile(payload: SignupRequest, request: Request):
             else:
                 redirect_url = settings.EMAIL_CONFIRM_REDIRECT
 
-        university_id = domain_res.data["university_id"]
+        university_id = domain_res.data[0]["university_id"]
 
         signup_options = {
             "email": payload.email,

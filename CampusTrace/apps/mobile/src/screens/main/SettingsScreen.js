@@ -13,6 +13,7 @@ import {
   Image, // Import Image
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   ChevronLeft,
   KeyRound,
@@ -331,30 +332,35 @@ const SettingsScreen = ({ navigation }) => {
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       {/* Header */}
-      <View
-        style={[
-          styles.header,
-          { backgroundColor: colors.surface, borderBottomColor: colors.border },
-        ]}
+      <LinearGradient
+        colors={[colors.background, colors.background]}
+        style={styles.headerGradient}
       >
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
+        <View
+          style={[
+            styles.header,
+            {
+              backgroundColor: "transparent",
+              borderBottomWidth: 0,
+              paddingTop: 16,
+              paddingBottom: 8,
+            },
+          ]}
         >
-          <ChevronLeft size={24} color={colors.text} />
-        </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            Settings
-          </Text>
-          <Text
-            style={[styles.headerSubtitle, { color: colors.textSecondary }]}
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
           >
-            Manage your account and preferences
-          </Text>
+            <ChevronLeft size={24} color={colors.text} />
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>
+              Settings
+            </Text>
+          </View>
+          <View style={{ width: 40 }} />
         </View>
-        <View style={{ width: 40 }} />
-      </View>
+      </LinearGradient>
 
       {loading ? (
         <View
@@ -915,16 +921,18 @@ const SettingsScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F9FAFB" },
+  container: { flex: 1, backgroundColor: "#FFFFFF" },
+  headerGradient: {
+    paddingBottom: 8,
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#DBDBDB",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: "#FAFAFA",
+    borderBottomWidth: 0,
   },
   backButton: { padding: 4 },
   headerContent: {
@@ -932,9 +940,10 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: 22,
+    fontWeight: "700",
     color: "#000000",
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: 14,

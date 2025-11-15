@@ -24,6 +24,7 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   Search,
   Filter,
@@ -414,101 +415,85 @@ const ItemDetailsModal = memo(
             { backgroundColor: colors.background },
           ]}
         >
-          {/* Fixed Header */}
+          {/* Fixed Header with Close Button */}
           <View
             style={[
               styles.detailHeader,
               {
-                backgroundColor: colors.surface,
-                borderBottomColor: colors.border,
+                backgroundColor: "transparent",
               },
             ]}
           >
-            <View style={{ flex: 1 }}>
+            <TouchableOpacity
+              onPress={onClose}
+              style={[
+                styles.closeButton,
+                { backgroundColor: "rgba(0,0,0,0.6)" },
+              ]}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <X size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Image with Title Overlay */}
+          <View style={styles.imageSection}>
+            {item.image_url ? (
+              <Image
+                source={{ uri: item.image_url }}
+                style={styles.detailImageFixed}
+                resizeMode="cover"
+              />
+            ) : (
+              <View
+                style={[
+                  styles.noImageContainerFixed,
+                  { backgroundColor: colors.surface },
+                ]}
+              >
+                <Camera size={48} color={colors.border} />
+                <Text
+                  style={[styles.noImageText, { color: colors.textSecondary }]}
+                >
+                  No Image Available
+                </Text>
+              </View>
+            )}
+            {/* Title and Badges Overlay */}
+            <View
+              style={[styles.titleOverlay, { backgroundColor: colors.overlay }]}
+            >
               <View style={styles.detailBadges}>
                 <View
                   style={[
                     styles.statusBadge,
                     {
                       backgroundColor:
-                        item.status === "Lost"
-                          ? colors.isDark
-                            ? "#7F1D1D"
-                            : "#FEE2E2"
-                          : colors.isDark
-                          ? "#064E3B"
-                          : "#D1FAE5",
+                        item.status === "Lost" ? colors.error : colors.success,
                     },
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.statusText,
-                      {
-                        color:
-                          item.status === "Lost"
-                            ? colors.error
-                            : colors.success,
-                      },
-                    ]}
-                  >
-                    {item.status}
-                  </Text>
+                  <Text style={styles.statusText}>{item.status}</Text>
                 </View>
                 <View
                   style={[
                     styles.categoryBadge,
                     {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.border,
+                      backgroundColor: "rgba(255,255,255,0.2)",
+                      borderColor: "rgba(255,255,255,0.3)",
                     },
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.categoryText,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
+                  <Text style={[styles.categoryText, { color: "#FFFFFF" }]}>
                     {item.category}
                   </Text>
                 </View>
               </View>
-              <Text style={[styles.detailTitle, { color: colors.text }]}>
+              <Text style={[styles.detailTitle, { color: "#FFFFFF" }]}>
                 {item.title}
               </Text>
             </View>
-            <TouchableOpacity
-              onPress={onClose}
-              style={styles.closeButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <X size={24} color={colors.text} />
-            </TouchableOpacity>
           </View>
-
-          {/* Fixed Image */}
-          {item.image_url ? (
-            <Image
-              source={{ uri: item.image_url }}
-              style={styles.detailImageFixed}
-              resizeMode="cover"
-            />
-          ) : (
-            <View
-              style={[
-                styles.noImageContainerFixed,
-                { backgroundColor: colors.surface },
-              ]}
-            >
-              <Camera size={48} color={colors.border} />
-              <Text
-                style={[styles.noImageText, { color: colors.textSecondary }]}
-              >
-                No Image Available
-              </Text>
-            </View>
-          )}
 
           {/* Fixed Poster Info */}
           <View
@@ -1215,23 +1200,30 @@ const BrowseScreen = () => {
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       {/* Header */}
-      <View
-        style={[
-          styles.header,
-          { backgroundColor: colors.surface, borderBottomColor: colors.border },
-        ]}
+      <LinearGradient
+        colors={[colors.background, colors.background]}
+        style={styles.headerGradient}
       >
-        <Text style={[styles.headerTitle, { color: colors.text }]}>
-          Browse All Items
-        </Text>
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-          Find lost items or help return found items
-        </Text>
-      </View>
+        <View
+          style={[
+            styles.header,
+            {
+              backgroundColor: "transparent",
+              borderBottomWidth: 0,
+              paddingTop: 16,
+              paddingBottom: 8,
+            },
+          ]}
+        >
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            Browse All Items
+          </Text>
+        </View>
+      </LinearGradient>
 
       {/* Enhanced Search Bar */}
       <View
-        style={[styles.searchContainer, { backgroundColor: colors.surface }]}
+        style={[styles.searchContainer, { backgroundColor: colors.background }]}
       >
         <View
           style={[
@@ -1352,7 +1344,10 @@ const BrowseScreen = () => {
       <View
         style={[
           styles.resultsCountRow,
-          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+          {
+            backgroundColor: colors.background,
+            borderBottomColor: colors.border,
+          },
         ]}
       >
         <View style={styles.resultsCount}>
@@ -1610,36 +1605,21 @@ const createStyles = (colors) =>
       fontSize: 16,
       color: colors.textSecondary,
     },
+    headerGradient: {
+      paddingBottom: 8,
+    },
     header: {
       paddingHorizontal: 20,
-      paddingVertical: 16,
-      backgroundColor: colors.surface,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-      ...Platform.select({
-        ios: {
-          shadowColor: colors.shadow || "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 3,
-        },
-        android: {
-          elevation: 3,
-        },
-      }),
+      paddingTop: 16,
+      paddingBottom: 8,
+      backgroundColor: "transparent",
+      borderBottomWidth: 0,
     },
     headerTitle: {
-      fontSize: 26,
+      fontSize: 22,
       fontWeight: "700",
       color: colors.text,
       letterSpacing: -0.5,
-    },
-    headerSubtitle: {
-      fontSize: 14,
-      color: colors.textSecondary,
-      marginTop: 4,
-      fontWeight: "400",
-      lineHeight: 20,
     },
     searchContainer: {
       flexDirection: "row",
@@ -1647,8 +1627,7 @@ const createStyles = (colors) =>
       paddingVertical: 12,
       gap: 12,
       backgroundColor: colors.surface,
-      borderBottomWidth: 0.5,
-      borderBottomColor: colors.border,
+      borderBottomWidth: 0,
     },
     searchBar: {
       flex: 1,
@@ -1659,6 +1638,8 @@ const createStyles = (colors) =>
       paddingHorizontal: 12,
       height: 40,
       gap: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     searchInput: {
       flex: 1,
@@ -1986,9 +1967,23 @@ const createStyles = (colors) =>
     },
     detailHeader: {
       flexDirection: "row",
+      justifyContent: "flex-start",
       padding: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
+      position: "absolute",
+      top: 40,
+      left: 0,
+      zIndex: 10,
+    },
+    imageSection: {
+      position: "relative",
+    },
+    titleOverlay: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: 16,
+      paddingTop: 40,
     },
     detailScrollContent: {
       flex: 1,
@@ -2005,6 +2000,8 @@ const createStyles = (colors) =>
     },
     closeButton: {
       padding: 8,
+      borderRadius: 20,
+      backgroundColor: "rgba(0,0,0,0.5)",
     },
     detailImageFixed: {
       width: screenWidth,

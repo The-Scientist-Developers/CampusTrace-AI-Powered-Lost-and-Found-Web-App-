@@ -56,56 +56,47 @@ const PAGE_CONFIGS = {
   },
   "/dashboard/browse-all": {
     type: "title",
-    title: "Browse",
-    subtitle: "Discover lost and found items",
+    title: "Browse All Items",
     showActions: false,
   },
   "/dashboard/profile": {
     type: "title",
     title: "Profile",
-    subtitle: "Manage your account and view your activity",
     showActions: false,
   },
   "/dashboard/my-posts": {
     type: "title",
     title: "My Activity",
-    subtitle: "View your posts, claims, and activity history",
     showActions: false,
   },
   "/dashboard/post-new": {
     type: "title",
     title: "Post Item",
-    subtitle: "Report a lost or found item",
     showActions: false,
   },
   "/dashboard/leaderboard": {
     type: "title",
     title: "Leaderboard",
-    subtitle: "Top contributors in the community",
     showActions: false,
   },
   "/dashboard/notifications": {
     type: "title",
     title: "Notifications",
-    subtitle: "Stay updated with your activity",
     showActions: false,
   },
   "/dashboard/messages": {
     type: "title",
     title: "Messages",
-    subtitle: "Your conversations",
     showActions: false,
   },
   "/dashboard/settings": {
     type: "title",
     title: "Settings",
-    subtitle: "Customize your experience",
     showActions: false,
   },
   "/dashboard/help": {
     type: "title",
     title: "Help & Support",
-    subtitle: "Get assistance and learn more",
     showActions: false,
   },
 };
@@ -129,14 +120,9 @@ const MobileHeader = ({ notificationCount = 0, messageCount = 0, profile }) => {
       {/* This component will load the 'Poppins' font */}
       <FontLoader />
       <header
-        className="sticky top-0 left-0 right-0 border-b z-50 md:hidden"
+        className="sticky top-0 left-0 right-0 z-50 md:hidden"
         style={{
           backgroundColor: isDark ? "#1a1a1a" : "#ffffff",
-          borderBottomColor: isDark ? "#2a2a2a" : "#e5e7eb",
-          borderBottomWidth: "1px",
-          boxShadow: isDark
-            ? "0 1px 3px 0 rgba(0, 0, 0, 0.3)"
-            : "0 1px 3px 0 rgba(0, 0, 0, 0.05)",
         }}
       >
         <div className="flex items-center justify-between px-5 py-3.5">
@@ -157,26 +143,15 @@ const MobileHeader = ({ notificationCount = 0, messageCount = 0, profile }) => {
           ) : (
             <div className="flex-1 min-w-0">
               <h2
-                className="text-xl font-bold leading-tight truncate"
+                className="font-semibold leading-tight truncate"
                 style={{
                   color: isDark ? "#ffffff" : "#000000",
-                  fontSize: "20px",
-                  fontWeight: "700",
+                  fontSize: "22px",
+                  fontWeight: "600",
                 }}
               >
                 {pageConfig.title}
               </h2>
-              {pageConfig.subtitle && (
-                <p
-                  className="text-xs mt-1 truncate"
-                  style={{
-                    color: isDark ? "#9CA3AF" : "#6B7280",
-                    fontSize: "13px",
-                  }}
-                >
-                  {pageConfig.subtitle}
-                </p>
-              )}
             </div>
           )}
 
