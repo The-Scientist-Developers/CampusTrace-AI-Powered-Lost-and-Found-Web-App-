@@ -182,6 +182,35 @@ const NotificationScreen = ({ navigation }) => {
     }
   };
 
+  const markAllAsRead = async () => {
+    try {
+      const supabase = getSupabaseClient();
+
+      // Get all unread notification IDs
+      const unreadNotifications = notifications.filter(
+        (n) => n.status !== "read"
+      );
+
+      if (unreadNotifications.length === 0) return;
+
+      // Optimistically update UI
+      setNotifications((prev) => prev.map((n) => ({ ...n, status: "read" })));
+
+      // Update all unread notifications in Supabase
+      const { error } = await supabase
+        .from("notifications")
+        .update({ status: "read" })
+        .eq("recipient_id", user.id)
+        .eq("status", "unread");
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+      // Revert on error
+      fetchNotifications();
+    }
+  };
+
   if (loading && !refreshing) {
     return <SimpleLoadingScreen />;
   }
@@ -209,6 +238,21 @@ const NotificationScreen = ({ navigation }) => {
           <Text style={[styles.headerTitle, { color: colors.text }]}>
             Notifications
           </Text>
+          {notifications.some((n) => n.status !== "read") && (
+            <TouchableOpacity
+              style={[
+                styles.markAllButton,
+                { backgroundColor: colors.primary + "15" },
+              ]}
+              onPress={markAllAsRead}
+              activeOpacity={0.7}
+            >
+              <CheckCircle size={16} color={colors.primary} />
+              <Text style={[styles.markAllText, { color: colors.primary }]}>
+                Mark all read
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </LinearGradient>
 
@@ -369,6 +413,9 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: "#FAFAFA",
@@ -379,6 +426,18 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#000000",
     letterSpacing: -0.5,
+  },
+  markAllButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+  },
+  markAllText: {
+    fontSize: 13,
+    fontWeight: "600",
   },
   loadingContainer: {
     flex: 1,

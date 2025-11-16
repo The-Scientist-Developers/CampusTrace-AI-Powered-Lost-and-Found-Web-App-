@@ -57,7 +57,7 @@ const getApiBaseUrl = () => {
         "❌ [API] You MUST set EXPO_PUBLIC_API_URL in your .env file!"
       );
       console.error(
-        "❌ [API] Example: EXPO_PUBLIC_API_URL=http://10.0.0.37:8081"
+        "❌ [API] Example: EXPO_PUBLIC_API_URL=http://192.168.1.43:8081"
       );
       console.error("❌ [API] Falling back to localhost (THIS WILL NOT WORK)");
     }
@@ -346,6 +346,20 @@ export const apiClient = {
       return responseData;
     } catch (error) {
       console.error(`❌ [DELETE] ${url} error:`, error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Get leaderboard with optional limit
+   * @param {number} limit - Maximum number of users to return (default: 20)
+   * @returns {Promise<Array>} - Array of leaderboard users
+   */
+  async getLeaderboard(limit = 20) {
+    try {
+      return await this.get(`/api/items/leaderboard?limit=${limit}`);
+    } catch (error) {
+      console.error("❌ [getLeaderboard] error:", error.message);
       throw error;
     }
   },

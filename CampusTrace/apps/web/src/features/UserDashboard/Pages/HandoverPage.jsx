@@ -46,9 +46,7 @@ const HandoverPage = () => {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.has_handover && !data.verified && !data.expired) {
-          setHandoverData(data);
-        }
+        setHandoverData(data); // Store all handover data including verified status
       }
     } catch (err) {
       console.error("Error checking handover:", err);
@@ -169,7 +167,35 @@ const HandoverPage = () => {
           {role === "claimant" ? (
             // Claimant View - Generate Code
             <>
-              {handoverCode || handoverData?.code ? (
+              {handoverData?.verified ? (
+                // Show Verified Status
+                <div className="text-center space-y-6">
+                  <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 dark:bg-green-900/20 rounded-full mb-4">
+                    <CheckCircle className="w-12 h-12 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">
+                      Handover Verified! ✅
+                    </h2>
+                    <p className="text-lg text-neutral-600 dark:text-neutral-400 mb-4">
+                      The item has been successfully returned
+                    </p>
+                    <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800 rounded-xl p-6">
+                      <p className="text-sm text-green-800 dark:text-green-300">
+                        Verified on:{" "}
+                        {new Date(handoverData.verified_at).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigate("/dashboard/my-posts")}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                    <span>Back to My Posts</span>
+                  </button>
+                </div>
+              ) : handoverCode || handoverData?.code ? (
                 <div className="space-y-6">
                   <div className="text-center">
                     <p className="text-lg font-semibold text-neutral-800 dark:text-white mb-4">

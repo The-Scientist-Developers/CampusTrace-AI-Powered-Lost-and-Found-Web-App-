@@ -568,25 +568,18 @@ export default function MyPostsPage({ user }) {
     setLoading(true);
     setError(null);
 
+    // Fetch ALL posts without filtering - we'll filter on client side
     let query = supabase
       .from("items")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (postStatusFilter === "active") {
-      query = query.in("moderation_status", ["approved", "pending_return"]);
-    } else if (postStatusFilter === "pending") {
-      query = query.eq("moderation_status", "pending");
-    } else if (postStatusFilter === "resolved") {
-      query = query.in("moderation_status", ["recovered", "rejected"]);
-    }
-
     try {
       const { data, error } = await query;
       if (error) throw error;
       const fetchedPosts = data || [];
-      setPosts(fetchedPosts);
+      setPosts(fetchedPosts); // Store ALL posts
 
       const foundItems = fetchedPosts.filter((p) => p.status === "Found");
       if (foundItems.length > 0) {
@@ -599,7 +592,7 @@ export default function MyPostsPage({ user }) {
     } finally {
       setLoading(false);
     }
-  }, [user, postStatusFilter]);
+  }, [user]); // Removed postStatusFilter dependency - we fetch all posts now
 
   const fetchMyClaims = useCallback(async () => {
     if (!user?.id) return;
@@ -610,13 +603,25 @@ export default function MyPostsPage({ user }) {
         .from("claims")
         .select("*, item:items(*)")
         .eq("claimant_id", user.id)
-        .neq("status", "resolved") // Exclude resolved claims
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setMyClaims(data || []);
+
+      console.log("📥 Fetched claims:", data);
+      console.log("📊 Total claims:", data?.length || 0);
+
+      // Filter out resolved claims on the client side
+      const activeClaims = (data || []).filter(
+        (claim) => claim.status !== "resolved"
+      );
+      console.log(
+        "✅ Active claims (excluding resolved):",
+        activeClaims.length
+      );
+
+      setMyClaims(activeClaims);
     } catch (err) {
-      console.error("Error fetching my claims:", err);
+      console.error("❌ Error fetching my claims:", err);
       toast.error("Failed to load your claims.");
     } finally {
       setLoading(false);
@@ -728,14 +733,52 @@ export default function MyPostsPage({ user }) {
     }
   };
 
-  // Calculate stats
-  const activeCount = posts.filter((p) =>
+  const handleCancelClaim = async (claimId) => {
+    const toastId = toast.loading("Canceling claim...");
+    try {
+      const token = await localApiClient.getAccessToken();
+      const response = await fetch(`${API_BASE_URL}/api/claims/${claimId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to cancel claim");
+      }
+
+      toast.success("Claim canceled successfully", { id: toastId });
+      // Remove the claim from the list
+      setMyClaims((prev) => prev.filter((c) => c.id !== claimId));
+    } catch (error) {
+      console.error("Error canceling claim:", error);
+      toast.error(error.message || "Failed to cancel claim", { id: toastId });
+    }
+  };
+
+  // Calculate stats from ALL posts (not filtered)
+  // This ensures stats always show correct totals regardless of active filter
+  const [allPosts, setAllPosts] = useState([]);
+
+  // Store all posts separately for stats calculation
+  useEffect(() => {
+    if (activeTab === "myPosts" && posts.length > 0) {
+      // When we fetch posts, store them for stats
+      setAllPosts(posts);
+    }
+  }, [posts, activeTab]);
+
+  // Calculate stats from all posts, not just filtered ones
+  const statsSource = allPosts.length > 0 ? allPosts : posts;
+  const activeCount = statsSource.filter((p) =>
     ["approved", "pending_return"].includes(p.moderation_status)
   ).length;
-  const pendingCount = posts.filter(
+  const pendingCount = statsSource.filter(
     (p) => p.moderation_status === "pending"
   ).length;
-  const resolvedCount = posts.filter((p) =>
+  const resolvedCount = statsSource.filter((p) =>
     ["recovered", "rejected"].includes(p.moderation_status)
   ).length;
   const claimsCount = Object.values(claims).reduce(
@@ -953,32 +996,50 @@ export default function MyPostsPage({ user }) {
             </div>
 
             {/* Posts Grid */}
-            {posts.length === 0 ? (
-              <div className="text-center p-16 bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl">
-                <Inbox className="w-16 h-16 text-neutral-300 dark:text-neutral-600 mx-auto mb-4" />
-                <p className="text-neutral-500 dark:text-gray-400 text-lg font-medium mb-2">
-                  No {postStatusFilter} posts
-                </p>
-                <p className="text-neutral-400 dark:text-neutral-500 text-sm">
-                  Your {postStatusFilter} posts will appear here
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {posts.map((post) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    onClick={setSelectedItem}
-                    onDelete={handleDeletePost}
-                    onMarkRecovered={handleMarkAsRecovered}
-                    onStartHandover={handleStartHandover}
-                    onVerifyHandover={handleVerifyHandover}
-                    hasClaims={claims[post.id]?.length > 0}
-                  />
-                ))}
-              </div>
-            )}
+            {(() => {
+              // Client-side filtering based on postStatusFilter
+              const filteredPosts = posts.filter((p) => {
+                if (postStatusFilter === "active") {
+                  return ["approved", "pending_return"].includes(
+                    p.moderation_status
+                  );
+                } else if (postStatusFilter === "pending") {
+                  return p.moderation_status === "pending";
+                } else if (postStatusFilter === "resolved") {
+                  return ["recovered", "rejected"].includes(
+                    p.moderation_status
+                  );
+                }
+                return true;
+              });
+
+              return filteredPosts.length === 0 ? (
+                <div className="text-center p-16 bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl">
+                  <Inbox className="w-16 h-16 text-neutral-300 dark:text-neutral-600 mx-auto mb-4" />
+                  <p className="text-neutral-500 dark:text-gray-400 text-lg font-medium mb-2">
+                    No {postStatusFilter} posts
+                  </p>
+                  <p className="text-neutral-400 dark:text-neutral-500 text-sm">
+                    Your {postStatusFilter} posts will appear here
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {filteredPosts.map((post) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      onClick={setSelectedItem}
+                      onDelete={handleDeletePost}
+                      onMarkRecovered={handleMarkAsRecovered}
+                      onStartHandover={handleStartHandover}
+                      onVerifyHandover={handleVerifyHandover}
+                      hasClaims={claims[post.id]?.length > 0}
+                    />
+                  ))}
+                </div>
+              );
+            })()}
           </>
         ) : activeTab === "myClaims" ? (
           <div className="space-y-4">
@@ -1060,6 +1121,24 @@ export default function MyPostsPage({ user }) {
                         "{claim.verification_message}"
                       </p>
                     </div>
+
+                    {claim.status === "pending" && (
+                      <button
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              "Are you sure you want to cancel this claim?"
+                            )
+                          ) {
+                            handleCancelClaim(claim.id);
+                          }
+                        }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/30 transition-colors font-medium border border-red-200 dark:border-red-800"
+                      >
+                        <X className="w-4 h-4" />
+                        Cancel Claim
+                      </button>
+                    )}
 
                     {claim.status === "approved" && (
                       <div className="space-y-3">

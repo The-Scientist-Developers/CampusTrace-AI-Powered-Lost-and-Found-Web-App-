@@ -23,7 +23,12 @@ const THEME_COLORS = {
   green: { primary: "#22C55E" },
 };
 
-const DesktopSidebar = ({ profile, notificationCount, messageCount }) => {
+const DesktopSidebar = ({
+  profile,
+  notificationCount,
+  messageCount,
+  siteName = "CampusTrace",
+}) => {
   const navigate = useNavigate();
   const { theme, colorMode } = useTheme();
 
@@ -82,20 +87,30 @@ const DesktopSidebar = ({ profile, notificationCount, messageCount }) => {
           </div>
 
           {/* Wordmark */}
-          <h1
-            className="text-xl font-['Inter'] tracking-tight"
-            style={{
-              color: isDark ? "#ffffff" : "#111111",
-              fontWeight: "600",
-              letterSpacing: "-0.025em",
-              fontSize: "20px",
-            }}
-          >
-            Campus
-            <span style={{ color: primaryColor, fontWeight: "700" }}>
-              Trace
-            </span>
-          </h1>
+          <div>
+            {siteName && siteName !== "CampusTrace" && (
+              <p
+                className="text-xs font-medium mb-0.5"
+                style={{
+                  color: isDark ? "#a3a3a3" : "#737373",
+                  letterSpacing: "0.3px",
+                }}
+              >
+                {siteName}
+              </p>
+            )}
+            <h1
+              className="text-xl font-['Inter'] tracking-tight"
+              style={{
+                color: isDark ? "#ffffff" : "#111111",
+                fontWeight: "600",
+                letterSpacing: "-0.025em",
+                fontSize: "20px",
+              }}
+            >
+              CampusTrace
+            </h1>
+          </div>
         </div>
       </div>
 

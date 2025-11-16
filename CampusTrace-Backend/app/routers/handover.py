@@ -216,20 +216,32 @@ async def verify_handover(
         
         # Credit the finder with +1 return count for leaderboard
         try:
+            print(f"🔄 [RETURNS_COUNT] Attempting to increment for user: {user_id}")
+            
             # Get current profile
             profile_response = supabase.table("profiles").select("returns_count").eq("id", user_id).single().execute()
+            
+            print(f"📊 [RETURNS_COUNT] Profile query response: {profile_response}")
             
             if profile_response.data:
                 current_count = profile_response.data.get("returns_count", 0) or 0
                 new_count = current_count + 1
                 
+                print(f"📈 [RETURNS_COUNT] Current: {current_count}, New: {new_count}")
+                
                 # Update returns count
-                supabase.table("profiles").update({
+                update_response = supabase.table("profiles").update({
                     "returns_count": new_count
                 }).eq("id", user_id).execute()
+                
+                print(f"💾 [RETURNS_COUNT] Update response: {update_response}")
                 print(f"✅ Credited finder {user_id} with return count: {current_count} -> {new_count}")
+            else:
+                print(f"❌ [RETURNS_COUNT] No profile data found for user {user_id}")
         except Exception as e:
             print(f"⚠️ Error updating return count: {e}")
+            import traceback
+            traceback.print_exc()
         
         # Award badge to the finder (item owner)
         try:

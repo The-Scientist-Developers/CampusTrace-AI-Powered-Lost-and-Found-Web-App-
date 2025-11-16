@@ -418,6 +418,41 @@ export default function UserProfilePage({ user }) {
     }
   };
 
+  const handleRemoveBadge = async (badgeId) => {
+    console.log("🗑️ handleRemoveBadge called");
+    console.log("Badge ID:", badgeId, "Type:", typeof badgeId);
+    console.log("User ID:", user?.id);
+    console.log("All badges:", badges);
+
+    const toastId = toast.loading("Removing badge...");
+    try {
+      // Optimistically update UI
+      setBadges((prev) => prev.filter((b) => b.id !== badgeId));
+
+      // Call API to remove badge (badgeId is a UUID string, no conversion needed)
+      const deleteUrl = `/api/badges/user/${user.id}/badges/${badgeId}`;
+      console.log("Calling DELETE:", deleteUrl);
+      const response = await apiClient.delete(deleteUrl);
+      console.log("Delete response:", response);
+
+      toast.success("Badge removed successfully", { id: toastId });
+    } catch (error) {
+      console.error("❌ Error removing badge:", error);
+      console.error("Error details:", error.response?.data || error.message);
+      toast.error("Failed to remove badge. Please try again.", { id: toastId });
+
+      // Revert on error - refetch badges
+      try {
+        const badgesRes = await apiClient.get(
+          `/api/badges/user/${user.id}/badges`
+        );
+        setBadges(badgesRes.badges || []);
+      } catch (refetchError) {
+        console.error("Error refetching badges:", refetchError);
+      }
+    }
+  };
+
   const handleSignOut = async () => {
     if (window.confirm("Are you sure you want to sign out?")) {
       try {
@@ -583,7 +618,11 @@ export default function UserProfilePage({ user }) {
 
       {/* Badges Section */}
       <div>
-        <BadgeList badges={badges} isOwnProfile={true} />
+        <BadgeList
+          badges={badges}
+          isOwnProfile={true}
+          onRemoveBadge={handleRemoveBadge}
+        />
       </div>
     </div>
   );

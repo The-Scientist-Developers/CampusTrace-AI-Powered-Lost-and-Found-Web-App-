@@ -1,8 +1,20 @@
 import React from "react";
-import { View, Text, StyleSheet, Image } from "react-native";
-import { Award, Calendar } from "lucide-react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
+import { Award, Calendar, X } from "lucide-react-native";
 
-const BadgeList = ({ badges = [], colors }) => {
+const BadgeList = ({
+  badges = [],
+  colors,
+  onRemoveBadge,
+  showRemoveButton = false,
+}) => {
   if (badges.length === 0) {
     return (
       <View style={[styles.emptyContainer, { borderColor: colors.border }]}>
@@ -16,6 +28,21 @@ const BadgeList = ({ badges = [], colors }) => {
       </View>
     );
   }
+
+  const handleRemove = (badge) => {
+    Alert.alert(
+      "Remove Badge",
+      `Are you sure you want to remove "${badge.badge_name || badge.name}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: () => onRemoveBadge && onRemoveBadge(badge.id),
+        },
+      ]
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -68,6 +95,20 @@ const BadgeList = ({ badges = [], colors }) => {
               </View>
             )}
           </View>
+
+          {/* Remove Button */}
+          {showRemoveButton && onRemoveBadge && (
+            <TouchableOpacity
+              style={[
+                styles.removeButton,
+                { backgroundColor: colors.error + "15" },
+              ]}
+              onPress={() => handleRemove(badge)}
+              activeOpacity={0.7}
+            >
+              <X size={18} color={colors.error || "#EF4444"} />
+            </TouchableOpacity>
+          )}
         </View>
       ))}
     </View>
@@ -142,6 +183,14 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 12,
+  },
+  removeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "flex-start",
   },
 });
 

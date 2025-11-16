@@ -31,14 +31,18 @@ const RightSuggestions = ({ profile }) => {
           return;
         }
 
-        const res = await fetch(`${API_BASE_URL}/api/items/leaderboard`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // Only fetch 5 users for the sidebar
+        const res = await fetch(
+          `${API_BASE_URL}/api/items/leaderboard?limit=5`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
 
         if (!res.ok) throw new Error("Failed to fetch leaderboard");
 
         const data = await res.json();
-        setLeaderboard(data.slice(0, 5));
+        setLeaderboard(data);
       } catch (err) {
         console.error("Error fetching leaderboard:", err);
       } finally {

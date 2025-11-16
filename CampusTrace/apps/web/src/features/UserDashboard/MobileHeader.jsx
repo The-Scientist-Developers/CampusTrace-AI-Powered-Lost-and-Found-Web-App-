@@ -101,7 +101,12 @@ const PAGE_CONFIGS = {
   },
 };
 
-const MobileHeader = ({ notificationCount = 0, messageCount = 0, profile }) => {
+const MobileHeader = ({
+  notificationCount = 0,
+  messageCount = 0,
+  profile,
+  siteName = "CampusTrace",
+}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { theme, colorMode } = useTheme();
@@ -128,18 +133,31 @@ const MobileHeader = ({ notificationCount = 0, messageCount = 0, profile }) => {
         <div className="flex items-center justify-between px-5 py-3.5">
           {/* Dynamic Header Content */}
           {pageConfig.type === "logo" ? (
-            <h1
-              className="font-['Poppins'] tracking-tight"
-              style={{
-                fontSize: "26px",
-                fontWeight: "700",
-                color: isDark ? "#ffffff" : "#000000",
-                letterSpacing: "-0.6px",
-                lineHeight: "32px",
-              }}
-            >
-              CampusTrace
-            </h1>
+            <div>
+              {siteName && siteName !== "CampusTrace" && (
+                <p
+                  className="text-xs font-medium mb-0.5"
+                  style={{
+                    color: isDark ? "#a3a3a3" : "#737373",
+                    letterSpacing: "0.3px",
+                  }}
+                >
+                  {siteName}
+                </p>
+              )}
+              <h1
+                className="font-['Poppins'] tracking-tight"
+                style={{
+                  fontSize: "26px",
+                  fontWeight: "700",
+                  color: isDark ? "#ffffff" : "#000000",
+                  letterSpacing: "-0.6px",
+                  lineHeight: "32px",
+                }}
+              >
+                CampusTrace
+              </h1>
+            </div>
           ) : (
             <div className="flex-1 min-w-0">
               <h2

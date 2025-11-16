@@ -164,9 +164,13 @@ export default function LeaderboardPage() {
         const token = await getAccessToken();
         if (!token) throw new Error("Authentication required.");
 
-        const response = await fetch(`${API_BASE_URL}/api/items/leaderboard`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // Fetch top 20 users for the full leaderboard page
+        const response = await fetch(
+          `${API_BASE_URL}/api/items/leaderboard?limit=20`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
 
         if (!response.ok) {
           const errData = await response.json();

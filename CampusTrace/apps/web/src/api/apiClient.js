@@ -49,6 +49,20 @@ export const apiClient = {
     return response.json();
   },
 
+  async delete(url) {
+    const token = await getAccessToken();
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!response.ok)
+      throw new Error(`Failed to delete: ${await response.text()}`);
+    return response.json();
+  },
+
   async signInWithMagicLink(email) {
     const { error } = await supabase.auth.signInWithOtp({
       email: email,

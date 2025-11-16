@@ -2040,6 +2040,40 @@ async def respond_to_claim(claim_id: int, payload: ClaimRespond, finder_id: str 
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+@claims_router.delete("/{claim_id}")
+async def cancel_claim(claim_id: int, user_id: str = Depends(get_current_user_id)):
+    """
+    Cancel/delete a claim. Only the claimant can cancel their own claim.
+    """
+    try:
+        # Get claim details
+        claim_res = supabase.table("claims").select("claimant_id, item_id, status").eq("id", claim_id).single().execute()
+        
+        if not claim_res.data:
+            raise HTTPException(status_code=404, detail="Claim not found")
+        
+        claim = claim_res.data
+        
+        # Verify user is the claimant
+        if claim['claimant_id'] != user_id:
+            raise HTTPException(status_code=403, detail="You can only cancel your own claims")
+        
+        # Don't allow canceling approved claims (they should go through handover)
+        if claim['status'] == 'approved':
+            raise HTTPException(status_code=400, detail="Cannot cancel an approved claim. Please complete the handover process.")
+        
+        # Delete the claim
+        supabase.table("claims").delete().eq("id", claim_id).execute()
+        
+        print(f"✅ Claim {claim_id} canceled by user {user_id}")
+        return {"message": "Claim canceled successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to cancel claim: {str(e)}")
     
 # ============= Admin Routes =============
 @admin_router.get("/manual-verifications")
@@ -2840,11 +2874,44 @@ class UpdateClaimRequest(BaseModel):
     status: str  # "accepted" or "rejected"
 
 @claims_router.post("/create")
-async def update_claim_legacy(
+async def create_claim_error_handler(user_id: str = Depends(get_current_user_id)):
+    """
+    Error handler for the old /create endpoint.
+    This endpoint was confusing - it was actually for UPDATING claims, not creating them.
+    """
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "This endpoint has been removed. "
+            "To SUBMIT a new claim, use: POST /api/claims/ with {item_id, verification_message}. "
+            "To UPDATE a claim status, use: PUT /api/claims/{claim_id}/respond with {approved: boolean}."
+        )
+    )
+
+@claims_router.post("/update-status")
+async def update_claim_status_legacy(
     request: UpdateClaimRequest,
     user_id: str = Depends(get_current_user_id)
 ):
-    """Legacy endpoint for mobile app - redirects to update_claim_status"""
+    """
+    Legacy endpoint for updating claim status.
+    DEPRECATED: Use PUT /api/claims/{claim_id}/respond instead.
+    """
+    print(f"⚠️  [DEPRECATED] /api/claims/update-status called")
+    print(f"📥 [CLAIMS/UPDATE-STATUS] Received request:")
+    print(f"   - claim_id: {request.claim_id}")
+    print(f"   - status: {request.status}")
+    print(f"   - user_id: {user_id}")
+    
+    if not request.status:
+        raise HTTPException(status_code=422, detail="status field is required")
+    
+    if request.status not in ["accepted", "rejected"]:
+        raise HTTPException(
+            status_code=422, 
+            detail=f"status must be 'accepted' or 'rejected', got '{request.status}'"
+        )
+    
     return await update_claim_status(request.claim_id, request, user_id)
 
 @claims_router.put("/{claim_id}/status")
@@ -3201,39 +3268,67 @@ async def start_handover(
 
 
 @app.get("/api/items/leaderboard")
-async def get_leaderboard(user_id: str = Depends(get_current_user_id)):
+async def get_leaderboard(
+    user_id: str = Depends(get_current_user_id),
+    limit: int = 10
+):
     """
     Get leaderboard of users with most successful returns.
     Returns users sorted by returns_count (items successfully returned to owners).
+    
+    Args:
+        limit: Maximum number of users to return (default: 10, max: 50)
     """
     try:
+        print(f"\n🏆 [LEADERBOARD] Request from user: {user_id}, limit: {limit}")
+        
+        # Validate and cap limit
+        limit = min(max(1, limit), 50)
+        
         # Get current user's profile to filter by university
         user_profile = supabase.table("profiles").select("university_id").eq("id", user_id).single().execute()
         
         if not user_profile.data:
+            print(f"❌ [LEADERBOARD] User profile not found for: {user_id}")
             raise HTTPException(status_code=404, detail="User profile not found")
         
         university_id = user_profile.data.get("university_id")
+        print(f"🏫 [LEADERBOARD] University ID: {university_id}")
         
-        # Get top users by returns_count from the same university
+        # First, check total users with returns_count > 0 in this university
+        count_check = supabase.table("profiles").select("id", count="exact").eq(
+            "university_id", university_id
+        ).gt("returns_count", 0).execute()
+        print(f"📊 [LEADERBOARD] Users with returns_count > 0: {count_check.count}")
+        
+        # Optimized query: only fetch users with returns_count > 0
         leaderboard_response = supabase.table("profiles").select(
-            "id, full_name, avatar_url, returns_count"
-        ).eq("university_id", university_id).order(
+            "id, full_name, avatar_url, returns_count, university_id"
+        ).eq("university_id", university_id).gt(
+            "returns_count", 0
+        ).order(
             "returns_count", desc=True
-        ).limit(50).execute()
+        ).limit(limit).execute()
         
-        # Filter out users with 0 returns and format response
-        leaderboard = []
-        for user in leaderboard_response.data:
-            returns_count = user.get("returns_count") or 0
-            if returns_count > 0:
-                leaderboard.append({
-                    "id": user["id"],
-                    "full_name": user.get("full_name", "Anonymous"),
-                    "avatar_url": user.get("avatar_url"),
-                    "recovered_count": returns_count  # Frontend expects this field name
-                })
+        print(f"📋 [LEADERBOARD] Query returned {len(leaderboard_response.data)} users")
+        if leaderboard_response.data:
+            for idx, user in enumerate(leaderboard_response.data[:3]):
+                print(f"   {idx+1}. {user.get('full_name')}: {user.get('returns_count')} returns")
         
+        # Format response
+        leaderboard = [
+            {
+                "id": user["id"],
+                "user_id": user["id"],  # Add user_id for compatibility
+                "full_name": user.get("full_name", "Anonymous"),
+                "avatar_url": user.get("avatar_url"),
+                "recovered_count": user.get("returns_count", 0),
+                "returns_count": user.get("returns_count", 0)  # Include both field names
+            }
+            for user in leaderboard_response.data
+        ]
+        
+        print(f"✅ [LEADERBOARD] Returning {len(leaderboard)} users\n")
         return leaderboard
         
     except HTTPException:
@@ -3243,6 +3338,10 @@ async def get_leaderboard(user_id: str = Depends(get_current_user_id)):
         raise HTTPException(status_code=500, detail=f"Failed to fetch leaderboard: {str(e)}")
 
 
-# Include handover router
+# Include routers
 app.include_router(handover_router)
+
+# Import and include user actions router for secure deletion operations
+from app.routers.user_actions import router as user_actions_router
+app.include_router(user_actions_router)
 

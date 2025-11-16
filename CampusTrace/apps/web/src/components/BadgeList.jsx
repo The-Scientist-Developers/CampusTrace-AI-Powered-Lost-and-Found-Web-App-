@@ -1,7 +1,7 @@
 import React from "react";
-import { Award, Calendar } from "lucide-react";
+import { Award, Calendar, X } from "lucide-react";
 
-const BadgeList = ({ badges, isOwnProfile = false }) => {
+const BadgeList = ({ badges, isOwnProfile = false, onRemoveBadge }) => {
   if (!badges || badges.length === 0) {
     return (
       <div className="text-center p-8 sm:p-12 bg-white dark:bg-[#2a2a2a] border-2 border-dashed border-neutral-200 dark:border-[#3a3a3a] rounded-xl">
@@ -28,9 +28,33 @@ const BadgeList = ({ badges, isOwnProfile = false }) => {
         {badges.map((badge) => (
           <div
             key={badge.id}
-            className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-4 flex flex-col items-center hover:shadow-md hover:border-primary-300 dark:hover:border-primary-600 transition-all group"
+            className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-4 flex flex-col items-center hover:shadow-md hover:border-primary-300 dark:hover:border-primary-600 transition-all group relative"
             title={badge.badge_description}
           >
+            {/* Remove Button */}
+            {isOwnProfile && onRemoveBadge && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  console.log("Delete button clicked for badge:", badge.id);
+                  if (
+                    window.confirm(
+                      `Are you sure you want to remove "${badge.badge_name}"?`
+                    )
+                  ) {
+                    console.log("Calling onRemoveBadge with:", badge.id);
+                    onRemoveBadge(badge.id);
+                  } else {
+                    console.log("User cancelled deletion");
+                  }
+                }}
+                className="absolute top-2 right-2 p-1.5 bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-full hover:bg-red-200 dark:hover:bg-red-900/30 transition-colors opacity-0 group-hover:opacity-100 z-10"
+                title="Remove badge"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+
             {/* Badge Icon */}
             <div className="badge-icon mb-3 transform group-hover:scale-110 transition-transform">
               {badge.badge_icon_url ? (

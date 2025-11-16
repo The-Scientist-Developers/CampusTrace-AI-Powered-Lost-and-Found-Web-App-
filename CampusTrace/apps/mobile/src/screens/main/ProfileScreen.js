@@ -162,6 +162,31 @@ const ProfileScreen = ({ navigation }) => {
     }
   }, [user?.id]);
 
+  const handleRemoveBadge = async (badgeId) => {
+    try {
+      // Optimistically update UI
+      setBadges((prev) => prev.filter((b) => b.id !== badgeId));
+
+      // Call API to remove badge
+      await apiClient.delete(`/api/badges/user/${user.id}/badges/${badgeId}`);
+
+      Alert.alert("Success", "Badge removed successfully");
+    } catch (error) {
+      console.error("Error removing badge:", error);
+      Alert.alert("Error", "Failed to remove badge. Please try again.");
+
+      // Revert on error - refetch badges
+      try {
+        const badgesData = await apiClient.get(
+          `/api/badges/user/${user.id}/badges`
+        );
+        setBadges(badgesData.badges || []);
+      } catch (refetchError) {
+        console.error("Error refetching badges:", refetchError);
+      }
+    }
+  };
+
   const handleLogout = async () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
       { text: "Cancel", style: "cancel" },
@@ -384,7 +409,12 @@ const ProfileScreen = ({ navigation }) => {
               <Award size={24} color={colors.primary} />
               <Text style={dynamicStyles.sectionTitle}>Badges</Text>
             </View>
-            <BadgeList badges={badges} colors={colors} />
+            <BadgeList
+              badges={badges}
+              colors={colors}
+              showRemoveButton={true}
+              onRemoveBadge={handleRemoveBadge}
+            />
           </View>
 
           {/* --- Recent Posts Removed --- */}

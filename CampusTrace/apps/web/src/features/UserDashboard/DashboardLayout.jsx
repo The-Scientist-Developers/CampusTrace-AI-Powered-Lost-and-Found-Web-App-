@@ -559,6 +559,7 @@ export default function DashboardLayout({ children, user }) {
         notificationCount={notificationCount}
         messageCount={messageCount}
         profile={profile}
+        siteName={siteName}
       />
 
       {/* Old Header - Hidden on mobile, only for tablet */}
@@ -833,6 +834,7 @@ export default function DashboardLayout({ children, user }) {
             notificationCount={notificationCount}
             messageCount={messageCount}
             profile={profile}
+            siteName={siteName}
           />
         </div>
 

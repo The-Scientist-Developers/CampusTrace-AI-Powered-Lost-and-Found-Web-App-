@@ -57,6 +57,7 @@ const DashboardScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [user, setUser] = useState(null);
+  const [siteName, setSiteName] = useState("CampusTrace");
   const [stats, setStats] = useState({
     totalItems: 0,
     lostItems: 0,
@@ -102,6 +103,27 @@ const DashboardScreen = ({ navigation }) => {
         setLoading(false);
         setRefreshing(false);
         return;
+      }
+
+      // Fetch user profile to get university_id
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("university_id")
+        .eq("id", user.id)
+        .single();
+
+      // Fetch site name from settings
+      if (profileData?.university_id) {
+        const { data: settingsData } = await supabase
+          .from("site_settings")
+          .select("setting_value")
+          .eq("university_id", profileData.university_id)
+          .eq("setting_key", "site_name")
+          .single();
+
+        if (settingsData?.setting_value) {
+          setSiteName(settingsData.setting_value);
+        }
       }
 
       // Use the new consolidated dashboard-summary endpoint
@@ -259,17 +281,15 @@ const DashboardScreen = ({ navigation }) => {
       >
         <View style={styles.header}>
           <View>
-            <Text
-              style={[styles.headerSubtitle, { color: colors.textSecondary }]}
-            >
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "short",
-                day: "numeric",
-              })}
-            </Text>
+            {siteName && siteName !== "CampusTrace" && (
+              <Text
+                style={[styles.headerSubtitle, { color: colors.textSecondary }]}
+              >
+                {siteName}
+              </Text>
+            )}
             <Text style={[styles.appName, { color: colors.text }]}>
-              Campustrace
+              CampusTrace
             </Text>
           </View>
           <View style={styles.headerIcons}>

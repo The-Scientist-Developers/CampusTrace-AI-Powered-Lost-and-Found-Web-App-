@@ -46,7 +46,7 @@ const apiClient = {
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/claims/create`, {
+      const response = await fetch(`${API_BASE_URL}/api/claims/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
