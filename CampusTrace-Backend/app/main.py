@@ -1187,7 +1187,7 @@ async def get_items_paginated(
         
         # Select only necessary fields for browse list
         query = supabase.table("items").select(
-            "id, title, status, category, location, thumbnail_url, created_at, user_id, profiles!items_user_id_fkey(id, full_name)",
+            "id, title, status, category, location, image_url , created_at, user_id, profiles!items_user_id_fkey(id, full_name)",
             count="exact"
         ).eq("university_id", university_id).eq("moderation_status", "approved")
         
@@ -2326,7 +2326,7 @@ async def get_admin_items(
         
         # Select only necessary fields
         query = supabase.table("items").select(
-            "id, title, status, category, moderation_status, created_at, user_id, thumbnail_url, profiles!items_user_id_fkey(id, full_name, email)",
+            "id, title, status, category, moderation_status, created_at, user_id, image_url, profiles!items_user_id_fkey(id, full_name, email)",
             count="exact"
         ).eq("university_id", university_id)
         
@@ -2556,7 +2556,7 @@ async def get_user_posts(
         
         # Select only necessary fields
         query = supabase.table("items").select(
-            "id, title, status, category, moderation_status, location, thumbnail_url, created_at",
+            "id, title, status, category, moderation_status, location, image_url, created_at",
             count="exact"
         ).eq("user_id", current_user_id)
         
