@@ -310,9 +310,8 @@ export default function DashboardLayout({ children, user }) {
       const { data: settingsData } = await supabase
         .from("site_settings")
         .select("setting_value")
-        .eq("university_id", universityId)
         .eq("setting_key", "site_name")
-        .single();
+        .maybeSingle();
 
       if (settingsData) {
         setSiteName(settingsData.setting_value);

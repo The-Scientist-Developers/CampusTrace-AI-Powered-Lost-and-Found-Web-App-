@@ -64,7 +64,25 @@ else:
 
 @app.api_route("/", methods=["GET", "HEAD"])
 async def root():
-    return {"status": "ok"}
+    """Fast health check endpoint for load balancers and monitoring."""
+    return {
+        "status": "ok",
+        "service": "CampusTrace API",
+        "version": "1.0.0"
+    }
+
+@app.get("/health")
+async def health_check():
+    """Detailed health check with service status."""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "services": {
+            "gemini_ai": "enabled" if settings.GEMINI_API_KEY else "disabled",
+            "jina_embedding": "enabled" if settings.JINA_API_KEY else "disabled",
+            "resend_email": "enabled" if settings.RESEND_API_KEY else "disabled"
+        }
+    }
 
 @app.on_event("startup")
 async def startup_event():
@@ -82,17 +100,15 @@ async def startup_event():
     else:
         print("⚠️ WARNING: GEMINI_API_KEY not found. AI generation features disabled.")
     
-    # Test Jina embedding model for image and text matching
+    # Note: Jina embedding test removed from startup for faster cold starts
+    # Jina will be tested on first use instead
     if settings.JINA_API_KEY:
-        try:
-            await jina_embedding_util.test_jina_embedding()
-        except Exception as e:
-            print(f"❌ ERROR: Could not test Jina embedding model: {e}")
+        print("✅ JINA_API_KEY found. Embedding features enabled (will test on first use).")
     else:
         print("⚠️ WARNING: JINA_API_KEY not found. Embedding features will be disabled.")
         
     print(f"Max image size: {int(os.getenv('MAX_IMAGE_SIZE', '5242880')) / 1024 / 1024:.1f}MB")
-    print("🚀 Running API with Jina embedding pipeline")
+    print("🚀 API startup complete")
 
 
 @app.on_event("shutdown")
@@ -1187,7 +1203,7 @@ async def get_items_paginated(
         
         # Select only necessary fields for browse list
         query = supabase.table("items").select(
-            "id, title, status, category, location, image_url , created_at, user_id, profiles!items_user_id_fkey(id, full_name)",
+            "id, title, status, category, location, image_url, thumbnail_url, created_at, user_id, profiles!items_user_id_fkey(id, full_name)",
             count="exact"
         ).eq("university_id", university_id).eq("moderation_status", "approved")
         
