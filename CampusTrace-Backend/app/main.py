@@ -56,6 +56,10 @@ if settings.RESEND_API_KEY:
 else:
     print("WARNING: RESEND_API_KEY not found. Email notifications disabled.")
 
+@app.api_route("/", methods=["GET", "HEAD"])
+async def root():
+    return {"status": "ok"}
+
 @app.on_event("startup")
 async def startup_event():
     """Load AI models on application startup."""
