@@ -6,10 +6,10 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  Image,
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
+import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -24,6 +24,10 @@ import {
 import { getSupabaseClient } from "@campustrace/core";
 import { useTheme } from "../../contexts/ThemeContext";
 import { apiClient } from "../../utils/apiClient";
+import {
+  ListItemSkeleton,
+  ProfileStatsSkeleton,
+} from "../../components/SkeletonLoaders";
 
 // Lazy load heavy components
 const BadgeList = React.lazy(() => import("../../components/BadgeList"));
@@ -379,7 +383,38 @@ const ProfileScreen = ({ navigation }) => {
 
       {loading ? (
         <View style={dynamicStyles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <View style={dynamicStyles.profileSection}>
+            <View
+              style={[
+                dynamicStyles.avatarLarge,
+                { backgroundColor: colors.surface },
+              ]}
+            >
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+            <View
+              style={{
+                height: 20,
+                width: 150,
+                backgroundColor: colors.surface,
+                borderRadius: 4,
+                marginBottom: 8,
+              }}
+            />
+            <View
+              style={{
+                height: 16,
+                width: 200,
+                backgroundColor: colors.surface,
+                borderRadius: 4,
+              }}
+            />
+          </View>
+          <View style={{ padding: 16 }}>
+            <ListItemSkeleton colors={colors} />
+            <ListItemSkeleton colors={colors} />
+            <ListItemSkeleton colors={colors} />
+          </View>
         </View>
       ) : (
         <ScrollView style={dynamicStyles.scrollView}>
@@ -390,6 +425,9 @@ const ProfileScreen = ({ navigation }) => {
                 <Image
                   source={{ uri: profile.avatar_url }}
                   style={dynamicStyles.avatarImage}
+                  contentFit="cover"
+                  transition={200}
+                  cachePolicy="memory-disk"
                 />
               ) : (
                 <User size={48} color="#FFFFFF" />

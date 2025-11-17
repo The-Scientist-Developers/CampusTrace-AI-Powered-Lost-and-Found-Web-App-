@@ -204,80 +204,63 @@ export default function DashboardLayout({ children, user }) {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showMobileDropdown, setShowMobileDropdown] = useState(false);
 
-  // Split into two functions: one for profile/siteName, one for counts
-  const fetchProfileAndSiteName = useCallback(async () => {
+  // Optimized: Fetch all data in parallel with Promise.all
+  const fetchProfileAndCounts = useCallback(async () => {
     if (!user?.id) {
       setIsLoading(false);
       return;
     }
 
     try {
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
+      // Fetch all data in parallel for faster loading
+      const [profileResult, notifResult, msgResult, postsResult] =
+        await Promise.all([
+          supabase.from("profiles").select("*").eq("id", user.id).single(),
+          supabase
+            .from("notifications")
+            .select("*", { head: true, count: "exact" })
+            .eq("recipient_id", user.id)
+            .eq("status", "unread"),
+          supabase
+            .from("conversations")
+            .select("*", { head: true, count: "exact" })
+            .or(`finder_id.eq.${user.id},claimant_id.eq.${user.id}`),
+          supabase
+            .from("items")
+            .select("*", { head: true, count: "exact" })
+            .eq("user_id", user.id)
+            .in("moderation_status", ["approved", "pending", "pending_return"]),
+        ]);
 
-      if (profileError) {
-        console.error("Error fetching profile:", profileError);
-      } else {
-        setProfile(profileData);
+      // Set profile
+      if (!profileResult.error && profileResult.data) {
+        setProfile(profileResult.data);
       }
+
+      // Set counts
+      if (!notifResult.error) setNotificationCount(notifResult.count || 0);
+      if (!msgResult.error) setMessageCount(msgResult.count || 0);
+      if (!postsResult.error) setMyPostsCount(postsResult.count || 0);
     } catch (error) {
-      console.error("Error fetching profile:", error);
+      console.error("Error fetching dashboard data:", error);
     } finally {
       setIsLoading(false);
     }
   }, [user?.id]);
 
-  const fetchCounts = useCallback(async () => {
-    if (!user?.id) return;
-
-    try {
-      const { count: notifCount, error: notifError } = await supabase
-        .from("notifications")
-        .select("*", { head: true, count: "exact" })
-        .eq("recipient_id", user.id)
-        .eq("status", "unread");
-
-      if (!notifError) setNotificationCount(notifCount || 0);
-
-      const { count: msgCount, error: msgError } = await supabase
-        .from("conversations")
-        .select("*", { head: true, count: "exact" })
-        .or(`finder_id.eq.${user.id},claimant_id.eq.${user.id}`);
-
-      if (!msgError) setMessageCount(msgCount || 0);
-
-      const { count: postsCount, error: postsError } = await supabase
-        .from("items")
-        .select("*", { head: true, count: "exact" })
-        .eq("user_id", user.id)
-        .in("status", ["active", "pending", "claimed"]);
-
-      if (!postsError) setMyPostsCount(postsCount || 0);
-    } catch (error) {
-      console.error("Error fetching counts:", error);
-    }
-  }, [user?.id]);
-
-  // Main effect: only runs once on mount or when user.id changes
+  // Optimized: Single effect with combined data fetching
   useEffect(() => {
     if (!user?.id) {
       setIsLoading(false);
       return;
     }
 
-    // Only set loading on initial load
     setIsLoading(true);
+    fetchProfileAndCounts();
 
-    // Fetch profile and counts separately
-    fetchProfileAndSiteName();
-    fetchCounts();
-
-    // Profile updates subscription
-    const profileSubscription = supabase
-      .channel(`user:profiles:${user.id}`)
+    // Optimized: Single channel for all real-time updates
+    const channel = supabase
+      .channel(`user:dashboard:${user.id}`)
       .on(
         "postgres_changes",
         {
@@ -288,11 +271,6 @@ export default function DashboardLayout({ children, user }) {
         },
         (payload) => setProfile(payload.new)
       )
-      .subscribe();
-
-    // Notification subscription - only updates count
-    const notificationSubscription = supabase
-      .channel(`user:notifications:${user.id}`)
       .on(
         "postgres_changes",
         {
@@ -301,46 +279,22 @@ export default function DashboardLayout({ children, user }) {
           table: "notifications",
           filter: `recipient_id=eq.${user.id}`,
         },
-        () => fetchCounts()
-      )
-      .subscribe();
-
-    // Messages subscription - only updates count
-    const messageSubscription = supabase
-      .channel(`user:messages:${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "conversations",
-        },
-        () => fetchCounts()
-      )
-      .subscribe();
-
-    // Posts subscription - only updates count
-    const postsSubscription = supabase
-      .channel(`user:posts:${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "items",
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => fetchCounts()
+        async () => {
+          // Only refetch notification count
+          const { count } = await supabase
+            .from("notifications")
+            .select("*", { head: true, count: "exact" })
+            .eq("recipient_id", user.id)
+            .eq("status", "unread");
+          setNotificationCount(count || 0);
+        }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(profileSubscription);
-      supabase.removeChannel(notificationSubscription);
-      supabase.removeChannel(messageSubscription);
-      supabase.removeChannel(postsSubscription);
+      supabase.removeChannel(channel);
     };
-  }, [user?.id, fetchProfileAndSiteName, fetchCounts]);
+  }, [user?.id, fetchProfileAndCounts]);
 
   // Separate effect for site name - runs when profile is loaded
   useEffect(() => {

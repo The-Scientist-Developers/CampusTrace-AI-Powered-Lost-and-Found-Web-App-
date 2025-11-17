@@ -19,6 +19,8 @@ import { FaceDetector, FilesetResolver } from "@mediapipe/tasks-vision";
 
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
+import { LazyLoadImage } from "react-lazy-load-image-component";
+import "react-lazy-load-image-component/src/effects/blur.css";
 
 import BadgeList from "../../../components/BadgeList";
 
@@ -501,7 +503,7 @@ export default function UserProfilePage({ user }) {
       <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm p-4 sm:p-6">
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
           <div className="relative flex-shrink-0">
-            <img
+            <LazyLoadImage
               src={
                 avatarUrl ||
                 `https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -509,6 +511,7 @@ export default function UserProfilePage({ user }) {
                 )}&background=eef2ff&color=4338ca`
               }
               alt="Avatar"
+              effect="blur"
               className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-neutral-200 dark:border-neutral-700 object-cover"
               onError={(e) => {
                 e.preventDefault();

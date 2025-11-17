@@ -13,7 +13,6 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
   RefreshControl,
   Modal,
@@ -23,6 +22,8 @@ import {
   Linking,
   Platform,
 } from "react-native";
+import { Image } from "expo-image";
+import { FlashList } from "@shopify/flash-list";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -47,6 +48,7 @@ import {
 import { getSupabaseClient, API_BASE_URL } from "@campustrace/core";
 import * as ImagePicker from "expo-image-picker";
 import SimpleLoadingScreen from "../../components/SimpleLoadingScreen";
+import { MarketplaceItemSkeleton } from "../../components/SkeletonLoaders";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../../contexts/ThemeContext";
 import {
@@ -438,9 +440,9 @@ const ItemDetailsModal = memo(
 
           {/* Image with Title Overlay */}
           <View style={styles.imageSection}>
-            {item.image_url ? (
+            {item.thumbnail_url || item.image_url ? (
               <Image
-                source={{ uri: item.image_url }}
+                source={{ uri: item.thumbnail_url || item.image_url }}
                 style={styles.detailImageFixed}
                 resizeMode="cover"
               />
@@ -849,13 +851,15 @@ const MarketplaceItem = memo(({ item, colors, styles }) => {
         { backgroundColor: colors?.card || "#FFFFFF" },
       ]}
     >
-      {/* Image */}
+      {/* Image with expo-image for lazy loading */}
       <View style={styles.marketplaceImageContainer}>
-        {item.image_url ? (
+        {item.thumbnail_url || item.image_url ? (
           <Image
-            source={{ uri: item.image_url }}
+            source={{ uri: item.thumbnail_url || item.image_url }}
             style={styles.marketplaceImage}
-            resizeMode="cover"
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
           />
         ) : (
           <View
@@ -962,7 +966,7 @@ const BrowseScreen = () => {
     dateFilter: "",
   });
 
-  const debouncedSearchQuery = useDebounce(searchQuery, 500);
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const rowOptions = [10, 20, 40];
   const [itemsPerPage, setItemsPerPage] = useState(20);
 

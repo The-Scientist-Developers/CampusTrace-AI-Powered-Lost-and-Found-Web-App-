@@ -23,6 +23,7 @@ from app.config import get_settings
 from app.dependencies import get_current_user_id, get_admin_university_id, supabase
 from app import jina_embedding_util
 from app.push_notification_service import PushNotificationService
+from app.routers import dashboard, notifications, messages
 
 # Load application settings and initialize global variables
 settings = get_settings()
@@ -48,6 +49,11 @@ app = FastAPI(
     description="Lost and Found Platform for Universities",
     version="2.1.0"
 )
+
+# Include routers
+app.include_router(dashboard.router)
+app.include_router(notifications.router)
+app.include_router(messages.router)
 
 # Configure Resend email service
 if settings.RESEND_API_KEY:
@@ -1154,14 +1160,21 @@ async def get_items_paginated(
     status: Optional[str] = None,
     category: Optional[str] = None,
     search: Optional[str] = None,
+    sort_by: Optional[str] = "created_at",
+    sort_order: Optional[str] = "desc",
     user_id: str = Depends(get_current_user_id)
 ):
     """
-    Get paginated items for the user's university.
-    Supports filtering by status, category, and search term.
-    Returns items with total count for pagination.
+    Get paginated items for the user's university with strict pagination.
+    Supports backend filtering, searching, and sorting.
+    Returns only necessary fields for list view (10-20 items max).
     """
     try:
+        # Enforce strict pagination limits
+        limit = min(limit, 20)  # Never return more than 20 items
+        if limit < 1:
+            limit = 10
+        
         # Get user's university
         profile_res = supabase.table("profiles").select("university_id").eq("id", user_id).single().execute()
         if not profile_res.data:
@@ -1172,22 +1185,31 @@ async def get_items_paginated(
         # Calculate offset
         offset = (page - 1) * limit
         
-        # Build query
+        # Select only necessary fields for browse list
         query = supabase.table("items").select(
-            "*, profiles(id, full_name, email)",
+            "id, title, status, category, location, thumbnail_url, created_at, user_id, profiles!items_user_id_fkey(id, full_name)",
             count="exact"
         ).eq("university_id", university_id).eq("moderation_status", "approved")
         
-        # Apply filters
+        # Apply backend filters
         if status and status != "All":
             query = query.eq("status", status)
-        if category:
+        if category and category != "All":
             query = query.eq("category", category)
         if search:
-            query = query.or_(f"title.ilike.%{search}%,description.ilike.%{search}%")
+            # Backend search on indexed columns
+            query = query.or_(f"title.ilike.%{search}%,description.ilike.%{search}%,category.ilike.%{search}%")
         
-        # Apply pagination and sorting
-        query = query.order("created_at", desc=True).range(offset, offset + limit - 1)
+        # Apply backend sorting
+        valid_sort_fields = ["created_at", "title", "status", "category"]
+        if sort_by not in valid_sort_fields:
+            sort_by = "created_at"
+        
+        desc = sort_order.lower() == "desc"
+        query = query.order(sort_by, desc=desc)
+        
+        # Apply strict pagination
+        query = query.range(offset, offset + limit - 1)
         
         result = query.execute()
         
@@ -2271,6 +2293,146 @@ async def set_user_role(user_id: str, data: RoleUpdate, admin_id: str = Depends(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+@admin_router.get("/items")
+async def get_admin_items(
+    page: int = 1,
+    limit: int = 20,
+    status: Optional[str] = None,
+    moderation_status: Optional[str] = None,
+    category: Optional[str] = None,
+    search: Optional[str] = None,
+    sort_by: Optional[str] = "created_at",
+    sort_order: Optional[str] = "desc",
+    admin_id: str = Depends(get_current_user_id)
+):
+    """
+    Get paginated items for admin's university with strict pagination.
+    Supports backend filtering by status, moderation_status, category, and search.
+    Returns only necessary fields (10-20 items max).
+    """
+    try:
+        # Enforce strict pagination limits
+        limit = min(limit, 20)
+        if limit < 1:
+            limit = 10
+        
+        # Get admin's university
+        profile_res = supabase.table("profiles").select("university_id, role").eq("id", admin_id).single().execute()
+        if not profile_res.data or profile_res.data.get('role') != 'admin':
+            raise HTTPException(status_code=403, detail="Admin access required.")
+        
+        university_id = profile_res.data['university_id']
+        offset = (page - 1) * limit
+        
+        # Select only necessary fields
+        query = supabase.table("items").select(
+            "id, title, status, category, moderation_status, created_at, user_id, thumbnail_url, profiles!items_user_id_fkey(id, full_name, email)",
+            count="exact"
+        ).eq("university_id", university_id)
+        
+        # Apply backend filters
+        if status and status != "All":
+            query = query.eq("status", status)
+        if moderation_status and moderation_status != "All":
+            query = query.eq("moderation_status", moderation_status)
+        if category and category != "All":
+            query = query.eq("category", category)
+        if search:
+            query = query.or_(f"title.ilike.%{search}%,description.ilike.%{search}%")
+        
+        # Apply backend sorting
+        valid_sort_fields = ["created_at", "title", "status", "moderation_status"]
+        if sort_by not in valid_sort_fields:
+            sort_by = "created_at"
+        
+        desc = sort_order.lower() == "desc"
+        query = query.order(sort_by, desc=desc).range(offset, offset + limit - 1)
+        
+        result = query.execute()
+        
+        return {
+            "items": result.data or [],
+            "total_items": result.count or 0,
+            "current_page": page,
+            "total_pages": ((result.count or 0) + limit - 1) // limit,
+            "items_per_page": limit
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to fetch items: {str(e)}")
+
+@admin_router.get("/users")
+async def get_admin_users(
+    page: int = 1,
+    limit: int = 20,
+    role: Optional[str] = None,
+    is_verified: Optional[bool] = None,
+    is_banned: Optional[bool] = None,
+    search: Optional[str] = None,
+    sort_by: Optional[str] = "created_at",
+    sort_order: Optional[str] = "desc",
+    admin_id: str = Depends(get_current_user_id)
+):
+    """
+    Get paginated users for admin's university with strict pagination.
+    Supports backend filtering by role, verification status, ban status, and search.
+    Returns only necessary fields (10-20 users max).
+    """
+    try:
+        # Enforce strict pagination limits
+        limit = min(limit, 20)
+        if limit < 1:
+            limit = 10
+        
+        # Get admin's university
+        profile_res = supabase.table("profiles").select("university_id, role").eq("id", admin_id).single().execute()
+        if not profile_res.data or profile_res.data.get('role') != 'admin':
+            raise HTTPException(status_code=403, detail="Admin access required.")
+        
+        university_id = profile_res.data['university_id']
+        offset = (page - 1) * limit
+        
+        # Select only necessary fields
+        query = supabase.table("profiles").select(
+            "id, full_name, email, role, is_verified, is_banned, created_at, successful_returns",
+            count="exact"
+        ).eq("university_id", university_id)
+        
+        # Apply backend filters
+        if role and role != "All":
+            query = query.eq("role", role)
+        if is_verified is not None:
+            query = query.eq("is_verified", is_verified)
+        if is_banned is not None:
+            query = query.eq("is_banned", is_banned)
+        if search:
+            query = query.or_(f"full_name.ilike.%{search}%,email.ilike.%{search}%")
+        
+        # Apply backend sorting
+        valid_sort_fields = ["created_at", "full_name", "email", "successful_returns"]
+        if sort_by not in valid_sort_fields:
+            sort_by = "created_at"
+        
+        desc = sort_order.lower() == "desc"
+        query = query.order(sort_by, desc=desc).range(offset, offset + limit - 1)
+        
+        result = query.execute()
+        
+        return {
+            "users": result.data or [],
+            "total_users": result.count or 0,
+            "current_page": page,
+            "total_pages": ((result.count or 0) + limit - 1) // limit,
+            "users_per_page": limit
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to fetch users: {str(e)}")
+
 # ============= Profile Routes =============
 @profile_router.put("/")
 async def update_profile(full_name: Optional[str] = Form(None), avatar: Optional[UploadFile] = File(None), current_user_id: str = Depends(get_current_user_id)):
@@ -2368,6 +2530,62 @@ async def update_user_preferences(preferences: UserPreferences, current_user_id:
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to update preferences: {str(e)}")
+
+@profile_router.get("/my-posts")
+async def get_user_posts(
+    page: int = 1,
+    limit: int = 20,
+    status: Optional[str] = None,
+    moderation_status: Optional[str] = None,
+    sort_by: Optional[str] = "created_at",
+    sort_order: Optional[str] = "desc",
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    Get user's own posts with strict pagination.
+    Supports backend filtering by status and moderation_status.
+    Returns only necessary fields (10-20 items max).
+    """
+    try:
+        # Enforce strict pagination limits
+        limit = min(limit, 20)
+        if limit < 1:
+            limit = 10
+        
+        offset = (page - 1) * limit
+        
+        # Select only necessary fields
+        query = supabase.table("items").select(
+            "id, title, status, category, moderation_status, location, thumbnail_url, created_at",
+            count="exact"
+        ).eq("user_id", current_user_id)
+        
+        # Apply backend filters
+        if status and status != "All":
+            query = query.eq("status", status)
+        if moderation_status and moderation_status != "All":
+            query = query.eq("moderation_status", moderation_status)
+        
+        # Apply backend sorting
+        valid_sort_fields = ["created_at", "title", "status"]
+        if sort_by not in valid_sort_fields:
+            sort_by = "created_at"
+        
+        desc = sort_order.lower() == "desc"
+        query = query.order(sort_by, desc=desc).range(offset, offset + limit - 1)
+        
+        result = query.execute()
+        
+        return {
+            "items": result.data or [],
+            "total_items": result.count or 0,
+            "current_page": page,
+            "total_pages": ((result.count or 0) + limit - 1) // limit,
+            "items_per_page": limit
+        }
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to fetch posts: {str(e)}")
 
 # ============= Backup & Restore Endpoints =============
 @backup_router.post("/create")

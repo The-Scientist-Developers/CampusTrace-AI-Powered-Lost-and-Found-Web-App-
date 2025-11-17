@@ -450,11 +450,12 @@ const ItemDetailsModal = ({ item, onClose, onClaim, user }) => {
       >
         {/* Left Side - Image (Desktop) / Top (Mobile) */}
         <div className="w-full md:w-[55%] bg-neutral-100 dark:bg-zinc-900 flex items-center justify-center relative flex-shrink-0 h-[45vh] md:h-auto">
-          {item.image_url ? (
+          {item.image_url || item.thumbnail_url ? (
             <img
-              src={item.image_url}
+              src={item.image_url || item.thumbnail_url}
               alt={item.title}
               className="w-full h-full object-contain"
+              loading="lazy"
             />
           ) : (
             <div className="text-center">
@@ -738,6 +739,7 @@ const MarketplaceItem = ({ item, onClick }) => {
             src={item.thumbnail_url || item.image_url}
             alt={item.title}
             className="w-full h-full object-cover"
+            loading="lazy"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
@@ -811,7 +813,7 @@ export default function BrowseAllPage({ user }) {
   const fileInputRef = useRef(null);
 
   const [searchTerm, setSearchTerm] = useState("");
-  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPosts, setTotalPosts] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(20);

@@ -8,11 +8,11 @@ import {
   RefreshControl,
   ActivityIndicator,
   FlatList,
-  Image,
   Dimensions,
   Platform,
   Animated,
 } from "react-native";
+import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -32,6 +32,7 @@ import {
   API_BASE_URL,
 } from "@campustrace/core";
 import SimpleLoadingScreen from "../../components/SimpleLoadingScreen";
+import { DashboardCardSkeleton } from "../../components/SkeletonLoaders";
 import { useTheme } from "../../contexts/ThemeContext";
 import {
   Spacing,
@@ -105,85 +106,73 @@ const DashboardScreen = ({ navigation }) => {
         return;
       }
 
-      // Fetch user profile to get university_id
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("university_id")
-        .eq("id", user.id)
-        .single();
-
-      // Fetch site name from settings
-      if (profileData?.university_id) {
-        const { data: settingsData } = await supabase
-          .from("site_settings")
-          .select("setting_value")
-          .eq("university_id", profileData.university_id)
-          .eq("setting_key", "site_name")
-          .single();
-
-        if (settingsData?.setting_value) {
-          setSiteName(settingsData.setting_value);
-        }
-      }
-
-      // Use the new consolidated dashboard-summary endpoint
+      // Optimized: Use consolidated endpoint with timeout
       const token = await getAccessToken();
       if (!token) {
         throw new Error("Authentication required.");
       }
 
-      // Add timeout to fetch request
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
       try {
-        const response = await fetch(`${API_BASE_URL}/api/dashboard-summary`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          signal: controller.signal,
-        });
+        // Fetch dashboard data and profile in parallel
+        const [dashboardResponse, profileResponse, settingsResponse] =
+          await Promise.all([
+            fetch(`${API_BASE_URL}/api/items/dashboard-summary`, {
+              headers: { Authorization: `Bearer ${token}` },
+              signal: controller.signal,
+            }),
+            supabase
+              .from("profiles")
+              .select("university_id")
+              .eq("id", user.id)
+              .single(),
+            supabase
+              .from("site_settings")
+              .select("setting_value")
+              .eq("setting_key", "site_name")
+              .limit(1)
+              .single(),
+          ]);
+
         clearTimeout(timeoutId);
 
-        if (!response.ok) {
+        // Set site name
+        if (settingsResponse.data?.setting_value) {
+          setSiteName(settingsResponse.data.setting_value);
+        }
+
+        if (!dashboardResponse.ok) {
           throw new Error("Failed to fetch dashboard data.");
         }
 
-        const data = await response.json();
+        const data = await dashboardResponse.json();
 
-        // Set recent posts
+        // Set all data from consolidated response
         setMyRecentPosts(data.myRecentPosts || []);
-
-        // Set recent activity
         setRecentActivity(data.recentActivity || []);
-
-        // Set stats from the consolidated response
-        setStats({
-          totalItems:
-            data.userStats.found +
-            data.userStats.lost +
-            data.userStats.recovered,
-          lostItems: data.userStats.lost,
-          foundItems: data.userStats.found,
-          recoveredItems: data.userStats.recovered,
-        });
-
-        // Process chart data from recent posts
-        processChartData(data.myRecentPosts);
-
-        // Set AI matches
         setPossibleMatches(data.aiMatches || []);
 
-        // Find the latest lost item for the "Your Lost Item" section
-        const latestLostItem = data.myRecentPosts
-          .filter(
-            (item) =>
-              item.status === "Lost" &&
-              item.moderation_status !== "recovered" &&
-              item.moderation_status !== "rejected"
-          )
-          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+        setStats({
+          totalItems: data.userStats?.total || 0,
+          lostItems: data.userStats?.lost || 0,
+          foundItems: data.userStats?.found || 0,
+          recoveredItems: data.userStats?.recovered || 0,
+        });
 
+        // Use pre-calculated chart data from backend
+        if (data.chartData) {
+          setChartData(data.chartData);
+        }
+
+        // Find latest lost item
+        const latestLostItem = (data.myRecentPosts || []).find(
+          (item) =>
+            item.status === "Lost" &&
+            item.moderation_status !== "recovered" &&
+            item.moderation_status !== "rejected"
+        );
         setMyLostItem(latestLostItem || null);
       } catch (fetchError) {
         clearTimeout(timeoutId);
@@ -331,7 +320,69 @@ const DashboardScreen = ({ navigation }) => {
       </LinearGradient>
 
       {loading && !refreshing ? (
-        <SimpleLoadingScreen />
+        <ScrollView style={styles.scrollView}>
+          {/* Welcome Card Skeleton */}
+          <View
+            style={[styles.welcomeCard, { backgroundColor: colors.surface }]}
+          >
+            <View
+              style={{
+                height: 60,
+                backgroundColor: colors.border,
+                borderRadius: 8,
+              }}
+            />
+          </View>
+
+          {/* Stats Skeleton */}
+          <View style={styles.statsContainer}>
+            <View style={styles.statsGrid}>
+              {[1, 2, 3, 4].map((i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.modernStatCard,
+                    { backgroundColor: colors.surface },
+                  ]}
+                >
+                  <View
+                    style={{
+                      height: 40,
+                      width: 40,
+                      backgroundColor: colors.border,
+                      borderRadius: 20,
+                    }}
+                  />
+                  <View
+                    style={{
+                      height: 24,
+                      width: 40,
+                      backgroundColor: colors.border,
+                      borderRadius: 4,
+                      marginTop: 8,
+                    }}
+                  />
+                  <View
+                    style={{
+                      height: 14,
+                      width: 60,
+                      backgroundColor: colors.border,
+                      borderRadius: 4,
+                      marginTop: 4,
+                    }}
+                  />
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Posts Skeleton */}
+          <View style={styles.section}>
+            <DashboardCardSkeleton colors={colors} />
+            <DashboardCardSkeleton colors={colors} />
+            <DashboardCardSkeleton colors={colors} />
+          </View>
+        </ScrollView>
       ) : (
         <Animated.ScrollView
           style={[
@@ -551,14 +602,16 @@ const DashboardScreen = ({ navigation }) => {
           {/* Community Activity Feed */}
           <View style={[styles.section, { paddingBottom: 32 }]}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Community Feed</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Community Feed
+              </Text>
               <View style={styles.liveIndicator}>
                 <View style={styles.liveDot} />
                 <Text style={styles.liveText}>Live</Text>
               </View>
             </View>
 
-            {recentActivity.length > 0 ? (
+            {recentActivity && recentActivity.length > 0 ? (
               recentActivity
                 .slice(0, 5)
                 .map((item, index) => (
@@ -615,10 +668,13 @@ const AnimatedItemCard = memo(({ item, index, onPress, styles, colors }) => {
         activeOpacity={0.9}
       >
         <View style={styles.itemCardImageContainer}>
-          {item.image_url ? (
+          {item.thumbnail_url || item.image_url ? (
             <Image
-              source={{ uri: item.image_url }}
+              source={{ uri: item.thumbnail_url || item.image_url }}
               style={styles.itemCardImage}
+              contentFit="cover"
+              transition={200}
+              cachePolicy="memory-disk"
             />
           ) : (
             <LinearGradient
@@ -707,10 +763,13 @@ const AnimatedMatchCard = memo(({ item, index, onPress, styles, colors }) => {
         </View>
 
         <View style={styles.matchCardImageContainer}>
-          {item.image_url ? (
+          {item.thumbnail_url || item.image_url ? (
             <Image
-              source={{ uri: item.image_url }}
+              source={{ uri: item.thumbnail_url || item.image_url }}
               style={styles.matchCardImage}
+              contentFit="cover"
+              transition={200}
+              cachePolicy="memory-disk"
             />
           ) : (
             <View style={styles.imagePlaceholder}>
@@ -768,10 +827,13 @@ const ModernLostItemCard = memo(({ item, styles, colors, onPress }) => (
       </View>
 
       <View style={styles.lostItemContent}>
-        {item.image_url ? (
+        {item.thumbnail_url || item.image_url ? (
           <Image
-            source={{ uri: item.image_url }}
+            source={{ uri: item.thumbnail_url || item.image_url }}
             style={styles.lostItemImage}
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
           />
         ) : (
           <View style={[styles.lostItemImage, styles.imagePlaceholder]}>
@@ -823,10 +885,13 @@ const ModernActivityItem = memo(({ item, index, onPress, styles, colors }) => {
         activeOpacity={0.9}
       >
         <View style={styles.activityLeft}>
-          {item.image_url ? (
+          {item.thumbnail_url || item.image_url ? (
             <Image
-              source={{ uri: item.image_url }}
+              source={{ uri: item.thumbnail_url || item.image_url }}
               style={styles.activityImage}
+              contentFit="cover"
+              transition={200}
+              cachePolicy="memory-disk"
             />
           ) : (
             <View style={[styles.activityImage, styles.imagePlaceholder]}>
@@ -919,8 +984,11 @@ const ModernChartCard = memo(({ title, data, type, styles, colors }) => {
       <Text style={styles.chartTitle}>{title}</Text>
       <View style={styles.chartContainer}>
         <LineChart
-          data={data.map((d) => ({ value: d.lost, label: d.day }))}
-          data2={data.map((d) => ({ value: d.found }))}
+          data={data.map((d) => ({
+            value: d.Lost || d.lost || 0,
+            label: d.name || d.day,
+          }))}
+          data2={data.map((d) => ({ value: d.Found || d.found || 0 }))}
           areaChart
           curved
           height={180}
@@ -1370,7 +1438,7 @@ const createStyles = (colors) => {
       height: "100%",
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: "#F3F4F6",
+      backgroundColor: colors.border || colors.surface || "#F3F4F6",
     },
     itemStatusBadge: {
       position: "absolute",
@@ -1482,7 +1550,7 @@ const createStyles = (colors) => {
     tag: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: "#F3F4F6",
+      backgroundColor: colors.border || "#F3F4F6",
       paddingHorizontal: 8,
       paddingVertical: 4,
       borderRadius: 6,
@@ -1490,7 +1558,7 @@ const createStyles = (colors) => {
     },
     tagText: {
       fontSize: 11,
-      color: "#6B7280",
+      color: colors.textSecondary || "#6B7280",
     },
     miniTag: {
       paddingHorizontal: 8,

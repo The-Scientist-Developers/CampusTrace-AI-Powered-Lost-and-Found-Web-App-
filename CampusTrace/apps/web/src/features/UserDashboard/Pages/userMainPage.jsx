@@ -21,6 +21,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { supabase, getAccessToken } from "../../../api/apiClient.js";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
+import { LazyLoadImage } from "react-lazy-load-image-component";
+import "react-lazy-load-image-component/src/effects/blur.css";
 import {
   BarChart,
   Bar,
@@ -129,7 +131,12 @@ const ItemImage = ({ imageUrl, className }) => (
     className={`bg-neutral-100 dark:bg-neutral-800 overflow-hidden ${className}`}
   >
     {imageUrl ? (
-      <img src={imageUrl} alt="item" className="w-full h-full object-cover" />
+      <img
+        src={imageUrl}
+        alt="item"
+        className="w-full h-full object-cover"
+        loading="lazy"
+      />
     ) : (
       <div className="w-full h-full flex items-center justify-center">
         <Camera className="w-8 h-8 text-neutral-300 dark:text-neutral-600" />
@@ -145,7 +152,10 @@ const ItemCard = ({ item, onPress }) => (
     className="w-[70vw] sm:w-64 bg-white dark:bg-[#2a2a2a] rounded-2xl border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden flex-shrink-0 snap-start shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
   >
     <div className="relative">
-      <ItemImage imageUrl={item.image_url} className="w-full aspect-square" />
+      <ItemImage
+        imageUrl={item.thumbnail_url || item.image_url}
+        className="w-full aspect-square"
+      />
       <div className="absolute top-3 left-3">
         <span
           className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg ${
@@ -203,7 +213,10 @@ const MatchCard = ({ item, onPress }) => {
           </span>
         </div>
       </div>
-      <ItemImage imageUrl={item.image_url} className="w-full aspect-square" />
+      <ItemImage
+        imageUrl={item.thumbnail_url || item.image_url}
+        className="w-full aspect-square"
+      />
       <div className="p-3">
         <h3 className="text-sm font-bold text-neutral-800 dark:text-white mb-1 truncate">
           {item.title}
@@ -232,7 +245,7 @@ const ActivityItem = ({ item, onPress }) => {
     >
       <div className="relative flex-shrink-0">
         <ItemImage
-          imageUrl={item.image_url}
+          imageUrl={item.thumbnail_url || item.image_url}
           className="w-14 h-14 rounded-xl shadow-sm"
         />
         <div
@@ -596,17 +609,33 @@ export default function UserMainPage({ user }) {
     setLoading(true);
     setError(null);
     try {
-      // Use new consolidated dashboard-summary endpoint
       const token = await getAccessToken();
       if (!token) throw new Error("Authentication required");
 
-      const response = await fetch(`${API_BASE_URL}/api/dashboard-summary`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // Optimized: Single API call with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
-      if (!response.ok) throw new Error("Failed to fetch dashboard data");
+      const response = await fetch(
+        `${API_BASE_URL}/api/items/dashboard-summary`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          signal: controller.signal,
+        }
+      );
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        // Fallback to old method if endpoint doesn't exist
+        if (response.status === 404) {
+          await fetchDashboardDataFallback();
+          return;
+        }
+        throw new Error("Failed to fetch dashboard data");
+      }
 
       const data = await response.json();
 
@@ -615,21 +644,34 @@ export default function UserMainPage({ user }) {
       setCommunityActivity(data.recentActivity || []);
       setPossibleMatches(data.aiMatches || []);
 
-      // Calculate stats from summary
-      const allItemsCount =
-        (data.userStats?.found || 0) + (data.userStats?.lost || 0);
+      // Find latest lost item
+      const latestLost = (data.myRecentPosts || []).find(
+        (item) =>
+          item.status === "Lost" &&
+          item.moderation_status !== "recovered" &&
+          item.moderation_status !== "rejected"
+      );
+      setMyLostItem(latestLost || null);
+
+      // Set stats
       setStats({
-        totalItems: allItemsCount,
+        totalItems: data.userStats?.total || 0,
         lostItems: data.userStats?.lost || 0,
         foundItems: data.userStats?.found || 0,
         recoveredItems: data.userStats?.recovered || 0,
       });
 
-      // Generate chart data (use all posts for accurate charts)
-      await generateChartData(data.allMyPosts || []);
+      // Set pre-calculated chart data from backend
+      if (data.chartData) {
+        setChartData(data.chartData);
+      }
     } catch (err) {
-      console.error("Error loading dashboard:", err);
-      setError(err.message || "Failed to load dashboard data");
+      if (err.name === "AbortError") {
+        setError("Request timed out. Please check your connection.");
+      } else {
+        console.error("Error loading dashboard:", err);
+        setError(err.message || "Failed to load dashboard data");
+      }
     } finally {
       setLoading(false);
     }
@@ -671,48 +713,49 @@ export default function UserMainPage({ user }) {
     });
   };
 
-  const fetchDashboardDataOld = async () => {
-    setLoading(true);
-    setError(null);
+  // Optimized fallback with parallel queries
+  const fetchDashboardDataFallback = async () => {
     try {
-      const { data: profile, error: profileError } = await supabase
+      // Fetch profile first to get university_id
+      const { data: profile } = await supabase
         .from("profiles")
         .select("university_id")
         .eq("id", user.id)
         .single();
 
-      if (profileError) throw profileError;
       if (!profile) throw new Error("User profile not found.");
 
-      const { data: allMyItems = [], error: itemsError } = await supabase
-        .from("items")
-        .select("*")
-        .eq("user_id", user.id);
+      // Fetch all data in parallel
+      const [allItemsResult, activePostsResult, communityResult] =
+        await Promise.all([
+          supabase
+            .from("items")
+            .select("id, status, moderation_status, category, created_at")
+            .eq("user_id", user.id),
+          supabase
+            .from("items")
+            .select("*")
+            .eq("user_id", user.id)
+            .in("moderation_status", ["approved", "pending", "pending_return"])
+            .order("created_at", { ascending: false })
+            .limit(4),
+          profile.university_id
+            ? supabase
+                .from("items")
+                .select("*, profiles(id, full_name, email)")
+                .eq("university_id", profile.university_id)
+                .eq("moderation_status", "approved")
+                .order("created_at", { ascending: false })
+                .limit(5)
+            : Promise.resolve({ data: [] }),
+        ]);
 
-      if (itemsError) throw itemsError;
-
-      const { data: activePosts = [] } = await supabase
-        .from("items")
-        .select("*")
-        .eq("user_id", user.id)
-        .in("moderation_status", ["approved", "pending", "pending_return"])
-        .order("created_at", { ascending: false })
-        .limit(4);
-
-      if (profile.university_id) {
-        const { data: communityData = [] } = await supabase
-          .from("items")
-          .select("*, profiles(id, full_name, email)")
-          .eq("university_id", profile.university_id)
-          .eq("moderation_status", "approved")
-          .order("created_at", { ascending: false })
-          .limit(50); // Fetch 50, but we will slice 5 for the UI
-        setCommunityActivity(communityData);
-      } else {
-        setCommunityActivity([]);
-      }
+      const allMyItems = allItemsResult.data || [];
+      const activePosts = activePostsResult.data || [];
+      const communityData = communityResult.data || [];
 
       setMyRecentPosts(activePosts);
+      setCommunityActivity(communityData);
 
       // Calculate stats
       const lostCount = allMyItems.filter(
@@ -734,14 +777,13 @@ export default function UserMainPage({ user }) {
 
       processChartData(allMyItems);
 
-      const latestLostItem = allMyItems
-        .filter(
-          (item) =>
-            item.status === "Lost" &&
-            item.moderation_status !== "recovered" &&
-            item.moderation_status !== "rejected"
-        )
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+      // Find latest lost item
+      const latestLostItem = activePosts.find(
+        (item) =>
+          item.status === "Lost" &&
+          item.moderation_status !== "recovered" &&
+          item.moderation_status !== "rejected"
+      );
 
       if (latestLostItem) {
         setMyLostItem(latestLostItem);
@@ -753,8 +795,6 @@ export default function UserMainPage({ user }) {
     } catch (err) {
       console.error("Dashboard error:", err);
       setError(err.message || "Failed to load dashboard data.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -980,7 +1020,7 @@ export default function UserMainPage({ user }) {
                 </div>
                 <div className="flex gap-3">
                   <ItemImage
-                    imageUrl={myLostItem.image_url}
+                    imageUrl={myLostItem.thumbnail_url || myLostItem.image_url}
                     className="w-20 h-20 rounded-xl flex-shrink-0 shadow-sm"
                   />
                   <div className="flex-1 min-w-0">

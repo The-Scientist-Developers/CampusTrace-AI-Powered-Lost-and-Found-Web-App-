@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase, apiClient } from "../../../api/apiClient";
 import { toast } from "react-hot-toast";
 import { API_BASE_URL } from "../../../api/apiClient";
+import { LazyLoadImage } from "react-lazy-load-image-component";
+import "react-lazy-load-image-component/src/effects/blur.css";
 import {
   ImageIcon,
   Loader2,
@@ -174,9 +176,10 @@ const MyPostPreviewModal = ({ item, onClose }) => {
             {/* Image */}
             <div className="w-full h-80 flex items-center justify-center bg-neutral-100 dark:bg-zinc-800 rounded-xl p-4">
               {item.image_url ? (
-                <img
+                <LazyLoadImage
                   src={item.image_url}
                   alt={item.title}
+                  effect="blur"
                   className="max-w-full max-h-full object-contain rounded-lg"
                 />
               ) : (
@@ -397,9 +400,10 @@ const PostCard = ({
       {/* Image section */}
       <div className="relative w-full h-52 bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-zinc-800 dark:to-zinc-900 p-3">
         {post.image_url ? (
-          <img
+          <LazyLoadImage
             src={post.image_url}
             alt={post.title}
+            effect="blur"
             className="w-full h-full object-contain rounded-lg"
           />
         ) : (
@@ -1062,9 +1066,10 @@ export default function MyPostsPage({ user }) {
                   <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100 dark:bg-gradient-to-r dark:from-[#2a2a2a] dark:to-[#2e2e2e] border-b border-neutral-200 dark:border-neutral-700">
                     <div className="flex items-center gap-4">
                       {claim.item?.image_url ? (
-                        <img
+                        <LazyLoadImage
                           src={claim.item.image_url}
                           alt={claim.item.title}
+                          effect="blur"
                           className="w-16 h-16 object-cover rounded-lg"
                         />
                       ) : (
@@ -1235,9 +1240,10 @@ export default function MyPostsPage({ user }) {
                     {" "}
                     <div className="flex items-center gap-4">
                       {post.image_url ? (
-                        <img
+                        <LazyLoadImage
                           src={post.image_url}
                           alt={post.title}
+                          effect="blur"
                           className="w-16 h-16 object-cover rounded-lg"
                         />
                       ) : (
