@@ -8,7 +8,7 @@ JINA_API_KEY = os.getenv("JINA_API_KEY")
 
 if not JINA_API_KEY:
     print("❌ JINA_API_KEY not found in environment!")
-    exit(1)
+    # exit(1) # Temporarily disabling exit to allow pytest to run
 
 print(f"🔑 Using Jina API Key: {JINA_API_KEY[:20]}...")
 

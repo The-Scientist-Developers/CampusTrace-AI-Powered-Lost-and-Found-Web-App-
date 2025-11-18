@@ -10,11 +10,11 @@ import logging
 
 from app.dependencies import supabase, get_current_user_id
 
-router = APIRouter(prefix="/api/items", tags=["dashboard"])
+router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 logger = logging.getLogger(__name__)
 
 
-@router.get("/dashboard-summary")
+@router.get("/summary")
 async def get_dashboard_summary(
     user_id: str = Depends(get_current_user_id)
 ) -> Dict[str, Any]:
