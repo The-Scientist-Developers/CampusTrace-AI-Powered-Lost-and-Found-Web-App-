@@ -40,7 +40,7 @@ async def start_handover(
     Only the claimant can start the handover.
     """
     try:
-        # Get the item and verify it's in pending_return status
+        # Get the item
         item_response = supabase.table("items").select("*").eq("id", item_id).single().execute()
         
         if not item_response.data:
@@ -48,11 +48,11 @@ async def start_handover(
         
         item = item_response.data
         
-        # Verify item is in pending_return status
-        if item.get("moderation_status") != "pending_return":
+        # Verify item is in 'pending handover' status
+        if item.get("status") != "pending handover":
             raise HTTPException(
                 status_code=400,
-                detail="Item must be in pending_return status to start handover"
+                detail="Item must be in 'pending handover' status to start handover"
             )
         
         # Get the claim to verify user is the claimant
@@ -201,7 +201,7 @@ async def verify_handover(
         
         # Update item status to recovered
         supabase.table("items").update({
-            "moderation_status": "recovered"
+            "status": "recovered"
         }).eq("id", item_id).execute()
         
         # Mark the approved claim as resolved/completed

@@ -23,7 +23,7 @@ from app.config import get_settings
 from app.dependencies import get_current_user_id, get_admin_university_id, supabase
 from app import jina_embedding_util
 from app.push_notification_service import PushNotificationService
-from app.routers import dashboard, notifications, messages
+from app.routers import dashboard, notifications, messages, handover
 
 # Load application settings and initialize global variables
 settings = get_settings()
@@ -54,7 +54,7 @@ app = FastAPI(
 app.include_router(dashboard.router)
 app.include_router(notifications.router)
 app.include_router(messages.router)
-
+app.include_router(handover.router)
 # Configure Resend email service
 if settings.RESEND_API_KEY:
     resend.api_key = settings.RESEND_API_KEY
@@ -235,7 +235,6 @@ claims_router = APIRouter(prefix="/api/claims", tags=["Claims"])
 conversations_router = APIRouter(prefix="/api/conversations", tags=["Conversations"])
 backup_router = APIRouter(prefix="/api/backup", tags=["Backup & Restore"])
 badges_router = APIRouter(prefix="/api/badges", tags=["Badges"])
-handover_router = APIRouter(prefix="/api/handover", tags=["Handover"])
 push_router = APIRouter(prefix="/api/push", tags=["Push Notifications"])
 
 # ============= Helper Functions =============
@@ -2935,177 +2934,7 @@ async def get_all_badges(user_id: str = Depends(get_current_user_id)):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to fetch badges: {str(e)}")
 
-# ============= Handover Routes (Task 4) =============
-@handover_router.post("/items/{item_id}/start-handover")
-async def start_handover(item_id: str, user_id: str = Depends(get_current_user_id)):
-    """
-    Start secure handover process (claimant only).
-    Generates a 4-digit code for verification.
-    """
-    try:
-        import random
-        
-        # Get item details
-        item_res = supabase.table("items").select(
-            "id, title, user_id, status"
-        ).eq("id", item_id).single().execute()
-        
-        if not item_res.data:
-            raise HTTPException(status_code=404, detail="Item not found.")
-        
-        item = item_res.data
-        
-        # TODO: In a real implementation, check if user is the claimant
-        # For now, we'll allow any authenticated user to start handover
-        # You would need a claims table to track who claimed what
-        
-        # Generate 4-digit code
-        handover_code = str(random.randint(1000, 9999))
-        
-        # Update item with handover code and change status
-        supabase.table("items").update({
-            "handover_code": handover_code,
-            "status": "Pending Handover"
-        }).eq("id", item_id).execute()
-        
-        print(f"🔐 Handover started for item {item_id}, code: {handover_code}")
-        
-        return {
-            "success": True,
-            "code": handover_code,
-            "message": "Handover code generated. Share this code with the finder."
-        }
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to start handover: {str(e)}")
 
-@handover_router.post("/items/{item_id}/complete-handover")
-async def complete_handover(item_id: str, code: str = Form(...), user_id: str = Depends(get_current_user_id)):
-    """
-    Complete handover process (finder only).
-    Verifies the 4-digit code and marks item as recovered.
-    """
-    try:
-        # Get item details
-        item_res = supabase.table("items").select(
-            "id, title, user_id, handover_code, university_id"
-        ).eq("id", item_id).single().execute()
-        
-        if not item_res.data:
-            raise HTTPException(status_code=404, detail="Item not found.")
-        
-        item = item_res.data
-        
-        # Verify the user is the finder (item owner)
-        if item['user_id'] != user_id:
-            raise HTTPException(status_code=403, detail="Only the finder can complete handover.")
-        
-        # Verify the code
-        if item.get('handover_code') != code:
-            raise HTTPException(status_code=400, detail="Invalid handover code.")
-        
-        # Update item status to Recovered
-        supabase.table("items").update({
-            "status": "Recovered",
-            "handover_code": None  # Clear the code
-        }).eq("id", item_id).execute()
-        
-        # TODO: Get claimant_id from claims table
-        # For now, we'll just notify the finder
-        # In a real implementation, you'd:
-        # 1. Get the claimant from claims table
-        # 2. Notify them to send a thank you note
-        # 3. Award badges based on return count
-        
-        # Award badges to finder
-        # Count returned items (Found items that are now Recovered)
-        returned_count_res = supabase.table("items").select("id", count="exact").eq(
-            "user_id", user_id
-        ).eq("status", "Recovered").execute()
-        
-        returned_count = returned_count_res.count or 0
-        
-        if returned_count == 1:
-            award_badge(user_id, "Good Samaritan", item['university_id'])
-        elif returned_count >= 5:
-            award_badge(user_id, "Campus Hero", item['university_id'])
-        
-        print(f"✅ Handover completed for item {item_id}")
-        
-        return {
-            "success": True,
-            "message": "Item successfully returned! Thank you for being a campus hero! 🎉"
-        }
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to complete handover: {str(e)}")
-
-class VerifyHandoverRequest(BaseModel):
-    code: str
-
-@handover_router.post("/items/{item_id}/verify-handover")
-async def verify_handover(
-    item_id: int,
-    request: VerifyHandoverRequest,
-    user_id: str = Depends(get_current_user_id)
-):
-    """
-    Verify handover code (finder/item owner only).
-    Checks the code stored in items table and marks item as returned.
-    """
-    try:
-        # Get the item
-        item_response = supabase.table("items").select("*").eq("id", item_id).single().execute()
-        
-        if not item_response.data:
-            raise HTTPException(status_code=404, detail="Item not found")
-        
-        item = item_response.data
-        
-        # Verify user is the item owner
-        if item.get("user_id") != user_id:
-            raise HTTPException(
-                status_code=403,
-                detail="Only the item owner can verify the handover code"
-            )
-        
-        # Check if item has a handover code
-        if not item.get("handover_code"):
-            raise HTTPException(status_code=404, detail="No active handover found for this item")
-        
-        # Verify the code
-        if item["handover_code"] != request.code:
-            raise HTTPException(status_code=400, detail="Invalid handover code")
-        
-        # Clear the handover code and update item status
-        supabase.table("items").update({
-            "handover_code": None,
-            "moderation_status": "recovered"
-        }).eq("id", item_id).execute()
-        
-        print(f"✅ Handover verified for item {item_id}")
-        
-        return {
-            "success": True,
-            "message": "Handover verified successfully. Item marked as returned.",
-            "item_id": item_id
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error verifying handover: {e}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to verify handover: {str(e)}")
-
-# Simple claims endpoint for mobile app
-# Note: Using the claims_router defined at the top of the file
 
 class UpdateClaimRequest(BaseModel):
     claim_id: Optional[int] = None
@@ -3215,98 +3044,6 @@ async def update_claim_status(
 # Include claims router
 app.include_router(claims_router)
 
-@handover_router.post("/items/{item_id}/thank-you")
-async def send_thank_you_note(
-    item_id: str, 
-    message: str = Form(...), 
-    user_id: str = Depends(get_current_user_id)
-):
-    """
-    Send a thank you note to the finder (claimant only).
-    """
-    try:
-        # Get item details
-        item_res = supabase.table("items").select(
-            "id, title, user_id"
-        ).eq("id", item_id).single().execute()
-        
-        if not item_res.data:
-            raise HTTPException(status_code=404, detail="Item not found.")
-        
-        item = item_res.data
-        finder_id = item['user_id']
-        
-        # TODO: Verify user is the claimant
-        # For now, allow any authenticated user to send thank you note
-        
-        # Insert thank you note
-        supabase.table("thank_you_notes").insert({
-            "item_id": item_id,
-            "finder_id": finder_id,
-            "claimant_id": user_id,
-            "message": message
-        }).execute()
-        
-        # Notify finder
-        profile_res = supabase.table("profiles").select("university_id").eq("id", user_id).single().execute()
-        if profile_res.data:
-            university_id = profile_res.data['university_id']
-            create_notification(
-                recipient_id=finder_id,
-                university_id=university_id,
-                message=f"You received a thank you note for returning {item['title']}!",
-                link_to="/profile",
-                type="thank_you"
-            )
-        
-        print(f"💌 Thank you note sent for item {item_id}")
-        
-        return {
-            "success": True,
-            "message": "Thank you note sent successfully!"
-        }
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to send thank you note: {str(e)}")
-
-@handover_router.get("/user/{target_user_id}/thank-you-notes")
-async def get_user_thank_you_notes(target_user_id: str, user_id: str = Depends(get_current_user_id)):
-    """
-    Get all thank you notes received by a user.
-    """
-    try:
-        # Try to fetch thank you notes using the view
-        try:
-            notes_res = supabase.from_("thank_you_notes_view").select("*").eq(
-                "finder_id", target_user_id
-            ).order("created_at", desc=True).execute()
-            
-            return {"notes": notes_res.data or []}
-        except Exception as view_error:
-            # If view doesn't exist, try direct table query as fallback
-            print(f"Thank you notes view error (trying fallback): {str(view_error)}")
-            
-            try:
-                # Fallback: Direct query from thank_you_notes table
-                notes_res = supabase.table("thank_you_notes").select(
-                    "*, items(title, category), profiles!thank_you_notes_sender_id_fkey(full_name, email)"
-                ).eq("finder_id", target_user_id).order("created_at", desc=True).execute()
-                
-                return {"notes": notes_res.data or []}
-            except Exception as fallback_error:
-                print(f"Thank you notes fallback error: {str(fallback_error)}")
-                # Return empty array instead of crashing
-                return {"notes": []}
-                
-    except Exception as e:
-        traceback.print_exc()
-        print(f"Thank you notes error: {str(e)}")
-        # Return empty array gracefully instead of 500 error
-        return {"notes": []}
-
 # ============= Include Routers =============
 # Register all API routers with the main app
 app.include_router(auth_router)
@@ -3319,9 +3056,7 @@ app.include_router(claims_router)
 app.include_router(conversations_router)
 app.include_router(backup_router)
 app.include_router(badges_router)
-app.include_router(handover_router)
-app.include_router(badges_router)
-app.include_router(handover_router)
+
 
 # ============= Health Check & Root =============
 @app.get("/health")
@@ -3419,92 +3154,6 @@ import random
 import string
 from datetime import timedelta
 
-def generate_handover_code() -> str:
-    """Generate a random 4-digit handover code."""
-    return ''.join(random.choices(string.digits, k=4))
-
-
-@handover_router.post("/items/{item_id}/start-handover")
-async def start_handover(
-    item_id: int,
-    user_id: str = Depends(get_current_user_id)
-):
-    """
-    Start the handover process by generating a verification code.
-    Only the claimant can start the handover.
-    """
-    try:
-        # Get the item and verify it's in pending_return status
-        item_response = supabase.table("items").select("*").eq("id", item_id).single().execute()
-        
-        if not item_response.data:
-            raise HTTPException(status_code=404, detail="Item not found")
-        
-        item = item_response.data
-        
-        # Verify item is in pending_return status
-        if item.get("moderation_status") != "pending_return":
-            raise HTTPException(
-                status_code=400,
-                detail="Item must be in pending_return status to start handover"
-            )
-        
-        # Get the claim to verify user is the claimant
-        claim_response = supabase.table("claims").select("*").eq("item_id", item_id).eq("status", "approved").single().execute()
-        
-        if not claim_response.data:
-            raise HTTPException(status_code=404, detail="No approved claim found for this item")
-        
-        claim = claim_response.data
-        
-        if claim.get("claimant_id") != user_id:
-            raise HTTPException(
-                status_code=403,
-                detail="Only the claimant can start the handover process"
-            )
-        
-        # Generate handover code
-        code = generate_handover_code()
-        expires_at = datetime.utcnow() + timedelta(hours=24)
-        
-        # Store the handover code
-        handover_data = {
-            "item_id": item_id,
-            "code": code,
-            "claimant_id": user_id,
-            "expires_at": expires_at.isoformat(),
-            "verified": False,
-            "created_at": datetime.utcnow().isoformat()
-        }
-        
-        # Check if handover record already exists
-        existing_handover = supabase.table("handovers").select("*").eq("item_id", item_id).eq("verified", False).execute()
-        
-        if existing_handover.data:
-            # Update existing handover
-            supabase.table("handovers").update({
-                "code": code,
-                "expires_at": expires_at.isoformat(),
-                "created_at": datetime.utcnow().isoformat()
-            }).eq("id", existing_handover.data[0]["id"]).execute()
-        else:
-            # Create new handover record
-            supabase.table("handovers").insert(handover_data).execute()
-        
-        return {
-            "code": code,
-            "expires_at": expires_at.isoformat(),
-            "item_id": item_id,
-            "message": "Handover code generated successfully"
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error starting handover: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to start handover: {str(e)}")
-
-
 @app.get("/api/items/leaderboard")
 async def get_leaderboard(
     user_id: str = Depends(get_current_user_id),
@@ -3574,10 +3223,6 @@ async def get_leaderboard(
     except Exception as e:
         print(f"Error fetching leaderboard: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch leaderboard: {str(e)}")
-
-
-# Include routers
-app.include_router(handover_router)
 
 # Import and include user actions router for secure deletion operations
 from app.routers.user_actions import router as user_actions_router
