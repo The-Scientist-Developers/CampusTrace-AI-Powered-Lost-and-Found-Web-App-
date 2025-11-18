@@ -556,8 +556,10 @@ const ChatWindow = ({ conversation, user }) => {
   };
 
   const isClaimant = user?.id === conversation.claimant?.id;
+  // Check for "pending handover" status (set when claim is approved)
   const isPendingReturn =
-    conversation.item?.moderation_status === "pending_return";
+    conversation.item?.status === "pending handover" ||
+    conversation.item?.status === "Pending Handover";
 
   const HandoverControls = () => {
     if (!isClaimant || !isPendingReturn) {

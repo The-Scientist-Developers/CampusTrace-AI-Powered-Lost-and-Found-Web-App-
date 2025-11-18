@@ -57,6 +57,10 @@ class ClaimCreate(BaseModel):
 class ClaimRespond(BaseModel):
     approved: bool
 
+class UpdateClaimRequest(BaseModel):
+    claim_id: Optional[int] = None
+    status: str
+
 class BanUpdate(BaseModel):
     is_banned: bool
 

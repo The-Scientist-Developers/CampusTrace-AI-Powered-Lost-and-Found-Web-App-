@@ -164,7 +164,7 @@ const MyPostsScreen = ({ navigation }) => {
       if (postsError) throw postsError;
       setMyPosts(postsData || []);
 
-      // 2. Fetch My Claims
+      // 2. Fetch My Claims (keep all including recovered - they'll show recovered badge)
       const { data: claimsData, error: claimsError } = await supabase
         .from("claims")
         .select("*, item:items(*)")
@@ -457,14 +457,20 @@ const MyPostsScreen = ({ navigation }) => {
       case "My Posts":
         // Filter posts based on status filter (client-side filtering)
         if (postStatusFilter === "active") {
-          return myPosts.filter((p) =>
-            ["approved", "pending_return"].includes(p.moderation_status)
+          return myPosts.filter(
+            (p) =>
+              (["approved", "pending_return"].includes(p.moderation_status) ||
+                p.status === "pending handover" ||
+                p.status === "Pending Handover") &&
+              p.status !== "recovered"
           );
         } else if (postStatusFilter === "pending") {
           return myPosts.filter((p) => p.moderation_status === "pending");
         } else if (postStatusFilter === "resolved") {
-          return myPosts.filter((p) =>
-            ["recovered", "rejected"].includes(p.moderation_status)
+          return myPosts.filter(
+            (p) =>
+              ["recovered", "rejected"].includes(p.moderation_status) ||
+              p.status === "recovered"
           );
         }
         return myPosts;
@@ -496,14 +502,20 @@ const MyPostsScreen = ({ navigation }) => {
   );
 
   // Calculate stats
-  const activeCount = myPosts.filter((p) =>
-    ["approved", "pending_return"].includes(p.moderation_status)
+  const activeCount = myPosts.filter(
+    (p) =>
+      (["approved", "pending_return"].includes(p.moderation_status) ||
+        p.status === "pending handover" ||
+        p.status === "Pending Handover") &&
+      p.status !== "recovered"
   ).length;
   const pendingCount = myPosts.filter(
     (p) => p.moderation_status === "pending"
   ).length;
-  const resolvedCount = myPosts.filter((p) =>
-    ["recovered", "rejected"].includes(p.moderation_status)
+  const resolvedCount = myPosts.filter(
+    (p) =>
+      ["recovered", "rejected"].includes(p.moderation_status) ||
+      p.status === "recovered"
   ).length;
   const claimsCount = receivedClaims.length;
 
@@ -1141,7 +1153,8 @@ const PostCard = ({
         </TouchableOpacity>
       </View>
     </View>
-    {item.moderation_status === "pending_return" ? (
+    {item.status === "pending handover" ||
+    item.status === "Pending Handover" ? (
       <TouchableOpacity
         style={[
           styles.claimButton,
@@ -1186,7 +1199,10 @@ const ClaimCard = ({
   styles,
 }) => {
   const isApproved = claim.status === "accepted" || claim.status === "approved";
-  const isPendingReturn = claim.item.moderation_status === "pending_return";
+  // Check for "pending handover" status (set when claim is approved)
+  const isPendingReturn =
+    claim.item.status === "pending handover" ||
+    claim.item.status === "Pending Handover";
 
   return (
     <View
@@ -1207,7 +1223,11 @@ const ClaimCard = ({
             {claim.item.title}
           </Text>
           <View style={styles.badgeRow}>
-            <ClaimStatusBadge status={claim.status} styles={styles} />
+            <ClaimStatusBadge
+              status={claim.status}
+              itemStatus={claim.item?.status}
+              styles={styles}
+            />
           </View>
           <Text style={styles.cardTimestamp}>
             {getTimeAgo(claim.created_at)}
@@ -1215,8 +1235,8 @@ const ClaimCard = ({
         </View>
       </View>
 
-      {/* Handover Code Section for Approved Claims */}
-      {isApproved && isPendingReturn && (
+      {/* Handover Code Section for Approved Claims (hide if recovered) */}
+      {isApproved && isPendingReturn && claim.item?.status !== "recovered" && (
         <View
           style={[
             styles.handoverSection,
@@ -1508,6 +1528,12 @@ const StatusBadge = ({ status, styles }) => {
       label: "Recovered",
       icon: PackageCheck,
     },
+    "pending handover": {
+      bg: "#E0F2FE",
+      text: "#0284C7",
+      label: "Pending Handover",
+      icon: RotateCcw,
+    },
     pending_return: {
       bg: "#E0F2FE",
       text: "#0284C7",
@@ -1532,13 +1558,29 @@ const StatusBadge = ({ status, styles }) => {
   );
 };
 
-const ClaimStatusBadge = ({ status, styles }) => {
+const ClaimStatusBadge = ({ status, itemStatus, styles }) => {
+  // Check if item is recovered first
+  if (itemStatus === "recovered") {
+    return (
+      <View style={[styles.badge, { backgroundColor: "#DBEAFE" }]}>
+        <PackageCheck size={12} color="#2563EB" />
+        <Text style={[styles.badgeText, { color: "#2563EB" }]}>Recovered</Text>
+      </View>
+    );
+  }
+
   const config = {
     pending: { bg: "#FEF3C7", text: "#D97706", label: "Pending", icon: Clock },
     accepted: {
       bg: "#D1FAE5",
       text: "#059669",
       label: "Accepted",
+      icon: CheckCircle,
+    },
+    approved: {
+      bg: "#D1FAE5",
+      text: "#059669",
+      label: "Approved",
       icon: CheckCircle,
     },
     rejected: {

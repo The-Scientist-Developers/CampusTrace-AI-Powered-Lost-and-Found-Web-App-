@@ -104,6 +104,12 @@ const StatusBadge = ({ status }) => {
       text = "Recovered";
       Icon = Package;
       break;
+    case "pending handover":
+      colorClass =
+        "bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800";
+      text = "Pending Handover";
+      Icon = AlertCircle;
+      break;
     case "pending_return":
       colorClass =
         "bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800";
@@ -331,7 +337,7 @@ const ClaimCard = ({ claim, onRespond, item, onStartHandover, navigate }) => {
               "{claim.verification_message}"
             </p>
           </div>
-          {isApproved && item.moderation_status === "pending_return" && (
+          {isApproved && item.status?.toLowerCase() === "pending handover" && (
             <button
               onClick={() =>
                 navigate(`/dashboard/handover/${item.id}?role=finder`)
@@ -359,10 +365,11 @@ const PostCard = ({
 }) => {
   const isLost = post.status?.toLowerCase() === "lost";
   const canRecover =
-    post.moderation_status === "pending_return" ||
+    post.status?.toLowerCase() === "pending handover" ||
     (post.status === "Lost" && post.moderation_status === "approved");
-  const isPendingReturn = post.moderation_status === "pending_return";
-  const isFoundItem = post.status?.toLowerCase() === "found";
+  const isPendingHandover = post.status?.toLowerCase() === "pending handover";
+  const isFoundItem =
+    post.status?.toLowerCase() === "found" || isPendingHandover;
 
   return (
     <div className="group relative bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
@@ -461,7 +468,7 @@ const PostCard = ({
           <StatusBadge status={post.moderation_status} />
 
           {/* --- Handover / Recover Buttons --- */}
-          {isPendingReturn && isFoundItem && (
+          {isPendingHandover && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -474,7 +481,7 @@ const PostCard = ({
             </button>
           )}
 
-          {canRecover && !isPendingReturn && (
+          {canRecover && !isPendingHandover && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -529,7 +536,7 @@ const ClaimCardSkeleton = () => (
   </div>
 );
 
-export default function MyPostsPage({ user }) {
+function MyPostsPage({ user }) {
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [claims, setClaims] = useState({});
@@ -614,16 +621,11 @@ export default function MyPostsPage({ user }) {
       console.log("📥 Fetched claims:", data);
       console.log("📊 Total claims:", data?.length || 0);
 
-      // Filter out resolved claims on the client side
-      const activeClaims = (data || []).filter(
-        (claim) => claim.status !== "resolved"
-      );
-      console.log(
-        "✅ Active claims (excluding resolved):",
-        activeClaims.length
-      );
+      // Keep all claims including recovered ones (they'll show recovered badge)
+      console.log("📥 Fetched claims:", data);
+      console.log("📊 Total claims:", data?.length || 0);
 
-      setMyClaims(activeClaims);
+      setMyClaims(data || []);
     } catch (err) {
       console.error("❌ Error fetching my claims:", err);
       toast.error("Failed to load your claims.");
@@ -776,14 +778,19 @@ export default function MyPostsPage({ user }) {
 
   // Calculate stats from all posts, not just filtered ones
   const statsSource = allPosts.length > 0 ? allPosts : posts;
-  const activeCount = statsSource.filter((p) =>
-    ["approved", "pending_return"].includes(p.moderation_status)
+  const activeCount = statsSource.filter(
+    (p) =>
+      (p.moderation_status === "approved" ||
+        p.status?.toLowerCase() === "pending handover") &&
+      p.status?.toLowerCase() !== "recovered"
   ).length;
   const pendingCount = statsSource.filter(
     (p) => p.moderation_status === "pending"
   ).length;
-  const resolvedCount = statsSource.filter((p) =>
-    ["recovered", "rejected"].includes(p.moderation_status)
+  const resolvedCount = statsSource.filter(
+    (p) =>
+      ["recovered", "rejected"].includes(p.moderation_status) ||
+      p.status?.toLowerCase() === "recovered"
   ).length;
   const claimsCount = Object.values(claims).reduce(
     (acc, claimList) => acc + (claimList?.length || 0),
@@ -1004,14 +1011,17 @@ export default function MyPostsPage({ user }) {
               // Client-side filtering based on postStatusFilter
               const filteredPosts = posts.filter((p) => {
                 if (postStatusFilter === "active") {
-                  return ["approved", "pending_return"].includes(
-                    p.moderation_status
+                  return (
+                    (p.moderation_status === "approved" ||
+                      p.status?.toLowerCase() === "pending handover") &&
+                    p.status?.toLowerCase() !== "recovered"
                   );
                 } else if (postStatusFilter === "pending") {
                   return p.moderation_status === "pending";
                 } else if (postStatusFilter === "resolved") {
-                  return ["recovered", "rejected"].includes(
-                    p.moderation_status
+                  return (
+                    ["recovered", "rejected"].includes(p.moderation_status) ||
+                    p.status?.toLowerCase() === "recovered"
                   );
                 }
                 return true;
@@ -1046,7 +1056,7 @@ export default function MyPostsPage({ user }) {
             })()}
           </>
         ) : activeTab === "myClaims" ? (
-          <div className="space-y-4">
+          <>
             {myClaims.length === 0 ? (
               <div className="text-center p-16 bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl">
                 <Send className="w-16 h-16 text-neutral-300 dark:text-neutral-600 mx-auto mb-4" />
@@ -1058,174 +1068,149 @@ export default function MyPostsPage({ user }) {
                 </p>
               </div>
             ) : (
-              myClaims.map((claim) => (
-                <div
-                  key={claim.id}
-                  className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden"
-                >
-                  <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100 dark:bg-gradient-to-r dark:from-[#2a2a2a] dark:to-[#2e2e2e] border-b border-neutral-200 dark:border-neutral-700">
-                    <div className="flex items-center gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {myClaims.map((claim) => (
+                  <div
+                    key={claim.id}
+                    className="group relative bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+                  >
+                    {/* Status badge overlay on image */}
+                    <div className="absolute top-3 right-3 z-10">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border backdrop-blur-sm ${
+                          claim.item?.status?.toLowerCase() === "recovered"
+                            ? "bg-blue-100/90 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400 border-blue-200 dark:border-blue-800"
+                            : claim.status === "approved"
+                            ? "bg-green-100/90 text-green-700 dark:bg-green-500/20 dark:text-green-400 border-green-200 dark:border-green-800"
+                            : claim.status === "rejected"
+                            ? "bg-red-100/90 text-red-700 dark:bg-red-500/20 dark:text-red-400 border-red-200 dark:border-red-800"
+                            : "bg-yellow-100/90 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800"
+                        }`}
+                      >
+                        {claim.item?.status?.toLowerCase() === "recovered" ? (
+                          <>
+                            <Package className="w-3.5 h-3.5" />
+                            Recovered
+                          </>
+                        ) : (
+                          <>
+                            {claim.status === "approved" && (
+                              <CheckCircle className="w-3.5 h-3.5" />
+                            )}
+                            {claim.status === "rejected" && (
+                              <XCircle className="w-3.5 h-3.5" />
+                            )}
+                            {claim.status === "pending" && (
+                              <Clock className="w-3.5 h-3.5" />
+                            )}
+                            {claim.status.charAt(0).toUpperCase() +
+                              claim.status.slice(1)}
+                          </>
+                        )}
+                      </span>
+                    </div>
+
+                    {/* Image section */}
+                    <div className="relative w-full h-52 bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-zinc-800 dark:to-zinc-900 p-3">
                       {claim.item?.image_url ? (
                         <LazyLoadImage
                           src={claim.item.image_url}
                           alt={claim.item.title}
                           effect="blur"
-                          className="w-16 h-16 object-cover rounded-lg"
+                          className="w-full h-full object-contain rounded-lg"
                         />
                       ) : (
-                        <div className="w-16 h-16 bg-neutral-200 dark:bg-neutral-700 rounded-lg flex items-center justify-center">
-                          <Camera className="w-8 h-8 text-neutral-400 dark:text-neutral-500" />
+                        <div className="w-full h-full flex flex-col items-center justify-center">
+                          <Camera className="w-12 h-12 text-neutral-300 dark:text-neutral-600 mb-2" />
+                          <p className="text-xs text-neutral-400 dark:text-neutral-500">
+                            No Image
+                          </p>
                         </div>
                       )}
-                      <div className="flex-1">
-                        <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
-                          {claim.item?.title || "Unknown Item"}
-                        </h3>
-                        <div className="flex items-center gap-4 mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3.5 h-3.5" />
-                            {claim.item?.location || "N/A"}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3.5 h-3.5" />
-                            {new Date(claim.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${
-                            claim.status === "approved"
-                              ? "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400 border-green-200 dark:border-green-800"
-                              : claim.status === "rejected"
-                              ? "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400 border-red-200 dark:border-red-800"
-                              : "bg-yellow-100 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800"
-                          }`}
-                        >
-                          {claim.status === "approved" && (
-                            <CheckCircle className="w-3.5 h-3.5" />
-                          )}
-                          {claim.status === "rejected" && (
-                            <XCircle className="w-3.5 h-3.5" />
-                          )}
-                          {claim.status === "pending" && (
-                            <Clock className="w-3.5 h-3.5" />
-                          )}
-                          {claim.status.charAt(0).toUpperCase() +
-                            claim.status.slice(1)}
+                    </div>
+
+                    {/* Content section */}
+                    <div className="p-4 flex flex-col flex-grow">
+                      <h3 className="text-lg font-semibold text-neutral-800 dark:text-white truncate mb-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                        {claim.item?.title || "Unknown Item"}
+                      </h3>
+
+                      <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400 mb-2">
+                        <MapPin className="w-3 h-3" />
+                        <span className="truncate">
+                          {claim.item?.location || "Unknown location"}
                         </span>
                       </div>
-                    </div>
-                  </div>
-                  <div className="p-6">
-                    <div className="bg-neutral-50 dark:bg-[#1a1a1a] rounded-lg p-4 border-l-4 border-primary-500 mb-4">
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">
-                        Your Verification Message
-                      </p>
-                      <p className="text-sm text-neutral-700 dark:text-neutral-300 italic">
-                        "{claim.verification_message}"
-                      </p>
-                    </div>
 
-                    {claim.status === "pending" && (
-                      <button
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              "Are you sure you want to cancel this claim?"
-                            )
-                          ) {
-                            handleCancelClaim(claim.id);
-                          }
-                        }}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/30 transition-colors font-medium border border-red-200 dark:border-red-800"
-                      >
-                        <X className="w-4 h-4" />
-                        Cancel Claim
-                      </button>
-                    )}
+                      <p className="text-sm text-neutral-600 dark:text-gray-400 mb-3 line-clamp-2">
+                        {claim.verification_message}
+                      </p>
 
-                    {claim.status === "approved" && (
-                      <div className="space-y-3">
-                        {handoverCodes[claim.item.id] ? (
-                          <div className="bg-green-50 dark:bg-green-900/10 border-2 border-green-500 rounded-xl p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <p className="text-xs text-green-700 dark:text-green-400 uppercase tracking-wider font-semibold">
-                                Your Handover Code
-                              </p>
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(
-                                    handoverCodes[claim.item.id]
-                                  );
-                                  toast.success("Code copied to clipboard!");
-                                }}
-                                className="p-1.5 hover:bg-green-100 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                                title="Copy code"
-                              >
-                                <Copy className="w-4 h-4 text-green-700 dark:text-green-400" />
-                              </button>
-                            </div>
-                            <div className="text-center">
-                              <p className="text-4xl font-bold text-green-700 dark:text-green-400 tracking-widest mb-2">
-                                {handoverCodes[claim.item.id]}
-                              </p>
-                              <p className="text-xs text-green-600 dark:text-green-500">
-                                Show this code to the finder when you meet
-                              </p>
-                            </div>
+                      {/* Footer */}
+                      <div className="mt-auto space-y-3">
+                        <div className="flex items-center justify-between pt-3 border-t border-neutral-100 dark:border-neutral-800">
+                          <span className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {new Date(claim.created_at).toLocaleDateString()}
+                          </span>
+                          <span className="text-xs font-medium px-2 py-1 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
+                            {claim.item?.category || "N/A"}
+                          </span>
+                        </div>
+
+                        {/* Action buttons */}
+                        {claim.status === "pending" && (
+                          <button
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  "Are you sure you want to cancel this claim?"
+                                )
+                              ) {
+                                handleCancelClaim(claim.id);
+                              }
+                            }}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/30 transition-colors font-medium border border-red-200 dark:border-red-800"
+                          >
+                            <X className="w-4 h-4" />
+                            Cancel Claim
+                          </button>
+                        )}
+
+                        {claim.status === "approved" &&
+                          claim.item?.status?.toLowerCase() !== "recovered" && (
                             <button
                               onClick={() =>
                                 handleGenerateHandoverCode(claim.item.id)
                               }
                               disabled={generatingCode[claim.item.id]}
-                              className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
+                              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium disabled:opacity-50"
                             >
                               {generatingCode[claim.item.id] ? (
                                 <>
                                   <Loader2 className="w-4 h-4 animate-spin" />
-                                  Regenerating...
+                                  Generating...
+                                </>
+                              ) : handoverCodes[claim.item.id] ? (
+                                <>
+                                  <Copy className="w-4 h-4" />
+                                  Code: {handoverCodes[claim.item.id]}
                                 </>
                               ) : (
                                 <>
-                                  <RotateCcw className="w-4 h-4" />
-                                  Regenerate Code
+                                  <ShieldCheck className="w-4 h-4" />
+                                  Generate Code
                                 </>
                               )}
                             </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() =>
-                              handleGenerateHandoverCode(claim.item.id)
-                            }
-                            disabled={generatingCode[claim.item.id]}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium disabled:opacity-50"
-                          >
-                            {generatingCode[claim.item.id] ? (
-                              <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Generating...
-                              </>
-                            ) : (
-                              <>
-                                <ShieldCheck className="w-4 h-4" />
-                                Generate Handover Code
-                              </>
-                            )}
-                          </button>
-                        )}
-                        <p className="text-xs text-center text-neutral-500 dark:text-neutral-400">
-                          Generate a code to securely complete the handover with
-                          the finder
-                        </p>
+                          )}
                       </div>
-                    )}
+                    </div>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
-          </div>
+          </>
         ) : (
           <div className="space-y-6">
             {posts
@@ -1235,9 +1220,7 @@ export default function MyPostsPage({ user }) {
                   key={`claim-item-${post.id}`}
                   className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden"
                 >
-                  {/* <div className="p-6 bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/10 dark:to-primary-900/20 border-b border-neutral-200 dark:border-neutral-700"> */}
-                  <div className="p-6 bg-gradient-to-r from-primary-50 to-primary-100 dark:bg-gradient-to-r dark:from-[#2a2a2a] dark:to-[#2e2e2e] border-b border-neutral-200 dark:border-neutral-700">
-                    {" "}
+                  <div className="p-6 bg-gradient-to-r from-neutral-50 to-neutral-100 dark:bg-gradient-to-r dark:from-[#2a2a2a] dark:to-[#2e2e2e] border-b border-neutral-200 dark:border-neutral-700">
                     <div className="flex items-center gap-4">
                       {post.image_url ? (
                         <LazyLoadImage
@@ -1258,7 +1241,7 @@ export default function MyPostsPage({ user }) {
                         <div className="flex items-center gap-4 mt-1 text-sm text-neutral-500 dark:text-neutral-400">
                           <span className="flex items-center gap-1">
                             <MapPin className="w-3.5 h-3.5" />
-                            {post.location}
+                            {post.location || "N/A"}
                           </span>
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3.5 h-3.5" />
@@ -1266,58 +1249,31 @@ export default function MyPostsPage({ user }) {
                           </span>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                          {claims[post.id].length}
-                        </p>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                          {claims[post.id].length === 1 ? "Claim" : "Claims"}
-                        </p>
-                      </div>
+                      <span className="text-xs font-medium px-3 py-1 rounded-full bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400">
+                        {claims[post.id]?.length || 0} Claim
+                        {claims[post.id]?.length !== 1 ? "s" : ""}
+                      </span>
                     </div>
                   </div>
-
-                  {/* Claims List */}
                   <div className="p-6 space-y-4">
-                    {claims[post.id].map((claim) => (
+                    {claims[post.id]?.map((claim) => (
                       <ClaimCard
                         key={claim.id}
                         claim={claim}
                         onRespond={handleRespondToClaim}
-                        onStartHandover={handleStartHandover}
                         item={post}
+                        onStartHandover={handleStartHandover}
                         navigate={navigate}
                       />
                     ))}
                   </div>
                 </div>
               ))}
-
-            {/* Empty State */}
-            {posts.filter(
-              (p) => p.status === "Found" && claims[p.id]?.length > 0
-            ).length === 0 && (
-              <div className="text-center p-16 bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl">
-                <MessageSquare className="w-16 h-16 text-neutral-300 dark:text-neutral-600 mx-auto mb-4" />
-                <p className="text-neutral-500 dark:text-neutral-400 text-lg font-medium mb-2">
-                  No pending claims
-                </p>
-                <p className="text-neutral-400 dark:text-neutral-500 text-sm">
-                  Claims on your found items will appear here
-                </p>
-              </div>
-            )}
           </div>
-        )}
-
-        {/* --- RENDER THE MODAL --- */}
-        {selectedItem && (
-          <MyPostPreviewModal
-            item={selectedItem}
-            onClose={() => setSelectedItem(null)}
-          />
         )}
       </div>
     </div>
   );
 }
+
+export default MyPostsPage;

@@ -83,6 +83,11 @@ const StatusBadge = ({ status }) => {
       text: "text-blue-800 dark:text-blue-400",
       label: "Recovered",
     },
+    "pending handover": {
+      bg: "bg-cyan-100 dark:bg-cyan-500/20",
+      text: "text-cyan-800 dark:text-cyan-400",
+      label: "Pending Handover",
+    },
     pending_return: {
       bg: "bg-cyan-100 dark:bg-cyan-500/20",
       text: "text-cyan-800 dark:text-cyan-400",
@@ -736,7 +741,9 @@ export default function UserMainPage({ user }) {
             .from("items")
             .select("*")
             .eq("user_id", user.id)
-            .in("moderation_status", ["approved", "pending", "pending_return"])
+            .or(
+              "moderation_status.in.(approved,pending,pending_return),status.eq.pending handover"
+            )
             .order("created_at", { ascending: false })
             .limit(4),
           profile.university_id

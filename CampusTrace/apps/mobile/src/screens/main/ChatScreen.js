@@ -37,8 +37,10 @@ const HandoverControls = ({
   const [handoverError, setHandoverError] = useState(null);
 
   const isClaimant = user?.id === conversationDetails.claimant_id;
+  // Check for "pending handover" status (set when claim is approved)
   const isPendingReturn =
-    conversationDetails.item?.moderation_status === "pending_return";
+    conversationDetails.item?.status === "pending handover" ||
+    conversationDetails.item?.status === "Pending Handover";
 
   if (!isClaimant || !isPendingReturn) {
     return null; // Don't show controls if not claimant or not pending

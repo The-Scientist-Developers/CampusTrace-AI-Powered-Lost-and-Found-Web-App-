@@ -13,12 +13,26 @@ from fastapi import HTTPException
 from app.config import get_settings
 from app.dependencies import supabase
 
-# This is a global, so it will be initialized in main.py on startup
-# and can be accessed from here.
-from app.shared import model
+# Import the shared module to access the AI model
+from app import shared
 
 
 settings = get_settings()
+
+# List of blacklisted public email domains
+PUBLIC_EMAIL_DOMAINS = {
+    'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com',
+    'icloud.com', 'mail.com', 'protonmail.com', 'zoho.com', 'yandex.com',
+    'gmx.com', 'inbox.com', 'live.com', 'msn.com', 'yahoo.co.uk',
+    'yahoo.co.in', 'yahoo.fr', 'yahoo.de', 'yahoo.es', 'yahoo.it',
+    'googlemail.com', 'me.com', 'mac.com', 'rediffmail.com', 'fastmail.com',
+    'hushmail.com', 'tutanota.com', 'mailfence.com', 'runbox.com'
+}
+
+def is_public_email_domain(email: str) -> bool:
+    """Check if email domain is a public email service."""
+    domain = email.split('@')[1].lower() if '@' in email else ''
+    return domain in PUBLIC_EMAIL_DOMAINS
 
 # Optimize images for faster processing and storage
 def process_image_efficiently(image_bytes: bytes, max_size=(1920, 1920)):
@@ -175,7 +189,8 @@ async def generate_ai_tags(title: str, description: str) -> Optional[List[str]]:
     Supports Taglish (Tagalog-English mix) for Philippine universities.
     Returns up to 7 relevant keywords.
     """
-    if not model:
+    if not shared.model:
+        print("⚠️ AI model not available for tag generation")
         return []
     try:
         prompt = f"""
@@ -191,12 +206,14 @@ async def generate_ai_tags(title: str, description: str) -> Optional[List[str]]:
         Description: 'Naiwan sa library, may libro sa loob.'
         Tags: backpack, itim, jansport, bag, library, libro
         """
-        response = await model.generate_content_async(prompt)
+        response = await shared.model.generate_content_async(prompt)
         tags_string = response.text.strip().replace("#", "")
         tags_list = [tag.strip().lower() for tag in tags_string.split(',') if tag.strip()]
+        print(f"✅ Generated AI tags: {tags_list}")
         return tags_list[:7]
     except Exception as e:
-        print(f"Error generating AI tags: {e}")
+        print(f"❌ Error generating AI tags: {e}")
+        traceback.print_exc()
         return []
 
 def calculate_simple_match_score(lost_item: dict, found_item: dict) -> int:

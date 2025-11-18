@@ -3,7 +3,7 @@ import traceback
 
 from app.dependencies import supabase
 from app.models import UniversityRegistrationRequest
-from app.main import is_public_email_domain
+from app.utils import is_public_email_domain
 
 router = APIRouter(prefix="/api/onboarding", tags=["Onboarding"])
 

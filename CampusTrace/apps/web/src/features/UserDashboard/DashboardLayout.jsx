@@ -229,7 +229,9 @@ export default function DashboardLayout({ children, user }) {
             .from("items")
             .select("*", { head: true, count: "exact" })
             .eq("user_id", user.id)
-            .in("moderation_status", ["approved", "pending", "pending_return"]),
+            .or(
+              "moderation_status.in.(approved,pending,pending_return),status.eq.pending handover"
+            ),
         ]);
 
       // Set profile

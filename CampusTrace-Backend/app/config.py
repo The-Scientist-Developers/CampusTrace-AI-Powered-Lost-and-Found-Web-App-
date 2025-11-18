@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     MAX_IMAGE_SIZE: int = Field(5242880, env="MAX_IMAGE_SIZE")
 
     class Config:   
-        env_file = "CampusTrace-Backend/.env"
+        env_file = ".env"
         env_file_encoding = "utf-8"
 
     @field_validator("CORS_ORIGINS", "EMAIL_CONFIRM_REDIRECT", "PENDING_APPROVAL_REDIRECT_URL", mode='before')
