@@ -22,13 +22,64 @@ const HandoverPage = () => {
   const [handoverCode, setHandoverCode] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [handoverData, setHandoverData] = useState(null);
+  const [itemData, setItemData] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (role === "claimant") {
-      checkExistingHandover();
+    fetchItemAndUserData();
+  }, []);
+
+  useEffect(() => {
+    if (itemData && currentUserId) {
+      const isGenerator = determineIsGenerator();
+      if (isGenerator) {
+        checkExistingHandover();
+      }
     }
-  }, [role]);
+  }, [itemData, currentUserId]);
+
+  const fetchItemAndUserData = async () => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const userId = session?.user?.id;
+      setCurrentUserId(userId);
+
+      // Fetch item details
+      const response = await fetch(`${API_BASE_URL}/api/items/${itemId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const item = await response.json();
+        setItemData(item);
+      }
+    } catch (err) {
+      console.error("Error fetching item data:", err);
+    }
+  };
+
+  const determineIsGenerator = () => {
+    if (!itemData || !currentUserId) return false;
+
+    const status = itemData.status?.toLowerCase();
+    const isOwner = itemData.user_id === currentUserId;
+
+    // pending recovery: Owner generates (receiving), Claimant enters (giving)
+    if (status === "pending recovery") {
+      return isOwner;
+    }
+
+    // pending handover: Claimant generates (receiving), Owner enters (giving)
+    if (status === "pending handover") {
+      return !isOwner;
+    }
+
+    return false;
+  };
 
   const checkExistingHandover = async () => {
     try {
@@ -135,6 +186,23 @@ const HandoverPage = () => {
     toast.success("Code copied to clipboard!");
   };
 
+  if (!itemData || !currentUserId) {
+    return (
+      <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1a] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-primary-600 mx-auto mb-4" />
+          <p className="text-neutral-600 dark:text-neutral-400">
+            Loading handover details...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const isGenerator = determineIsGenerator();
+  const isPendingRecovery =
+    itemData.status?.toLowerCase() === "pending recovery";
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1a] py-8 px-4">
       <div className="max-w-2xl mx-auto">
@@ -156,15 +224,15 @@ const HandoverPage = () => {
             Secure Handover
           </h1>
           <p className="text-neutral-600 dark:text-neutral-400">
-            {role === "claimant"
+            {isGenerator
               ? "Generate a code to verify item pickup"
-              : "Enter the code from the claimant"}
+              : "Enter the code to complete handover"}
           </p>
         </div>
 
         {/* Content Card */}
         <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-2xl shadow-lg p-8">
-          {role === "claimant" ? (
+          {isGenerator ? (
             // Claimant View - Generate Code
             <>
               {handoverData?.verified ? (
@@ -243,7 +311,11 @@ const HandoverPage = () => {
                     <ol className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
                       <li className="flex gap-2">
                         <span className="font-semibold">1.</span>
-                        <span>Meet with the finder at the agreed location</span>
+                        <span>
+                          Meet with the{" "}
+                          {isPendingRecovery ? "finder" : "claimant"} at the
+                          agreed location
+                        </span>
                       </li>
                       <li className="flex gap-2">
                         <span className="font-semibold">2.</span>
@@ -271,8 +343,8 @@ const HandoverPage = () => {
                     </h2>
                     <p className="text-neutral-600 dark:text-neutral-400">
                       Generate a secure 4-digit code to complete the handover
-                      process. You'll show this code to the finder when you
-                      meet.
+                      process. You'll show this code to the{" "}
+                      {isPendingRecovery ? "finder" : "claimant"} when you meet.
                     </p>
                   </div>
                   <button
@@ -342,7 +414,10 @@ const HandoverPage = () => {
                 <ol className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
                   <li className="flex gap-2">
                     <span className="font-semibold">1.</span>
-                    <span>Ask the claimant to show their 4-digit code</span>
+                    <span>
+                      Ask the {isPendingRecovery ? "owner" : "claimant"} to show
+                      their 4-digit code
+                    </span>
                   </li>
                   <li className="flex gap-2">
                     <span className="font-semibold">2.</span>

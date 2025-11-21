@@ -24,13 +24,64 @@ const HandoverScreen = () => {
   const [handoverCode, setHandoverCode] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [handoverData, setHandoverData] = useState(null);
+  const [itemData, setItemData] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (role === "claimant") {
-      checkExistingHandover();
+    fetchItemAndUserData();
+  }, []);
+
+  useEffect(() => {
+    if (itemData && currentUserId) {
+      const isGenerator = determineIsGenerator();
+      if (isGenerator) {
+        checkExistingHandover();
+      }
     }
-  }, [role]);
+  }, [itemData, currentUserId]);
+
+  const fetchItemAndUserData = async () => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const userId = session?.user?.id;
+      setCurrentUserId(userId);
+
+      // Fetch item details
+      const response = await fetch(`${API_BASE_URL}/api/items/${itemId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const item = await response.json();
+        setItemData(item);
+      }
+    } catch (err) {
+      console.error("Error fetching item data:", err);
+    }
+  };
+
+  const determineIsGenerator = () => {
+    if (!itemData || !currentUserId) return false;
+
+    const status = itemData.status?.toLowerCase();
+    const isOwner = itemData.user_id === currentUserId;
+
+    // pending recovery: Owner generates (receiving), Claimant enters (giving)
+    if (status === "pending recovery") {
+      return isOwner;
+    }
+
+    // pending handover: Claimant generates (receiving), Owner enters (giving)
+    if (status === "pending handover") {
+      return !isOwner;
+    }
+
+    return false;
+  };
 
   const checkExistingHandover = async () => {
     try {
@@ -141,6 +192,26 @@ const HandoverScreen = () => {
     Alert.alert("Copied", "Code copied to clipboard!");
   };
 
+  if (!itemData || !currentUserId) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={{ marginTop: 16, color: COLORS.text.secondary }}>
+          Loading handover details...
+        </Text>
+      </View>
+    );
+  }
+
+  const isGenerator = determineIsGenerator();
+  const isPendingRecovery =
+    itemData.status?.toLowerCase() === "pending recovery";
+
   return (
     <ScrollView
       style={styles.container}
@@ -164,16 +235,16 @@ const HandoverScreen = () => {
           </View>
           <Text style={styles.title}>Secure Handover</Text>
           <Text style={styles.subtitle}>
-            {role === "claimant"
+            {isGenerator
               ? "Generate a code to verify item pickup"
-              : "Enter the code from the claimant"}
+              : "Enter the code to complete handover"}
           </Text>
         </View>
       </View>
 
       {/* Content */}
       <View style={styles.card}>
-        {role === "claimant" ? (
+        {isGenerator ? (
           // Claimant View - Generate Code
           <>
             {handoverData?.verified ? (
@@ -261,7 +332,8 @@ const HandoverScreen = () => {
                 <View style={styles.instructionsBox}>
                   <Text style={styles.instructionsTitle}>Instructions:</Text>
                   <Text style={styles.instructionItem}>
-                    1. Meet with the finder at the agreed location
+                    1. Meet with the {isPendingRecovery ? "finder" : "claimant"}{" "}
+                    at the agreed location
                   </Text>
                   <Text style={styles.instructionItem}>
                     2. Show them this 4-digit code
@@ -285,7 +357,8 @@ const HandoverScreen = () => {
                 <Text style={styles.generateTitle}>Ready to Pick Up?</Text>
                 <Text style={styles.generateSubtitle}>
                   Generate a secure 4-digit code to complete the handover
-                  process. You'll show this code to the finder when you meet.
+                  process. You'll show this code to the{" "}
+                  {isPendingRecovery ? "finder" : "claimant"} when you meet.
                 </Text>
                 <TouchableOpacity
                   style={styles.primaryButton}
@@ -354,7 +427,8 @@ const HandoverScreen = () => {
             <View style={styles.instructionsBox}>
               <Text style={styles.instructionsTitle}>Verification Steps:</Text>
               <Text style={styles.instructionItem}>
-                1. Ask the claimant to show their 4-digit code
+                1. Ask the {isPendingRecovery ? "owner" : "claimant"} to show
+                their 4-digit code
               </Text>
               <Text style={styles.instructionItem}>
                 2. Enter the code above

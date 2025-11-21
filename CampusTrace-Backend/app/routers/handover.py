@@ -26,9 +26,9 @@ async def start_handover(
 ):
     """
     Generates a verification code.
-    - Found Item: Claimant (User who submitted claim) generates code.
-    - Lost Item: Owner (User who posted item) generates code.
-    Sets item status to 'pending handover'.
+    The person RECEIVING the item generates the code.
+    - Found Item Post (Loser is claiming): Claimant (Receiver) generates code.
+    - Lost Item Post (Finder is reporting): Post Owner (Receiver) generates code.
     """
     try:
         # 1. Get Item
@@ -39,35 +39,38 @@ async def start_handover(
         
         claimant_id = None
         status = item.get("status")
-        moderation_status = item.get("moderation_status")
-
+        
         # 2. Determine Logic based on Status
-        # Explicitly accept "pending handover" as valid status for Found item flow
+        
+        # CASE A: Standard Claim (Found Item -> Loser Claims)
         if status in ["Found", "pending handover", "Pending Handover"]:
-            print(f"DEBUG: Item {item_id} has status '{status}'. Looking for approved claim...")
+            print(f"DEBUG: Found Item {item_id} flow. Looking for approved claim...")
             claim_res = supabase.table("claims").select("*").eq("item_id", item_id).eq("status", "approved").single().execute()
+            
             if not claim_res.data:
-                print(f"DEBUG: No approved claim found for item {item_id}")
+                # Fallback: If user is the owner (testing purposes or edge case)
                 if item.get("user_id") == user_id:
                      claimant_id = user_id
                 else:
-                     raise HTTPException(status_code=400, detail="No approved claim found for this item. Handover cannot start.")
+                     raise HTTPException(status_code=400, detail="No approved claim found. Handover cannot start.")
             else:
-                print(f"DEBUG: Found approved claim for item {item_id}. Claimant: {claim_res.data.get('claimant_id')}")
+                # The Claimant (Loser) receives the item, so they generate code
                 claimant_id = claim_res.data.get("claimant_id")
                 if claimant_id != user_id:
-                    raise HTTPException(status_code=403, detail="Only the approved claimant can generate the code.")
+                    raise HTTPException(status_code=403, detail="Only the approved claimant (receiver) can generate the code.")
 
-        elif status == "Lost":
+        # CASE B: Found Report (Lost Item -> Finder Reports -> Loser Approves)
+        elif status in ["Lost", "pending recovery"]:
+            # The Post Owner (Loser) receives the item, so they generate code
             if item.get("user_id") != user_id:
-                raise HTTPException(status_code=403, detail="Only the item owner can start the handover.")
+                raise HTTPException(status_code=403, detail="Only the item owner (receiver) can generate the handover code.")
             claimant_id = user_id
         
         else:
+             # Fallback for manual recovery/testing
              if item.get("user_id") == user_id:
-                claimant_id = user_id # Assume Owner recovering lost item
+                claimant_id = user_id 
              else:
-                print(f"DEBUG: Handover failed. Status: {status}, ModStatus: {moderation_status}")
                 raise HTTPException(status_code=400, detail=f"Item status '{status}' invalid for handover start.")
 
         # 3. Generate and Store Code
@@ -77,20 +80,27 @@ async def start_handover(
         handover_data = {
             "item_id": item_id,
             "code": code,
-            "claimant_id": claimant_id,
+            "claimant_id": claimant_id, # This is always the person generating/receiving
             "expires_at": expires_at.isoformat(),
             "verified": False,
             "created_at": datetime.utcnow().isoformat()
         }
-        # Delete old unverified handovers for this item to prevent duplicates
+        
+        # Delete old unverified handovers
         supabase.table("handovers").delete().eq("item_id", item_id).eq("verified", False).execute()
+        
         # Insert new handover
         supabase.table("handovers").insert(handover_data).execute()
 
-        # **Set item status to 'pending handover'**
-        supabase.table("items").update({
-            "status": "pending handover"
-        }).eq("id", item_id).execute()
+        # Update status if strictly in 'Found' or 'Lost' to pending states
+        new_status = None
+        if status == "Found":
+            new_status = "pending handover"
+        elif status == "Lost":
+            new_status = "pending recovery"
+            
+        if new_status:
+            supabase.table("items").update({"status": new_status}).eq("id", item_id).execute()
 
         return {
             "code": code,
@@ -113,34 +123,42 @@ async def verify_handover(
 ):
     """
     Verifies the handover code.
+    The person GIVING the item enters the code.
     - Found Item: Finder (Poster) enters code.
-    - Lost Item: Finder (User B) enters code.
-    Sets item status to 'recovered'.
+    - Lost Item: Finder (Claimant) enters code.
     """
     try:
-        # 1. Define finder_id immediately (It is the current user)
-        finder_id = user_id 
+        current_user_id = user_id 
 
         item_res = supabase.table("items").select("*").eq("id", item_id).single().execute()
         if not item_res.data:
             raise HTTPException(status_code=404, detail="Item not found")
         item = item_res.data
+        status = item.get("status")
 
-        # Security Check: The Code Generator cannot verify their own code.
-        if item.get("status") == "Lost":
-            # For lost items, Owner generated code. Owner cannot verify.
-            if item.get("user_id") == user_id:
-                raise HTTPException(status_code=403, detail="You cannot verify your own code. The finder must enter it.")
+        # Logic Validation: Who is allowed to verify?
         
-        # For Found items or items in "pending handover" state, only the finder (poster) can verify
-        if item.get("status") in ["Found", "pending handover", "Pending Handover"]:
-            if item.get("user_id") != user_id:
+        # CASE A: Lost Item Flow (pending recovery)
+        # The Post Owner generated code. The Finder (Claimant) must verify.
+        if status in ["Lost", "pending recovery"]:
+            if item.get("user_id") == current_user_id:
+                raise HTTPException(status_code=403, detail="You cannot verify your own code. The finder must enter it.")
+            
+            # Optionally verify if current_user is the approved claimant (Finder)
+            # This adds extra security but might fail if we allow ad-hoc handovers. 
+            # For now, we assume possessing the code + allowed logic is enough, 
+            # or we check against approved claims.
+            
+        # CASE B: Found Item Flow (pending handover)
+        # The Claimant generated code. The Post Owner (Finder) must verify.
+        elif status in ["Found", "pending handover", "Pending Handover"]:
+            if item.get("user_id") != current_user_id:
                 raise HTTPException(status_code=403, detail="Only the item poster (finder) can verify the code.")
 
+        # Fetch Code
         handover_res = supabase.table("handovers").select("*").eq("item_id", item_id).eq("verified", False).order("created_at", desc=True).limit(1).execute()
         if not handover_res.data:
-            print(f"DEBUG: No handover found for item {item_id}. Item status: {item.get('status')}")
-            raise HTTPException(status_code=404, detail="No active handover code found. The claimant must generate a code first.")
+            raise HTTPException(status_code=404, detail="No active handover code found. The receiver must generate a code first.")
         handover = handover_res.data[0]
 
         if handover["code"] != request.code:
@@ -153,50 +171,53 @@ async def verify_handover(
         except:
             pass 
 
-        # Mark handover as verified
-        # finder_id is used here, so it must be defined above
+        # Mark verified
         supabase.table("handovers").update({
             "verified": True,
             "verified_at": datetime.utcnow().isoformat(),
-            "verified_by": finder_id 
+            "verified_by": current_user_id
         }).eq("id", handover["id"]).execute()
 
-        # Set item status to 'recovered'
+        # Mark recovered
         supabase.table("items").update({
             "status": "recovered"
         }).eq("id", item_id).execute()
 
         print(f"✅ Item {item_id} marked as recovered.")
 
-        # Award Points - Increment returns_count for the finder
-        try:
-            # Get current returns_count
-            profile_res = supabase.table("profiles").select("returns_count").eq("id", finder_id).single().execute()
-            if profile_res.data:
-                current_count = profile_res.data.get("returns_count", 0)
-                new_count = current_count + 1
-                
-                # Update returns_count
-                supabase.table("profiles").update({
-                    "returns_count": new_count
-                }).eq("id", finder_id).execute()
-                
-                print(f"✅ Credited finder {finder_id}: returns_count {current_count} → {new_count}")
-                
-                # Award badge for first successful return
-                if new_count == 1:
-                    supabase.table("user_badges").insert({
-                        "user_id": finder_id,
-                        "badge_type": "helper",
-                        "earned_at": datetime.utcnow().isoformat()
-                    }).execute()
-                    print(f"🏅 Awarded 'helper' badge to {finder_id}")
-            else:
-                print(f"⚠️ Profile not found for finder {finder_id}")
-        except Exception as e:
-            print(f"⚠️ Error updating stats: {e}")
-            import traceback
-            traceback.print_exc()
+        # --- POINTS & BADGES LOGIC ---
+        # We credit the "Finder" (The one who gave the item back)
+        
+        person_to_credit = None
+        
+        if status in ["Lost", "pending recovery"]:
+            # Finder is the current_user_id (the one entering the code)
+            person_to_credit = current_user_id
+        else:
+            # Finder is the item post owner (current_user_id)
+            person_to_credit = item.get("user_id")
+
+        if person_to_credit:
+            try:
+                profile_res = supabase.table("profiles").select("returns_count").eq("id", person_to_credit).single().execute()
+                if profile_res.data:
+                    current_count = profile_res.data.get("returns_count", 0)
+                    new_count = current_count + 1
+                    
+                    supabase.table("profiles").update({
+                        "returns_count": new_count
+                    }).eq("id", person_to_credit).execute()
+                    
+                    print(f"✅ Credited finder {person_to_credit}: returns_count {current_count} → {new_count}")
+                    
+                    if new_count == 1:
+                        supabase.table("user_badges").insert({
+                            "user_id": person_to_credit,
+                            "badge_type": "helper",
+                            "earned_at": datetime.utcnow().isoformat()
+                        }).execute()
+            except Exception as e:
+                print(f"⚠️ Error updating stats: {e}")
 
         return {
             "success": True,

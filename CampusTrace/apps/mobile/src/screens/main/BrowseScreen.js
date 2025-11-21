@@ -349,6 +349,7 @@ const ItemDetailsModal = memo(
       (item.profiles?.email ? item.profiles.email.split("@")[0] : "Anonymous");
     const contactMethods = parseContactInfo(item.contact_info);
     const isFoundItem = item.status?.toLowerCase() === "found";
+    const isLostItem = item.status?.toLowerCase() === "lost";
     const isMyOwnItem = item.profiles?.id === user?.id;
     const showActionButtons = !isMyOwnItem;
 
@@ -675,7 +676,19 @@ const ItemDetailsModal = memo(
                     onPress={() => onClaim(item)}
                   >
                     <Send size={20} color="#FFF" />
-                    <Text style={styles.claimButtonText}>Claim Item</Text>
+                    <Text style={styles.claimButtonText}>This is Mine</Text>
+                  </TouchableOpacity>
+                )}
+                {isLostItem && (
+                  <TouchableOpacity
+                    style={[
+                      styles.claimButton,
+                      { backgroundColor: colors.success },
+                    ]}
+                    onPress={() => onClaim(item)}
+                  >
+                    <Send size={20} color="#FFF" />
+                    <Text style={styles.claimButtonText}>I Found This</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
@@ -712,6 +725,9 @@ const ClaimModal = memo(
       }
     }, [visible]);
 
+    const isFoundItem = item?.status?.toLowerCase() === "found";
+    const isLostItem = item?.status?.toLowerCase() === "lost";
+
     const handleSubmit = async () => {
       if (!verificationMessage.trim()) {
         Alert.alert("Error", "Please provide a verification detail");
@@ -723,7 +739,9 @@ const ClaimModal = memo(
         await onSubmit(item.id, verificationMessage);
         Alert.alert(
           "Success",
-          "Claim submitted! The finder has been notified."
+          isFoundItem
+            ? "Claim submitted! The finder has been notified."
+            : "Found report submitted! The owner has been notified."
         );
         setVerificationMessage("");
         onClose();
@@ -759,7 +777,7 @@ const ClaimModal = memo(
               ]}
             >
               <Text style={[styles.claimModalTitle, { color: colors.text }]}>
-                Claim This Item
+                {isFoundItem ? "Claim This Item" : "Report Found Item"}
               </Text>
               <Text
                 style={[
@@ -767,7 +785,9 @@ const ClaimModal = memo(
                   { color: colors.textSecondary },
                 ]}
               >
-                Describe a unique detail only the owner would know
+                {isFoundItem
+                  ? "Describe a unique detail only the owner would know"
+                  : "Where did you find it? Provide contact details"}
               </Text>
 
               <TextInput
@@ -779,7 +799,11 @@ const ClaimModal = memo(
                     color: colors.text,
                   },
                 ]}
-                placeholder="e.g., What's inside the wallet? What color is the lining?"
+                placeholder={
+                  isFoundItem
+                    ? "e.g., What's inside the wallet? What color is the lining?"
+                    : "e.g., Found at library 2nd floor. Contact: 555-1234"
+                }
                 placeholderTextColor={colors.textTertiary}
                 multiline
                 numberOfLines={6}
@@ -823,7 +847,9 @@ const ClaimModal = memo(
                   ) : (
                     <>
                       <Send size={20} color="#FFF" />
-                      <Text style={styles.submitButtonText}>Submit Claim</Text>
+                      <Text style={styles.submitButtonText}>
+                        {isFoundItem ? "Submit Claim" : "Submit Report"}
+                      </Text>
                     </>
                   )}
                 </TouchableOpacity>

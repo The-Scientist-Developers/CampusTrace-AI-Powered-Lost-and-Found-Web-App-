@@ -532,3 +532,46 @@ async def get_dashboard_summary(user_id: str = Depends(get_current_user_id)):
     except Exception as e:
         traceback.print_exc()
         return {"myRecentPosts": [], "allMyPosts": [], "recentActivity": [], "userStats": {"found":0,"lost":0,"pending":0,"recovered":0}, "unreadNotifications": 0, "aiMatches": []}
+
+@router.get("/{item_id}")
+async def get_item_by_id(
+    item_id: int,
+    user_id: str = Depends(get_current_user_id),
+):
+    try:
+        profile_res = (
+            supabase.table("profiles")
+            .select("university_id")
+            .eq("id", user_id)
+            .single()
+            .execute()
+        )
+        if not profile_res.data:
+            raise HTTPException(status_code=404, detail="User profile not found.")
+        university_id = profile_res.data["university_id"]
+
+        item_res = (
+            supabase.table("items")
+            .select(
+                "id, title, description, status, category, location, contact_info, image_url, thumbnail_url, created_at, user_id, university_id, moderation_status, profiles!items_user_id_fkey(id, full_name, email)"
+            )
+            .eq("id", item_id)
+            .single()
+            .execute()
+        )
+
+        if not item_res.data:
+            raise HTTPException(status_code=404, detail="Item not found.")
+
+        item = item_res.data
+
+        if item.get("university_id") != university_id:
+            raise HTTPException(status_code=403, detail="Access denied to this item.")
+
+        return item
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to fetch item: {str(e)}")

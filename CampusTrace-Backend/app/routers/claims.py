@@ -22,15 +22,32 @@ async def submit_claim(
         )
         if not item_res.data:
             raise HTTPException(status_code=404, detail="Item not found.")
-        if item_res.data["status"] != "Found":
-            raise HTTPException(status_code=400, detail="You can only claim 'Found' items.")
+        
+        item_data = item_res.data
+        item_status = item_data["status"]
+        
+        # Allow claiming on 'Found' items (standard claim) OR 'Lost' items (reporting found)
+        if item_status not in ["Found", "Lost"]:
+            raise HTTPException(status_code=400, detail="Item is not available for claiming or reporting.")
 
-        finder_id = item_res.data["user_id"]
-        item_title = item_res.data["title"]
-        item_university_id = item_res.data["university_id"]
+        finder_id = item_data["user_id"] # The owner of the post
+        item_title = item_data["title"]
+        item_university_id = item_data["university_id"]
 
         if finder_id == claimant_id:
-            raise HTTPException(status_code=400, detail="You cannot claim your own item.")
+            raise HTTPException(status_code=400, detail="You cannot interact with your own item.")
+
+        # Check if a pending claim already exists for this user and item
+        existing_claim = (
+            supabase.table("claims")
+            .select("id")
+            .eq("item_id", payload.item_id)
+            .eq("claimant_id", claimant_id)
+            .eq("status", "pending")
+            .execute()
+        )
+        if existing_claim.data:
+             raise HTTPException(status_code=400, detail="You already have a pending claim on this item.")
 
         claim_data = {
             "item_id": payload.item_id,
@@ -54,18 +71,29 @@ async def submit_claim(
             else "A user"
         )
 
-        message = f"{claimant_name} has submitted a claim on your found item: '{item_title}'."
+        # Dynamic notification message based on flow
+        if item_status == "Lost":
+            # Claimant found the lost item
+            message = f"{claimant_name} claims to have found your lost item: '{item_title}'."
+            notif_type = "found_report"
+        else:
+            # Standard: Claimant wants the found item
+            message = f"{claimant_name} has submitted a claim on your found item: '{item_title}'."
+            notif_type = "claim"
+
         create_notification(
             recipient_id=finder_id,
             university_id=item_university_id,
             message=message,
             link_to="/dashboard/my-posts",
-            type="claim",
+            type=notif_type,
         )
 
         return {
-            "message": "Claim submitted successfully. The finder has been notified."
+            "message": "Submission successful. The user has been notified."
         }
+    except HTTPException:
+        raise
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
@@ -105,7 +133,7 @@ async def respond_to_claim(
     try:
         claim_res = (
             supabase.table("claims")
-            .select("*, item:items(id, title, user_id, university_id)")
+            .select("*, item:items(id, title, user_id, university_id, status)")
             .eq("id", claim_id)
             .single()
             .execute()
@@ -118,13 +146,21 @@ async def respond_to_claim(
         item_title = claim["item"]["title"]
         claimant_id = claim["claimant_id"]
         item_university_id = claim["item"]["university_id"]
+        current_item_status = claim["item"]["status"]
 
         new_status = "approved" if payload.approved else "rejected"
 
         supabase.table("claims").update({"status": new_status}).eq("id", claim_id).execute()
 
         if payload.approved:
-            supabase.table("items").update({"status": "pending handover"}).eq("id", claim["item_id"]).execute()
+            # Determine next item status based on whether it was Lost or Found
+            if current_item_status == "Lost":
+                new_item_status = "pending recovery"
+            else:
+                new_item_status = "pending handover"
+
+            supabase.table("items").update({"status": new_item_status}).eq("id", claim["item_id"]).execute()
+            
             existing_convo_res = (
                 supabase.table("conversations")
                 .select("id")
@@ -170,8 +206,8 @@ async def respond_to_claim(
             finder_email = finder_profile_res.data.get("email", "N/A")
             claimant_email = claimant_profile_res.data.get("email", "N/A")
 
-            finder_message = f"You approved the claim for '{item_title}'. You can now chat with the claimant to arrange the return."
-            claimant_message = f"Great news! Your claim for '{item_title}' has been approved. You can now chat with the finder to arrange the return."
+            finder_message = f"You approved the interaction for '{item_title}'. You can now chat to arrange the meetup."
+            claimant_message = f"Great news! Your interaction for '{item_title}' has been approved. You can now chat to arrange the meetup."
 
             chat_link = f"/dashboard/messages/{conversation_id}"
             create_notification(
@@ -189,11 +225,12 @@ async def respond_to_claim(
                 type="claim_response",
             )
 
+            # Reject all other pending claims for this item
             supabase.table("claims").update({"status": "rejected"}).eq(
                 "item_id", claim["item_id"]
             ).eq("status", "pending").execute()
         else:
-            message = f"Unfortunately, your claim for '{item_title}' was not approved by the finder."
+            message = f"Unfortunately, the interaction for '{item_title}' was not approved."
             create_notification(
                 recipient_id=claimant_id,
                 university_id=item_university_id,
@@ -300,6 +337,7 @@ async def update_claim_status(
 
         if new_status == "accepted":
             try:
+                # Default fallback, though 'respond' endpoint handles logic better
                 supabase.table("items").update(
                     {"status": "pending handover"}
                 ).eq("id", claim["item_id"]).execute()

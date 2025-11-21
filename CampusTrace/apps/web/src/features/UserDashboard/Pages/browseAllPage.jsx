@@ -381,6 +381,7 @@ const ItemDetailsModal = ({ item, onClose, onClaim, user }) => {
     (item.profiles?.email ? item.profiles.email.split("@")[0] : "Anonymous");
   const contactMethods = parseContactInfo(item.contact_info);
   const isFoundItem = item.status?.toLowerCase() === "found";
+  const isLostItem = item.status?.toLowerCase() === "lost";
   const isMyOwnItem = item.profiles?.id === user?.id;
   const showActionButtons = !isMyOwnItem;
 
@@ -607,7 +608,18 @@ const ItemDetailsModal = ({ item, onClose, onClaim, user }) => {
                       style={{ backgroundColor: BRAND_COLOR }}
                     >
                       <Send className="w-5 h-5" />
-                      Claim This Item
+                      This is Mine
+                    </button>
+                  )}
+                  {isLostItem && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onClaim(item);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 px-6 py-3.5 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-md bg-green-600 hover:bg-green-700"
+                    >
+                      <Send className="w-5 h-5" />I Found This
                     </button>
                   )}
                   <button
@@ -637,6 +649,9 @@ const ClaimModal = ({ item, onClose, onSubmit }) => {
   const [verificationMessage, setVerificationMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const isFoundItem = item?.status?.toLowerCase() === "found";
+  const isLostItem = item?.status?.toLowerCase() === "lost";
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -646,12 +661,19 @@ const ClaimModal = ({ item, onClose, onSubmit }) => {
     }
 
     setIsSubmitting(true);
-    const toastId = toast.loading("Submitting claim...");
+    const toastId = toast.loading(
+      isFoundItem ? "Submitting claim..." : "Submitting found report..."
+    );
     try {
       await onSubmit(item.id, verificationMessage);
-      toast.success("Claim submitted! The finder has been notified.", {
-        id: toastId,
-      });
+      toast.success(
+        isFoundItem
+          ? "Claim submitted! The finder has been notified."
+          : "Found report submitted! The owner has been notified.",
+        {
+          id: toastId,
+        }
+      );
       // Small delay before closing to ensure toast is visible
       setTimeout(() => {
         onClose();
@@ -673,18 +695,23 @@ const ClaimModal = ({ item, onClose, onSubmit }) => {
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-xl font-bold text-neutral-800 dark:text-white mb-2">
-          Claim Item: {item.title}
+          {isFoundItem ? "Claim Item" : "Report Found Item"}: {item.title}
         </h2>
         <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-5">
-          To verify ownership, please describe a unique detail only you would
-          know.
+          {isFoundItem
+            ? "To verify ownership, please describe a unique detail only you would know."
+            : "Where did you find it? Provide contact details so the owner can reach you."}
         </p>
         <form onSubmit={handleSubmit}>
           <textarea
             value={verificationMessage}
             onChange={(e) => setVerificationMessage(e.target.value)}
             className="form-textarea w-full h-32 dark:bg-[#1a1a1a] dark:border-neutral-700 dark:text-white rounded-lg text-sm p-3"
-            placeholder="Enter your secret detail here..."
+            placeholder={
+              isFoundItem
+                ? "e.g., What's inside the wallet? What color is the lining?"
+                : "e.g., Found at library 2nd floor. Contact: 555-1234"
+            }
             required
             disabled={isSubmitting}
           />
@@ -708,7 +735,7 @@ const ClaimModal = ({ item, onClose, onSubmit }) => {
               ) : (
                 <Send className="w-4 h-4" />
               )}
-              Submit Claim
+              {isFoundItem ? "Submit Claim" : "Submit Report"}
             </button>
           </div>
         </form>
