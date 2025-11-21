@@ -8,7 +8,7 @@
       "distribution": "internal",
       "env": {
         "APP_ENV": "development",
-        "EXPO_PUBLIC_API_URL": "http://192.168.1.43:8000",
+        "EXPO_PUBLIC_API_URL": "http://10.0.0.37:8000",
         "EXPO_PUBLIC_SUPABASE_URL": "https://cvcxqsdwtcvwgdftsdtp.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2Y3hxc2R3dGN2d2dkZnRzZHRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY2OTQ2NTAsImV4cCI6MjA3MjI3MDY1MH0.QDiwFK_CqhCyyB7XeCYLJKcNoYVflVVCgDod6IIyOPA"
       }

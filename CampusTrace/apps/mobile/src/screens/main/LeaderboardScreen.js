@@ -1,27 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
-  ScrollView,
   StyleSheet,
-  ActivityIndicator,
   Image,
   RefreshControl,
   FlatList,
   Animated,
-  Platform,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import {
-  Trophy,
-  Award,
-  Star,
-  User,
   Crown,
   Medal,
   Zap,
-  TrendingUp,
+  Trophy,
+  ShieldCheck,
+  Sparkles,
 } from "lucide-react-native";
 import { apiClient } from "@campustrace/core";
 import SimpleLoadingScreen from "../../components/SimpleLoadingScreen";
@@ -33,15 +29,16 @@ import {
   getShadow,
 } from "../../constants/designSystem";
 
+const { width } = Dimensions.get("window");
 const BRAND_COLOR = "#1877F2";
 
 const LeaderboardScreen = () => {
-  const { colors, fontSizes } = useTheme();
-
+  const { colors } = useTheme();
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Logic unchanged
   useEffect(() => {
     fetchLeaderboard();
   }, []);
@@ -49,8 +46,6 @@ const LeaderboardScreen = () => {
   const fetchLeaderboard = async () => {
     try {
       if (!refreshing) setLoading(true);
-
-      // Use apiClient to fetch leaderboard
       const data = await apiClient.getLeaderboard();
       setLeaderboard(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -71,39 +66,101 @@ const LeaderboardScreen = () => {
     return <SimpleLoadingScreen />;
   }
 
+  // Split data for UI layout (Top 3 vs Rest)
+  const topThree = leaderboard.slice(0, 3);
+  const restOfList = leaderboard.slice(3);
+
+  // Helper to render the Podium Header
+  const renderHeader = () => (
+    <View>
+      {/* Title Section */}
+      <View style={styles.headerContent}>
+        <View style={styles.titleContainer}>
+          <Trophy
+            size={28}
+            color={colors.primary}
+            fill={colors.primary + "20"}
+          />
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            Campus Heroes
+          </Text>
+        </View>
+        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+          Top contributors recovering lost items
+        </Text>
+      </View>
+
+      {/* Podium Section */}
+      {topThree.length > 0 && (
+        <View style={styles.podiumContainer}>
+          {/* Rank 2 (Left) */}
+          {topThree[1] && (
+            <PodiumItem
+              user={topThree[1]}
+              rank={2}
+              colors={colors}
+              delay={200}
+            />
+          )}
+
+          {/* Rank 1 (Center - Winner) */}
+          {topThree[0] && (
+            <PodiumItem
+              user={topThree[0]}
+              rank={1}
+              colors={colors}
+              delay={0}
+              isWinner
+            />
+          )}
+
+          {/* Rank 3 (Right) */}
+          {topThree[2] && (
+            <PodiumItem
+              user={topThree[2]}
+              rank={3}
+              colors={colors}
+              delay={400}
+            />
+          )}
+        </View>
+      )}
+
+      {/* Divider for list */}
+      {restOfList.length > 0 && (
+        <View style={styles.listHeaderLabel}>
+          <Text style={[styles.listLabelText, { color: colors.textSecondary }]}>
+            Honorable Mentions
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      {/* Header */}
       <LinearGradient
-        colors={[colors.background, colors.background]}
-        style={styles.headerGradient}
-      >
-        <View
-          style={[
-            styles.header,
-            {
-              backgroundColor: "transparent",
-              borderBottomWidth: 0,
-              paddingTop: 16,
-              paddingBottom: 8,
-            },
-          ]}
-        >
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            Leaderboard
-          </Text>
-        </View>
-      </LinearGradient>
+        colors={[colors.primary + "10", "transparent"]}
+        style={styles.backgroundGradient}
+      />
 
       <FlatList
-        data={leaderboard}
-        keyExtractor={(item) => item.user_id}
+        data={restOfList}
+        keyExtractor={(item) =>
+          item.user_id?.toString() || Math.random().toString()
+        }
         renderItem={({ item, index }) => (
-          <LeaderboardRow user={item} rank={index + 1} colors={colors} />
+          <LeaderboardRow
+            user={item}
+            rank={index + 4} // Offset by 3 since top 3 are in header
+            colors={colors}
+          />
         )}
-        style={[styles.scrollView, { backgroundColor: colors.background }]}
+        ListHeaderComponent={renderHeader}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -113,358 +170,378 @@ const LeaderboardScreen = () => {
           />
         }
         ListEmptyComponent={
-          <View
-            style={[styles.emptyState, { backgroundColor: colors.background }]}
-          >
-            <Trophy size={64} color={colors.border} />
-            <Text style={[styles.emptyStateText, { color: colors.text }]}>
-              No data yet
-            </Text>
-            <Text
-              style={[
-                styles.emptyStateSubtext,
-                { color: colors.textSecondary },
-              ]}
-            >
-              Be the first to return an item!
-            </Text>
-          </View>
+          !loading && topThree.length === 0 ? (
+            <View style={styles.emptyState}>
+              <ShieldCheck size={64} color={colors.border} />
+              <Text style={[styles.emptyStateText, { color: colors.text }]}>
+                Be the First Hero
+              </Text>
+              <Text
+                style={[
+                  styles.emptyStateSubtext,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                Return a lost item to claim the throne!
+              </Text>
+            </View>
+          ) : null
         }
       />
     </SafeAreaView>
   );
 };
 
-const LeaderboardRow = ({ user, rank, colors }) => {
-  const scaleAnim = React.useRef(new Animated.Value(0)).current;
+// --- Sub-Component: Podium Item (Rank 1, 2, 3) ---
+const PodiumItem = ({ user, rank, colors, isWinner, delay }) => {
+  const anim = useRef(new Animated.Value(0)).current;
 
-  React.useEffect(() => {
-    Animated.spring(scaleAnim, {
+  useEffect(() => {
+    Animated.spring(anim, {
       toValue: 1,
-      tension: 50,
-      friction: 7,
-      delay: rank * 50, // Stagger animation
+      tension: 40,
+      friction: 6,
+      delay: delay,
       useNativeDriver: true,
     }).start();
   }, []);
 
-  const getRankIcon = () => {
-    if (rank === 1)
-      return (
-        <View style={styles.crownContainer}>
-          <Crown size={28} color="#FFD700" fill="#FFD700" strokeWidth={2} />
-        </View>
-      );
-    if (rank === 2)
-      return (
-        <View style={styles.medalContainer}>
-          <Medal size={26} color="#C0C0C0" fill="#C0C0C0" strokeWidth={2} />
-        </View>
-      );
-    if (rank === 3)
-      return (
-        <View style={styles.medalContainer}>
-          <Medal size={26} color="#CD7F32" fill="#CD7F32" strokeWidth={2} />
-        </View>
-      );
-    return (
-      <View style={styles.rankBadge}>
-        <Text style={[styles.rankNumber, { color: colors?.text || "#000000" }]}>
-          {rank}
-        </Text>
-      </View>
-    );
+  const getBadgeColor = () => {
+    if (rank === 1) return "#FFD700"; // Gold
+    if (rank === 2) return "#C0C0C0"; // Silver
+    if (rank === 3) return "#CD7F32"; // Bronze
+    return colors.primary;
   };
 
-  const getRankStyle = () => {
-    if (rank === 1) return styles.topRankGold;
-    if (rank === 2) return styles.topRankSilver;
-    if (rank === 3) return styles.topRankBronze;
-    return {};
-  };
-
-  const getRankBorder = () => {
-    if (rank === 1) return { borderLeftColor: "#FFD700", borderLeftWidth: 4 };
-    if (rank === 2) return { borderLeftColor: "#C0C0C0", borderLeftWidth: 4 };
-    if (rank === 3) return { borderLeftColor: "#CD7F32", borderLeftWidth: 4 };
-    return {};
-  };
+  const size = isWinner ? 88 : 64;
+  const badgeColor = getBadgeColor();
 
   return (
     <Animated.View
       style={[
-        styles.leaderboardRow,
-        getRankStyle(),
-        getRankBorder(),
+        styles.podiumItem,
         {
-          backgroundColor: colors?.card || "#FFFFFF",
-          borderColor: colors?.border || "#E5E7EB",
-          transform: [{ scale: scaleAnim }],
+          transform: [
+            {
+              translateY: anim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [50, 0],
+              }),
+            },
+            { scale: anim },
+          ],
+          opacity: anim,
         },
       ]}
     >
-      <View style={styles.rankContainer}>{getRankIcon()}</View>
-
-      <View style={styles.avatarContainer}>
-        {user.avatar_url ? (
-          <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
-        ) : (
-          <View
-            style={[
-              styles.avatarPlaceholder,
-              { backgroundColor: colors?.primary || BRAND_COLOR },
-            ]}
-          >
-            <User size={24} color="#FFFFFF" />
+      <View style={styles.podiumAvatarContainer}>
+        {isWinner && (
+          <View style={styles.crownWrapper}>
+            <Crown size={24} color="#FFD700" fill="#FFD700" />
           </View>
         )}
-        {rank <= 3 && (
-          <View
-            style={[
-              styles.topBadge,
-              {
-                backgroundColor:
-                  rank === 1 ? "#FFD700" : rank === 2 ? "#C0C0C0" : "#CD7F32",
-              },
-            ]}
-          >
-            <Text style={styles.topBadgeText}>TOP {rank}</Text>
-          </View>
-        )}
-      </View>
 
-      <View style={styles.userInfo}>
-        <Text
-          style={[styles.userName, { color: colors?.text || "#000000" }]}
-          numberOfLines={1}
-        >
-          {user.full_name || "Anonymous"}
-        </Text>
-        <View style={styles.statsRow}>
-          <Zap
-            size={14}
-            color={colors?.warning || "#F59E0B"}
-            fill={colors?.warning || "#F59E0B"}
-          />
-          <Text
-            style={[
-              styles.rankLabel,
-              { color: colors?.textSecondary || "#8E8E93" },
-            ]}
-          >
-            {user.recovered_count || 0} items returned
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.scoreContainer}>
+        {/* Avatar Circle with Rank Border */}
         <View
           style={[
-            styles.scoreBadge,
-            { backgroundColor: colors?.primary + "15" || BRAND_COLOR + "15" },
+            styles.avatarWrapper,
+            {
+              width: size + 6,
+              height: size + 6,
+              borderRadius: (size + 6) / 2,
+              borderColor: badgeColor,
+              borderWidth: isWinner ? 3 : 2,
+              shadowColor: badgeColor,
+              shadowOpacity: isWinner ? 0.5 : 0.2,
+              shadowRadius: 8,
+              elevation: 5,
+            },
           ]}
         >
-          <TrendingUp size={16} color={colors?.primary || BRAND_COLOR} />
-          <Text
-            style={[
-              styles.scoreValue,
-              { color: colors?.primary || BRAND_COLOR },
-            ]}
-          >
-            {user.recovered_count || 0}
-          </Text>
+          <Image
+            source={{
+              uri:
+                user.avatar_url ||
+                `https://ui-avatars.com/api/?name=${user.full_name}&background=random`,
+            }}
+            style={{ width: size, height: size, borderRadius: size / 2 }}
+          />
+
+          {/* Rank Badge Circle */}
+          <View style={[styles.rankBadge, { backgroundColor: badgeColor }]}>
+            <Text style={styles.rankText}>{rank}</Text>
+          </View>
         </View>
+      </View>
+
+      <View style={styles.podiumInfo}>
         <Text
           style={[
-            styles.scoreLabel,
-            { color: colors?.textSecondary || "#8E8E93" },
+            styles.podiumName,
+            { color: colors.text, fontWeight: isWinner ? "700" : "600" },
           ]}
+          numberOfLines={1}
         >
-          Points
+          {user.full_name?.split(" ")[0] || "User"}
         </Text>
+        <View style={styles.podiumScore}>
+          <Zap
+            size={12}
+            color={colors.warning || "#F59E0B"}
+            fill={colors.warning || "#F59E0B"}
+          />
+          <Text
+            style={[styles.podiumScoreText, { color: colors.textSecondary }]}
+          >
+            {user.recovered_count}
+          </Text>
+        </View>
       </View>
     </Animated.View>
+  );
+};
+
+// --- Sub-Component: Regular List Item (Rank 4+) ---
+const LeaderboardRow = ({ user, rank, colors }) => {
+  return (
+    <View
+      style={[
+        styles.leaderboardRow,
+        { backgroundColor: colors.card, borderColor: colors.border },
+      ]}
+    >
+      <View style={styles.rowLeft}>
+        <Text style={[styles.listRank, { color: colors.textTertiary }]}>
+          {rank}
+        </Text>
+        <Image
+          source={{
+            uri:
+              user.avatar_url ||
+              `https://ui-avatars.com/api/?name=${user.full_name}&background=random`,
+          }}
+          style={styles.listAvatar}
+        />
+        <View style={styles.listNameContainer}>
+          <Text
+            style={[styles.listName, { color: colors.text }]}
+            numberOfLines={1}
+          >
+            {user.full_name}
+          </Text>
+          <Text style={[styles.listSubtitle, { color: colors.textSecondary }]}>
+            Campus Scout
+          </Text>
+        </View>
+      </View>
+
+      <View
+        style={[
+          styles.listScoreContainer,
+          { backgroundColor: colors.primary + "10" },
+        ]}
+      >
+        <Text style={[styles.listScore, { color: colors.primary }]}>
+          {user.recovered_count}
+        </Text>
+        <Text style={[styles.listScoreLabel, { color: colors.primary }]}>
+          pts
+        </Text>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
+  backgroundGradient: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 200,
+  },
+  listContent: {
+    paddingBottom: 20,
+  },
+
+  // Header Styles
+  headerContent: {
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#606770",
-  },
-  headerGradient: {
-    paddingBottom: 8,
-  },
-  // Enhanced Header - Facebook-style consistency
-  header: {
+    paddingTop: 20,
+    paddingBottom: 30,
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: "#FAFAFA",
-    borderBottomWidth: 0,
+  },
+  titleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#000000",
+    fontSize: 24,
+    fontWeight: "800",
     letterSpacing: -0.5,
   },
-  scrollView: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 80,
-    paddingHorizontal: 20,
-    backgroundColor: "#FFFFFF",
-    flexGrow: 1,
-  },
-  emptyStateText: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#8E8E93",
-    marginTop: 16,
-  },
-  emptyStateSubtext: {
+  headerSubtitle: {
     fontSize: 14,
-    color: "#8E8E93",
-    marginTop: 8,
+  },
+
+  // Podium Styles
+  podiumContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "flex-end",
+    marginBottom: 40,
+    paddingHorizontal: 20,
+    height: 160, // Fixed height for alignment
+  },
+  podiumItem: {
+    alignItems: "center",
+    width: width * 0.28, // 3 columns roughly
+    justifyContent: "flex-end",
+  },
+  podiumAvatarContainer: {
+    alignItems: "center",
+    marginBottom: 8,
+    position: "relative",
+  },
+  avatarWrapper: {
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FFF",
+  },
+  crownWrapper: {
+    position: "absolute",
+    top: -28,
+    zIndex: 10,
+  },
+  rankBadge: {
+    position: "absolute",
+    bottom: -6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#FFF",
+  },
+  rankText: {
+    color: "#FFF",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  podiumInfo: {
+    alignItems: "center",
+  },
+  podiumName: {
+    fontSize: 14,
+    marginBottom: 2,
     textAlign: "center",
+  },
+  podiumScore: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(255,255,255,0.8)",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  podiumScoreText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  // List Styles
+  listHeaderLabel: {
+    paddingHorizontal: 24,
+    marginBottom: 12,
+  },
+  listLabelText: {
+    fontSize: 12,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    fontWeight: "600",
   },
   leaderboardRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.lg,
-    marginHorizontal: Spacing.md,
-    marginVertical: Spacing.xs,
-    backgroundColor: "#FFFFFF",
-    borderRadius: BorderRadius.lg,
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#F0F0F0",
     ...getShadow("sm"),
   },
-  topRankGold: {
-    backgroundColor: "#FFFBF0",
-    ...getShadow("md"),
-  },
-  topRankSilver: {
-    backgroundColor: "#F8F9FA",
-    ...getShadow("md"),
-  },
-  topRankBronze: {
-    backgroundColor: "#FFF5F0",
-    ...getShadow("md"),
-  },
-  rankContainer: {
-    width: 48,
+  rowLeft: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    marginRight: Spacing.sm,
-  },
-  rankBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: BorderRadius.full,
-    backgroundColor: "#F3F4F6",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  rankNumber: {
-    ...Typography.h5,
-    color: "#6B7280",
-  },
-  crownContainer: {
-    transform: [{ rotate: "-15deg" }],
-  },
-  medalContainer: {
-    // Medal styling
-  },
-  avatarContainer: {
-    position: "relative",
-    marginRight: Spacing.md,
-  },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: BorderRadius.full,
-    borderWidth: 3,
-    borderColor: "#FFFFFF",
-  },
-  avatarPlaceholder: {
-    width: 56,
-    height: 56,
-    borderRadius: BorderRadius.full,
-    backgroundColor: BRAND_COLOR,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 3,
-    borderColor: "#FFFFFF",
-  },
-  topBadge: {
-    position: "absolute",
-    bottom: -4,
-    right: -4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
-    borderWidth: 2,
-    borderColor: "#FFFFFF",
-  },
-  topBadgeText: {
-    fontSize: 9,
-    fontWeight: "800",
-    color: "#FFFFFF",
-    letterSpacing: 0.5,
-  },
-  userInfo: {
+    gap: 12,
     flex: 1,
   },
-  userName: {
-    ...Typography.body,
+  listRank: {
+    fontSize: 14,
     fontWeight: "600",
-    color: "#000000",
-    marginBottom: Spacing.xs,
+    width: 20,
+    textAlign: "center",
   },
-  statsRow: {
-    flexDirection: "row",
+  listAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F0F0F0",
+  },
+  listNameContainer: {
+    flex: 1,
+  },
+  listName: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  listSubtitle: {
+    fontSize: 12,
+  },
+  listScoreContainer: {
     alignItems: "center",
-    gap: Spacing.xs,
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    minWidth: 60,
   },
-  rankLabel: {
-    ...Typography.caption,
-    color: "#8E8E93",
+  listScore: {
+    fontSize: 16,
+    fontWeight: "700",
+    lineHeight: 20,
   },
-  scoreContainer: {
-    alignItems: "flex-end",
+  listScoreLabel: {
+    fontSize: 10,
+    fontWeight: "600",
+    lineHeight: 10,
   },
-  scoreBadge: {
-    flexDirection: "row",
+
+  // Empty State
+  emptyState: {
     alignItems: "center",
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    marginBottom: Spacing.xs,
+    paddingVertical: 60,
+    paddingHorizontal: 40,
   },
-  scoreValue: {
-    ...Typography.h5,
-    color: BRAND_COLOR,
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginTop: 16,
+    marginBottom: 8,
   },
-  scoreLabel: {
-    ...Typography.caption,
-    color: "#8E8E93",
+  emptyStateSubtext: {
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 20,
   },
 });
 

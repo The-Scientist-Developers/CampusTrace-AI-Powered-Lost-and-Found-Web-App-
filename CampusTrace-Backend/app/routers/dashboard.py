@@ -47,9 +47,10 @@ async def get_dashboard_summary(
         
         # Get recent active posts (limit 4, only necessary fields)
         # Include items with moderation_status approved/pending OR status "pending handover"
+        # Exclude recovered items (both status and moderation_status)
         recent_posts_response = supabase.table("items").select(
             "id, title, status, category, image_url, thumbnail_url, created_at, moderation_status"
-        ).eq("user_id", user_id).or_(
+        ).eq("user_id", user_id).neq("status", "recovered").neq("moderation_status", "recovered").or_(
             'moderation_status.in.(approved,pending,pending_return),status.eq.pending handover'
         ).order("created_at", desc=True).limit(4).execute()
         

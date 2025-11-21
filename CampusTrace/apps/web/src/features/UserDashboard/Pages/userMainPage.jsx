@@ -644,10 +644,20 @@ export default function UserMainPage({ user }) {
 
       const data = await response.json();
 
-      // Set data from consolidated endpoint
-      setMyRecentPosts(data.myRecentPosts || []);
-      setCommunityActivity(data.recentActivity || []);
-      setPossibleMatches(data.aiMatches || []);
+      // Set data from consolidated endpoint - filter out recovered items
+      const activeRecentPosts = (data.myRecentPosts || []).filter(
+        (item) => item.status?.toLowerCase() !== "recovered"
+      );
+      const activeCommunityActivity = (data.recentActivity || []).filter(
+        (item) => item.status?.toLowerCase() !== "recovered"
+      );
+      const activeMatches = (data.aiMatches || []).filter(
+        (item) => item.status?.toLowerCase() !== "recovered"
+      );
+
+      setMyRecentPosts(activeRecentPosts);
+      setCommunityActivity(activeCommunityActivity);
+      setPossibleMatches(activeMatches);
 
       // Find latest lost item
       const latestLost = (data.myRecentPosts || []).find(
@@ -758,8 +768,12 @@ export default function UserMainPage({ user }) {
         ]);
 
       const allMyItems = allItemsResult.data || [];
-      const activePosts = activePostsResult.data || [];
-      const communityData = communityResult.data || [];
+      const activePosts = (activePostsResult.data || []).filter(
+        (item) => item.status?.toLowerCase() !== "recovered"
+      );
+      const communityData = (communityResult.data || []).filter(
+        (item) => item.status?.toLowerCase() !== "recovered"
+      );
 
       setMyRecentPosts(activePosts);
       setCommunityActivity(communityData);

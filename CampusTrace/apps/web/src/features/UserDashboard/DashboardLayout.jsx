@@ -26,6 +26,7 @@ import {
   Palette,
   MoreVertical,
   ChevronRight,
+  Trophy,
 } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import Skeleton from "react-loading-skeleton";
@@ -193,6 +194,11 @@ export default function DashboardLayout({ children, user }) {
     const saved = localStorage.getItem("userSidebarOpen");
     return saved !== null ? JSON.parse(saved) : window.innerWidth >= 1024;
   });
+
+  const [isRightPanelOpen, setIsRightPanelOpen] = useState(() => {
+    const saved = localStorage.getItem("userRightPanelOpen");
+    return saved !== null ? JSON.parse(saved) : true;
+  });
   const [mobileMenu, setMobileMenu] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [profile, setProfile] = useState(null);
@@ -203,6 +209,16 @@ export default function DashboardLayout({ children, user }) {
   const [isLoading, setIsLoading] = useState(true);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showMobileDropdown, setShowMobileDropdown] = useState(false);
+
+  // Theme colors for floating button
+  const THEME_COLORS = {
+    default: "#1877F2",
+    blue: "#3B82F6",
+    purple: "#A855F7",
+    pink: "#EC4899",
+    green: "#22C55E",
+  };
+  const primaryColor = THEME_COLORS[colorMode] || THEME_COLORS.default;
 
   // Optimized: Fetch all data in parallel with Promise.all
   const fetchProfileAndCounts = useCallback(async () => {
@@ -411,6 +427,15 @@ export default function DashboardLayout({ children, user }) {
       localStorage.setItem("userSidebarOpen", JSON.stringify(isSidebarOpen));
     }
   }, [isSidebarOpen]);
+
+  useEffect(() => {
+    if (window.innerWidth >= 1024) {
+      localStorage.setItem(
+        "userRightPanelOpen",
+        JSON.stringify(isRightPanelOpen)
+      );
+    }
+  }, [isRightPanelOpen]);
 
   useEffect(() => {
     setMobileMenu(false);
@@ -900,16 +925,43 @@ export default function DashboardLayout({ children, user }) {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-white dark:bg-[#1a1a1a] lg:ml-64 lg:mr-80">
-          <div className="p-4 md:p-6 lg:p-8 min-h-full pb-20 lg:pb-8">
+        <main
+          className={`flex-1 overflow-y-auto scrollbar-hide bg-white dark:bg-[#1a1a1a] transition-all duration-300 lg:ml-64 ${
+            isRightPanelOpen ? "lg:mr-80" : "lg:mr-0"
+          }`}
+        >
+          <div
+            className={`p-4 md:p-6 lg:py-8 lg:pl-8 min-h-full pb-20 lg:pb-8 transition-all duration-300 ${
+              isRightPanelOpen ? "lg:pr-2" : "lg:pr-8"
+            }`}
+          >
             {children}
           </div>
         </main>
 
         {/* Right Suggestions Panel - Only visible on desktop (≥1024px) */}
         <div className="hidden lg:block">
-          <RightSuggestions profile={profile} />
+          <RightSuggestions
+            profile={profile}
+            isOpen={isRightPanelOpen}
+            onToggle={() => setIsRightPanelOpen(!isRightPanelOpen)}
+          />
         </div>
+
+        {/* Floating Button to Show Right Panel */}
+        {!isRightPanelOpen && (
+          <button
+            onClick={() => setIsRightPanelOpen(true)}
+            className="hidden lg:flex fixed right-4 top-20 w-10 h-10 rounded-full items-center justify-center transition-all hover:scale-110 shadow-lg z-40"
+            style={{
+              backgroundColor: primaryColor,
+              color: "#FFFFFF",
+            }}
+            title="Show suggestions"
+          >
+            <Trophy size={18} />
+          </button>
+        )}
       </div>
 
       {/* Mobile Bottom Navigation - Only visible on mobile */}

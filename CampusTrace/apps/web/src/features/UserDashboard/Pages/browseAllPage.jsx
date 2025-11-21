@@ -1085,10 +1085,10 @@ export default function BrowseAllPage({ user }) {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1a] pb-32">
-      <div className="max-w-screen-xl mx-auto py-6 px-4">
+    <div className="h-full overflow-y-auto bg-neutral-50 dark:bg-[#1a1a1a]">
+      <div className="max-w-screen-xl mx-auto px-4 py-4">
         {/* Enhanced Search Bar */}
-        <div className="sticky top-0 z-20 bg-neutral-50 dark:bg-[#1a1a1a] py-3">
+        <div className="mb-4">
           <div className="flex gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400 z-10" />
@@ -1159,7 +1159,7 @@ export default function BrowseAllPage({ user }) {
 
         {/* Active Filters Display */}
         {(filters.status !== "All" || filters.categories?.length > 0) && (
-          <div className="flex-nowrap overflow-x-auto whitespace-nowrap py-2 space-x-2">
+          <div className="flex-nowrap overflow-x-auto whitespace-nowrap py-2 space-x-2 mb-3">
             {filters.status !== "All" && (
               <button
                 className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-white"
@@ -1192,7 +1192,7 @@ export default function BrowseAllPage({ user }) {
         )}
 
         {/* Results count & Row options */}
-        <div className="flex items-center justify-between py-3">
+        <div className="flex items-center justify-between py-3 border-b border-neutral-200 dark:border-neutral-700 mb-4">
           <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
             {imagePreview ? "Image search: " : ""}
             {totalPosts} item{totalPosts !== 1 ? "s" : ""} found
@@ -1226,9 +1226,9 @@ export default function BrowseAllPage({ user }) {
         {/* Items Grid */}
         <div className="pb-4">{renderGrid()}</div>
 
-        {/* Pagination Controls - Inline on desktop */}
+        {/* Pagination Controls */}
         {totalPosts > itemsPerPage && !loading && (
-          <div className="hidden md:flex items-center justify-center gap-2 py-4 bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-700 rounded-b-lg">
+          <div className="flex items-center justify-center gap-2 py-6 mt-4 border-t border-neutral-200 dark:border-neutral-700">
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
@@ -1269,51 +1269,6 @@ export default function BrowseAllPage({ user }) {
           </div>
         )}
       </div>
-
-      {/* Pagination Controls - Fixed at bottom on mobile only */}
-      {totalPosts > itemsPerPage && !loading && (
-        <div className="md:hidden fixed bottom-14 left-0 right-0 bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-700 z-40">
-          <div className="flex items-center justify-center gap-2 py-3">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="p-2 rounded-md transition-colors"
-              style={{
-                backgroundColor:
-                  currentPage === 1 ? "transparent" : "transparent",
-              }}
-            >
-              <ChevronLeft
-                className="w-5 h-5"
-                style={{
-                  color: currentPage === 1 ? "#A1A1AA" : BRAND_COLOR,
-                }}
-              />
-            </button>
-
-            <span className="text-sm font-medium text-neutral-900 dark:text-white mx-2">
-              Page {currentPage} of {totalPages}
-            </span>
-
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="p-2 rounded-md transition-colors"
-              style={{
-                backgroundColor:
-                  currentPage === totalPages ? "transparent" : "transparent",
-              }}
-            >
-              <ChevronRight
-                className="w-5 h-5"
-                style={{
-                  color: currentPage === totalPages ? "#A1A1AA" : BRAND_COLOR,
-                }}
-              />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Modals */}
       <FiltersModal

@@ -118,13 +118,14 @@ async def verify_handover(
     Sets item status to 'recovered'.
     """
     try:
+        # 1. Define finder_id immediately (It is the current user)
+        finder_id = user_id 
+
         item_res = supabase.table("items").select("*").eq("id", item_id).single().execute()
         if not item_res.data:
             raise HTTPException(status_code=404, detail="Item not found")
         item = item_res.data
 
-        finder_id = user_id 
-        
         # Security Check: The Code Generator cannot verify their own code.
         if item.get("status") == "Lost":
             # For lost items, Owner generated code. Owner cannot verify.
@@ -153,35 +154,49 @@ async def verify_handover(
             pass 
 
         # Mark handover as verified
+        # finder_id is used here, so it must be defined above
         supabase.table("handovers").update({
             "verified": True,
             "verified_at": datetime.utcnow().isoformat(),
-            "verified_by": finder_id
+            "verified_by": finder_id 
         }).eq("id", handover["id"]).execute()
 
-        # **Set item status to 'recovered'**
+        # Set item status to 'recovered'
         supabase.table("items").update({
             "status": "recovered"
         }).eq("id", item_id).execute()
 
-        # Note: Claim stays as "approved" - the item status "recovered" indicates completion
-        print(f"✅ Item {item_id} marked as recovered. Claim remains approved.")
+        print(f"✅ Item {item_id} marked as recovered.")
 
-        # Award Points/Badges to Finder
+        # Award Points - Increment returns_count for the finder
         try:
+            # Get current returns_count
             profile_res = supabase.table("profiles").select("returns_count").eq("id", finder_id).single().execute()
             if profile_res.data:
-                new_count = (profile_res.data.get("returns_count") or 0) + 1
-                supabase.table("profiles").update({"returns_count": new_count}).eq("id", finder_id).execute()
-                print(f"✅ Credited finder {finder_id} with return #{new_count}")
+                current_count = profile_res.data.get("returns_count", 0)
+                new_count = current_count + 1
+                
+                # Update returns_count
+                supabase.table("profiles").update({
+                    "returns_count": new_count
+                }).eq("id", finder_id).execute()
+                
+                print(f"✅ Credited finder {finder_id}: returns_count {current_count} → {new_count}")
+                
+                # Award badge for first successful return
                 if new_count == 1:
                     supabase.table("user_badges").insert({
                         "user_id": finder_id,
                         "badge_type": "helper",
                         "earned_at": datetime.utcnow().isoformat()
                     }).execute()
+                    print(f"🏅 Awarded 'helper' badge to {finder_id}")
+            else:
+                print(f"⚠️ Profile not found for finder {finder_id}")
         except Exception as e:
             print(f"⚠️ Error updating stats: {e}")
+            import traceback
+            traceback.print_exc()
 
         return {
             "success": True,
@@ -193,7 +208,7 @@ async def verify_handover(
     except Exception as e:
         print(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
+        
 @router.get("/items/{item_id}/handover-status")
 async def get_handover_status(
     item_id: int,

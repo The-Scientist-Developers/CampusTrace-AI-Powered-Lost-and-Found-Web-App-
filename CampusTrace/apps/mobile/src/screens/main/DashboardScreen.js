@@ -149,10 +149,20 @@ const DashboardScreen = ({ navigation }) => {
 
         const data = await dashboardResponse.json();
 
-        // Set all data from consolidated response
-        setMyRecentPosts(data.myRecentPosts || []);
-        setRecentActivity(data.recentActivity || []);
-        setPossibleMatches(data.aiMatches || []);
+        // Set all data from consolidated response - filter out recovered items
+        const activeRecentPosts = (data.myRecentPosts || []).filter(
+          (item) => item.status?.toLowerCase() !== "recovered"
+        );
+        const activeRecentActivity = (data.recentActivity || []).filter(
+          (item) => item.status?.toLowerCase() !== "recovered"
+        );
+        const activeMatches = (data.aiMatches || []).filter(
+          (item) => item.status?.toLowerCase() !== "recovered"
+        );
+
+        setMyRecentPosts(activeRecentPosts);
+        setRecentActivity(activeRecentActivity);
+        setPossibleMatches(activeMatches);
 
         setStats({
           totalItems: data.userStats?.total || 0,

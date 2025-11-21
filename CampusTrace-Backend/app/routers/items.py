@@ -137,7 +137,11 @@ async def get_leaderboard(user_id: str = Depends(get_current_user_id)):
             results = []
             if profiles_res.data:
                 for p in profiles_res.data:
-                    p["successful_returns"] = p.get("returns_count", 0)
+                    # Map returns_count to both successful_returns and recovered_count for compatibility
+                    count = p.get("returns_count", 0)
+                    p["successful_returns"] = count
+                    p["recovered_count"] = count
+                    p["user_id"] = p.get("id")  # Add user_id for frontend compatibility
                     results.append(p)
             return results
         except Exception as e:

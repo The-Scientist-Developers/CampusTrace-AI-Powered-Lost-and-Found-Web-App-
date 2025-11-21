@@ -49,7 +49,7 @@ export default ({ config }) => {
     },
     extra: {
       // These will be accessible via Constants.expoConfig.extra
-      apiUrl: process.env.EXPO_PUBLIC_API_URL || "http://192.168.1.43:8000",
+      apiUrl: process.env.EXPO_PUBLIC_API_URL || "http://10.0.0.37:8000",
       supabaseUrl:
         process.env.EXPO_PUBLIC_SUPABASE_URL ||
         "https://cvcxqsdwtcvwgdftsdtp.supabase.co",

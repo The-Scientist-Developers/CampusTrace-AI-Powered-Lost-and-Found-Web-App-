@@ -1017,7 +1017,8 @@ const BrowseScreen = () => {
         .from("items")
         .select("*, profiles(id, full_name, email)", { count: "exact" })
         .eq("university_id", profile.university_id)
-        .eq("moderation_status", "approved");
+        .eq("moderation_status", "approved")
+        .neq("status", "recovered");
 
       // Apply filters
       if (filters.status !== "All") {
@@ -1117,8 +1118,13 @@ const BrowseScreen = () => {
         const data = await response.json();
         const results = data.results || data || [];
 
-        setItems(results);
-        setTotalItems(results.length);
+        // Filter out recovered items
+        const activeResults = results.filter(
+          (item) => item.status?.toLowerCase() !== "recovered"
+        );
+
+        setItems(activeResults);
+        setTotalItems(activeResults.length);
         setCurrentPage(1);
 
         if (results.length === 0) {
@@ -1203,47 +1209,9 @@ const BrowseScreen = () => {
     </TouchableOpacity>
   );
 
-  const renderFooter = () => {
-    if (!loading || !hasMore) return null;
-    return (
-      <View
-        style={[styles.footerLoader, { backgroundColor: colors.background }]}
-      >
-        <ActivityIndicator size="small" color={colors.primary} />
-      </View>
-    );
-  };
-
-  if ((loading && items.length === 0 && !refreshing) || isImageSearching) {
-    return <SimpleLoadingScreen />;
-  }
-
-  return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
-    >
-      {/* Header */}
-      <LinearGradient
-        colors={[colors.background, colors.background]}
-        style={styles.headerGradient}
-      >
-        <View
-          style={[
-            styles.header,
-            {
-              backgroundColor: "transparent",
-              borderBottomWidth: 0,
-              paddingTop: 16,
-              paddingBottom: 8,
-            },
-          ]}
-        >
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            Browse All Items
-          </Text>
-        </View>
-      </LinearGradient>
-
+  // List Header Component - scrolls with content (without main title)
+  const renderListHeader = () => (
+    <View>
       {/* Enhanced Search Bar */}
       <View
         style={[styles.searchContainer, { backgroundColor: colors.background }]}
@@ -1418,8 +1386,138 @@ const BrowseScreen = () => {
           ))}
         </View>
       </View>
+    </View>
+  );
 
-      {/* Items Grid */}
+  // Unified Footer Component - scrolls with content
+  const renderListFooter = () => {
+    if (items.length === 0) return null;
+
+    return (
+      <View style={styles.listFooterContainer}>
+        {/* Loading indicator */}
+        {loading && (
+          <View
+            style={[
+              styles.footerLoader,
+              { backgroundColor: colors.background },
+            ]}
+          >
+            <ActivityIndicator size="small" color={colors.primary} />
+          </View>
+        )}
+
+        {/* Pagination Controls */}
+        {totalItems > 0 && (
+          <View
+            style={[
+              styles.paginationRow,
+              { backgroundColor: colors.background },
+            ]}
+          >
+            <TouchableOpacity
+              style={[
+                styles.paginationButton,
+                { backgroundColor: colors.surface },
+                currentPage === 1 && styles.paginationDisabled,
+              ]}
+              onPress={() => {
+                if (currentPage > 1) {
+                  const newPage = currentPage - 1;
+                  setCurrentPage(newPage);
+                  fetchItems(false, newPage);
+                }
+              }}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft
+                size={20}
+                color={currentPage === 1 ? "#A1A1AA" : BRAND_COLOR}
+              />
+            </TouchableOpacity>
+            <Text style={[styles.paginationText, { color: colors.text }]}>
+              Page {currentPage} of{" "}
+              {Math.max(1, Math.ceil(totalItems / itemsPerPage))}
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.paginationButton,
+                { backgroundColor: colors.surface },
+                currentPage >= Math.ceil(totalItems / itemsPerPage) &&
+                  styles.paginationDisabled,
+              ]}
+              onPress={() => {
+                if (currentPage < Math.ceil(totalItems / itemsPerPage)) {
+                  const newPage = currentPage + 1;
+                  setCurrentPage(newPage);
+                  fetchItems(false, newPage);
+                }
+              }}
+              disabled={currentPage >= Math.ceil(totalItems / itemsPerPage)}
+            >
+              <ChevronRight
+                size={20}
+                color={
+                  currentPage >= Math.ceil(totalItems / itemsPerPage)
+                    ? "#A1A1AA"
+                    : BRAND_COLOR
+                }
+              />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  // Empty state component
+  const renderEmptyComponent = () => (
+    <View style={styles.emptyState}>
+      {imagePreview ? (
+        <Camera size={64} color="#DFE0E4" />
+      ) : (
+        <Search size={64} color="#DFE0E4" />
+      )}
+      <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+        No items found
+      </Text>
+      <Text style={[styles.emptyStateSubtext, { color: colors.textSecondary }]}>
+        {searchQuery || imagePreview
+          ? "Try different search criteria"
+          : "Lost and found items will appear here"}
+      </Text>
+      {(searchQuery || imagePreview) && (
+        <TouchableOpacity
+          style={[styles.resetButton, { backgroundColor: colors.primary }]}
+          onPress={() => {
+            setSearchQuery("");
+            clearImageSearch();
+          }}
+        >
+          <Text style={styles.resetButtonText}>Clear Search</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
+  if ((loading && items.length === 0 && !refreshing) || isImageSearching) {
+    return <SimpleLoadingScreen />;
+  }
+
+  return (
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      {/* Fixed Header - doesn't scroll */}
+      <View
+        style={[styles.fixedHeader, { backgroundColor: colors.background }]}
+      >
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          Browse All Items
+        </Text>
+      </View>
+
+      {/* Unified FlatList with Header and Footer */}
       <FlatList
         key={`marketplace-grid-${itemsPerPage}`}
         data={items}
@@ -1427,95 +1525,22 @@ const BrowseScreen = () => {
         keyExtractor={(item) => item.id.toString()}
         numColumns={2}
         columnWrapperStyle={styles.gridRow}
+        ListHeaderComponent={renderListHeader}
+        ListFooterComponent={renderListFooter}
+        ListEmptyComponent={renderEmptyComponent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.1}
-        ListFooterComponent={renderFooter}
         contentContainerStyle={
           items.length === 0 ? styles.emptyListContainer : styles.gridContainer
         }
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            {imagePreview ? (
-              <Camera size={64} color="#DFE0E4" />
-            ) : (
-              <Search size={64} color="#DFE0E4" />
-            )}
-            <Text style={styles.emptyStateText}>No items found</Text>
-            <Text style={styles.emptyStateSubtext}>
-              {searchQuery || imagePreview
-                ? "Try different search criteria"
-                : "Lost and found items will appear here"}
-            </Text>
-            {(searchQuery || imagePreview) && (
-              <TouchableOpacity
-                style={styles.resetButton}
-                onPress={() => {
-                  setSearchQuery("");
-                  clearImageSearch();
-                }}
-              >
-                <Text style={styles.resetButtonText}>Clear Search</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        }
+        showsVerticalScrollIndicator={true}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={10}
+        windowSize={5}
       />
-
-      {/* Pagination Controls */}
-      {totalItems > 0 && (
-        <View style={styles.paginationRow}>
-          <TouchableOpacity
-            style={[
-              styles.paginationButton,
-              currentPage === 1 && styles.paginationDisabled,
-            ]}
-            onPress={() => {
-              if (currentPage > 1) {
-                const newPage = currentPage - 1;
-                setCurrentPage(newPage);
-                fetchItems(false, newPage);
-              }
-            }}
-            disabled={currentPage === 1}
-          >
-            <ChevronLeft
-              size={20}
-              color={currentPage === 1 ? "#A1A1AA" : BRAND_COLOR}
-            />
-          </TouchableOpacity>
-          <Text style={styles.paginationText}>
-            Page {currentPage} of{" "}
-            {Math.max(1, Math.ceil(totalItems / itemsPerPage))}
-          </Text>
-          <TouchableOpacity
-            style={[
-              styles.paginationButton,
-              currentPage >= Math.ceil(totalItems / itemsPerPage) &&
-                styles.paginationDisabled,
-            ]}
-            onPress={() => {
-              if (currentPage < Math.ceil(totalItems / itemsPerPage)) {
-                const newPage = currentPage + 1;
-                setCurrentPage(newPage);
-                fetchItems(false, newPage);
-              }
-            }}
-            disabled={currentPage >= Math.ceil(totalItems / itemsPerPage)}
-          >
-            <ChevronRight
-              size={20}
-              color={
-                currentPage >= Math.ceil(totalItems / itemsPerPage)
-                  ? "#A1A1AA"
-                  : BRAND_COLOR
-              }
-            />
-          </TouchableOpacity>
-        </View>
-      )}
 
       {/* Modals */}
       <FiltersModal
@@ -1566,8 +1591,11 @@ const createStyles = (colors) =>
       alignItems: "center",
       justifyContent: "space-between",
       paddingHorizontal: 16,
-      paddingVertical: 8,
-      backgroundColor: colors.surface,
+      paddingVertical: 10,
+      paddingBottom: 8,
+      backgroundColor: colors.background,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
     },
     rowOptions: {
       flexDirection: "row",
@@ -1602,7 +1630,11 @@ const createStyles = (colors) =>
       alignItems: "center",
       justifyContent: "center",
       gap: 8,
-      paddingVertical: 12,
+      paddingVertical: 16,
+      paddingHorizontal: 16,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      marginTop: 8,
     },
     paginationButton: {
       padding: 8,
@@ -1633,13 +1665,18 @@ const createStyles = (colors) =>
       fontSize: 16,
       color: colors.textSecondary,
     },
-    headerGradient: {
-      paddingBottom: 8,
+    fixedHeader: {
+      paddingHorizontal: 20,
+      paddingTop: 12,
+      paddingBottom: 12,
+      backgroundColor: colors.background,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
     },
     header: {
       paddingHorizontal: 20,
-      paddingTop: 16,
-      paddingBottom: 8,
+      paddingTop: 12,
+      paddingBottom: 12,
       backgroundColor: "transparent",
       borderBottomWidth: 0,
     },
@@ -1652,9 +1689,9 @@ const createStyles = (colors) =>
     searchContainer: {
       flexDirection: "row",
       paddingHorizontal: 16,
-      paddingVertical: 12,
+      paddingVertical: 8,
       gap: 12,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.background,
       borderBottomWidth: 0,
     },
     searchBar: {
@@ -1709,9 +1746,8 @@ const createStyles = (colors) =>
     },
     activeFilters: {
       paddingVertical: 8,
-      backgroundColor: colors.surface,
-      borderBottomWidth: 0.5,
-      borderBottomColor: colors.border,
+      backgroundColor: colors.background,
+      borderBottomWidth: 0,
     },
     activeFiltersContent: {
       paddingHorizontal: 16,
@@ -1752,7 +1788,10 @@ const createStyles = (colors) =>
     },
     gridContainer: {
       paddingHorizontal: 8,
-      paddingBottom: 8,
+      paddingBottom: 20,
+    },
+    listFooterContainer: {
+      paddingBottom: 20,
     },
     gridRow: {
       justifyContent: "space-between",
@@ -1762,10 +1801,11 @@ const createStyles = (colors) =>
       flex: 1,
     },
     emptyState: {
-      flex: 1,
       alignItems: "center",
-      paddingVertical: 80,
+      paddingVertical: 60,
       paddingHorizontal: 20,
+      minHeight: screenHeight * 0.5,
+      justifyContent: "center",
     },
     emptyStateText: {
       fontSize: 20,

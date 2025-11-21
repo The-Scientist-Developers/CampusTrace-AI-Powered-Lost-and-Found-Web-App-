@@ -11,17 +11,16 @@ import {
   Award,
   FileText,
   LogOut,
-  Sparkles,
 } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { supabase } from "../../api/apiClient";
 
 // Color mode definitions matching mobile app
 const THEME_COLORS = {
-  blue: { primary: "#1877F2", gradient: "from-blue-500 to-blue-600" },
-  purple: { primary: "#A855F7", gradient: "from-purple-500 to-purple-600" },
-  pink: { primary: "#EC4899", gradient: "from-pink-500 to-pink-600" },
-  green: { primary: "#22C55E", gradient: "from-green-500 to-green-600" },
+  blue: { primary: "#1877F2", hover: "rgba(24, 119, 242, 0.1)" },
+  purple: { primary: "#A855F7", hover: "rgba(168, 85, 247, 0.1)" },
+  pink: { primary: "#EC4899", hover: "rgba(236, 72, 153, 0.1)" },
+  green: { primary: "#22C55E", hover: "rgba(34, 197, 94, 0.1)" },
 };
 
 const DesktopSidebar = ({
@@ -36,9 +35,18 @@ const DesktopSidebar = ({
 
   const primaryColor =
     THEME_COLORS[colorMode]?.primary || THEME_COLORS.blue.primary;
-  const gradientClass =
-    THEME_COLORS[colorMode]?.gradient || THEME_COLORS.blue.gradient;
+  const hoverColor = THEME_COLORS[colorMode]?.hover || THEME_COLORS.blue.hover;
+
   const isDark = theme === "dark";
+
+  // Neutral colors for professional look
+  const colors = {
+    bg: isDark ? "#1a1a1a" : "#FFFFFF", // Smooth background matching main pages
+    border: isDark ? "#3a3a3a" : "#E5E5E5",
+    textPrimary: isDark ? "#FFFFFF" : "#171717",
+    textSecondary: isDark ? "#A3A3A3" : "#737373",
+    hoverBg: isDark ? "#1F1F1F" : "#F5F5F5",
+  };
 
   const navItems = [
     { path: "/dashboard", icon: Home, label: "Home", exact: true },
@@ -72,183 +80,95 @@ const DesktopSidebar = ({
 
   return (
     <aside
-      className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 flex-col backdrop-blur-lg"
+      className="hidden md:flex fixed left-0 top-0 bottom-0 w-72 flex-col transition-colors duration-200"
       style={{
-        backgroundColor: isDark ? "rgba(26, 26, 26, 0.95)" : "rgba(255, 255, 255, 0.95)",
-        borderRight: `1px solid ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"}`,
+        backgroundColor: colors.bg,
+        borderRight: `1px solid ${colors.border}`,
         zIndex: 40,
-        boxShadow: isDark 
-          ? "4px 0 24px rgba(0, 0, 0, 0.4)" 
-          : "4px 0 24px rgba(0, 0, 0, 0.08)",
       }}
     >
-      {/* Logo Section with gradient accent */}
-      <div className="px-6 py-6 mb-2 relative">
-        <div 
-          className="absolute inset-0 opacity-10 bg-gradient-to-br"
-          style={{
-            background: `linear-gradient(135deg, ${primaryColor}20 0%, transparent 100%)`,
-          }}
-        />
-        <div className="flex items-center gap-3 relative">
-          <div 
-            className="w-10 h-10 rounded-2xl flex items-center justify-center overflow-hidden relative group cursor-pointer transform transition-all duration-300 hover:scale-110"
-            style={{
-              background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)`,
-              boxShadow: `0 4px 12px ${primaryColor}40`,
-            }}
-          >
+      {/* Logo Section - Clean & Professional */}
+      <div className="px-6 py-6">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0">
             <img
               src="/Icon.svg"
               alt="CampusTrace Logo"
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
           </div>
-
-          {/* Wordmark with animated underline */}
-          <div className="relative">
-            {siteName && siteName !== "CampusTrace" && (
-              <p
-                className="text-xs font-medium mb-0.5 tracking-wider uppercase"
-                style={{
-                  color: isDark ? "#a3a3a3" : "#737373",
-                  letterSpacing: "0.5px",
-                }}
-              >
-                {siteName}
-              </p>
-            )}
+          <div className="flex flex-col justify-center">
             <h1
-              className="text-xl font-['Inter'] tracking-tight relative"
-              style={{
-                color: isDark ? "#ffffff" : "#111111",
-                fontWeight: "700",
-                letterSpacing: "-0.025em",
-                fontSize: "20px",
-              }}
+              className="text-lg font-bold tracking-tight leading-none"
+              style={{ color: colors.textPrimary }}
             >
               CampusTrace
-              <Sparkles 
-                size={14} 
-                className="inline-block ml-1 opacity-50"
-                style={{ color: primaryColor }}
-              />
             </h1>
-            <div 
-              className="absolute -bottom-1 left-0 h-0.5 rounded-full transition-all duration-500"
-              style={{
-                background: `linear-gradient(90deg, ${primaryColor}, ${primaryColor}60)`,
-                width: "60%",
-              }}
-            />
+            {siteName && siteName !== "CampusTrace" && (
+              <span
+                className="text-[10px] uppercase tracking-wider font-medium mt-1"
+                style={{ color: colors.textSecondary }}
+              >
+                {siteName}
+              </span>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Navigation with enhanced hover effects */}
-      <nav className="flex-1 px-3 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
+      {/* Section Divider */}
+      <div
+        className="w-full h-[1px] mb-4"
+        style={{ backgroundColor: colors.border }}
+      />
+
+      {/* Navigation */}
+      <nav className="flex-1 px-4 overflow-y-auto scrollbar-hide">
         <ul className="space-y-1">
           {navItems.map((item) => (
-            <li key={item.path} className="relative">
+            <li key={item.path}>
               <NavLink
                 to={item.path}
                 end={item.exact}
-                onMouseEnter={() => setHoveredItem(item.path)}
-                onMouseLeave={() => setHoveredItem(null)}
-                className="relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group overflow-hidden"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg group transition-all duration-150"
                 style={({ isActive }) => ({
-                  color: isActive
-                    ? isDark
-                      ? "#ffffff"
-                      : "#000000"
-                    : isDark
-                    ? "#9ca3af"
-                    : "#6b7280",
                   backgroundColor: isActive
-                    ? isDark
-                      ? primaryColor + "20"
-                      : primaryColor + "10"
-                    : hoveredItem === item.path
-                    ? isDark
-                      ? "rgba(255, 255, 255, 0.05)"
-                      : "rgba(0, 0, 0, 0.03)"
+                    ? hoverColor // Subtle tint of the theme color
                     : "transparent",
-                  fontWeight: isActive ? "600" : "400",
-                  transform: hoveredItem === item.path ? "translateX(4px)" : "translateX(0)",
-                  boxShadow: isActive
-                    ? `inset 0 0 0 2px ${primaryColor}30`
-                    : "none",
+                  color: isActive ? primaryColor : colors.textSecondary,
                 })}
               >
                 {({ isActive }) => (
                   <>
-                    {/* Animated background gradient */}
-                    {isActive && (
-                      <div
-                        className="absolute inset-0 opacity-10"
-                        style={{
-                          background: `linear-gradient(90deg, transparent, ${primaryColor}40, transparent)`,
-                          animation: "slideGradient 3s ease-in-out infinite",
-                        }}
-                      />
-                    )}
-
-                    {/* Active indicator bar */}
-                    <div
-                      className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-full transition-all duration-300"
+                    <item.icon
+                      size={22}
+                      strokeWidth={isActive ? 2.5 : 2}
                       style={{
-                        backgroundColor: isActive ? primaryColor : "transparent",
-                        boxShadow: isActive ? `0 0 8px ${primaryColor}60` : "none",
+                        color: isActive ? primaryColor : "currentColor",
                       }}
+                      className="group-hover:text-opacity-80 transition-colors"
                     />
-
-                    {/* Icon with pulse animation for notifications */}
-                    <div className="relative flex-shrink-0 z-10">
-                      <item.icon
-                        size={22}
-                        strokeWidth={isActive ? 2.5 : hoveredItem === item.path ? 2 : 1.5}
-                        className="transition-all duration-300"
-                        style={{
-                          color: isActive ? primaryColor : "inherit",
-                          filter: isActive ? `drop-shadow(0 0 8px ${primaryColor}40)` : "none",
-                        }}
-                      />
-                      {item.count > 0 && (
-                        <>
-                          <span
-                            className="absolute -top-2 -right-2 min-w-[22px] h-[22px] flex items-center justify-center text-xs font-bold text-white rounded-full px-1.5 animate-bounce"
-                            style={{
-                              backgroundColor: "#ef4444",
-                              boxShadow: "0 2px 8px rgba(239, 68, 68, 0.4)",
-                            }}
-                          >
-                            {item.count > 99 ? "99+" : item.count}
-                          </span>
-                          <span
-                            className="absolute -top-2 -right-2 min-w-[22px] h-[22px] rounded-full animate-ping"
-                            style={{
-                              backgroundColor: "#ef4444",
-                              opacity: 0.4,
-                            }}
-                          />
-                        </>
-                      )}
-                    </div>
-
-                    <span className="text-base z-10 transition-all duration-300">
+                    <span
+                      className={`text-sm font-medium ${
+                        isActive
+                          ? ""
+                          : "group-hover:text-gray-900 dark:group-hover:text-white"
+                      }`}
+                    >
                       {item.label}
                     </span>
 
-                    {/* Hover accent */}
-                    {hoveredItem === item.path && !isActive && (
-                      <div
-                        className="absolute right-4 w-2 h-2 rounded-full animate-pulse"
+                    {/* Notification Badge - Clean Pill Shape */}
+                    {item.count > 0 && (
+                      <span
+                        className="ml-auto text-[11px] font-bold px-2 py-0.5 rounded-full"
                         style={{
                           backgroundColor: primaryColor,
-                          boxShadow: `0 0 6px ${primaryColor}`,
+                          color: "#FFFFFF",
                         }}
-                      />
+                      >
+                        {item.count > 99 ? "99+" : item.count}
+                      </span>
                     )}
                   </>
                 )}
@@ -258,96 +178,77 @@ const DesktopSidebar = ({
         </ul>
       </nav>
 
-      {/* Bottom Section with glass effect */}
+      {/* Section Divider */}
       <div
-        className="px-3 py-4 space-y-1 backdrop-blur-xl relative"
-        style={{
-          borderTop: `1px solid ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"}`,
-          background: isDark
-            ? "linear-gradient(to top, rgba(0, 0, 0, 0.2), transparent)"
-            : "linear-gradient(to top, rgba(255, 255, 255, 0.8), transparent)",
-        }}
-      >
+        className="w-full h-[1px] mt-2"
+        style={{ backgroundColor: colors.border }}
+      />
+
+      {/* Bottom Actions */}
+      <div className="p-4 space-y-1">
         <NavLink
           to="/dashboard/settings"
-          onMouseEnter={() => setHoveredItem("settings")}
-          onMouseLeave={() => setHoveredItem(null)}
-          className="relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 overflow-hidden"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-150 hover:bg-gray-100 dark:hover:bg-neutral-800"
           style={({ isActive }) => ({
-            color: isActive
-              ? isDark
-                ? "#ffffff"
-                : "#000000"
-              : isDark
-              ? "#9ca3af"
-              : "#6b7280",
-            backgroundColor: isActive
-              ? isDark
-                ? primaryColor + "20"
-                : primaryColor + "10"
-              : hoveredItem === "settings"
-              ? isDark
-                ? "rgba(255, 255, 255, 0.05)"
-                : "rgba(0, 0, 0, 0.03)"
-              : "transparent",
-            fontWeight: isActive ? "600" : "400",
-            transform: hoveredItem === "settings" ? "translateX(4px)" : "translateX(0)",
+            backgroundColor: isActive ? hoverColor : "transparent",
+            color: isActive ? primaryColor : colors.textSecondary,
           })}
         >
-          <Settings 
-            size={22} 
-            strokeWidth={1.5} 
-            className={hoveredItem === "settings" ? "animate-spin-slow" : ""}
-          />
-          <span className="text-base">Settings</span>
+          <Settings size={22} />
+          <span className="text-sm font-medium">Settings</span>
         </NavLink>
 
         <button
           onClick={handleLogout}
-          onMouseEnter={() => setHoveredItem("logout")}
-          onMouseLeave={() => setHoveredItem(null)}
-          className="w-full relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 overflow-hidden group"
-          style={{
-            color: hoveredItem === "logout" ? "#ef4444" : isDark ? "#9ca3af" : "#6b7280",
-            backgroundColor: hoveredItem === "logout"
-              ? "rgba(239, 68, 68, 0.08)"
-              : "transparent",
-            border: "none",
-            transform: hoveredItem === "logout" ? "translateX(4px)" : "translateX(0)",
-          }}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-150 hover:bg-red-50 dark:hover:bg-red-900/10 group"
+          style={{ color: colors.textSecondary }}
         >
-          {/* Animated background on hover */}
-          <div
-            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-            style={{
-              background: "linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.1), transparent)",
-              animation: hoveredItem === "logout" ? "slideGradient 2s ease-in-out infinite" : "none",
-            }}
+          <LogOut
+            size={22}
+            className="group-hover:text-red-600 transition-colors"
           />
-          
-          <LogOut 
-            size={22} 
-            strokeWidth={1.5}
-            className="z-10 transition-transform duration-300 group-hover:translate-x-1"
-          />
-          <span className="text-base z-10">Log out</span>
+          <span className="text-sm font-medium group-hover:text-red-600 transition-colors">
+            Log out
+          </span>
         </button>
       </div>
 
-      {/* Add CSS animation */}
-      <style jsx>{`
-        @keyframes slideGradient {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin-slow {
-          animation: spin-slow 3s linear infinite;
-        }
-      `}</style>
+      {/* Profile Mini-Row */}
+      <div
+        className="mx-4 mb-6 mt-2 p-3 rounded-xl flex items-center gap-3 border transition-colors hover:bg-gray-50 dark:hover:bg-white/5"
+        style={{
+          borderColor: colors.border,
+          backgroundColor: isDark
+            ? "rgba(255,255,255,0.02)"
+            : "rgba(0,0,0,0.01)",
+        }}
+      >
+        <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+          {profile?.avatar_url ? (
+            <img
+              src={profile.avatar_url}
+              alt=""
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <User className="w-full h-full p-1.5 text-gray-400" />
+          )}
+        </div>
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <p
+            className="text-sm font-semibold truncate"
+            style={{ color: colors.textPrimary }}
+          >
+            {profile?.full_name || "User"}
+          </p>
+          <p
+            className="text-[11px] truncate"
+            style={{ color: colors.textSecondary }}
+          >
+            View Profile
+          </p>
+        </div>
+      </div>
     </aside>
   );
 };

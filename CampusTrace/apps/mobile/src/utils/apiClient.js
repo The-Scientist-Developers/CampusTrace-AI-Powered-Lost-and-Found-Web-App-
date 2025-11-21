@@ -57,7 +57,7 @@ const getApiBaseUrl = () => {
         "❌ [API] You MUST set EXPO_PUBLIC_API_URL in your .env file!"
       );
       console.error(
-        "❌ [API] Example: EXPO_PUBLIC_API_URL=http://192.168.1.43:8081"
+        "❌ [API] Example: EXPO_PUBLIC_API_URL=http://10.0.0.37:8081"
       );
       console.error("❌ [API] Falling back to localhost (THIS WILL NOT WORK)");
     }

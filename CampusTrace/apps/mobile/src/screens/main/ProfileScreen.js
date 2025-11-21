@@ -282,9 +282,6 @@ const ProfileScreen = ({ navigation }) => {
       color: colors.textSecondary,
     },
     loadingContainer: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
       backgroundColor: colors.background,
     },
     // --- Removed Stats Styles ---
@@ -382,7 +379,7 @@ const ProfileScreen = ({ navigation }) => {
       </LinearGradient>
 
       {loading ? (
-        <View style={dynamicStyles.loadingContainer}>
+        <ScrollView style={dynamicStyles.scrollView}>
           <View style={dynamicStyles.profileSection}>
             <View
               style={[
@@ -415,7 +412,7 @@ const ProfileScreen = ({ navigation }) => {
             <ListItemSkeleton colors={colors} />
             <ListItemSkeleton colors={colors} />
           </View>
-        </View>
+        </ScrollView>
       ) : (
         <ScrollView style={dynamicStyles.scrollView}>
           {/* Profile Info */}
