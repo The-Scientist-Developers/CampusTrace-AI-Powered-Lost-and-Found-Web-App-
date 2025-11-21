@@ -12,13 +12,39 @@ import {
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { API_BASE_URL, supabase } from "../../api/apiClient";
-import { COLORS, SPACING, TYPOGRAPHY } from "../../constants/designSystem";
+import { getSupabaseClient } from "@campustrace/core";
+import { API_BASE_URL, apiClient } from "../../utils/apiClient";
+import {
+  Colors,
+  Spacing as SPACING,
+  Typography as TYPOGRAPHY,
+} from "../../constants/designSystem";
+
+// Create compatibility layer for COLORS
+const COLORS = {
+  primary: Colors.primary[600],
+  success: Colors.success.main,
+  error: Colors.error.main,
+  warning: Colors.warning.main,
+  border: Colors.neutral[300],
+  text: {
+    primary: Colors.neutral[900],
+    secondary: Colors.neutral[600],
+    tertiary: Colors.neutral[400],
+  },
+  background: {
+    primary: Colors.neutral[50],
+    secondary: Colors.neutral[100],
+  },
+};
 
 const HandoverScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { itemId, role } = route.params; // role: 'claimant' or 'finder'
+
+  // Get supabase client inside component
+  const supabase = getSupabaseClient();
 
   const [loading, setLoading] = useState(false);
   const [handoverCode, setHandoverCode] = useState("");
@@ -70,13 +96,13 @@ const HandoverScreen = () => {
     const status = itemData.status?.toLowerCase();
     const isOwner = itemData.user_id === currentUserId;
 
-    // pending recovery: Owner generates (receiving), Claimant enters (giving)
-    if (status === "pending recovery") {
+    // Lost Item Flow: Owner generates
+    if (status === "pending recovery" || status === "lost") {
       return isOwner;
     }
 
-    // pending handover: Claimant generates (receiving), Owner enters (giving)
-    if (status === "pending handover") {
+    // Found Item Flow: Claimant (non-owner) generates
+    if (status === "pending handover" || status === "found") {
       return !isOwner;
     }
 
@@ -209,8 +235,11 @@ const HandoverScreen = () => {
   }
 
   const isGenerator = determineIsGenerator();
-  const isPendingRecovery =
-    itemData.status?.toLowerCase() === "pending recovery";
+
+  // Logic moved to component scope so it is accessible in JSX
+  const isLostItemFlow =
+    itemData.status?.toLowerCase() === "pending recovery" ||
+    itemData.status?.toLowerCase() === "lost";
 
   return (
     <ScrollView
@@ -332,8 +361,8 @@ const HandoverScreen = () => {
                 <View style={styles.instructionsBox}>
                   <Text style={styles.instructionsTitle}>Instructions:</Text>
                   <Text style={styles.instructionItem}>
-                    1. Meet with the {isPendingRecovery ? "finder" : "claimant"}{" "}
-                    at the agreed location
+                    1. Meet with the {isLostItemFlow ? "finder" : "claimant"} at
+                    the agreed location
                   </Text>
                   <Text style={styles.instructionItem}>
                     2. Show them this 4-digit code
@@ -358,7 +387,7 @@ const HandoverScreen = () => {
                 <Text style={styles.generateSubtitle}>
                   Generate a secure 4-digit code to complete the handover
                   process. You'll show this code to the{" "}
-                  {isPendingRecovery ? "finder" : "claimant"} when you meet.
+                  {isLostItemFlow ? "finder" : "claimant"} when you meet.
                 </Text>
                 <TouchableOpacity
                   style={styles.primaryButton}
@@ -427,8 +456,8 @@ const HandoverScreen = () => {
             <View style={styles.instructionsBox}>
               <Text style={styles.instructionsTitle}>Verification Steps:</Text>
               <Text style={styles.instructionItem}>
-                1. Ask the {isPendingRecovery ? "owner" : "claimant"} to show
-                their 4-digit code
+                1. Ask the {isLostItemFlow ? "owner" : "claimant"} to show their
+                4-digit code
               </Text>
               <Text style={styles.instructionItem}>
                 2. Enter the code above

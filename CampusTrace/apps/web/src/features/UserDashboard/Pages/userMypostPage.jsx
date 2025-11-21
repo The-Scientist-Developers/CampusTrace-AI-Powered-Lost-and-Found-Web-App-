@@ -368,6 +368,7 @@ const PostCard = ({
     post.status?.toLowerCase() === "pending handover" ||
     (post.status === "Lost" && post.moderation_status === "approved");
   const isPendingHandover = post.status?.toLowerCase() === "pending handover";
+  const isPendingRecovery = post.status?.toLowerCase() === "pending recovery";
   const isFoundItem =
     post.status?.toLowerCase() === "found" || isPendingHandover;
 
@@ -481,7 +482,20 @@ const PostCard = ({
             </button>
           )}
 
-          {canRecover && !isPendingHandover && (
+          {isPendingRecovery && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onStartHandover(post.id);
+              }}
+              className="w-full mt-4 flex items-center justify-center gap-2 rounded-lg border-2 border-primary-600 bg-primary-50 dark:bg-primary-900/20 px-4 py-3 text-sm font-semibold text-primary-700 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              Generate Handover Code
+            </button>
+          )}
+
+          {canRecover && !isPendingHandover && !isPendingRecovery && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -781,7 +795,8 @@ function MyPostsPage({ user }) {
   const activeCount = statsSource.filter(
     (p) =>
       (p.moderation_status === "approved" ||
-        p.status?.toLowerCase() === "pending handover") &&
+        p.status?.toLowerCase() === "pending handover" ||
+        p.status?.toLowerCase() === "pending recovery") &&
       p.status?.toLowerCase() !== "recovered"
   ).length;
   const pendingCount = statsSource.filter(
@@ -1013,7 +1028,8 @@ function MyPostsPage({ user }) {
                 if (postStatusFilter === "active") {
                   return (
                     (p.moderation_status === "approved" ||
-                      p.status?.toLowerCase() === "pending handover") &&
+                      p.status?.toLowerCase() === "pending handover" ||
+                      p.status?.toLowerCase() === "pending recovery") &&
                     p.status?.toLowerCase() !== "recovered"
                   );
                 } else if (postStatusFilter === "pending") {
@@ -1179,30 +1195,49 @@ function MyPostsPage({ user }) {
 
                         {claim.status === "approved" &&
                           claim.item?.status?.toLowerCase() !== "recovered" && (
-                            <button
-                              onClick={() =>
-                                handleGenerateHandoverCode(claim.item.id)
-                              }
-                              disabled={generatingCode[claim.item.id]}
-                              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium disabled:opacity-50"
-                            >
-                              {generatingCode[claim.item.id] ? (
-                                <>
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                  Generating...
-                                </>
-                              ) : handoverCodes[claim.item.id] ? (
-                                <>
-                                  <Copy className="w-4 h-4" />
-                                  Code: {handoverCodes[claim.item.id]}
-                                </>
-                              ) : (
-                                <>
+                            <>
+                              {claim.item?.status?.toLowerCase() ===
+                              "pending recovery" ? (
+                                // Lost item: Finder (claimant) verifies code
+                                <button
+                                  onClick={() =>
+                                    navigate(
+                                      `/dashboard/handover/${claim.item.id}?role=finder`
+                                    )
+                                  }
+                                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium"
+                                >
                                   <ShieldCheck className="w-4 h-4" />
-                                  Generate Code
-                                </>
+                                  Verify Handover Code
+                                </button>
+                              ) : (
+                                // Found item: Claimant generates code
+                                <button
+                                  onClick={() =>
+                                    handleGenerateHandoverCode(claim.item.id)
+                                  }
+                                  disabled={generatingCode[claim.item.id]}
+                                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium disabled:opacity-50"
+                                >
+                                  {generatingCode[claim.item.id] ? (
+                                    <>
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                      Generating...
+                                    </>
+                                  ) : handoverCodes[claim.item.id] ? (
+                                    <>
+                                      <Copy className="w-4 h-4" />
+                                      Code: {handoverCodes[claim.item.id]}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <ShieldCheck className="w-4 h-4" />
+                                      Generate Code
+                                    </>
+                                  )}
+                                </button>
                               )}
-                            </button>
+                            </>
                           )}
                       </div>
                     </div>

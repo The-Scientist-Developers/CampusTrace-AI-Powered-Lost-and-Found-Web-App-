@@ -68,13 +68,11 @@ const HandoverPage = () => {
     const status = itemData.status?.toLowerCase();
     const isOwner = itemData.user_id === currentUserId;
 
-    // pending recovery: Owner generates (receiving), Claimant enters (giving)
-    if (status === "pending recovery") {
+    if (status === "pending recovery" || status === "lost") {
       return isOwner;
     }
 
-    // pending handover: Claimant generates (receiving), Owner enters (giving)
-    if (status === "pending handover") {
+    if (status === "pending handover" || status === "found") {
       return !isOwner;
     }
 

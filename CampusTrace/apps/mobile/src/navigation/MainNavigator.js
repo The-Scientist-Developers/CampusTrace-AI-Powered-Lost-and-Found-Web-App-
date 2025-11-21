@@ -22,6 +22,7 @@ import MessagesScreen from "../screens/main/MessagesScreen";
 import NotificationScreen from "../screens/main/NotificationScreen";
 import ChatScreen from "../screens/main/ChatScreen";
 import MyPostsScreen from "../screens/main/MyPostsScreen";
+import HandoverScreen from "../screens/main/HandoverScreen";
 
 // --- IMPORT NEW SCREENS ---
 import SettingsScreen from "../screens/main/SettingsScreen";
@@ -42,6 +43,17 @@ function DashboardStack() {
       <Stack.Screen name="Notifications" component={NotificationScreen} />
       <Stack.Screen name="MyPosts" component={MyPostsScreen} />
       <Stack.Screen name="Chat" component={ChatScreen} />
+      <Stack.Screen name="Handover" component={HandoverScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// MyPosts Stack Navigator (includes Handover screen)
+function MyPostsStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MyPostsHome" component={MyPostsScreen} />
+      <Stack.Screen name="Handover" component={HandoverScreen} />
     </Stack.Navigator>
   );
 }
@@ -190,7 +202,7 @@ export default function MainNavigator() {
       <Tab.Screen name="Browse" component={BrowseScreen} />
       <Tab.Screen name="PostItem" component={PostItemScreen} />
       <Tab.Screen name="Leaderboard" component={LeaderboardScreen} />
-      <Tab.Screen name="MyPosts" component={MyPostsScreen} />
+      <Tab.Screen name="MyPosts" component={MyPostsStack} />
       {/* --- UPDATE PROFILE TAB TO USE THE STACK --- */}
       <Tab.Screen name="Profile" component={ProfileStack} />
     </Tab.Navigator>

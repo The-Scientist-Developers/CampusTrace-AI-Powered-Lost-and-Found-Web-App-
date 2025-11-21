@@ -1120,15 +1120,15 @@ export default function LandingPage() {
     },
     {
       icon: KeyRound,
-      title: "Secure Claim & Messaging",
+      title: "Smart Claim & Instant Connect",
       description:
-        "Claim items with a unique detail. Once approved, securely chat in-app with the finder/claimant to arrange the return without sharing personal contact info initially.",
+        "Found something? Report it and connect instantly with the owner - no waiting! Lost something? Claimants provide verification details for your approval. Once connected, chat securely in-app to arrange the return without sharing personal contact info.",
     },
     {
       icon: ShieldCheck,
       title: "Secure Handover System",
       description:
-        "Complete item returns safely with our verification code system. Claimants generate a 4-digit code, finders verify it in person, and both parties get confirmation. Finders earn Helper badges for successful returns!",
+        "Complete item returns safely with our verification code system. The person receiving the item generates a 4-digit code, the person giving verifies it in person. Lost items connect you instantly (no approval needed!), while Found items require verification. Earn Helper badges for successful returns!",
     },
     {
       icon: FilePlus,
@@ -1236,9 +1236,15 @@ export default function LandingPage() {
         "When you post a 'Lost' item, our AI analyzes its text (title, description, category) and image (if provided) using Jina AI. It then compares this against all approved 'Found' items in your university, calculating similarity scores. High-scoring matches appear under 'AI-Powered Matches' on your dashboard.",
     },
     {
-      question: "How do I communicate securely after a claim is approved?",
+      question:
+        "What's the difference between reporting a Found item vs a Lost item?",
       answer:
-        "Once a finder approves a claim on their 'Found' item, a private chat conversation is automatically created between the finder and claimant. Both users receive a notification linking directly to this chat in the 'Messages' section. You can coordinate the return here without initially sharing external contact details.",
+        "Found items require approval when someone claims them (to verify ownership). Lost items connect you instantly with anyone who reports finding them - no waiting! This is because finders are helping you, not claiming ownership. Both flows use our secure handover system with verification codes to complete the return safely.",
+    },
+    {
+      question: "How do I communicate securely after connecting?",
+      answer:
+        "For Found items: Once you approve a claim, a private chat opens. For Lost items: Chat opens immediately when someone reports finding it! Both users receive notifications linking to the 'Messages' section. You can coordinate the return without sharing external contact details initially.",
     },
     {
       question: "What if I don't have a university email?",
@@ -1251,9 +1257,14 @@ export default function LandingPage() {
         "Yes. Your primary login email is not displayed publicly. Contact information is only shared within the secure in-app chat after a claim is mutually approved. Optional contact details added to a post description are visible. We use Supabase's security features, including Row Level Security, to protect user data and isolate university information.",
     },
     {
+      question: "How does the secure handover system work?",
+      answer:
+        "When you're ready to meet, the person receiving the item generates a 4-digit verification code in the app. When you meet in person, the person giving the item enters this code to confirm the handover. This ensures both parties actually met and the item was safely returned. Finders earn Helper badges and leaderboard points for successful returns!",
+    },
+    {
       question: "How does the Leaderboard work?",
       answer:
-        "Successfully returning a 'Found' item to its owner (marked as 'Recovered' after claim approval) earns the finder points. The Leaderboard page ranks users within your university based on the number of items they've helped return, encouraging community participation.",
+        "Successfully returning items to their owners (verified through our handover code system) earns you points. The Leaderboard ranks users within your university based on the number of items they've helped return, encouraging community participation and recognizing campus heroes!",
     },
   ];
 
@@ -1844,19 +1855,19 @@ export default function LandingPage() {
                   icon: FilePlus,
                   title: "1. Report Item",
                   description:
-                    "Quickly post details and a photo of a lost or found item. Use the AI Helper for better descriptions.",
+                    "Post a Found item you discovered or a Lost item you're missing. Add photos and details - our AI Helper can improve your description.",
                 },
                 {
                   icon: Sparkles,
-                  title: "2. AI Matches",
+                  title: "2. AI Matches & Connect",
                   description:
-                    "Our smart system analyzes text and images, suggesting potential matches on your dashboard.",
+                    "Our smart system finds potential matches. Found a Lost item? Connect instantly! Lost something? Claimants provide verification for your approval.",
                 },
                 {
-                  icon: MessageSquare,
-                  title: "3. Connect Securely",
+                  icon: ShieldCheck,
+                  title: "3. Secure Handover",
                   description:
-                    "Claim items with a unique detail. Chat safely in-app after approval to arrange the return.",
+                    "Chat in-app to arrange meetup. The receiver generates a 4-digit code, the giver verifies it in person. Safe, verified, and rewarded!",
                 },
               ].map((step, index) => {
                 const stepView = useInView({

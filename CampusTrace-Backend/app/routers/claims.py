@@ -49,14 +49,51 @@ async def submit_claim(
         if existing_claim.data:
              raise HTTPException(status_code=400, detail="You already have a pending claim on this item.")
 
+        # For Lost items, auto-approve since finder is helping (no approval needed)
+        # For Found items, require approval from the finder
+        auto_approve = (item_status == "Lost")
+        claim_status = "approved" if auto_approve else "pending"
+
         claim_data = {
             "item_id": payload.item_id,
             "claimant_id": claimant_id,
             "finder_id": finder_id,
             "verification_message": payload.verification_message,
-            "status": "pending",
+            "status": claim_status,
         }
-        supabase.table("claims").insert(claim_data).execute()
+        claim_insert = supabase.table("claims").insert(claim_data).execute()
+        
+        # If auto-approved, update item status and create conversation
+        if auto_approve:
+            supabase.table("items").update({"status": "pending recovery"}).eq("id", payload.item_id).execute()
+            
+            # Create conversation for direct communication
+            existing_convo_res = (
+                supabase.table("conversations")
+                .select("id")
+                .eq("item_id", payload.item_id)
+                .eq("finder_id", finder_id)
+                .eq("claimant_id", claimant_id)
+                .execute()
+            )
+
+            conversation_id = None
+            if existing_convo_res.data:
+                conversation_id = existing_convo_res.data[0]["id"]
+            else:
+                new_convo_res = (
+                    supabase.table("conversations")
+                    .insert(
+                        {
+                            "item_id": payload.item_id,
+                            "finder_id": finder_id,
+                            "claimant_id": claimant_id,
+                        }
+                    )
+                    .execute()
+                )
+                if new_convo_res.data:
+                    conversation_id = new_convo_res.data[0]["id"]
 
         claimant_profile_res = (
             supabase.table("profiles")
@@ -73,25 +110,47 @@ async def submit_claim(
 
         # Dynamic notification message based on flow
         if item_status == "Lost":
-            # Claimant found the lost item
-            message = f"{claimant_name} claims to have found your lost item: '{item_title}'."
-            notif_type = "found_report"
+            # Auto-approved: Claimant found the lost item - notify both parties
+            chat_link = f"/dashboard/messages/{conversation_id}" if auto_approve and conversation_id else "/dashboard/my-posts"
+            
+            # Notify the loser (post owner)
+            message_loser = f"Great news! {claimant_name} found your lost item: '{item_title}'. You can now chat to arrange pickup."
+            create_notification(
+                recipient_id=finder_id,
+                university_id=item_university_id,
+                message=message_loser,
+                link_to=chat_link,
+                type="found_report",
+            )
+            
+            # Notify the finder (claimant)
+            message_finder = f"You've successfully reported finding '{item_title}'. You can now chat with the owner to arrange handover."
+            create_notification(
+                recipient_id=claimant_id,
+                university_id=item_university_id,
+                message=message_finder,
+                link_to=chat_link,
+                type="found_report",
+            )
+            
+            return {
+                "message": "Success! You can now chat with the owner to arrange the handover.",
+                "conversation_id": conversation_id
+            }
         else:
-            # Standard: Claimant wants the found item
+            # Standard: Claimant wants the found item - needs approval
             message = f"{claimant_name} has submitted a claim on your found item: '{item_title}'."
-            notif_type = "claim"
+            create_notification(
+                recipient_id=finder_id,
+                university_id=item_university_id,
+                message=message,
+                link_to="/dashboard/my-posts",
+                type="claim",
+            )
 
-        create_notification(
-            recipient_id=finder_id,
-            university_id=item_university_id,
-            message=message,
-            link_to="/dashboard/my-posts",
-            type=notif_type,
-        )
-
-        return {
-            "message": "Submission successful. The user has been notified."
-        }
+            return {
+                "message": "Submission successful. The user has been notified."
+            }
     except HTTPException:
         raise
     except Exception as e:

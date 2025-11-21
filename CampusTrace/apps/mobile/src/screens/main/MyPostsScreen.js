@@ -417,6 +417,7 @@ const MyPostsScreen = ({ navigation }) => {
           colors={colors}
           fontSizes={fontSizes}
           styles={styles}
+          navigation={navigation}
         />
       );
     }
@@ -432,6 +433,7 @@ const MyPostsScreen = ({ navigation }) => {
           colors={colors}
           fontSizes={fontSizes}
           styles={styles}
+          navigation={navigation}
         />
       );
     }
@@ -461,7 +463,8 @@ const MyPostsScreen = ({ navigation }) => {
             (p) =>
               (["approved", "pending_return"].includes(p.moderation_status) ||
                 p.status === "pending handover" ||
-                p.status === "Pending Handover") &&
+                p.status === "Pending Handover" ||
+                p.status === "pending recovery") &&
               p.status !== "recovered"
           );
         } else if (postStatusFilter === "pending") {
@@ -506,7 +509,8 @@ const MyPostsScreen = ({ navigation }) => {
     (p) =>
       (["approved", "pending_return"].includes(p.moderation_status) ||
         p.status === "pending handover" ||
-        p.status === "Pending Handover") &&
+        p.status === "Pending Handover" ||
+        p.status === "pending recovery") &&
       p.status !== "recovered"
   ).length;
   const pendingCount = myPosts.filter(
@@ -1027,6 +1031,7 @@ const SwipeablePostCard = ({
   colors,
   fontSizes,
   styles,
+  navigation,
 }) => {
   const ref = useRef(null);
   const onSwipeableOpen = () => {
@@ -1066,6 +1071,7 @@ const SwipeablePostCard = ({
         colors={colors}
         fontSizes={fontSizes}
         styles={styles}
+        navigation={navigation}
       />
     </Swipeable>
   );
@@ -1115,6 +1121,7 @@ const PostCard = ({
   colors,
   fontSizes,
   styles,
+  navigation,
 }) => (
   <View
     style={[
@@ -1163,7 +1170,17 @@ const PostCard = ({
         onPress={onOpenHandover}
       >
         <ShieldCheck size={16} color="#FFFFFF" />
-        <Text style={styles.claimButtonText}>Complete Handover</Text>
+        <Text style={styles.claimButtonText}>Verify Handover Code</Text>
+      </TouchableOpacity>
+    ) : item.status === "pending recovery" ? (
+      <TouchableOpacity
+        style={[styles.claimButton, { backgroundColor: colors.primary }]}
+        onPress={() =>
+          navigation.navigate("Handover", { itemId: item.id, role: "claimant" })
+        }
+      >
+        <ShieldCheck size={16} color="#FFFFFF" />
+        <Text style={styles.claimButtonText}>Generate Handover Code</Text>
       </TouchableOpacity>
     ) : item.moderation_status === "approved" && item.status === "Lost" ? (
       <TouchableOpacity
@@ -1197,12 +1214,14 @@ const ClaimCard = ({
   colors,
   fontSizes,
   styles,
+  navigation,
 }) => {
   const isApproved = claim.status === "accepted" || claim.status === "approved";
   // Check for "pending handover" status (set when claim is approved)
   const isPendingReturn =
     claim.item.status === "pending handover" ||
     claim.item.status === "Pending Handover";
+  const isPendingRecovery = claim.item.status === "pending recovery";
 
   return (
     <View
@@ -1236,6 +1255,43 @@ const ClaimCard = ({
       </View>
 
       {/* Handover Code Section for Approved Claims (hide if recovered) */}
+      {isApproved &&
+        isPendingRecovery &&
+        claim.item?.status !== "recovered" && (
+          <View
+            style={[
+              styles.handoverSection,
+              {
+                backgroundColor: colors.background,
+                borderTopColor: colors.divider,
+              },
+            ]}
+          >
+            <View style={styles.handoverCodeContainer}>
+              <Shield size={20} color={colors.success || "#10B981"} />
+              <Text style={[styles.handoverLabel, { color: colors.text }]}>
+                Ready to return the item?
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[
+                styles.generateCodeButton,
+                { backgroundColor: colors.success || "#10B981" },
+              ]}
+              onPress={() =>
+                navigation.navigate("Handover", {
+                  itemId: claim.item.id,
+                  role: "finder",
+                })
+              }
+            >
+              <ShieldCheck size={16} color="#FFF" />
+              <Text style={styles.generateCodeButtonText}>
+                Verify Handover Code
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       {isApproved && isPendingReturn && claim.item?.status !== "recovered" && (
         <View
           style={[
