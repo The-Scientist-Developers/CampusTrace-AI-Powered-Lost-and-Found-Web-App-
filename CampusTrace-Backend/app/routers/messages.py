@@ -288,3 +288,39 @@ async def get_unread_messages_count(user_id: str = Depends(get_current_user_id))
     except Exception as e:
         print(f"Error fetching unread messages count: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch unread count: {str(e)}")
+
+
+@router.delete("/conversations/{conversation_id}")
+async def delete_conversation(
+    conversation_id: int,
+    user_id: str = Depends(get_current_user_id)
+):
+    """
+    Delete a conversation and all its messages. Only participants can delete.
+    """
+    try:
+        # Verify conversation exists and user is a participant
+        convo_res = supabase.table("conversations").select(
+            "id, finder_id, claimant_id"
+        ).eq("id", conversation_id).single().execute()
+        
+        if not convo_res.data:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        convo = convo_res.data
+        
+        if user_id not in [convo["finder_id"], convo["claimant_id"]]:
+            raise HTTPException(status_code=403, detail="You can only delete your own conversations")
+        
+        # Delete all messages in the conversation first
+        supabase.table("messages").delete().eq("conversation_id", conversation_id).execute()
+        
+        # Delete the conversation
+        supabase.table("conversations").delete().eq("id", conversation_id).execute()
+        
+        return {"message": "Conversation deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error deleting conversation: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete conversation: {str(e)}")

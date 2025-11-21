@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MessageCircle, ChevronRight, User, Trash2 } from "lucide-react-native";
 import { getSupabaseClient } from "@campustrace/core";
 import { useTheme } from "../../contexts/ThemeContext";
+import { apiClient } from "../../utils/apiClient";
 
 const BRAND_COLOR = "#1877F2";
 // --- 1. IMPORT GESTURE HANDLER ---
@@ -217,7 +218,7 @@ const MessagesScreen = ({ navigation }) => {
     fetchMessages();
   };
 
-  // --- 2. ADD DELETE FUNCTION ---
+  // --- 2. ADD DELETE FUNCTION (Using backend API like web app) ---
   const deleteConversation = (conversationId) => {
     Alert.alert(
       "Delete Conversation",
@@ -232,29 +233,20 @@ const MessagesScreen = ({ navigation }) => {
           style: "destructive",
           onPress: async () => {
             try {
-              // 1. Optimistically remove from UI
+              // Use apiClient which handles correct URL and authentication
+              await apiClient.delete(`/api/conversations/${conversationId}`);
+
+              // Remove from UI on success
               setConversations((prev) =>
                 prev.filter((convo) => convo.id !== conversationId)
               );
-
-              // 2. Attempt to delete from Supabase
-              const supabase = getSupabaseClient();
-              const { error } = await supabase
-                .from("conversations")
-                .delete()
-                .eq("id", conversationId);
-
-              if (error) {
-                // If error, refresh from server
-                Alert.alert(
-                  "Error",
-                  "Could not delete conversation. Please try again."
-                );
-                fetchMessages();
-              }
             } catch (err) {
-              Alert.alert("Error", "An unexpected error occurred.");
-              fetchMessages();
+              console.error("Delete error:", err);
+              Alert.alert(
+                "Error",
+                err.message ||
+                  "Could not delete conversation. Please try again."
+              );
             }
           },
         },
