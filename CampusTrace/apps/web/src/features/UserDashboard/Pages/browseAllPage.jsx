@@ -897,7 +897,11 @@ export default function BrowseAllPage({ user }) {
         }
 
         const data = await response.json();
-        setPosts(data.items || []);
+        // Filter out recovered items on client side as well
+        const activeItems = (data.items || []).filter(
+          (item) => item.status?.toLowerCase() !== "recovered"
+        );
+        setPosts(activeItems);
         setTotalPosts(data.total_items || 0);
       } catch (err) {
         setError("Failed to load posts.");

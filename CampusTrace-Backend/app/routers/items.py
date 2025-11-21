@@ -75,6 +75,7 @@ async def get_items_paginated(
             )
             .eq("university_id", university_id)
             .eq("moderation_status", "approved")
+            .neq("status", "recovered")  # Exclude recovered items from browse
         )
 
         if status and status != "All":
