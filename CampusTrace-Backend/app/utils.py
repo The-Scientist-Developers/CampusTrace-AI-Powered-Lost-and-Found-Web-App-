@@ -158,8 +158,9 @@ async def send_push_notification(recipient_id: str, message: str, notification_t
             "to": push_token,
             "sound": "default",
             "title": "CampusTrace", # You can customize this
+            "data": { "url": link_to }, # Send link_to in data payload
             "body": message,
-            "data": { "url": link_to } # Send link_to in data payload
+            "image": image_url
         }
 
         # Send the request to Expo's push API

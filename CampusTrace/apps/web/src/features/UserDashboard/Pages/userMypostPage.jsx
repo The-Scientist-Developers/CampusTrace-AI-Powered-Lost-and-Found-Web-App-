@@ -138,18 +138,18 @@ const MyPostPreviewModal = ({ item, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn"
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+        className="relative bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-white dark:bg-[#2a2a2a] border-b border-neutral-200 dark:border-[#3a3a3a] p-6 rounded-t-2xl">
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
+        <div className="flex-shrink-0 bg-white dark:bg-[#2a2a2a] border-b border-neutral-200 dark:border-[#3a3a3a] p-6 rounded-t-2xl z-10">
+          <div className="flex justify-between items-start gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <span
                   className={`text-xs font-semibold px-3 py-1 rounded-full ${
                     item.status?.toLowerCase() === "lost"
@@ -163,29 +163,28 @@ const MyPostPreviewModal = ({ item, onClose }) => {
                   {item.category}
                 </span>
               </div>
-              <h2 className="text-2xl font-bold text-neutral-800 dark:text-white">
+              <h2 className="text-2xl font-bold text-neutral-800 dark:text-white break-words">
                 {item.title}
               </h2>
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-gray-400"
+              className="flex-shrink-0 p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-gray-400 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-6">
+        {/* Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Image */}
-            <div className="w-full h-80 flex items-center justify-center bg-neutral-100 dark:bg-zinc-800 rounded-xl p-4">
+            <div className="w-full h-80 flex items-center justify-center bg-neutral-100 dark:bg-zinc-800 rounded-xl p-4 overflow-hidden">
               {item.image_url ? (
-                <LazyLoadImage
+                <img
                   src={item.image_url}
                   alt={item.title}
-                  effect="blur"
                   className="max-w-full max-h-full object-contain rounded-lg"
                 />
               ) : (
@@ -373,40 +372,43 @@ const PostCard = ({
     post.status?.toLowerCase() === "found" || isPendingHandover;
 
   return (
-    <div className="group relative bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-      {/* Action buttons - always visible */}
-      <div className="absolute top-3 right-3 z-10 flex gap-2">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick(post);
-          }}
-          className="p-2 bg-primary-100 dark:bg-primary-500/20 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-500/30 transition-all duration-200 hover:scale-110"
-          title="View Details"
-        >
-          <Eye className="w-4 h-4" />
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(post.id);
-          }}
-          className="p-2 bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-500/30 transition-all duration-200 hover:scale-110"
-          title="Delete Post"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </div>
-
-      {hasClaims && (
-        <div className="absolute top-3 left-3 z-10 px-2.5 py-1 bg-primary-600 text-white rounded-full text-xs font-semibold flex items-center gap-1.5 animate-pulse">
-          <MessageSquare className="w-3.5 h-3.5" />
-          Has Claims
-        </div>
-      )}
-
+    <div
+      onClick={() => onClick(post)}
+      className="group relative bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-visible flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+    >
       {/* Image section */}
-      <div className="relative w-full h-52 bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-zinc-800 dark:to-zinc-900 p-3">
+      <div className="relative w-full h-52 bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-zinc-800 dark:to-zinc-900 p-3 rounded-t-xl overflow-hidden">
+        {/* Action buttons - positioned at top right of image */}
+        <div className="absolute top-2 right-2 z-30 flex gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick(post);
+            }}
+            className="p-2 bg-white/95 dark:bg-[#2a2a2a]/95 backdrop-blur-sm border border-neutral-200 dark:border-neutral-700 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all duration-200 hover:scale-110 shadow-lg"
+            title="View Details"
+          >
+            <Eye className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(post.id);
+            }}
+            className="p-2 bg-white/95 dark:bg-[#2a2a2a]/95 backdrop-blur-sm border border-neutral-200 dark:border-neutral-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-all duration-200 hover:scale-110 shadow-lg"
+            title="Delete Post"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+
+        {hasClaims && (
+          <div className="absolute top-2 left-2 z-30 px-2.5 py-1 bg-primary-600 text-white rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-lg">
+            <MessageSquare className="w-3.5 h-3.5" />
+            Has Claims
+          </div>
+        )}
+
         {post.image_url ? (
           <LazyLoadImage
             src={post.image_url}
@@ -424,9 +426,9 @@ const PostCard = ({
         )}
 
         {/* Status badge overlay */}
-        <div className="absolute bottom-3 right-3">
+        <div className="absolute bottom-2 right-2 z-20">
           <span
-            className={`text-xs font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm ${
+            className={`text-xs font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm shadow-md ${
               isLost
                 ? "bg-red-100/90 text-red-700 dark:bg-red-500/20 dark:text-red-400"
                 : "bg-green-100/90 text-green-700 dark:bg-green-500/20 dark:text-green-400"
@@ -1307,6 +1309,14 @@ function MyPostsPage({ user }) {
           </div>
         )}
       </div>
+
+      {/* Preview Modal */}
+      {selectedItem && (
+        <MyPostPreviewModal
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+        />
+      )}
     </div>
   );
 }

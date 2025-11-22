@@ -30,7 +30,7 @@ import {
 } from "../../components/SkeletonLoaders";
 
 // Lazy load heavy components
-const BadgeList = React.lazy(() => import("../../components/BadgeList"));
+import BadgeList from "../../components/BadgeList";
 
 const ProfileScreen = ({ navigation }) => {
   const { colors, fontSizes } = useTheme();

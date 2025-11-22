@@ -367,8 +367,13 @@ async def create_item(
 
         if item.status == "Found":
             found_res = supabase.table("items").select("id", count="exact").eq("user_id", user_id).eq("status", "Found").execute()
+            
+            # Badge Milestones
+            if found_res.count == 5:
+                award_badge(user_id, "Observer", university_id)
             if found_res.count == 10:
                 award_badge(user_id, "Eagle Eye", university_id)
+                
             if moderation_status == "approved":
                 asyncio.create_task(find_proactive_matches(new_item, university_id))
 

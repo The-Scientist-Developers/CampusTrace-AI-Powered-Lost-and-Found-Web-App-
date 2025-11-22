@@ -4,6 +4,7 @@ import random
 import string
 from datetime import datetime, timedelta
 from app.dependencies import get_current_user_id, supabase
+from app.utils import award_badge  # Imported for badge logic
 
 router = APIRouter(prefix="/api/handover", tags=["Handover"])
 
@@ -135,6 +136,7 @@ async def verify_handover(
             raise HTTPException(status_code=404, detail="Item not found")
         item = item_res.data
         status = item.get("status")
+        university_id = item.get("university_id")
 
         # Logic Validation: Who is allowed to verify?
         
@@ -143,11 +145,6 @@ async def verify_handover(
         if status in ["Lost", "pending recovery"]:
             if item.get("user_id") == current_user_id:
                 raise HTTPException(status_code=403, detail="You cannot verify your own code. The finder must enter it.")
-            
-            # Optionally verify if current_user is the approved claimant (Finder)
-            # This adds extra security but might fail if we allow ad-hoc handovers. 
-            # For now, we assume possessing the code + allowed logic is enough, 
-            # or we check against approved claims.
             
         # CASE B: Found Item Flow (pending handover)
         # The Claimant generated code. The Post Owner (Finder) must verify.
@@ -180,24 +177,21 @@ async def verify_handover(
 
         # Mark recovered
         supabase.table("items").update({
-            "status": "recovered"
+            "status": "recovered",
+            "moderation_status": "recovered"
         }).eq("id", item_id).execute()
 
         print(f"✅ Item {item_id} marked as recovered.")
 
         # --- POINTS & BADGES LOGIC ---
-        # Credit the "Finder" (The person who found and returned the item)
         
+        # 1. Credit the FINDER (Giver)
         finder_to_credit = None
-        
         if status in ["Lost", "pending recovery"]:
-            # Lost Item Flow: The finder is the current_user_id (who reported finding it)
             finder_to_credit = current_user_id
         else:
-            # Found Item Flow: The finder is the item post owner
             finder_to_credit = item.get("user_id")
 
-        # Credit the finder for returning the item
         if finder_to_credit:
             try:
                 profile_res = supabase.table("profiles").select("returns_count").eq("id", finder_to_credit).single().execute()
@@ -209,22 +203,28 @@ async def verify_handover(
                         "returns_count": new_count
                     }).eq("id", finder_to_credit).execute()
                     
-                    print(f"✅ Credited finder {finder_to_credit}: returns_count {current_count} → {new_count}")
-                    
-                    # Award helper badge for first return
+                    # Return Milestones
                     if new_count == 1:
-                        try:
-                            supabase.table("user_badges").insert({
-                                "user_id": finder_to_credit,
-                                "badge_type": "helper",
-                                "earned_at": datetime.utcnow().isoformat()
-                            }).execute()
-                            print(f"🏆 Awarded 'helper' badge to finder {finder_to_credit}")
-                        except Exception as badge_error:
-                            # Badge might already exist, ignore duplicate errors
-                            print(f"⚠️ Badge error (might already exist): {badge_error}")
+                        award_badge(finder_to_credit, "Helper", university_id)
+                    elif new_count == 5:
+                        award_badge(finder_to_credit, "Trusted Finder", university_id)
+                    elif new_count == 10:
+                        award_badge(finder_to_credit, "Community Hero", university_id)
+                        
             except Exception as e:
                 print(f"⚠️ Error updating finder stats: {e}")
+
+        # 2. Credit the RECEIVER (Claimant/Owner)
+        receiver_id = handover.get("claimant_id")
+        if receiver_id:
+            try:
+                # Check if this is their first recovered item
+                recovered_count_res = supabase.table("items").select("id", count="exact").eq("user_id", receiver_id).eq("status", "recovered").execute()
+                # If count is 1 (the one just marked), award badge
+                if recovered_count_res.count == 1:
+                    award_badge(receiver_id, "Reunited", university_id)
+            except Exception as e:
+                print(f"⚠️ Error awarding receiver badge: {e}")
 
         return {
             "success": True,

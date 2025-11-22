@@ -62,3 +62,39 @@ async def get_all_badges(user_id: str = Depends(get_current_user_id)):
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to fetch badges: {str(e)}")
+
+
+@router.delete("/user/{user_id}/badges/{badge_id}")
+async def remove_badge(
+    user_id: str, 
+    badge_id: str, 
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    Remove a badge from a user.
+    """
+    # Security check: Ensure user is modifying their own data
+    if user_id != current_user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to remove this badge")
+
+    try:
+        # Perform the delete operation on the user_badges table
+        # We match both id (the record unique ID) and user_id (security)
+        result = (
+            supabase.table("user_badges")
+            .delete()
+            .match({"id": badge_id, "user_id": user_id})
+            .execute()
+        )
+
+        # Check if anything was actually deleted
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Badge not found or already removed")
+
+        return {"message": "Badge removed successfully"}
+
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        print(f"Error removing badge: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to remove badge: {str(e)}")

@@ -1020,79 +1020,96 @@ const BrowseScreen = () => {
     }
   }, []);
 
-  const fetchItems = async (reset = false, pageOverride = null) => {
-    try {
-      setLoading(true);
-      const supabase = getSupabaseClient();
+  const fetchItems = useCallback(
+    async (pageOverride = null) => {
+      try {
+        setLoading(true);
+        const supabase = getSupabaseClient();
 
-      if (!user?.id) {
-        setItems([]);
-        return;
+        if (!user?.id) {
+          setItems([]);
+          setInitialLoading(false);
+          setLoading(false);
+          return;
+        }
+
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("university_id")
+          .eq("id", user.id)
+          .single();
+
+        if (profileError) throw profileError;
+        if (!profile) throw new Error("Could not find user profile.");
+
+        let query = supabase
+          .from("items")
+          .select("*, profiles(id, full_name, email)", { count: "exact" })
+          .eq("university_id", profile.university_id)
+          .eq("moderation_status", "approved")
+          .neq("status", "recovered");
+
+        // Apply filters
+        if (filters.status !== "All") {
+          query = query.eq("status", filters.status);
+        }
+
+        if (filters.categories && filters.categories.length > 0) {
+          query = query.in("category", filters.categories);
+        }
+
+        if (filters.dateFilter) {
+          query = query.gte("created_at", filters.dateFilter);
+        }
+
+        if (debouncedSearchQuery) {
+          query = query.or(
+            `title.ilike.%${debouncedSearchQuery}%,description.ilike.%${debouncedSearchQuery}%,ai_tags.cs.{${debouncedSearchQuery}}`
+          );
+        }
+
+        // Pagination
+        const page = pageOverride !== null ? pageOverride : currentPage;
+        const from = (page - 1) * itemsPerPage;
+        const to = from + itemsPerPage - 1;
+        query = query.range(from, to);
+
+        // Sorting
+        query = query.order("created_at", {
+          ascending: filters.sortBy === "oldest",
+        });
+
+        const { data, error, count } = await query;
+
+        if (error) throw error;
+
+        // Always replace items for pagination, never append
+        setItems(data || []);
+        setTotalItems(count || 0);
+        setHasMore((data?.length || 0) === itemsPerPage);
+      } catch (error) {
+        console.error("Error fetching items:", error);
+        Alert.alert("Error", "Failed to load items");
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+        setInitialLoading(false);
       }
+    },
+    [user, debouncedSearchQuery, filters, currentPage, itemsPerPage]
+  );
 
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("university_id")
-        .eq("id", user.id)
-        .single();
+  // Reset page to 1 when filters or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, debouncedSearchQuery, itemsPerPage]);
 
-      if (profileError) throw profileError;
-      if (!profile) throw new Error("Could not find user profile.");
-
-      let query = supabase
-        .from("items")
-        .select("*, profiles(id, full_name, email)", { count: "exact" })
-        .eq("university_id", profile.university_id)
-        .eq("moderation_status", "approved")
-        .neq("status", "recovered");
-
-      // Apply filters
-      if (filters.status !== "All") {
-        query = query.eq("status", filters.status);
-      }
-
-      if (filters.categories && filters.categories.length > 0) {
-        query = query.in("category", filters.categories);
-      }
-
-      if (filters.dateFilter) {
-        query = query.gte("created_at", filters.dateFilter);
-      }
-
-      if (debouncedSearchQuery) {
-        query = query.or(
-          `title.ilike.%${debouncedSearchQuery}%,description.ilike.%${debouncedSearchQuery}%,ai_tags.cs.{${debouncedSearchQuery}}`
-        );
-      }
-
-      // Pagination - use pageOverride if provided, otherwise use currentPage
-      const page =
-        pageOverride !== null ? pageOverride : reset ? 1 : currentPage;
-      const from = (page - 1) * itemsPerPage;
-      const to = from + itemsPerPage - 1;
-      query = query.range(from, to);
-
-      // Sorting
-      query = query.order("created_at", {
-        ascending: filters.sortBy === "oldest",
-      });
-
-      const { data, error, count } = await query;
-
-      if (error) throw error;
-
-      // Always replace items for pagination, never append
-      setItems(data || []);
-      setTotalItems(count || 0);
-      setHasMore((data?.length || 0) === itemsPerPage);
-    } catch (error) {
-      console.error("Error fetching items:", error);
-      Alert.alert("Error", "Failed to load items");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+  // Fetch items when dependencies change
+  useEffect(() => {
+    if (user && !imagePreview) {
+      fetchItems();
     }
-  };
+  }, [fetchItems, user, imagePreview]);
 
   const handleImageSearch = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
