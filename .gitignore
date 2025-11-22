@@ -77,6 +77,12 @@ CampusTrace-FrontEnd/.env
 CampusTrace-FrontEnd/.env.*
 CampusTrace-Backend/.env
 CampusTrace-Backend/.env.*
+CampusTrace/apps/mobile/.env
+CampusTrace/apps/mobile/.env.*
+!CampusTrace/apps/mobile/.env.example
+CampusTrace/apps/web/.env
+CampusTrace/apps/web/.env.*
+!CampusTrace/apps/web/.env.example
 
 # ============================================
 # IDE & EDITORS
