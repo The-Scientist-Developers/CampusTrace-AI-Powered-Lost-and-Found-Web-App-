@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Trophy, ArrowRight, User, ChevronRight } from "lucide-react";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
-import { getAccessToken, API_BASE_URL } from "../../api/apiClient";
+import { getAccessToken, API_BASE_URL, supabase } from "../../api/apiClient";
 import { useTheme } from "../../contexts/ThemeContext";
 
 const THEME_COLORS = {
@@ -82,8 +82,45 @@ const RightSuggestions = ({ profile, isOpen = true, onToggle }) => {
         setLoading(false);
       }
     };
+
     fetchLeaderboard();
-  }, []);
+
+    // Set up real-time subscription for profile updates (affects leaderboard)
+    if (!profile?.university_id) return;
+
+    const setupRealtime = async () => {
+      const channel = supabase
+        .channel("leaderboard-updates")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "profiles",
+            filter: `university_id=eq.${profile.university_id}`,
+          },
+          () => {
+            // Refetch leaderboard when any profile in the university updates
+            console.log("Profile updated, refreshing leaderboard...");
+            fetchLeaderboard();
+          }
+        )
+        .subscribe();
+
+      return channel;
+    };
+
+    let channel;
+    setupRealtime().then((ch) => {
+      channel = ch;
+    });
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [profile]);
 
   return (
     <aside

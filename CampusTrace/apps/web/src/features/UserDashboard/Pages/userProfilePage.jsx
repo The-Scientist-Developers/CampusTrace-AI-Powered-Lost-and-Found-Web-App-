@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { supabase, apiClient } from "../../../api/apiClient";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import { useProfile } from "../../../contexts/ProfileContext";
 import {
   User,
   Edit,
@@ -217,6 +218,7 @@ const CameraModal = ({
 
 export default function UserProfilePage({ user }) {
   const navigate = useNavigate();
+  const { updateProfile: updateProfileContext } = useProfile();
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]); // Logic Kept
   const [badges, setBadges] = useState([]);
@@ -411,6 +413,12 @@ export default function UserProfilePage({ user }) {
       setFullName(updatedProfile.full_name || "");
       setAvatarFile(null);
       setIsEditing(false);
+
+      // Update profile context for real-time updates across the app
+      if (updateProfileContext) {
+        updateProfileContext(updatedProfile);
+      }
+
       toast.success("Profile updated successfully!");
     } catch (err) {
       console.error("Error updating profile:", err);

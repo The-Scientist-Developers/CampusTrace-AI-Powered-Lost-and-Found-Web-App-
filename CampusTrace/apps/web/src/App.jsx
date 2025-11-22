@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import { supabase } from "./api/apiClient.js";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext.jsx";
+import { ProfileProvider } from "./contexts/ProfileContext.jsx";
 import { SkeletonTheme } from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
@@ -420,7 +421,9 @@ function AppContent() {
 function App() {
   return (
     <ThemeProvider>
-      <AppContent />
+      <ProfileProvider>
+        <AppContent />
+      </ProfileProvider>
     </ThemeProvider>
   );
 }

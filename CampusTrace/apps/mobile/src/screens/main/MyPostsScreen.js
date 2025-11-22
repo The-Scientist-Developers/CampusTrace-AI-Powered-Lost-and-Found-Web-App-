@@ -341,6 +341,60 @@ const MyPostsScreen = ({ navigation }) => {
     );
   };
 
+  const handleDeleteClaim = (claim) => {
+    Alert.alert(
+      "Delete Claim",
+      `Are you sure you want to delete your claim for "${claim.item.title}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setMyClaims((prev) => prev.filter((c) => c.id !== claim.id));
+            const supabase = getSupabaseClient();
+            const { error } = await supabase
+              .from("claims")
+              .delete()
+              .eq("id", claim.id);
+            if (error) {
+              Alert.alert("Error", "Could not delete claim. Please refresh.");
+              fetchAllData(true);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteReceivedClaim = (claim) => {
+    Alert.alert(
+      "Delete Claim",
+      `Are you sure you want to delete the claim from ${
+        claim.claimant.full_name || "Anonymous"
+      } for "${claim.item.title}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setReceivedClaims((prev) => prev.filter((c) => c.id !== claim.id));
+            const supabase = getSupabaseClient();
+            const { error } = await supabase
+              .from("claims")
+              .delete()
+              .eq("id", claim.id);
+            if (error) {
+              Alert.alert("Error", "Could not delete claim. Please refresh.");
+              fetchAllData(true);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleGenerateHandoverCode = async (itemId) => {
     setGeneratingCode((prev) => ({ ...prev, [itemId]: true }));
     try {
@@ -427,6 +481,7 @@ const MyPostsScreen = ({ navigation }) => {
         <ClaimCard
           claim={item}
           onCancel={() => handleCancelClaim(item)}
+          onDelete={() => handleDeleteClaim(item)}
           onGenerateCode={() => handleGenerateHandoverCode(item.item.id)}
           handoverCode={handoverCodes[item.item.id]}
           isGenerating={generatingCode[item.item.id]}
@@ -444,6 +499,7 @@ const MyPostsScreen = ({ navigation }) => {
           claim={item}
           onAccept={() => handleUpdateClaimStatus(item, "accepted")}
           onReject={() => handleUpdateClaimStatus(item, "rejected")}
+          onDelete={() => handleDeleteReceivedClaim(item)}
           colors={colors}
           fontSizes={fontSizes}
           styles={styles}
@@ -1208,6 +1264,7 @@ const PostCard = ({
 const ClaimCard = ({
   claim,
   onCancel,
+  onDelete,
   onGenerateCode,
   handoverCode,
   isGenerating,
@@ -1251,6 +1308,15 @@ const ClaimCard = ({
           <Text style={styles.cardTimestamp}>
             {getTimeAgo(claim.created_at)}
           </Text>
+        </View>
+        {/* Delete button in header */}
+        <View style={styles.cardActions}>
+          <TouchableOpacity
+            onPress={onDelete}
+            style={[styles.iconButton, { backgroundColor: "#EF444410" }]}
+          >
+            <Trash2 size={18} color="#EF4444" />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -1438,6 +1504,7 @@ const ReceivedClaimCard = ({
   claim,
   onAccept,
   onReject,
+  onDelete,
   colors,
   fontSizes,
   styles,
@@ -1467,6 +1534,15 @@ const ReceivedClaimCard = ({
         <View style={styles.badgeRow}>
           <ClaimStatusBadge status={claim.status} styles={styles} />
         </View>
+      </View>
+      {/* Delete button in header */}
+      <View style={styles.cardActions}>
+        <TouchableOpacity
+          onPress={onDelete}
+          style={[styles.iconButton, { backgroundColor: "#EF444410" }]}
+        >
+          <Trash2 size={18} color="#EF4444" />
+        </TouchableOpacity>
       </View>
     </View>
     <View

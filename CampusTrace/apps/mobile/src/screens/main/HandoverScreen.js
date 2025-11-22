@@ -14,33 +14,16 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { getSupabaseClient } from "@campustrace/core";
 import { API_BASE_URL, apiClient } from "../../utils/apiClient";
+import { useTheme } from "../../contexts/ThemeContext";
 import {
-  Colors,
   Spacing as SPACING,
   Typography as TYPOGRAPHY,
 } from "../../constants/designSystem";
 
-// Create compatibility layer for COLORS
-const COLORS = {
-  primary: Colors.primary[600],
-  success: Colors.success.main,
-  error: Colors.error.main,
-  warning: Colors.warning.main,
-  border: Colors.neutral[300],
-  text: {
-    primary: Colors.neutral[900],
-    secondary: Colors.neutral[600],
-    tertiary: Colors.neutral[400],
-  },
-  background: {
-    primary: Colors.neutral[50],
-    secondary: Colors.neutral[100],
-  },
-};
-
 const HandoverScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
+  const { colors } = useTheme();
   const { itemId, role } = route.params; // role: 'claimant' or 'finder'
 
   // Get supabase client inside component
@@ -48,6 +31,9 @@ const HandoverScreen = () => {
 
   const [loading, setLoading] = useState(false);
   const [handoverCode, setHandoverCode] = useState("");
+
+  // Create dynamic styles based on theme
+  const styles = getStyles(colors);
   const [verificationCode, setVerificationCode] = useState("");
   const [handoverData, setHandoverData] = useState(null);
   const [itemData, setItemData] = useState(null);
@@ -223,11 +209,15 @@ const HandoverScreen = () => {
       <View
         style={[
           styles.container,
-          { justifyContent: "center", alignItems: "center" },
+          {
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: colors.background,
+          },
         ]}
       >
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={{ marginTop: 16, color: COLORS.text.secondary }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ marginTop: 16, color: colors.textSecondary }}>
           Loading handover details...
         </Text>
       </View>
@@ -252,14 +242,14 @@ const HandoverScreen = () => {
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color={COLORS.text.primary} />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <View style={styles.iconContainer}>
             <Ionicons
               name="shield-checkmark"
               size={40}
-              color={COLORS.primary}
+              color={colors.primary}
             />
           </View>
           <Text style={styles.title}>Secure Handover</Text>
@@ -283,7 +273,7 @@ const HandoverScreen = () => {
                   <Ionicons
                     name="checkmark-circle"
                     size={80}
-                    color={COLORS.success}
+                    color={colors.success}
                   />
                 </View>
                 <Text style={styles.verifiedTitle}>Handover Verified! ✅</Text>
@@ -321,7 +311,7 @@ const HandoverScreen = () => {
                     <Ionicons
                       name="copy-outline"
                       size={20}
-                      color={COLORS.primary}
+                      color={colors.primary}
                     />
                     <Text style={styles.secondaryButtonText}>Copy</Text>
                   </TouchableOpacity>
@@ -331,13 +321,13 @@ const HandoverScreen = () => {
                     disabled={loading}
                   >
                     {loading ? (
-                      <ActivityIndicator size="small" color={COLORS.primary} />
+                      <ActivityIndicator size="small" color={colors.primary} />
                     ) : (
                       <>
                         <Ionicons
                           name="refresh-outline"
                           size={20}
-                          color={COLORS.primary}
+                          color={colors.primary}
                         />
                         <Text style={styles.secondaryButtonText}>
                           Regenerate
@@ -351,7 +341,7 @@ const HandoverScreen = () => {
                   <Ionicons
                     name="time-outline"
                     size={20}
-                    color={COLORS.warning}
+                    color={colors.warning}
                   />
                   <Text style={styles.warningText}>
                     Code expires in 24 hours
@@ -381,7 +371,7 @@ const HandoverScreen = () => {
                 <Ionicons
                   name="alert-circle-outline"
                   size={64}
-                  color={COLORS.text.secondary}
+                  color={colors.textSecondary}
                 />
                 <Text style={styles.generateTitle}>Ready to Pick Up?</Text>
                 <Text style={styles.generateSubtitle}>
@@ -425,12 +415,12 @@ const HandoverScreen = () => {
               maxLength={4}
               placeholder="1234"
               keyboardType="number-pad"
-              placeholderTextColor={COLORS.text.tertiary}
+              placeholderTextColor={colors.textSecondary}
             />
 
             {error ? (
               <View style={styles.errorBox}>
-                <Ionicons name="alert-circle" size={20} color={COLORS.error} />
+                <Ionicons name="alert-circle" size={20} color={colors.error} />
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             ) : null}
@@ -476,231 +466,232 @@ const HandoverScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background.primary,
-  },
-  contentContainer: {
-    padding: SPACING.lg,
-  },
-  header: {
-    marginBottom: SPACING.xl,
-  },
-  backButton: {
-    marginBottom: SPACING.md,
-  },
-  headerContent: {
-    alignItems: "center",
-  },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: `${COLORS.primary}20`,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: SPACING.md,
-  },
-  title: {
-    ...TYPOGRAPHY.h1,
-    color: COLORS.text.primary,
-    marginBottom: SPACING.xs,
-  },
-  subtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.text.secondary,
-    textAlign: "center",
-  },
-  card: {
-    backgroundColor: COLORS.background.secondary,
-    borderRadius: 16,
-    padding: SPACING.xl,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  // Claimant - Verified
-  verifiedContainer: {
-    alignItems: "center",
-  },
-  verifiedIconContainer: {
-    marginBottom: SPACING.lg,
-  },
-  verifiedTitle: {
-    ...TYPOGRAPHY.h2,
-    color: COLORS.success,
-    marginBottom: SPACING.sm,
-  },
-  verifiedSubtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.text.secondary,
-    marginBottom: SPACING.lg,
-  },
-  verifiedInfo: {
-    backgroundColor: `${COLORS.success}20`,
-    borderRadius: 12,
-    padding: SPACING.md,
-    marginBottom: SPACING.lg,
-  },
-  verifiedInfoText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.success,
-  },
-  // Claimant - Code Display
-  codeContainer: {
-    alignItems: "center",
-  },
-  codeLabel: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.text.primary,
-    marginBottom: SPACING.md,
-  },
-  codeDisplay: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 16,
-    padding: SPACING.xl,
-    marginBottom: SPACING.md,
-    width: "100%",
-    alignItems: "center",
-  },
-  codeText: {
-    fontSize: 48,
-    fontWeight: "bold",
-    color: "#fff",
-    letterSpacing: 8,
-  },
-  buttonRow: {
-    flexDirection: "row",
-    gap: SPACING.md,
-    marginBottom: SPACING.lg,
-  },
-  secondaryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.xs,
-    backgroundColor: `${COLORS.primary}20`,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    borderRadius: 8,
-  },
-  secondaryButtonText: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.primary,
-  },
-  warningBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.sm,
-    backgroundColor: `${COLORS.warning}20`,
-    padding: SPACING.md,
-    borderRadius: 8,
-    marginBottom: SPACING.lg,
-  },
-  warningText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.warning,
-  },
-  // Claimant - Generate
-  generateContainer: {
-    alignItems: "center",
-  },
-  generateTitle: {
-    ...TYPOGRAPHY.h2,
-    color: COLORS.text.primary,
-    marginTop: SPACING.lg,
-    marginBottom: SPACING.sm,
-  },
-  generateSubtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.text.secondary,
-    textAlign: "center",
-    marginBottom: SPACING.xl,
-  },
-  primaryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.sm,
-    backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.xl,
-    borderRadius: 8,
-  },
-  primaryButtonText: {
-    ...TYPOGRAPHY.button,
-    color: "#fff",
-  },
-  // Finder - Verify
-  verifyContainer: {
-    alignItems: "stretch",
-  },
-  verifyLabel: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.text.primary,
-    textAlign: "center",
-    marginBottom: SPACING.md,
-  },
-  codeInput: {
-    fontSize: 36,
-    fontWeight: "bold",
-    textAlign: "center",
-    backgroundColor: COLORS.background.primary,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    padding: SPACING.lg,
-    marginBottom: SPACING.lg,
-    letterSpacing: 8,
-    color: COLORS.text.primary,
-  },
-  errorBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.sm,
-    backgroundColor: `${COLORS.error}20`,
-    padding: SPACING.md,
-    borderRadius: 8,
-    marginBottom: SPACING.lg,
-  },
-  errorText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.error,
-  },
-  verifyButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: SPACING.sm,
-    backgroundColor: COLORS.success,
-    paddingVertical: SPACING.md,
-    borderRadius: 8,
-    marginBottom: SPACING.lg,
-  },
-  verifyButtonText: {
-    ...TYPOGRAPHY.button,
-    color: "#fff",
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  // Instructions
-  instructionsBox: {
-    backgroundColor: COLORS.background.primary,
-    borderRadius: 12,
-    padding: SPACING.lg,
-  },
-  instructionsTitle: {
-    ...TYPOGRAPHY.h4,
-    color: COLORS.text.primary,
-    marginBottom: SPACING.sm,
-  },
-  instructionItem: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.text.secondary,
-    marginBottom: SPACING.xs,
-  },
-});
+const getStyles = (colors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    contentContainer: {
+      padding: SPACING.lg,
+    },
+    header: {
+      marginBottom: SPACING.xl,
+    },
+    backButton: {
+      marginBottom: SPACING.md,
+    },
+    headerContent: {
+      alignItems: "center",
+    },
+    iconContainer: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: `${colors.primary}20`,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: SPACING.md,
+    },
+    title: {
+      ...TYPOGRAPHY.h1,
+      color: colors.text,
+      marginBottom: SPACING.xs,
+    },
+    subtitle: {
+      ...TYPOGRAPHY.body,
+      color: colors.textSecondary,
+      textAlign: "center",
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      padding: SPACING.xl,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 3,
+    },
+    // Claimant - Verified
+    verifiedContainer: {
+      alignItems: "center",
+    },
+    verifiedIconContainer: {
+      marginBottom: SPACING.lg,
+    },
+    verifiedTitle: {
+      ...TYPOGRAPHY.h2,
+      color: colors.success,
+      marginBottom: SPACING.sm,
+    },
+    verifiedSubtitle: {
+      ...TYPOGRAPHY.body,
+      color: colors.textSecondary,
+      marginBottom: SPACING.lg,
+    },
+    verifiedInfo: {
+      backgroundColor: `${colors.success}20`,
+      borderRadius: 12,
+      padding: SPACING.md,
+      marginBottom: SPACING.lg,
+    },
+    verifiedInfoText: {
+      ...TYPOGRAPHY.caption,
+      color: colors.success,
+    },
+    // Claimant - Code Display
+    codeContainer: {
+      alignItems: "center",
+    },
+    codeLabel: {
+      ...TYPOGRAPHY.h3,
+      color: colors.text,
+      marginBottom: SPACING.md,
+    },
+    codeDisplay: {
+      backgroundColor: colors.primary,
+      borderRadius: 16,
+      padding: SPACING.xl,
+      marginBottom: SPACING.md,
+      width: "100%",
+      alignItems: "center",
+    },
+    codeText: {
+      fontSize: 48,
+      fontWeight: "bold",
+      color: "#fff",
+      letterSpacing: 8,
+    },
+    buttonRow: {
+      flexDirection: "row",
+      gap: SPACING.md,
+      marginBottom: SPACING.lg,
+    },
+    secondaryButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.xs,
+      backgroundColor: `${colors.primary}20`,
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.md,
+      borderRadius: 8,
+    },
+    secondaryButtonText: {
+      ...TYPOGRAPHY.button,
+      color: colors.primary,
+    },
+    warningBox: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.sm,
+      backgroundColor: `${colors.warning}20`,
+      padding: SPACING.md,
+      borderRadius: 8,
+      marginBottom: SPACING.lg,
+    },
+    warningText: {
+      ...TYPOGRAPHY.caption,
+      color: colors.warning,
+    },
+    // Claimant - Generate
+    generateContainer: {
+      alignItems: "center",
+    },
+    generateTitle: {
+      ...TYPOGRAPHY.h2,
+      color: colors.text,
+      marginTop: SPACING.lg,
+      marginBottom: SPACING.sm,
+    },
+    generateSubtitle: {
+      ...TYPOGRAPHY.body,
+      color: colors.textSecondary,
+      textAlign: "center",
+      marginBottom: SPACING.xl,
+    },
+    primaryButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.sm,
+      backgroundColor: colors.primary,
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.xl,
+      borderRadius: 8,
+    },
+    primaryButtonText: {
+      ...TYPOGRAPHY.button,
+      color: "#fff",
+    },
+    // Finder - Verify
+    verifyContainer: {
+      alignItems: "stretch",
+    },
+    verifyLabel: {
+      ...TYPOGRAPHY.h3,
+      color: colors.text,
+      textAlign: "center",
+      marginBottom: SPACING.md,
+    },
+    codeInput: {
+      fontSize: 36,
+      fontWeight: "bold",
+      textAlign: "center",
+      backgroundColor: colors.background,
+      borderWidth: 2,
+      borderColor: colors.border,
+      borderRadius: 12,
+      padding: SPACING.lg,
+      marginBottom: SPACING.lg,
+      letterSpacing: 8,
+      color: colors.text,
+    },
+    errorBox: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.sm,
+      backgroundColor: `${colors.error}20`,
+      padding: SPACING.md,
+      borderRadius: 8,
+      marginBottom: SPACING.lg,
+    },
+    errorText: {
+      ...TYPOGRAPHY.caption,
+      color: colors.error,
+    },
+    verifyButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: SPACING.sm,
+      backgroundColor: colors.success,
+      paddingVertical: SPACING.md,
+      borderRadius: 8,
+      marginBottom: SPACING.lg,
+    },
+    verifyButtonText: {
+      ...TYPOGRAPHY.button,
+      color: "#fff",
+    },
+    disabledButton: {
+      opacity: 0.5,
+    },
+    // Instructions
+    instructionsBox: {
+      backgroundColor: colors.background,
+      borderRadius: 12,
+      padding: SPACING.lg,
+    },
+    instructionsTitle: {
+      ...TYPOGRAPHY.h4,
+      color: colors.text,
+      marginBottom: SPACING.sm,
+    },
+    instructionItem: {
+      ...TYPOGRAPHY.caption,
+      color: colors.textSecondary,
+      marginBottom: SPACING.xs,
+    },
+  });
 
 export default HandoverScreen;
