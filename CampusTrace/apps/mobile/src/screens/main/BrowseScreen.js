@@ -1551,7 +1551,7 @@ const BrowseScreen = () => {
         keyExtractor={(item) => item.id.toString()}
         numColumns={2}
         columnWrapperStyle={styles.gridRow}
-        ListHeaderComponent={renderListHeader}
+        ListHeaderComponent={renderListHeader()}
         ListFooterComponent={renderListFooter}
         ListEmptyComponent={renderEmptyComponent}
         refreshControl={
@@ -1956,6 +1956,13 @@ const createStyles = (colors) =>
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
       maxHeight: screenHeight * 0.8,
+      width: "90%", // Add this: ensures modal isn't too narrow
+      overflow: "hidden", // Add this: ensures content respects rounded corners
+    },
+
+    modalBody: {
+      padding: 20,
+      flex: 1, // Add this: allows scrolling within the maxHeight constraint
     },
     modalHeader: {
       flexDirection: "row",
