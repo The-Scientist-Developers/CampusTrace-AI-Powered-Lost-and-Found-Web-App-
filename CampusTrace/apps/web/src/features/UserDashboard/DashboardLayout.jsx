@@ -323,48 +323,60 @@ export default function DashboardLayout({ children, user }) {
 
     const universityId = profile.university_id;
 
-    // Fetch site name
+    // Fetch university name directly from universities table
     const fetchSiteName = async () => {
-      const { data: settingsData } = await supabase
-        .from("site_settings")
-        .select("setting_value")
-        .eq("setting_key", "site_name")
+      // First try to get from universities table (works for all users)
+      const { data: universityData } = await supabase
+        .from("universities")
+        .select("name")
+        .eq("id", universityId)
         .maybeSingle();
 
-      if (settingsData) {
-        setSiteName(settingsData.setting_value);
+      if (universityData?.name) {
+        setSiteName(universityData.name);
       } else {
-        setSiteName("CampusTrace");
+        // Fallback to site_settings for backward compatibility
+        const { data: settingsData } = await supabase
+          .from("site_settings")
+          .select("setting_value")
+          .eq("setting_key", "site_name")
+          .maybeSingle();
+
+        if (settingsData) {
+          setSiteName(settingsData.setting_value);
+        } else {
+          setSiteName("CampusTrace");
+        }
       }
     };
 
     fetchSiteName();
 
-    // Subscribe to site name changes
-    const siteNameSubscription = supabase
-      .channel(`site-name:${universityId}`)
+    // Subscribe to university name changes
+    const universitySubscription = supabase
+      .channel(`university-name:${universityId}`)
       .on(
         "postgres_changes",
         {
           event: "UPDATE",
           schema: "public",
-          table: "site_settings",
-          filter: `university_id=eq.${universityId}`,
+          table: "universities",
+          filter: `id=eq.${universityId}`,
         },
         (payload) => {
-          if (payload.new.setting_key === "site_name") {
+          if (payload.new.name) {
             console.log(
-              "Site name updated in real-time!",
-              payload.new.setting_value
+              "University name updated in real-time!",
+              payload.new.name
             );
-            setSiteName(payload.new.setting_value);
+            setSiteName(payload.new.name);
           }
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(siteNameSubscription);
+      supabase.removeChannel(universitySubscription);
     };
   }, [profile]);
 

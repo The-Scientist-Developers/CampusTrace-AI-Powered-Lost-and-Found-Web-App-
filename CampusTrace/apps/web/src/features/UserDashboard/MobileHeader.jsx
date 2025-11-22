@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Heart, Send } from "lucide-react";
+import { Bell, MessageCircle } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 
 // This component will add the Google Font link to the page <head>
@@ -176,7 +176,7 @@ const MobileHeader = ({
           {/* Action Icons - Only show on dashboard home */}
           {pageConfig.showActions && (
             <div className="flex items-center gap-4">
-              {/* Notifications - Heart Icon */}
+              {/* Notifications - Bell Icon */}
               <button
                 onClick={() => navigate("/dashboard/notifications")}
                 className="relative p-2 transition-all duration-200 active:scale-95 hover:opacity-80"
@@ -189,8 +189,8 @@ const MobileHeader = ({
                   justifyContent: "center",
                 }}
               >
-                <Heart
-                  size={24}
+                <Bell
+                  size={22}
                   style={{ color: primaryColor }}
                   strokeWidth={2.5}
                 />
@@ -213,7 +213,7 @@ const MobileHeader = ({
                 )}
               </button>
 
-              {/* Messages - Send Icon */}
+              {/* Messages - MessageCircle Icon */}
               <button
                 onClick={() => navigate("/dashboard/messages")}
                 className="relative p-2 transition-all duration-200 active:scale-95 hover:opacity-80"
@@ -226,8 +226,8 @@ const MobileHeader = ({
                   justifyContent: "center",
                 }}
               >
-                <Send
-                  size={24}
+                <MessageCircle
+                  size={22}
                   style={{ color: primaryColor }}
                   strokeWidth={2.5}
                 />

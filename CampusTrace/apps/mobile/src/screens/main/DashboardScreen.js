@@ -116,38 +116,27 @@ const DashboardScreen = ({ navigation }) => {
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
       try {
-        // Fetch dashboard data and profile in parallel
-        const [dashboardResponse, profileResponse, settingsResponse] =
-          await Promise.all([
-            fetch(`${API_BASE_URL}/api/items/dashboard-summary`, {
-              headers: { Authorization: `Bearer ${token}` },
-              signal: controller.signal,
-            }),
-            supabase
-              .from("profiles")
-              .select("university_id")
-              .eq("id", user.id)
-              .single(),
-            supabase
-              .from("site_settings")
-              .select("setting_value")
-              .eq("setting_key", "site_name")
-              .limit(1)
-              .single(),
-          ]);
+        // Fetch dashboard data (includes university name now)
+        const dashboardResponse = await fetch(
+          `${API_BASE_URL}/api/items/dashboard-summary`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            signal: controller.signal,
+          }
+        );
 
         clearTimeout(timeoutId);
-
-        // Set site name
-        if (settingsResponse.data?.setting_value) {
-          setSiteName(settingsResponse.data.setting_value);
-        }
 
         if (!dashboardResponse.ok) {
           throw new Error("Failed to fetch dashboard data.");
         }
 
         const data = await dashboardResponse.json();
+
+        // Set university name from dashboard response
+        if (data.universityName) {
+          setSiteName(data.universityName);
+        }
 
         // Set all data from consolidated response - filter out recovered items
         const activeRecentPosts = (data.myRecentPosts || []).filter(

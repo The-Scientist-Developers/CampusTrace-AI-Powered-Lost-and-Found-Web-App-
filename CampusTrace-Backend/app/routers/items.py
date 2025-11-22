@@ -494,10 +494,16 @@ async def mark_as_recovered(item_id: int, user_id: str = Depends(get_current_use
 @router.get("/dashboard-summary")
 async def get_dashboard_summary(user_id: str = Depends(get_current_user_id)):
     try:
-        profile_res = supabase.table("profiles").select("university_id").eq("id", user_id).single().execute()
+        # Fetch profile with university name in one query
+        profile_res = supabase.table("profiles").select("university_id, universities(name)").eq("id", user_id).single().execute()
         if not profile_res.data:
             raise HTTPException(status_code=404, detail="User profile not found.")
         university_id = profile_res.data["university_id"]
+        
+        # Extract university name safely
+        university_name = "CampusTrace"
+        if profile_res.data.get("universities"):
+            university_name = profile_res.data["universities"].get("name", "CampusTrace")
 
         my_posts_res = supabase.table("items").select("*").eq("user_id", user_id).order("created_at", desc=True).limit(5).execute()
         all_my_posts_res = supabase.table("items").select("category, status, created_at").eq("user_id", user_id).execute()
@@ -532,7 +538,8 @@ async def get_dashboard_summary(user_id: str = Depends(get_current_user_id)):
                 "recovered": recovered.count or 0
             },
             "unreadNotifications": unread.count or 0,
-            "aiMatches": ai_matches
+            "aiMatches": ai_matches,
+            "universityName": university_name
         }
     except Exception as e:
         traceback.print_exc()

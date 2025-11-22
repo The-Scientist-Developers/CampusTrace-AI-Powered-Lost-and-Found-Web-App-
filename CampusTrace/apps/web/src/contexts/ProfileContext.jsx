@@ -15,7 +15,7 @@ export const ProfileProvider = ({ children }) => {
   const [currentProfile, setCurrentProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch initial profile
+  // Fetch initial profile with university name
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -27,14 +27,22 @@ export const ProfileProvider = ({ children }) => {
           return;
         }
 
+        // Fetch profile with university name in one query
         const { data, error } = await supabase
           .from("profiles")
-          .select("*")
+          .select("*, universities(name)")
           .eq("id", user.id)
           .single();
 
         if (error) throw error;
-        setCurrentProfile(data);
+
+        // Extract university name and add it to profile
+        const profileWithUniversity = {
+          ...data,
+          universityName: data.universities?.name || "CampusTrace",
+        };
+
+        setCurrentProfile(profileWithUniversity);
       } catch (error) {
         console.error("Error fetching profile:", error);
       } finally {
@@ -79,14 +87,22 @@ export const ProfileProvider = ({ children }) => {
     if (!currentProfile?.id) return;
 
     try {
+      // Fetch profile with university name
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("*, universities(name)")
         .eq("id", currentProfile.id)
         .single();
 
       if (error) throw error;
-      setCurrentProfile(data);
+
+      // Extract university name and add it to profile
+      const profileWithUniversity = {
+        ...data,
+        universityName: data.universities?.name || "CampusTrace",
+      };
+
+      setCurrentProfile(profileWithUniversity);
     } catch (error) {
       console.error("Error refreshing profile:", error);
     }
