@@ -276,44 +276,13 @@ export default function UserSettingsPage() {
             className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-lg text-sm sm:text-base text-neutral-700 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition appearance-none cursor-pointer"
             style={{ WebkitAppearance: "none", MozAppearance: "none" }}
           >
-            <option value="default">🎨 Default (Original Purple)</option>
+            <option value="default">Default (Original Blue)</option>
             <option value="purple">
-              💜 Purple - Gender and Development (GAD)
+              Purple - Gender and Development (GAD)
             </option>
-            <option value="pink">💗 Pink - Breast Cancer Awareness</option>
-            <option value="blue">💙 Blue - Autism Awareness</option>
-            <option value="green">💚 Green - Environmental Awareness</option>
+            <option value="pink">Pink - Breast Cancer Awareness</option>
+            <option value="green">Green - Environmental Awareness</option>
           </select>
-        </div>
-
-        {/* Font Size Control */}
-        <div className="py-2 border-t border-neutral-200 dark:border-neutral-700 pt-4 mt-4">
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2">
-            Font Size
-          </label>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">
-            Adjust the text size for better readability.
-          </p>
-          <div className="grid grid-cols-2 sm:flex gap-2 sm:gap-2">
-            {[
-              { value: "small", label: "Small" },
-              { value: "medium", label: "Medium" },
-              { value: "large", label: "Large" },
-              { value: "x-large", label: "X-Large" },
-            ].map((size) => (
-              <button
-                key={size.value}
-                onClick={() => setFontSize(size.value)}
-                className={`px-3 sm:px-4 py-2.5 rounded-lg text-sm sm:text-base font-medium transition ${
-                  fontSize === size.value
-                    ? "bg-primary-500 text-white"
-                    : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
-                } sm:flex-1`}
-              >
-                {size.label}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* High Contrast Mode */}

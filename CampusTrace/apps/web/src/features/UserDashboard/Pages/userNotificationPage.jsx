@@ -69,6 +69,10 @@ export default function NotificationsPage({ user }) {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
 
+  // Selection state
+  const [selectedNotifications, setSelectedNotifications] = useState([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const fetchNotifications = useCallback(async () => {
     if (!user?.id) {
       setLoading(false);
@@ -168,12 +172,74 @@ export default function NotificationsPage({ user }) {
       }
 
       toast.success("Notification deleted!");
+      setSelectedNotifications((prev) =>
+        prev.filter((id) => id !== notificationId)
+      );
       fetchNotifications();
     } catch (err) {
       console.error("Failed to delete notification:", err);
       toast.error(
         `Failed to delete notification: ${err.message || "Unknown error"}`
       );
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (selectedNotifications.length === notifications.length) {
+      setSelectedNotifications([]);
+    } else {
+      setSelectedNotifications(notifications.map((n) => n.id));
+    }
+  };
+
+  const handleSelectNotification = (notificationId) => {
+    setSelectedNotifications((prev) => {
+      if (prev.includes(notificationId)) {
+        return prev.filter((id) => id !== notificationId);
+      } else {
+        return [...prev, notificationId];
+      }
+    });
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedNotifications.length === 0) return;
+
+    const isAllSelected = selectedNotifications.length === notifications.length;
+    const confirmMessage = isAllSelected
+      ? `Are you sure you want to delete ALL ${selectedNotifications.length} notifications? This action cannot be undone.`
+      : `Are you sure you want to delete ${
+          selectedNotifications.length
+        } selected notification${selectedNotifications.length > 1 ? "s" : ""}?`;
+
+    const confirmDelete = window.confirm(confirmMessage);
+
+    if (!confirmDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("notifications")
+        .delete()
+        .in("id", selectedNotifications)
+        .eq("recipient_id", user.id);
+
+      if (error) throw error;
+
+      const successMessage = isAllSelected
+        ? `All ${selectedNotifications.length} notifications deleted!`
+        : `${selectedNotifications.length} notification${
+            selectedNotifications.length > 1 ? "s" : ""
+          } deleted!`;
+
+      toast.success(successMessage);
+      setSelectedNotifications([]);
+      fetchNotifications();
+    } catch (err) {
+      console.error("Failed to delete notifications:", err);
+      toast.error("Failed to delete selected notifications");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -222,15 +288,40 @@ export default function NotificationsPage({ user }) {
           <Bell className="w-8 h-8 text-primary-600" />
           Notifications
         </h1>
-        {unreadCount > 0 && (
-          <button
-            onClick={handleMarkAllAsRead}
-            className="flex items-center gap-2 px-4 py-2 bg-neutral-100 dark:bg-zinc-800 text-neutral-700 dark:text-gray-100 font-semibold text-sm rounded-md hover:bg-neutral-200 dark:hover:bg-zinc-700 transition"
-          >
-            <CheckCheck className="w-4 h-4" />
-            Mark All as Read ({unreadCount})
-          </button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {selectedNotifications.length > 0 && (
+            <button
+              onClick={handleDeleteSelected}
+              disabled={isDeleting}
+              className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white font-semibold text-sm rounded-md hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4" />
+                  <span>
+                    {selectedNotifications.length === notifications.length
+                      ? `Delete All (${selectedNotifications.length})`
+                      : `Delete Selected (${selectedNotifications.length})`}
+                  </span>
+                </>
+              )}
+            </button>
+          )}
+          {unreadCount > 0 && (
+            <button
+              onClick={handleMarkAllAsRead}
+              className="flex items-center gap-2 px-4 py-2 bg-neutral-100 dark:bg-zinc-800 text-neutral-700 dark:text-gray-100 font-semibold text-sm rounded-md hover:bg-neutral-200 dark:hover:bg-zinc-700 transition shadow-sm"
+            >
+              <CheckCheck className="w-4 h-4" />
+              Mark All as Read ({unreadCount})
+            </button>
+          )}
+        </div>
       </div>
 
       {notifications.length === 0 && totalCount === 0 ? (
@@ -245,53 +336,99 @@ export default function NotificationsPage({ user }) {
         </div>
       ) : (
         <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm relative">
+          {/* Select All Header */}
+          {notifications.length > 0 && (
+            <div className="p-4 border-b border-neutral-200 dark:border-[#3a3a3a] flex items-center gap-3 bg-neutral-50 dark:bg-[#1a1a1a]">
+              <input
+                type="checkbox"
+                checked={
+                  selectedNotifications.length === notifications.length &&
+                  notifications.length > 0
+                }
+                onChange={handleSelectAll}
+                className="w-4 h-4 text-primary-600 bg-white dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600 rounded focus:ring-primary-500 focus:ring-2 cursor-pointer"
+              />
+              <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                {selectedNotifications.length === notifications.length &&
+                notifications.length > 0
+                  ? "Deselect All"
+                  : "Select All"}
+              </span>
+              {selectedNotifications.length > 0 && (
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                  ({selectedNotifications.length} selected)
+                </span>
+              )}
+            </div>
+          )}
+
           <div className="divide-y divide-neutral-200 dark:divide-[#3a3a3a]">
-            {notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className={`p-4 flex items-start gap-4 transition-colors ${
-                  notification.status === "unread"
-                    ? "bg-neutral-100 dark:bg-[#2a2a2a]"
-                    // ? "bg-primary-50 dark:bg-primary-500/5"
-                    : ""
-                }`}
-              >
-                <div className="flex-shrink-0 mt-1.5">
-                  {notification.status === "unread" && (
-                    <span
-                      className="w-2.5 h-2.5 bg-primary-500 rounded-full flex"
-                      title="Unread"
-                    ></span>
-                  )}
-                </div>
-                <div className="flex-grow">
-                  <p className="text-neutral-700 dark:text-neutral-200">
-                    {notification.message}
-                  </p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
-                    {timeAgo(notification.created_at)}
-                  </p>
-                </div>
-                <div className="flex-shrink-0 flex items-center gap-2">
-                  {notification.status === "unread" && (
+            {notifications.map((notification) => {
+              const isSelected = selectedNotifications.includes(
+                notification.id
+              );
+              const isUnread = notification.status === "unread";
+
+              return (
+                <div
+                  key={notification.id}
+                  className={`p-4 flex items-start gap-4 transition-colors ${
+                    isSelected
+                      ? "bg-primary-100 dark:bg-neutral-800 border-l-4 border-primary-500 dark:border-neutral-500"
+                      : isUnread
+                      ? "bg-neutral-100 dark:bg-[#2a2a2a]"
+                      : "bg-white dark:bg-[#2a2a2a]"
+                  }`}
+                >
+                  {/* Checkbox */}
+                  <div className="flex-shrink-0 mt-1.5">
+                    <input
+                      type="checkbox"
+                      checked={selectedNotifications.includes(notification.id)}
+                      onChange={() => handleSelectNotification(notification.id)}
+                      className="w-4 h-4 text-primary-600 bg-white dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600 rounded focus:ring-primary-500 focus:ring-2 cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Unread Indicator */}
+                  <div className="flex-shrink-0 mt-1.5">
+                    {notification.status === "unread" && (
+                      <span
+                        className="w-2.5 h-2.5 bg-primary-500 rounded-full flex"
+                        title="Unread"
+                      ></span>
+                    )}
+                  </div>
+
+                  <div className="flex-grow">
+                    <p className="text-neutral-700 dark:text-neutral-200">
+                      {notification.message}
+                    </p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
+                      {timeAgo(notification.created_at)}
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0 flex items-center gap-2">
+                    {notification.status === "unread" && (
+                      <button
+                        onClick={() => handleMarkAsRead(notification.id)}
+                        className="p-2 rounded-full text-neutral-500 dark:text-gray-400 hover:bg-neutral-100 dark:hover:bg-zinc-700 hover:text-neutral-800 dark:hover:text-white transition"
+                        title="Mark as read"
+                      >
+                        <MailOpen className="w-5 h-5" />
+                      </button>
+                    )}
                     <button
-                      onClick={() => handleMarkAsRead(notification.id)}
-                      className="p-2 rounded-full text-neutral-500 dark:text-gray-400 hover:bg-neutral-100 dark:hover:bg-zinc-700 hover:text-neutral-800 dark:hover:text-white transition"
-                      title="Mark as read"
+                      onClick={() => handleDeleteNotification(notification.id)}
+                      className="p-2 rounded-full text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-700 dark:hover:text-red-300 transition"
+                      title="Delete notification"
                     >
-                      <MailOpen className="w-5 h-5" />
+                      <Trash2 className="w-5 h-5" />
                     </button>
-                  )}
-                  <button
-                    onClick={() => handleDeleteNotification(notification.id)}
-                    className="p-2 rounded-full text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-700 dark:hover:text-red-300 transition"
-                    title="Delete notification"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Pagination Controls */}

@@ -186,38 +186,45 @@ async def verify_handover(
         print(f"✅ Item {item_id} marked as recovered.")
 
         # --- POINTS & BADGES LOGIC ---
-        # We credit the "Finder" (The one who gave the item back)
+        # Credit the "Finder" (The person who found and returned the item)
         
-        person_to_credit = None
+        finder_to_credit = None
         
         if status in ["Lost", "pending recovery"]:
-            # Finder is the current_user_id (the one entering the code)
-            person_to_credit = current_user_id
+            # Lost Item Flow: The finder is the current_user_id (who reported finding it)
+            finder_to_credit = current_user_id
         else:
-            # Finder is the item post owner (current_user_id)
-            person_to_credit = item.get("user_id")
+            # Found Item Flow: The finder is the item post owner
+            finder_to_credit = item.get("user_id")
 
-        if person_to_credit:
+        # Credit the finder for returning the item
+        if finder_to_credit:
             try:
-                profile_res = supabase.table("profiles").select("returns_count").eq("id", person_to_credit).single().execute()
+                profile_res = supabase.table("profiles").select("returns_count").eq("id", finder_to_credit).single().execute()
                 if profile_res.data:
                     current_count = profile_res.data.get("returns_count", 0)
                     new_count = current_count + 1
                     
                     supabase.table("profiles").update({
                         "returns_count": new_count
-                    }).eq("id", person_to_credit).execute()
+                    }).eq("id", finder_to_credit).execute()
                     
-                    print(f"✅ Credited finder {person_to_credit}: returns_count {current_count} → {new_count}")
+                    print(f"✅ Credited finder {finder_to_credit}: returns_count {current_count} → {new_count}")
                     
+                    # Award helper badge for first return
                     if new_count == 1:
-                        supabase.table("user_badges").insert({
-                            "user_id": person_to_credit,
-                            "badge_type": "helper",
-                            "earned_at": datetime.utcnow().isoformat()
-                        }).execute()
+                        try:
+                            supabase.table("user_badges").insert({
+                                "user_id": finder_to_credit,
+                                "badge_type": "helper",
+                                "earned_at": datetime.utcnow().isoformat()
+                            }).execute()
+                            print(f"🏆 Awarded 'helper' badge to finder {finder_to_credit}")
+                        except Exception as badge_error:
+                            # Badge might already exist, ignore duplicate errors
+                            print(f"⚠️ Badge error (might already exist): {badge_error}")
             except Exception as e:
-                print(f"⚠️ Error updating stats: {e}")
+                print(f"⚠️ Error updating finder stats: {e}")
 
         return {
             "success": True,

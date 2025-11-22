@@ -64,6 +64,11 @@ const NotificationScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [user, setUser] = useState(null);
 
+  // Selection state
+  const [selectedNotifications, setSelectedNotifications] = useState([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+
   useEffect(() => {
     getCurrentUser();
   }, []);
@@ -211,6 +216,56 @@ const NotificationScreen = ({ navigation }) => {
     }
   };
 
+  const handleSelectAll = () => {
+    if (selectedNotifications.length === notifications.length) {
+      setSelectedNotifications([]);
+    } else {
+      setSelectedNotifications(notifications.map((n) => n.id));
+    }
+  };
+
+  const handleSelectNotification = (notificationId) => {
+    setSelectedNotifications((prev) => {
+      if (prev.includes(notificationId)) {
+        return prev.filter((id) => id !== notificationId);
+      } else {
+        return [...prev, notificationId];
+      }
+    });
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedNotifications.length === 0) return;
+
+    setIsDeleting(true);
+    try {
+      const supabase = getSupabaseClient();
+
+      // Optimistically update UI
+      setNotifications((prev) =>
+        prev.filter((n) => !selectedNotifications.includes(n.id))
+      );
+
+      // Delete from Supabase
+      const { error } = await supabase
+        .from("notifications")
+        .delete()
+        .in("id", selectedNotifications)
+        .eq("recipient_id", user.id);
+
+      if (error) throw error;
+
+      setSelectedNotifications([]);
+      setSelectionMode(false);
+    } catch (error) {
+      console.error("Error deleting notifications:", error);
+      // Revert on error
+      fetchNotifications();
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (loading && !refreshing) {
     return <SimpleLoadingScreen />;
   }
@@ -238,22 +293,85 @@ const NotificationScreen = ({ navigation }) => {
           <Text style={[styles.headerTitle, { color: colors.text }]}>
             Notifications
           </Text>
-          {notifications.some((n) => n.status !== "read") && (
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            {selectionMode && selectedNotifications.length > 0 && (
+              <TouchableOpacity
+                style={[
+                  styles.deleteSelectedButton,
+                  { backgroundColor: colors.error || "#EF4444" },
+                ]}
+                onPress={handleDeleteSelected}
+                disabled={isDeleting}
+                activeOpacity={0.7}
+              >
+                <Trash2 size={16} color="#FFFFFF" />
+                <Text style={styles.deleteSelectedText}>
+                  {isDeleting
+                    ? "Deleting..."
+                    : `Delete (${selectedNotifications.length})`}
+                </Text>
+              </TouchableOpacity>
+            )}
+            {!selectionMode &&
+              notifications.some((n) => n.status !== "read") && (
+                <TouchableOpacity
+                  style={[
+                    styles.markAllButton,
+                    { backgroundColor: colors.primary + "15" },
+                  ]}
+                  onPress={markAllAsRead}
+                  activeOpacity={0.7}
+                >
+                  <CheckCircle size={16} color={colors.primary} />
+                  <Text style={[styles.markAllText, { color: colors.primary }]}>
+                    Mark all read
+                  </Text>
+                </TouchableOpacity>
+              )}
+          </View>
+        </View>
+
+        {/* Selection Mode Bar */}
+        {notifications.length > 0 && (
+          <View
+            style={[
+              styles.selectionBar,
+              {
+                backgroundColor: colors.surface,
+                borderTopColor: colors.border,
+              },
+            ]}
+          >
             <TouchableOpacity
-              style={[
-                styles.markAllButton,
-                { backgroundColor: colors.primary + "15" },
-              ]}
-              onPress={markAllAsRead}
+              style={styles.selectionModeButton}
+              onPress={() => {
+                setSelectionMode(!selectionMode);
+                setSelectedNotifications([]);
+              }}
               activeOpacity={0.7}
             >
-              <CheckCircle size={16} color={colors.primary} />
-              <Text style={[styles.markAllText, { color: colors.primary }]}>
-                Mark all read
+              <Text
+                style={[styles.selectionModeText, { color: colors.primary }]}
+              >
+                {selectionMode ? "Cancel" : "Select"}
               </Text>
             </TouchableOpacity>
-          )}
-        </View>
+
+            {selectionMode && (
+              <TouchableOpacity
+                style={styles.selectAllButton}
+                onPress={handleSelectAll}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.selectAllText, { color: colors.text }]}>
+                  {selectedNotifications.length === notifications.length
+                    ? "Deselect All"
+                    : "Select All"}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </LinearGradient>
 
       {/* Notifications List */}
@@ -263,9 +381,17 @@ const NotificationScreen = ({ navigation }) => {
         renderItem={({ item }) => (
           <NotificationItem
             notification={item}
-            onPress={() => handleNotificationPress(item)}
+            onPress={() => {
+              if (selectionMode) {
+                handleSelectNotification(item.id);
+              } else {
+                handleNotificationPress(item);
+              }
+            }}
             onDelete={() => handleDeleteNotification(item.id)}
             colors={colors}
+            selectionMode={selectionMode}
+            isSelected={selectedNotifications.includes(item.id)}
           />
         )}
         style={styles.scrollView}
@@ -299,9 +425,16 @@ const NotificationScreen = ({ navigation }) => {
 };
 
 // ====================
-// NotificationItem Component (with delete button)
+// NotificationItem Component (with delete button and selection)
 // ====================
-const NotificationItem = ({ notification, onPress, onDelete, colors }) => {
+const NotificationItem = ({
+  notification,
+  onPress,
+  onDelete,
+  colors,
+  selectionMode,
+  isSelected,
+}) => {
   const { type, message, created_at, status } = notification;
   const is_read = status === "read";
 
@@ -349,6 +482,7 @@ const NotificationItem = ({ notification, onPress, onDelete, colors }) => {
         styles.notificationItem,
         { backgroundColor: colors.card, borderBottomColor: colors.border },
         !is_read && { backgroundColor: colors.surface },
+        isSelected && { backgroundColor: colors.primary + "15" },
       ]}
     >
       <TouchableOpacity
@@ -356,6 +490,21 @@ const NotificationItem = ({ notification, onPress, onDelete, colors }) => {
         onPress={onPress}
         activeOpacity={0.7}
       >
+        {/* Selection Checkbox */}
+        {selectionMode && (
+          <View
+            style={[
+              styles.checkbox,
+              isSelected && {
+                backgroundColor: colors.primary,
+                borderColor: colors.primary,
+              },
+            ]}
+          >
+            {isSelected && <CheckCircle size={18} color="#FFFFFF" />}
+          </View>
+        )}
+
         {/* Icon */}
         <View style={[styles.iconContainer, { backgroundColor: iconColor }]}>
           <Icon size={24} color="#FFFFFF" />
@@ -379,7 +528,7 @@ const NotificationItem = ({ notification, onPress, onDelete, colors }) => {
         </View>
 
         {/* Unread Indicator */}
-        {!is_read && (
+        {!is_read && !selectionMode && (
           <View
             style={[
               styles.unreadIndicator,
@@ -389,14 +538,16 @@ const NotificationItem = ({ notification, onPress, onDelete, colors }) => {
         )}
       </TouchableOpacity>
 
-      {/* Delete Button */}
-      <TouchableOpacity
-        style={[styles.deleteButton, { backgroundColor: colors.surface }]}
-        onPress={onDelete}
-        activeOpacity={0.7}
-      >
-        <Trash2 size={20} color={colors.error || "#EF4444"} />
-      </TouchableOpacity>
+      {/* Delete Button - Only show when not in selection mode */}
+      {!selectionMode && (
+        <TouchableOpacity
+          style={[styles.deleteButton, { backgroundColor: colors.surface }]}
+          onPress={onDelete}
+          activeOpacity={0.7}
+        >
+          <Trash2 size={20} color={colors.error || "#EF4444"} />
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -457,7 +608,6 @@ const styles = StyleSheet.create({
     paddingVertical: 80,
     paddingHorizontal: 20,
     flexGrow: 1,
-    backgroundColor: "#FFFFFF",
   },
   emptyStateText: {
     fontSize: 20,
@@ -530,6 +680,53 @@ const styles = StyleSheet.create({
     backgroundColor: BRAND_COLOR,
     marginTop: 6,
     marginLeft: 4,
+  },
+  selectionBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+  },
+  selectionModeButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  selectionModeText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  selectAllButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  selectAllText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  deleteSelectedButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+  },
+  deleteSelectedText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#CCCCCC",
+    marginRight: 12,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 

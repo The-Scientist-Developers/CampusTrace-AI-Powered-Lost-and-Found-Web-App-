@@ -1505,6 +1505,103 @@ const LoginScreen = ({ navigation }) => {
                 </View>
               )}
 
+              {cooldownTime > 0 && (
+                <View
+                  style={{
+                    backgroundColor: isDark
+                      ? "rgba(251, 191, 36, 0.1)"
+                      : "rgba(251, 191, 36, 0.15)",
+                    borderRadius: 12,
+                    padding: 12,
+                    marginBottom: 12,
+                    borderWidth: 1,
+                    borderColor: isDark
+                      ? "rgba(251, 191, 36, 0.3)"
+                      : "rgba(251, 191, 36, 0.4)",
+                  }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <AlertCircle
+                      size={16}
+                      color="#F59E0B"
+                      style={{ marginRight: 8 }}
+                    />
+                    <Text
+                      style={{
+                        fontSize: fontSizes.small || 14,
+                        color: isDark ? "#FCD34D" : "#D97706",
+                        flex: 1,
+                      }}
+                    >
+                      Too many attempts. Please wait {cooldownTime} seconds
+                      before trying again.
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {loginAttempts > 0 &&
+                loginAttempts < 5 &&
+                cooldownTime === 0 &&
+                isLogin && (
+                  <View
+                    style={{
+                      backgroundColor:
+                        loginAttempts >= 3
+                          ? isDark
+                            ? "rgba(239, 68, 68, 0.1)"
+                            : "rgba(239, 68, 68, 0.15)"
+                          : isDark
+                          ? "rgba(251, 191, 36, 0.1)"
+                          : "rgba(251, 191, 36, 0.15)",
+                      borderRadius: 12,
+                      padding: 12,
+                      marginBottom: 12,
+                      borderWidth: 1,
+                      borderColor:
+                        loginAttempts >= 3
+                          ? isDark
+                            ? "rgba(239, 68, 68, 0.3)"
+                            : "rgba(239, 68, 68, 0.4)"
+                          : isDark
+                          ? "rgba(251, 191, 36, 0.3)"
+                          : "rgba(251, 191, 36, 0.4)",
+                    }}
+                  >
+                    <View
+                      style={{ flexDirection: "row", alignItems: "center" }}
+                    >
+                      <AlertCircle
+                        size={16}
+                        color={loginAttempts >= 3 ? "#EF4444" : "#F59E0B"}
+                        style={{ marginRight: 8 }}
+                      />
+                      <Text
+                        style={{
+                          fontSize: fontSizes.small || 14,
+                          color:
+                            loginAttempts >= 3
+                              ? isDark
+                                ? "#FCA5A5"
+                                : "#DC2626"
+                              : isDark
+                              ? "#FCD34D"
+                              : "#D97706",
+                          flex: 1,
+                        }}
+                      >
+                        {loginAttempts >= 3
+                          ? `Warning: ${5 - loginAttempts} attempt${
+                              5 - loginAttempts === 1 ? "" : "s"
+                            } remaining before 60-second lockout`
+                          : `${loginAttempts} failed attempt${
+                              loginAttempts === 1 ? "" : "s"
+                            }. ${5 - loginAttempts} remaining before lockout`}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
               <TouchableOpacity
                 style={[
                   styles.button,

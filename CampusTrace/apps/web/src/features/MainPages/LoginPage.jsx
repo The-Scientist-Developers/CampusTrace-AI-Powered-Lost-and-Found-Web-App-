@@ -781,6 +781,38 @@ export default function LoginPage() {
                 </div>
               )}
 
+              {loginAttempts > 0 &&
+                loginAttempts < 5 &&
+                cooldownTime === 0 &&
+                isLogin && (
+                  <div
+                    className={`mb-6 p-3 rounded-lg border ${
+                      loginAttempts >= 3
+                        ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+                        : "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
+                    }`}
+                  >
+                    <div
+                      className={`flex items-center text-sm ${
+                        loginAttempts >= 3
+                          ? "text-red-800 dark:text-red-200"
+                          : "text-yellow-800 dark:text-yellow-200"
+                      }`}
+                    >
+                      <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span>
+                        {loginAttempts >= 3
+                          ? `Warning: ${5 - loginAttempts} attempt${
+                              5 - loginAttempts === 1 ? "" : "s"
+                            } remaining before 60-second lockout`
+                          : `${loginAttempts} failed attempt${
+                              loginAttempts === 1 ? "" : "s"
+                            }. ${5 - loginAttempts} remaining before lockout`}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
               <div className="flex bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1 mb-8">
                 <button
                   className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all ${
