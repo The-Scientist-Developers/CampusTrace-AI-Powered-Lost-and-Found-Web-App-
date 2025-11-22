@@ -11,7 +11,7 @@ import AdminMobileBottomNav from "./AdminMobileBottomNav";
 const AdminDashboardSkeleton = () => (
   <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1a]">
     {/* Mobile Header Skeleton */}
-    <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white dark:bg-[#2a2a2a] border-b border-neutral-200 dark:border-[#3a3a3a] z-50">
+    <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white dark:bg-[#2a2a2a] border-b border-neutral-200 dark:border-[#3a3a3a] z-50">
       <div className="h-full px-4 flex items-center justify-between">
         <Skeleton width={150} height={24} />
         <div className="flex gap-2">
@@ -23,7 +23,7 @@ const AdminDashboardSkeleton = () => (
     </div>
 
     {/* Desktop Sidebar Skeleton */}
-    <div className="hidden lg:block fixed left-0 top-0 h-screen w-64 bg-white dark:bg-[#2a2a2a] border-r border-neutral-200 dark:border-[#3a3a3a]">
+    <div className="hidden md:block fixed left-0 top-0 h-screen w-72 bg-white dark:bg-[#2a2a2a] border-r border-neutral-200 dark:border-[#3a3a3a]">
       <div className="h-20 px-6 flex items-center border-b border-neutral-200 dark:border-[#3a3a3a]">
         <Skeleton width={180} height={28} />
       </div>
@@ -35,7 +35,7 @@ const AdminDashboardSkeleton = () => (
     </div>
 
     {/* Main Content Skeleton */}
-    <div className="pt-14 pb-16 lg:pt-0 lg:pb-0 lg:ml-64">
+    <div className="pt-14 pb-16 md:pt-0 md:pb-0 md:ml-72">
       <div className="p-6">
         <Skeleton height={40} width={200} className="mb-6" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -47,7 +47,7 @@ const AdminDashboardSkeleton = () => (
     </div>
 
     {/* Mobile Bottom Nav Skeleton */}
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white dark:bg-[#2a2a2a] border-t border-neutral-200 dark:border-[#3a3a3a]">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white dark:bg-[#2a2a2a] border-t border-neutral-200 dark:border-[#3a3a3a]">
       <div className="h-full flex items-center justify-around px-2">
         {[...Array(6)].map((_, i) => (
           <div key={i} className="flex flex-col items-center gap-1">
@@ -246,16 +246,18 @@ export default function AdminDashboardLayout({ children, user }) {
       />
 
       {/* Main Content */}
-      <main className="pt-14 pb-16 lg:pt-0 lg:pb-0 lg:ml-64">
+      <main className="pt-14 pb-16 md:pt-0 md:pb-0 md:ml-72">
         <div className="p-4 md:p-6 lg:p-8">{children}</div>
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <AdminMobileBottomNav
-        pendingPostsCount={pendingPostsCount}
-        pendingVerificationsCount={pendingVerificationsCount}
-        notificationCount={notificationCount}
-      />
+      <div className="md:hidden">
+        <AdminMobileBottomNav
+          pendingPostsCount={pendingPostsCount}
+          pendingVerificationsCount={pendingVerificationsCount}
+          notificationCount={notificationCount}
+        />
+      </div>
     </div>
   );
 }
