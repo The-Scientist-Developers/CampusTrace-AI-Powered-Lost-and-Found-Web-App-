@@ -192,32 +192,11 @@ const ItemCard = ({ item, onPress }) => (
 
 // --- Enhanced Match Card with Modern Styling ---
 const MatchCard = ({ item, onPress }) => {
-  const matchPercentage = item.match_score ? Math.round(item.match_score) : 0;
-  const matchColor =
-    matchPercentage >= 80
-      ? "#10B981"
-      : matchPercentage >= 60
-      ? "#F59E0B"
-      : "#6B7280";
-
   return (
     <button
       onClick={onPress}
       className="w-[50vw] sm:w-48 bg-white dark:bg-[#2a2a2a] rounded-2xl border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden flex-shrink-0 snap-start shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
     >
-      <div className="p-3 pb-2">
-        <div className="flex items-center justify-between mb-2">
-          <div
-            className="px-2.5 py-1 rounded-lg text-xs font-bold text-white shadow-sm"
-            style={{ backgroundColor: matchColor }}
-          >
-            {matchPercentage}%
-          </div>
-          <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-            Match
-          </span>
-        </div>
-      </div>
       <ItemImage
         imageUrl={item.thumbnail_url || item.image_url}
         className="w-full aspect-square"
