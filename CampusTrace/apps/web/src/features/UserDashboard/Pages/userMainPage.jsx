@@ -202,9 +202,20 @@ const MatchCard = ({ item, onPress }) => {
         className="w-full aspect-square"
       />
       <div className="p-3">
-        <h3 className="text-sm font-bold text-neutral-800 dark:text-white mb-1 truncate">
-          {item.title}
-        </h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-bold text-neutral-800 dark:text-white truncate flex-1">
+            {item.title}
+          </h3>
+          <span
+            className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold flex-shrink-0 ${
+              item.status === "Lost"
+                ? "bg-red-500 text-white"
+                : "bg-green-500 text-white"
+            }`}
+          >
+            {item.status}
+          </span>
+        </div>
         <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
           {item.location || "Campus"}
         </p>
