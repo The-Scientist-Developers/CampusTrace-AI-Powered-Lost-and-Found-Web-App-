@@ -1274,15 +1274,25 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1a] text-neutral-800 dark:text-neutral-300 flex flex-col overflow-x-hidden">
       <Helmet>
-        <title>CampusTrace - AI-Powered Lost and Found for Universities</title>
+        <title>CampusTrace | AI-Powered Lost and Found for Universities</title>
         <meta
           name="description"
-          content="CampusTrace is an intelligent lost and found platform for universities. Report lost items, claim found belongings, and reconnect with what matters using AI-powered matching technology."
+          content="CampusTrace is a smart, AI-powered lost and found web app designed for university communities. Find lost items with AI matching, secure messaging, and a verified campus network."
         />
         <meta
           name="keywords"
-          content="campustrace, lost and found, university platform, campus lost items, AI matching, student community, campus security, item recovery"
+          content="CampusTrace, campus trace, lost and found, university lost and found, AI lost and found, campus lost items, college lost and found, Isabela State University, lost item finder, found item reporting"
         />
+        <link rel="canonical" href="https://www.campustrace.site/" />
+        {/* Open Graph Tags */}
+        <meta property="og:title" content="CampusTrace | AI-Powered Lost and Found for Universities" />
+        <meta property="og:description" content="Find what's lost, return what's found. CampusTrace uses AI to make recovering lost items on campus simple and fast." />
+        <meta property="og:image" content="https://www.campustrace.site/og-image.png" />
+        <meta property="og:url" content="https://www.campustrace.site/" />
+        {/* Twitter Tags */}
+        <meta name="twitter:title" content="CampusTrace | AI-Powered Lost and Found for Universities" />
+        <meta name="twitter:description" content="Find what's lost, return what's found. CampusTrace uses AI to make recovering lost items on campus simple and fast." />
+        <meta name="twitter:image" content="https://www.campustrace.site/og-image.png" />
       </Helmet>
 
       {/* Mobile App Alert Banner */}
