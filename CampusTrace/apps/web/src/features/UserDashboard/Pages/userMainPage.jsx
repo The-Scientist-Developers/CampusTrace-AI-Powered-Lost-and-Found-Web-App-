@@ -156,14 +156,17 @@ const ItemCard = ({ item, onPress }) => (
     onClick={onPress}
     className="w-[70vw] sm:w-64 bg-white dark:bg-[#2a2a2a] rounded-2xl border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden flex-shrink-0 snap-start shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
   >
-    <div className="relative">
-      <ItemImage
-        imageUrl={item.thumbnail_url || item.image_url}
-        className="w-full aspect-square"
-      />
-      <div className="absolute top-3 left-3">
+    <ItemImage
+      imageUrl={item.thumbnail_url || item.image_url}
+      className="w-full aspect-square"
+    />
+    <div className="p-4">
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <h3 className="text-sm font-bold text-neutral-800 dark:text-white line-clamp-2 flex-1">
+          {item.title}
+        </h3>
         <span
-          className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg ${
+          className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold flex-shrink-0 ${
             item.status === "Lost"
               ? "bg-red-500 text-white"
               : "bg-green-500 text-white"
@@ -172,11 +175,6 @@ const ItemCard = ({ item, onPress }) => (
           {item.status}
         </span>
       </div>
-    </div>
-    <div className="p-4">
-      <h3 className="text-sm font-bold text-neutral-800 dark:text-white mb-2 h-10 line-clamp-2">
-        {item.title}
-      </h3>
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
           <Tag className="w-3 h-3" />

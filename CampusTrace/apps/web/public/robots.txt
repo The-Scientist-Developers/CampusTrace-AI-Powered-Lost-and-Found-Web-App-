@@ -1,0 +1,8 @@
+# CampusTrace robots.txt
+# https://www.campustrace.site
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://www.campustrace.site/sitemap.xml

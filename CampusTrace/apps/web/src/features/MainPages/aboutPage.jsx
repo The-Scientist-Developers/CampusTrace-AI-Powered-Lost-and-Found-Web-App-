@@ -84,15 +84,66 @@ export default function AboutUsPage() {
   return (
     <div className="bg-white dark:bg-[#1a1a1a] text-neutral-700 dark:text-gray-100 min-h-screen">
       <Helmet>
-        <title>About Us - Meet the CampusTrace Team</title>
+        <title>About CampusTrace - AI-Powered Lost and Found for Universities</title>
         <meta
           name="description"
-          content="Meet the student developers behind CampusTrace from Isabela State University. Learn about our mission to solve campus lost and found challenges with AI technology."
+          content="CampusTrace is an AI-powered lost and found platform built for university communities. Learn about our mission, meet our team from Isabela State University, and discover how we're solving campus lost and found challenges."
         />
         <meta
           name="keywords"
-          content="about campustrace, team, student developers, isabela state university, campus innovation, AI lost and found"
+          content="CampusTrace, about CampusTrace, team, student developers, Isabela State University, campus innovation, AI lost and found, university lost and found platform"
         />
+        <link rel="canonical" href="https://www.campustrace.site/about" />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content="About CampusTrace - AI-Powered Lost and Found for Universities" />
+        <meta property="og:description" content="Meet the team behind CampusTrace and learn about our mission to solve campus lost and found challenges with AI technology." />
+        <meta property="og:url" content="https://www.campustrace.site/about" />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://www.campustrace.site/og-image.png" />
+        
+        {/* Organization Schema for About Page */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "AboutPage",
+            "mainEntity": {
+              "@type": "Organization",
+              "name": "CampusTrace",
+              "url": "https://www.campustrace.site",
+              "logo": "https://www.campustrace.site/logo.png",
+              "description": "CampusTrace is an AI-powered lost and found web application designed for university communities. We help students and staff find lost items quickly using intelligent AI matching technology, secure messaging, and verified campus networks.",
+              "foundingDate": "2024",
+              "founders": [
+                {
+                  "@type": "Person",
+                  "name": "John Franklin C. Bugauisan",
+                  "jobTitle": "Project Lead / Full Stack Developer",
+                  "sameAs": ["https://github.com/ImFrankB", "https://www.linkedin.com/in/john-franklin-bugauisan-86aa16309/"]
+                },
+                {
+                  "@type": "Person",
+                  "name": "William Ray M. Respicio",
+                  "jobTitle": "Frontend Developer / UI Designer",
+                  "sameAs": ["https://github.com/williamUser-ops", "https://www.linkedin.com/in/respicio-william-ray-m-0b5969384/"]
+                },
+                {
+                  "@type": "Person",
+                  "name": "Jerome Ian N. Cacho",
+                  "jobTitle": "Frontend Developer / UI Designer",
+                  "sameAs": ["https://github.com/iiiiaannnnnnn", "https://www.linkedin.com/in/jerome-ian-cacho-19a46233a/"]
+                }
+              ],
+              "address": {
+                "@type": "PostalAddress",
+                "addressLocality": "Echague",
+                "addressRegion": "Isabela",
+                "addressCountry": "PH"
+              },
+              "sameAs": ["https://github.com/ImFrankB"]
+            }
+          })}
+        </script>
       </Helmet>
 
       {/* Header with Logo and Back Button */}
@@ -135,24 +186,52 @@ export default function AboutUsPage() {
       <div className="pt-28 pb-12 flex flex-col justify-center items-center">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center animate-fade-in-up">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-neutral-900 dark:text-white mb-5">
-            About Our Team
+            About CampusTrace
           </h1>
-          <p className="text-base sm:text-lg md:text-xl text-neutral-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed mb-10">
-            We are a dedicated team of student developers from Isabela State
-            University, bringing innovative solutions to campus challenges.
-            Campus Trace is our project, born from a passion for technology and
-            community.
-          </p>
+          
+          {/* What is CampusTrace Section */}
+          <section className="mb-12 text-left bg-neutral-50 dark:bg-[#2a2a2a] rounded-2xl p-6 sm:p-8 border border-neutral-200 dark:border-neutral-700">
+            <h2 className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white mb-4">
+              What is CampusTrace?
+            </h2>
+            <p className="text-base sm:text-lg text-neutral-600 dark:text-gray-400 leading-relaxed mb-4">
+              <strong className="text-primary-600 dark:text-primary-400">CampusTrace</strong> is an AI-powered lost and found web application specifically designed for university communities. We leverage cutting-edge artificial intelligence to automatically match lost items with found reports, making the recovery process faster and more efficient than traditional bulletin boards or manual reporting systems.
+            </p>
+            
+            <h3 className="text-xl font-semibold text-neutral-800 dark:text-white mt-6 mb-3">
+              Who is CampusTrace for?
+            </h3>
+            <p className="text-base sm:text-lg text-neutral-600 dark:text-gray-400 leading-relaxed mb-4">
+              CampusTrace is built for <strong>university communities</strong> — students, faculty, staff, and campus administrators who need a reliable, modern solution for managing lost and found items. Whether you're a student who lost their laptop or a campus security office managing hundreds of found items, CampusTrace streamlines the entire process.
+            </p>
+            
+            <h3 className="text-xl font-semibold text-neutral-800 dark:text-white mt-6 mb-3">
+              What problem does CampusTrace solve?
+            </h3>
+            <p className="text-base sm:text-lg text-neutral-600 dark:text-gray-400 leading-relaxed">
+              Traditional lost and found systems rely on paper forms, bulletin boards, or disconnected databases that rarely connect owners with their belongings. CampusTrace solves this by using <strong>AI-powered image and text matching</strong> to automatically identify potential matches, <strong>secure in-app messaging</strong> for safe communication between parties, and <strong>university email verification</strong> to ensure only verified campus members can participate. The result: faster reunions, reduced administrative burden, and a more connected campus community.
+            </p>
+          </section>
+          
+          {/* Our Team Section */}
+          <section className="mt-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900 dark:text-white mb-4">
+              Meet Our Team
+            </h2>
+            <p className="text-base sm:text-lg md:text-xl text-neutral-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed mb-10">
+              We are a dedicated team of student developers from <strong>Isabela State University</strong>, Philippines, bringing innovative solutions to campus challenges. CampusTrace is our project, born from a passion for technology and community.
+            </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12 mt-12">
-            {teamMembers.map((member, index) => (
-              <TeamMemberCard
-                key={member.name}
-                {...member}
-                style={{ animationDelay: `${index * 100 + 200}ms` }}
-              />
-            ))}
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12 mt-12">
+              {teamMembers.map((member, index) => (
+                <TeamMemberCard
+                  key={member.name}
+                  {...member}
+                  style={{ animationDelay: `${index * 100 + 200}ms` }}
+                />
+              ))}
+            </div>
+          </section>
         </div>
       </div>
     </div>

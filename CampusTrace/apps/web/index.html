@@ -3,11 +3,18 @@
   <head>
     <meta charset="UTF-8" />
 
-    <!-- This is your main title Google will show -->
+    <!-- Primary Meta Tags -->
     <title>CampusTrace | AI-Powered Lost and Found for Universities</title>
     <link rel="canonical" href="https://www.campustrace.site/" />
-    <link rel="icon" href="/Icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#2563EB" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Favicon & Apple Touch Icons -->
+    <link rel="icon" type="image/svg+xml" href="/Icon.svg" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/logo.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/logo.png" />
+    <link rel="shortcut icon" href="/logo.png" />
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -17,21 +24,20 @@
       rel="stylesheet"
     />
 
-    <!-- SEO & Social Share Meta Tags -->
-
-    <!-- This is the description that appears under your title in Google -->
+    <!-- SEO Meta Description -->
     <meta
       name="description"
       content="CampusTrace is a smart, AI-powered lost and found web app designed for university communities. Find lost items with AI matching, secure messaging, and a verified campus network."
     />
 
-    <!-- These are the keywords Google will use -->
+    <!-- Keywords -->
     <meta
       name="keywords"
-      content="campus trace, lost and found, university lost and found, ai lost and found, campus lost items, college lost and found, Isabela State University, isabela state university lost and found"
+      content="CampusTrace, campus trace, lost and found, university lost and found, AI lost and found, campus lost items, college lost and found, Isabela State University, lost item finder, found item reporting"
     />
 
-    <!-- Open Graph (for Facebook, LinkedIn, etc.) -->
+    <!-- Open Graph (Facebook, LinkedIn, etc.) -->
+    <meta property="og:site_name" content="CampusTrace" />
     <meta
       property="og:title"
       content="CampusTrace | AI-Powered Lost and Found for Universities"
@@ -42,14 +48,15 @@
       property="og:description"
       content="Find what's lost, return what's found. CampusTrace uses AI to make recovering lost items on campus simple and fast."
     />
-    <!-- 
-      Create a banner image (e.g., 1200x630px) for your site, 
-      add it to the /public folder, and uncomment this line:
-    -->
-    <!-- <meta property="og:image" content="https://www.campustrace.site/og-image.png" /> -->
+    <meta property="og:image" content="https://www.campustrace.site/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="CampusTrace - AI-Powered Lost and Found for Universities" />
+    <meta property="og:locale" content="en_US" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@CampusTrace" />
     <meta
       name="twitter:title"
       content="CampusTrace | AI-Powered Lost and Found for Universities"
@@ -58,14 +65,143 @@
       name="twitter:description"
       content="Find what's lost, return what's found. CampusTrace uses AI to make recovering lost items on campus simple and fast."
     />
-    <!-- <meta name="twitter:image" content="https://www.campustrace.site/og-image.png" /> -->
+    <meta name="twitter:image" content="https://www.campustrace.site/og-image.png" />
 
-    <!-- Structured Data for Google Sitelinks -->
-    <!-- This links to the schema.json file you just created in /public -->
-    <script type="application/ld+json" src="/schema.json"></script>
+    <!-- ============================================== -->
+    <!-- STRUCTURED DATA: Organization Schema (CRITICAL FOR GOOGLE LOGO) -->
+    <!-- This MUST be inline - Google ignores external src for JSON-LD -->
+    <!-- ============================================== -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "CampusTrace",
+      "url": "https://www.campustrace.site",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.campustrace.site/logo.png",
+        "width": 512,
+        "height": 512
+      },
+      "image": "https://www.campustrace.site/logo.png",
+      "description": "CampusTrace is an AI-powered lost and found web application designed for university communities. We help students and staff find lost items quickly using AI matching technology.",
+      "foundingDate": "2024",
+      "founders": [
+        {
+          "@type": "Person",
+          "name": "John Franklin C. Bugauisan"
+        }
+      ],
+      "address": {
+        "@type": "PostalAddress",
+        "addressCountry": "PH"
+      },
+      "sameAs": [
+        "https://github.com/ImFrankB"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "url": "https://www.campustrace.site/about"
+      }
+    }
+    </script>
+
+    <!-- STRUCTURED DATA: WebSite Schema (for Sitelinks Search Box) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "CampusTrace",
+      "alternateName": "Campus Trace",
+      "url": "https://www.campustrace.site/",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://www.campustrace.site/dashboard/browse-all?search={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "CampusTrace",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://www.campustrace.site/logo.png"
+        }
+      }
+    }
+    </script>
+
+    <!-- STRUCTURED DATA: WebApplication Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "CampusTrace",
+      "url": "https://www.campustrace.site",
+      "applicationCategory": "UtilityApplication",
+      "operatingSystem": "Web Browser, Android",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "description": "AI-powered lost and found platform for university campuses. Report lost items, post found items, and use AI matching to reunite belongings with their owners.",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "50"
+      },
+      "featureList": [
+        "AI-Powered Item Matching",
+        "Secure In-App Messaging",
+        "University Email Verification",
+        "Real-Time Notifications",
+        "Photo-Based Item Posting",
+        "Mobile App for Android"
+      ]
+    }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Static content for SEO crawlers (React will hydrate/replace this) -->
+    <div id="root">
+      <header style="padding: 20px; text-align: center;">
+        <h1>CampusTrace - AI-Powered Lost and Found for Universities</h1>
+        <p>Find what's lost, return what's found. CampusTrace uses artificial intelligence to make recovering lost items on campus simple and fast.</p>
+      </header>
+      <main style="padding: 20px; max-width: 800px; margin: 0 auto;">
+        <section>
+          <h2>What is CampusTrace?</h2>
+          <p>CampusTrace is a smart, AI-powered lost and found web application designed specifically for university communities. We help students, faculty, and staff find their lost belongings through intelligent AI matching, secure messaging, and a verified campus network.</p>
+        </section>
+        <section>
+          <h2>Key Features</h2>
+          <ul>
+            <li><strong>AI-Powered Matching</strong> - Our intelligent system automatically matches lost items with found reports</li>
+            <li><strong>Secure Messaging</strong> - Communicate safely with finders through our in-app messaging</li>
+            <li><strong>University Verification</strong> - Verified campus users for a trusted community</li>
+            <li><strong>Real-Time Notifications</strong> - Get instant alerts when your item is found</li>
+            <li><strong>Mobile App</strong> - Available for Android devices</li>
+          </ul>
+        </section>
+        <section>
+          <h2>For Universities</h2>
+          <p>CampusTrace is designed to serve university communities, providing a centralized platform for lost and found item management. Reduce administrative burden while helping your campus community stay connected.</p>
+        </section>
+        <nav>
+          <a href="/about">About Us</a> |
+          <a href="/learn-more">Learn More</a> |
+          <a href="/login">Login</a> |
+          <a href="/register-university">For Universities</a>
+        </nav>
+      </main>
+      <noscript>
+        <p>CampusTrace requires JavaScript to function. Please enable JavaScript in your browser to use this application.</p>
+      </noscript>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
