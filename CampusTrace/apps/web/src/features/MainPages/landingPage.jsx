@@ -1396,13 +1396,13 @@ export default function LandingPage() {
                   isAnchor: true,
                 },
                 {
-                  to: "/about",
+                  to: "/about/",
                   label: "About Us",
                   number: "04",
                   isAnchor: false,
                 },
                 {
-                  to: "/register-university",
+                  to: "/register-university/",
                   label: "For Universities",
                   number: "05",
                   isAnchor: false,
@@ -1439,7 +1439,7 @@ export default function LandingPage() {
                 )
               )}
               <Link
-                to="/login"
+                to="/login/"
                 className="ml-4 px-5 py-2 bg-primary-600 text-white text-sm font-medium tracking-wider rounded-md hover:bg-primary-700 transition-colors duration-200"
               >
                 Log In
@@ -1577,7 +1577,7 @@ export default function LandingPage() {
                 transition={{ delay: 0.6 }}
               >
                 <Link
-                  to="/login"
+                  to="/login/"
                   onClick={() => setMobileMenuOpen(false)}
                   className="block mt-8 px-8 py-3 bg-primary-600 text-white text-base font-medium rounded-md hover:bg-primary-700 transition-colors"
                   style={{
@@ -1780,7 +1780,7 @@ export default function LandingPage() {
               className="mt-6 sm:mt-8 md:mt-10 flex flex-col sm:flex-row justify-center items-center gap-3 px-4"
             >
               <Link
-                to="/login"
+                to="/login/"
                 className="group relative px-8 py-3.5 sm:px-7 sm:py-3 bg-gradient-to-r from-primary-600 to-blue-600 text-white font-semibold rounded-lg overflow-hidden transition-all duration-300 flex items-center justify-center gap-2 text-base w-full sm:w-auto shadow-lg hover:shadow-2xl hover:shadow-primary-500/50 transform hover:scale-105"
               >
                 <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-primary-500 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -1793,7 +1793,7 @@ export default function LandingPage() {
                 </div>
               </Link>
               <Link
-                to="/learn-more"
+                to="/learn-more/"
                 className="group relative px-8 py-3.5 sm:px-7 sm:py-3 bg-white/80 dark:bg-neutral-800/80 backdrop-blur-sm text-neutral-700 dark:text-neutral-200 font-semibold rounded-lg transition-all duration-300 border-2 border-neutral-300 dark:border-neutral-600 w-full sm:w-auto text-center text-base shadow-lg hover:shadow-xl hover:border-primary-500 dark:hover:border-primary-400 transform hover:scale-105"
               >
                 <span className="flex items-center justify-center gap-2">
@@ -2020,7 +2020,7 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-4">
               <Link
-                to="/login"
+                to="/login/"
                 className="group px-8 sm:px-8 py-3 sm:py-3 bg-white text-primary-600 text-base sm:text-base font-semibold rounded-lg shadow-lg hover:shadow-xl hover:bg-neutral-50 transition-all duration-300 inline-flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 <span className="relative z-10">Sign Up / Log In</span>
@@ -2091,7 +2091,7 @@ export default function LandingPage() {
                   </a>
                 </li>
                 <li>
-                  <Link to="/about" className="footer-link">
+                  <Link to="/about/" className="footer-link">
                     About Us
                   </Link>
                 </li>
@@ -2105,12 +2105,12 @@ export default function LandingPage() {
               </h3>
               <ul className="space-y-3">
                 <li>
-                  <Link to="/register-university" className="footer-link">
+                  <Link to="/register-university/" className="footer-link">
                     For Universities
                   </Link>
                 </li>
                 <li>
-                  <Link to="/learn-more" className="footer-link">
+                  <Link to="/learn-more/" className="footer-link">
                     Detailed Guide
                   </Link>
                 </li>
