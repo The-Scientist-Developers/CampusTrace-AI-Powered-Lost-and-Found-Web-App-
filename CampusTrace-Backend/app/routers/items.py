@@ -38,6 +38,93 @@ def ensure_ai_model():
             print(f"❌ Failed to lazy load AI model: {e}")
             traceback.print_exc()
 
+async def generate_match_explanation(lost_item: dict, found_item: dict, match_score: float, text_sim: float, image_sim: float) -> str:
+    """
+    Generate an XAI (Explainable AI) explanation for why two items match.
+    Uses Gemini AI to provide human-readable explanations.
+    Caches results to avoid regenerating on every page load.
+    """
+    # Check cache first
+    lost_id = lost_item.get("id")
+    found_id = found_item.get("id")
+    cache_key = (lost_id, found_id)
+    
+    if cache_key in shared.match_explanation_cache:
+        print(f"📦 Using cached explanation for match ({lost_id}, {found_id})")
+        return shared.match_explanation_cache[cache_key]
+    
+    ensure_ai_model()
+    
+    if not shared.model:
+        print(f"⚠️ Gemini model not available, using fallback explanation")
+        # Fallback to basic explanation if AI is not available
+        reasons = []
+        if text_sim > 0.7:
+            reasons.append(f"Description similarity: {round(text_sim * 100)}%")
+        if image_sim > 0.7:
+            reasons.append(f"Visual similarity: {round(image_sim * 100)}%")
+        if lost_item.get("category") == found_item.get("category"):
+            reasons.append(f"Same category: {lost_item.get('category')}")
+        if lost_item.get("location") == found_item.get("location"):
+            reasons.append(f"Same location: {lost_item.get('location')}")
+        
+        explanation = " • ".join(reasons) if reasons else "Potential match based on AI analysis"
+        shared.match_explanation_cache[cache_key] = explanation
+        return explanation
+    
+    try:
+        # Create detailed prompt for XAI explanation
+        prompt = f"""You are an AI assistant helping users understand why items might match in a lost and found system.
+
+Lost Item:
+- Title: {lost_item.get('title', 'N/A')}
+- Description: {lost_item.get('description', 'N/A')[:200]}
+- Category: {lost_item.get('category', 'N/A')}
+- Location: {lost_item.get('location', 'N/A')}
+
+Found Item:
+- Title: {found_item.get('title', 'N/A')}
+- Description: {found_item.get('description', 'N/A')[:200]}
+- Category: {found_item.get('category', 'N/A')}
+- Location: {found_item.get('location', 'N/A')}
+
+Match Metrics:
+- Overall Match: {match_score}%
+- Text Similarity: {round(text_sim * 100)}%
+- Image Similarity: {round(image_sim * 100)}%
+
+Generate a brief, friendly explanation (1-2 sentences, max 150 characters) explaining WHY these items might match. Focus on the strongest matching factors. Be concise and user-friendly."""
+
+        print(f"🤖 Calling Gemini AI for match explanation (score: {match_score}%)")
+        response = await shared.model.generate_content_async(prompt)
+        explanation = response.text.strip()
+        print(f"✅ Gemini response: {explanation[:100]}...")
+        
+        # Limit explanation length
+        if len(explanation) > 150:
+            explanation = explanation[:147] + "..."
+        
+        # Cache the result
+        shared.match_explanation_cache[cache_key] = explanation
+        print(f"💾 Cached explanation for match ({lost_id}, {found_id})")
+        
+        return explanation
+        
+    except Exception as e:
+        print(f"⚠️ Error generating match explanation: {e}")
+        import traceback
+        traceback.print_exc()
+        # Fallback explanation
+        if match_score >= 80:
+            explanation = "Strong match: Similar appearance and description"
+        elif match_score >= 60:
+            explanation = "Good match: Notable similarities found"
+        else:
+            explanation = "Possible match: Some similarities detected"
+        
+        shared.match_explanation_cache[cache_key] = explanation
+        return explanation
+
 @router.get("")
 async def get_items_paginated(
     page: int = 1,
@@ -430,9 +517,10 @@ async def search_by_image(
 @router.get("/find-matches/{item_id}")
 async def find_matches(item_id: int, user_id: str = Depends(get_current_user_id)):
     try:
+        # Get the lost item details
         item_res = (
             supabase.table("items")
-            .select("university_id, user_id, status")
+            .select("id, title, description, category, location, university_id, user_id, status, text_embedding, image_embedding")
             .eq("id", item_id)
             .eq("user_id", user_id)
             .single()
@@ -444,22 +532,63 @@ async def find_matches(item_id: int, user_id: str = Depends(get_current_user_id)
         if item_res.data["status"] != "Lost":
             return []
 
+        lost_item = item_res.data
+
+        # Find potential matches using RPC
         matches_res = supabase.rpc(
             "find_matches_for_lost_item",
             {
                 "p_item_id": item_id,
                 "p_text_weight": 0.6,
                 "p_image_weight": 0.4,
-                "p_match_threshold": 0.7,
-                "p_match_count": 4,
+                "p_match_threshold": 0.65,  # Lower threshold for more matches
+                "p_match_count": 10,
             },
         ).execute()
 
-        return matches_res.data or []
+        if not matches_res.data:
+            return []
+
+        # Get detailed information for each match
+        enriched_matches = []
+        for match in matches_res.data[:4]:  # Limit to 4 best matches
+            # Fetch full item details
+            match_item_res = supabase.table("items").select(
+                "id, title, description, category, location, image_url, thumbnail_url, created_at, status"
+            ).eq("id", match["id"]).single().execute()
+
+            if match_item_res.data:
+                match_item = match_item_res.data
+                
+                # Convert similarity to percentage (0-1 → 0-100)
+                match_score = round(match.get("similarity", 0.0) * 100)
+                
+                # Generate XAI explanation
+                explanation = await generate_match_explanation(
+                    lost_item, 
+                    match_item, 
+                    match_score,
+                    match.get("text_similarity", 0.0),
+                    match.get("image_similarity", 0.0)
+                )
+                
+                enriched_matches.append({
+                    **match_item,
+                    "match_score": match_score,
+                    "match_explanation": explanation,
+                    "text_similarity": round(match.get("text_similarity", 0.0) * 100),
+                    "image_similarity": round(match.get("image_similarity", 0.0) * 100)
+                })
+
+        # Sort by match score
+        enriched_matches.sort(key=lambda x: x["match_score"], reverse=True)
+        
+        return enriched_matches
 
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Match error: {str(e)}")
 
 @router.put("/{item_id}/recover")
@@ -515,16 +644,45 @@ async def get_dashboard_summary(user_id: str = Depends(get_current_user_id)):
         unread = supabase.table("notifications").select("id", count="exact").eq("recipient_id", user_id).eq("status", "unread").execute()
 
         ai_matches = []
-        user_lost_items = supabase.table("items").select("id").eq("user_id", user_id).eq("status", "Lost").eq("moderation_status", "approved").order("created_at", desc=True).limit(1).execute()
+        user_lost_items = supabase.table("items").select("id, title, description, category, location").eq("user_id", user_id).eq("status", "Lost").eq("moderation_status", "approved").order("created_at", desc=True).limit(1).execute()
 
         if user_lost_items.data:
             try:
+                lost_item = user_lost_items.data[0]
                 matches = supabase.rpc(
                     "find_matches_for_lost_item",
-                    {"p_item_id": user_lost_items.data[0]["id"], "p_match_count": 3, "p_text_weight": 0.4, "p_image_weight": 0.6, "p_match_threshold": 0.7}
+                    {"p_item_id": lost_item["id"], "p_match_count": 4, "p_text_weight": 0.5, "p_image_weight": 0.5, "p_match_threshold": 0.65}
                 ).execute()
-                ai_matches = matches.data or []
-            except:
+                
+                # Convert matches to include percentage scores and XAI explanations
+                if matches.data:
+                    for match in matches.data[:3]:  # Limit to top 3 for dashboard
+                        match_score = round(match.get("similarity", 0.0) * 100)
+                        match["match_score"] = match_score
+                        
+                        # Generate XAI explanation using Gemini
+                        try:
+                            explanation = await generate_match_explanation(
+                                lost_item,
+                                match,
+                                match_score,
+                                match.get("text_similarity", 0.0),
+                                match.get("image_similarity", 0.0)
+                            )
+                            match["match_explanation"] = explanation
+                        except Exception as e:
+                            print(f"⚠️ Failed to generate XAI explanation: {e}")
+                            # Fallback explanations
+                            if match_score >= 80:
+                                match["match_explanation"] = "High match confidence"
+                            elif match_score >= 60:
+                                match["match_explanation"] = "Good potential match"
+                            else:
+                                match["match_explanation"] = "Possible match"
+                    
+                    ai_matches = matches.data[:3]
+            except Exception as e:
+                print(f"Error fetching AI matches: {e}")
                 pass
 
         return {

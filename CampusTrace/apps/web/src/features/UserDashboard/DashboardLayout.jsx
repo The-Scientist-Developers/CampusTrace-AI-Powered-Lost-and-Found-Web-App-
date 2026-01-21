@@ -35,6 +35,7 @@ import MobileBottomNav from "./MobileBottomNav";
 import MobileHeader from "./MobileHeader";
 import DesktopSidebar from "./DesktopSidebar";
 import RightSuggestions from "./RightSuggestions";
+import Chatbot from "../../components/Chatbot/Chatbot";
 
 const DashboardSkeleton = ({ isSidebarOpen, mobileMenu }) => (
   <div className="h-screen flex flex-col bg-neutral-50 dark:bg-[#1a1a1a] text-neutral-800 dark:text-neutral-300 overflow-hidden">
@@ -246,7 +247,7 @@ export default function DashboardLayout({ children, user }) {
             .select("*", { head: true, count: "exact" })
             .eq("user_id", user.id)
             .or(
-              "moderation_status.in.(approved,pending,pending_return),status.eq.pending handover"
+              "moderation_status.in.(approved,pending,pending_return),status.eq.pending handover",
             ),
         ]);
 
@@ -287,7 +288,7 @@ export default function DashboardLayout({ children, user }) {
           table: "profiles",
           filter: `id=eq.${user.id}`,
         },
-        (payload) => setProfile(payload.new)
+        (payload) => setProfile(payload.new),
       )
       .on(
         "postgres_changes",
@@ -305,7 +306,7 @@ export default function DashboardLayout({ children, user }) {
             .eq("recipient_id", user.id)
             .eq("status", "unread");
           setNotificationCount(count || 0);
-        }
+        },
       )
       .subscribe();
 
@@ -367,11 +368,11 @@ export default function DashboardLayout({ children, user }) {
           if (payload.new.name) {
             console.log(
               "University name updated in real-time!",
-              payload.new.name
+              payload.new.name,
             );
             setSiteName(payload.new.name);
           }
-        }
+        },
       )
       .subscribe();
 
@@ -444,7 +445,7 @@ export default function DashboardLayout({ children, user }) {
     if (window.innerWidth >= 1024) {
       localStorage.setItem(
         "userRightPanelOpen",
-        JSON.stringify(isRightPanelOpen)
+        JSON.stringify(isRightPanelOpen),
       );
     }
   }, [isRightPanelOpen]);
@@ -516,14 +517,14 @@ export default function DashboardLayout({ children, user }) {
   const avatarUrl =
     profile?.avatar_url ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      displayName
+      displayName,
     )}&background=4f46e5&color=ffffff&bold=true`;
 
   const pageTitle =
     menuItems.find((item) =>
       item.exact
         ? location.pathname === item.path
-        : location.pathname.startsWith(item.path)
+        : location.pathname.startsWith(item.path),
     )?.label || "Dashboard";
 
   const totalNotifications = notificationCount + messageCount;
@@ -982,6 +983,9 @@ export default function DashboardLayout({ children, user }) {
         messageCount={messageCount}
         profile={profile}
       />
+
+      {/* AI Chatbot */}
+      <Chatbot />
     </div>
   );
 }

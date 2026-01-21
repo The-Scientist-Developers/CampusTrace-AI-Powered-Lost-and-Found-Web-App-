@@ -190,15 +190,45 @@ const ItemCard = ({ item, onPress }) => (
 
 // --- Enhanced Match Card with Modern Styling ---
 const MatchCard = ({ item, onPress }) => {
+  // Get match score and determine color
+  const matchScore = item.match_score || 0;
+  const getMatchColor = (score) => {
+    if (score >= 80) return "bg-green-500";
+    if (score >= 60) return "bg-yellow-500";
+    return "bg-gray-500";
+  };
+  const getMatchTextColor = (score) => {
+    if (score >= 80) return "text-green-600 dark:text-green-400";
+    if (score >= 60) return "text-yellow-600 dark:text-yellow-400";
+    return "text-gray-600 dark:text-gray-400";
+  };
+  const getMatchBgColor = (score) => {
+    if (score >= 80)
+      return "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800";
+    if (score >= 60)
+      return "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800";
+    return "bg-gray-50 dark:bg-gray-800/30 border-gray-200 dark:border-gray-700";
+  };
+
   return (
     <button
       onClick={onPress}
-      className="w-[50vw] sm:w-48 bg-white dark:bg-[#2a2a2a] rounded-2xl border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden flex-shrink-0 snap-start shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
+      className="w-[55vw] sm:w-56 bg-white dark:bg-[#2a2a2a] rounded-2xl border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden flex-shrink-0 snap-start shadow-sm hover:shadow-lg transition-all duration-200 hover:scale-[1.02]"
     >
-      <ItemImage
-        imageUrl={item.thumbnail_url || item.image_url}
-        className="w-full aspect-square"
-      />
+      <div className="relative">
+        <ItemImage
+          imageUrl={item.thumbnail_url || item.image_url}
+          className="w-full aspect-square"
+        />
+        {/* Match Score Badge Overlay */}
+        {matchScore > 0 && (
+          <div
+            className={`absolute top-2 right-2 px-2 py-1 rounded-full ${getMatchColor(matchScore)} shadow-md`}
+          >
+            <span className="text-xs font-bold text-white">{matchScore}%</span>
+          </div>
+        )}
+      </div>
       <div className="p-3">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-bold text-neutral-800 dark:text-white truncate flex-1">
@@ -214,9 +244,34 @@ const MatchCard = ({ item, onPress }) => {
             {item.status}
           </span>
         </div>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+        <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate mb-2">
           {item.location || "Campus"}
         </p>
+        {/* XAI Explanation Box */}
+        {item.match_explanation && (
+          <div
+            className={`p-2 rounded-lg border ${getMatchBgColor(matchScore)}`}
+          >
+            <div className="flex items-start gap-1.5">
+              <svg
+                className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${getMatchTextColor(matchScore)}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <p className="text-[11px] text-neutral-700 dark:text-neutral-300 leading-snug">
+                {item.match_explanation}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </button>
   );
@@ -616,7 +671,7 @@ export default function UserMainPage({ user }) {
             Authorization: `Bearer ${token}`,
           },
           signal: controller.signal,
-        }
+        },
       );
 
       clearTimeout(timeoutId);
@@ -634,13 +689,13 @@ export default function UserMainPage({ user }) {
 
       // Set data from consolidated endpoint - filter out recovered items
       const activeRecentPosts = (data.myRecentPosts || []).filter(
-        (item) => item.status?.toLowerCase() !== "recovered"
+        (item) => item.status?.toLowerCase() !== "recovered",
       );
       const activeCommunityActivity = (data.recentActivity || []).filter(
-        (item) => item.status?.toLowerCase() !== "recovered"
+        (item) => item.status?.toLowerCase() !== "recovered",
       );
       const activeMatches = (data.aiMatches || []).filter(
-        (item) => item.status?.toLowerCase() !== "recovered"
+        (item) => item.status?.toLowerCase() !== "recovered",
       );
 
       setMyRecentPosts(activeRecentPosts);
@@ -652,7 +707,7 @@ export default function UserMainPage({ user }) {
         (item) =>
           item.status === "Lost" &&
           item.moderation_status !== "recovered" &&
-          item.moderation_status !== "rejected"
+          item.moderation_status !== "rejected",
       );
       setMyLostItem(latestLost || null);
 
@@ -695,7 +750,7 @@ export default function UserMainPage({ user }) {
 
     const daysOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     const weeklyArray = daysOrder.map(
-      (day) => weeklyData[day] || { name: day, Lost: 0, Found: 0 }
+      (day) => weeklyData[day] || { name: day, Lost: 0, Found: 0 },
     );
 
     // Generate category data
@@ -740,7 +795,7 @@ export default function UserMainPage({ user }) {
             .select("*")
             .eq("user_id", user.id)
             .or(
-              "moderation_status.in.(approved,pending,pending_return),status.eq.pending handover"
+              "moderation_status.in.(approved,pending,pending_return),status.eq.pending handover",
             )
             .order("created_at", { ascending: false })
             .limit(4),
@@ -757,10 +812,10 @@ export default function UserMainPage({ user }) {
 
       const allMyItems = allItemsResult.data || [];
       const activePosts = (activePostsResult.data || []).filter(
-        (item) => item.status?.toLowerCase() !== "recovered"
+        (item) => item.status?.toLowerCase() !== "recovered",
       );
       const communityData = (communityResult.data || []).filter(
-        (item) => item.status?.toLowerCase() !== "recovered"
+        (item) => item.status?.toLowerCase() !== "recovered",
       );
 
       setMyRecentPosts(activePosts);
@@ -768,13 +823,13 @@ export default function UserMainPage({ user }) {
 
       // Calculate stats
       const lostCount = allMyItems.filter(
-        (item) => item.status === "Lost"
+        (item) => item.status === "Lost",
       ).length;
       const foundCount = allMyItems.filter(
-        (item) => item.status === "Found"
+        (item) => item.status === "Found",
       ).length;
       const recoveredCount = allMyItems.filter(
-        (item) => item.moderation_status === "recovered"
+        (item) => item.moderation_status === "recovered",
       ).length;
 
       setStats({
@@ -791,7 +846,7 @@ export default function UserMainPage({ user }) {
         (item) =>
           item.status === "Lost" &&
           item.moderation_status !== "recovered" &&
-          item.moderation_status !== "rejected"
+          item.moderation_status !== "rejected",
       );
 
       if (latestLostItem) {
@@ -813,7 +868,7 @@ export default function UserMainPage({ user }) {
       if (!token) return;
       const response = await fetch(
         `${API_BASE_URL}/api/items/find-matches/${itemId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       if (!response.ok) throw new Error("Failed to fetch matches");
       const matches = await response.json();

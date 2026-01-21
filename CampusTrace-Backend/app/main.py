@@ -207,7 +207,8 @@ from app.routers import (
     handover, 
     auth, 
     public, 
-    items, 
+    items,
+    chatbot, 
     admin, 
     profile, 
     onboarding, 
@@ -334,3 +335,4 @@ app.include_router(messages.router)
 app.include_router(dashboard.router)
 app.include_router(push.router)
 app.include_router(user_actions.router)
+app.include_router(chatbot.router)
