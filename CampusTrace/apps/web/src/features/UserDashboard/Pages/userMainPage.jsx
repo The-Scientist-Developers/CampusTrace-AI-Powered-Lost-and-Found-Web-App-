@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   ArrowRight,
   EyeOff,
@@ -621,6 +621,14 @@ const getThemeColors = (colorMode) => {
 };
 
 // ==================== Main Page Component ====================
+// Cache for dashboard data to prevent refetching on tab switch
+const dashboardCache = {
+  data: null,
+  timestamp: null,
+  userId: null,
+  CACHE_DURATION: 5 * 60 * 1000, // 5 minutes
+};
+
 export default function UserMainPage({ user }) {
   const [myRecentPosts, setMyRecentPosts] = useState([]);
   const [communityActivity, setCommunityActivity] = useState([]);
@@ -632,6 +640,7 @@ export default function UserMainPage({ user }) {
   const { theme, colorMode } = useTheme();
   const themeColors = getThemeColors(colorMode);
   const primaryColor = themeColors.primary;
+  const hasFetched = useRef(false);
 
   const [stats, setStats] = useState({
     totalItems: 0,
@@ -645,11 +654,61 @@ export default function UserMainPage({ user }) {
     categories: [],
   });
 
+  // Check if cache is valid
+  const isCacheValid = () => {
+    if (!dashboardCache.data || !dashboardCache.timestamp) return false;
+    if (dashboardCache.userId !== user?.id) return false;
+    const now = Date.now();
+    return now - dashboardCache.timestamp < dashboardCache.CACHE_DURATION;
+  };
+
+  // Apply cached data to state
+  const applyCachedData = (data) => {
+    const activeRecentPosts = (data.myRecentPosts || []).filter(
+      (item) => item.status?.toLowerCase() !== "recovered",
+    );
+    const activeCommunityActivity = (data.recentActivity || []).filter(
+      (item) => item.status?.toLowerCase() !== "recovered",
+    );
+    const activeMatches = (data.aiMatches || []).filter(
+      (item) => item.status?.toLowerCase() !== "recovered",
+    );
+
+    setMyRecentPosts(activeRecentPosts);
+    setCommunityActivity(activeCommunityActivity);
+    setPossibleMatches(activeMatches);
+
+    const latestLost = (data.myRecentPosts || []).find(
+      (item) =>
+        item.status === "Lost" &&
+        item.moderation_status !== "recovered" &&
+        item.moderation_status !== "rejected",
+    );
+    setMyLostItem(latestLost || null);
+
+    setStats({
+      totalItems: data.userStats?.total || 0,
+      lostItems: data.userStats?.lost || 0,
+      foundItems: data.userStats?.found || 0,
+      recoveredItems: data.userStats?.recovered || 0,
+    });
+  };
+
   useEffect(() => {
     if (!user) {
       setLoading(false);
       return;
     }
+
+    // Use cache if valid to avoid refetching on tab switch
+    if (isCacheValid() && hasFetched.current) {
+      console.log("📦 Using cached dashboard data");
+      applyCachedData(dashboardCache.data);
+      setLoading(false);
+      return;
+    }
+
+    hasFetched.current = true;
     fetchDashboardData();
   }, [user]);
 
@@ -687,37 +746,14 @@ export default function UserMainPage({ user }) {
 
       const data = await response.json();
 
+      // Cache the response data
+      dashboardCache.data = data;
+      dashboardCache.timestamp = Date.now();
+      dashboardCache.userId = user?.id;
+      console.log("💾 Dashboard data cached");
+
       // Set data from consolidated endpoint - filter out recovered items
-      const activeRecentPosts = (data.myRecentPosts || []).filter(
-        (item) => item.status?.toLowerCase() !== "recovered",
-      );
-      const activeCommunityActivity = (data.recentActivity || []).filter(
-        (item) => item.status?.toLowerCase() !== "recovered",
-      );
-      const activeMatches = (data.aiMatches || []).filter(
-        (item) => item.status?.toLowerCase() !== "recovered",
-      );
-
-      setMyRecentPosts(activeRecentPosts);
-      setCommunityActivity(activeCommunityActivity);
-      setPossibleMatches(activeMatches);
-
-      // Find latest lost item
-      const latestLost = (data.myRecentPosts || []).find(
-        (item) =>
-          item.status === "Lost" &&
-          item.moderation_status !== "recovered" &&
-          item.moderation_status !== "rejected",
-      );
-      setMyLostItem(latestLost || null);
-
-      // Set stats
-      setStats({
-        totalItems: data.userStats?.total || 0,
-        lostItems: data.userStats?.lost || 0,
-        foundItems: data.userStats?.found || 0,
-        recoveredItems: data.userStats?.recovered || 0,
-      });
+      applyCachedData(data);
 
       // Set pre-calculated chart data from backend
       if (data.chartData) {
@@ -915,6 +951,10 @@ export default function UserMainPage({ user }) {
   };
 
   const handleRefresh = () => {
+    // Clear cache on manual refresh
+    dashboardCache.data = null;
+    dashboardCache.timestamp = null;
+    console.log("🔄 Manual refresh - cache cleared");
     fetchDashboardData();
   };
 

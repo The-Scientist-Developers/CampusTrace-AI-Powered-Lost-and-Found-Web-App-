@@ -55,9 +55,8 @@ async def generate_match_explanation(lost_item: dict, found_item: dict, match_sc
     
     ensure_ai_model()
     
-    if not shared.model:
-        print(f"⚠️ Gemini model not available, using fallback explanation")
-        # Fallback to basic explanation if AI is not available
+    # Fallback explanation if AI is not available
+    def get_fallback_explanation():
         reasons = []
         if text_sim > 0.7:
             reasons.append(f"Description similarity: {round(text_sim * 100)}%")
@@ -67,8 +66,11 @@ async def generate_match_explanation(lost_item: dict, found_item: dict, match_sc
             reasons.append(f"Same category: {lost_item.get('category')}")
         if lost_item.get("location") == found_item.get("location"):
             reasons.append(f"Same location: {lost_item.get('location')}")
-        
-        explanation = " • ".join(reasons) if reasons else "Potential match based on AI analysis"
+        return " • ".join(reasons) if reasons else "Potential match based on AI analysis"
+    
+    if not shared.model:
+        print(f"⚠️ Gemini model not available, using fallback explanation")
+        explanation = get_fallback_explanation()
         shared.match_explanation_cache[cache_key] = explanation
         return explanation
     
@@ -93,7 +95,7 @@ Match Metrics:
 - Text Similarity: {round(text_sim * 100)}%
 - Image Similarity: {round(image_sim * 100)}%
 
-Generate a brief, friendly explanation (1-2 sentences, max 150 characters) explaining WHY these items might match. Focus on the strongest matching factors. Be concise and user-friendly."""
+Generate a brief, friendly explanation (1-2 sentences, max 150 characters) explaining WHY these items might match. Focus on the strongest matching factors. Be concise and user-friendly. Use only English language."""
 
         print(f"🤖 Calling Gemini AI for match explanation (score: {match_score}%)")
         response = await shared.model.generate_content_async(prompt)
@@ -112,18 +114,11 @@ Generate a brief, friendly explanation (1-2 sentences, max 150 characters) expla
         
     except Exception as e:
         print(f"⚠️ Error generating match explanation: {e}")
-        import traceback
-        traceback.print_exc()
-        # Fallback explanation
-        if match_score >= 80:
-            explanation = "Strong match: Similar appearance and description"
-        elif match_score >= 60:
-            explanation = "Good match: Notable similarities found"
-        else:
-            explanation = "Possible match: Some similarities detected"
-        
+        # Fallback explanation on error
+        explanation = get_fallback_explanation()
         shared.match_explanation_cache[cache_key] = explanation
         return explanation
+
 
 @router.get("")
 async def get_items_paginated(
