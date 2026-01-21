@@ -103,6 +103,9 @@ const ConfirmEmailPage = lazy(() =>
 const AdminBackupPage = lazy(() =>
   import("./features/AdminDashboard/Pages/adminBackupPage.jsx")
 );
+const AdminRestorePage = lazy(() =>
+  import("./features/AdminDashboard/Pages/adminRestorePage.jsx")
+);
 const HandoverPage = lazy(() =>
   import("./features/UserDashboard/Pages/HandoverPage.jsx")
 );
@@ -401,6 +404,10 @@ function AppContent() {
                 <Route
                   path="backup"
                   element={<AdminBackupPage user={session?.user} />}
+                />
+                <Route
+                  path="restore"
+                  element={<AdminRestorePage user={session?.user} />}
                 />
                 <Route
                   path="help"

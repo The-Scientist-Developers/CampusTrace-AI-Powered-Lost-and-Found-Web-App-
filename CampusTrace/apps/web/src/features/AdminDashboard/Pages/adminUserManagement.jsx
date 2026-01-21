@@ -1135,7 +1135,7 @@ export default function UserManagement({ user: sessionUser }) {
               <select
                 value={rowsPerPage}
                 onChange={handleRowsPerPageChange}
-                className="px-2 py-1 bg-white dark:bg-[#1a1a1a] border border-neutral-300 dark:border-neutral-600 rounded text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="pl-2 pr-8 py-1 bg-white dark:bg-[#1a1a1a] border border-neutral-300 dark:border-neutral-600 rounded text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer appearance-none"
               >
                 <option value={5}>5</option>
                 <option value={10}>10</option>
@@ -1234,7 +1234,7 @@ export default function UserManagement({ user: sessionUser }) {
                 <select
                   value={rowsPerPage}
                   onChange={handleRowsPerPageChange}
-                  className="px-2 py-1 bg-white dark:bg-[#1a1a1a] border border-neutral-300 dark:border-neutral-600 rounded text-neutral-900 dark:text-neutral-100"
+                  className="pl-2 pr-8 py-1 bg-white dark:bg-[#1a1a1a] border border-neutral-300 dark:border-neutral-600 rounded text-neutral-900 dark:text-neutral-100 cursor-pointer appearance-none"
                 >
                   <option value={5}>5</option>
                   <option value={10}>10</option>

@@ -335,7 +335,7 @@ export default function NotificationsPage({ user }) {
           </p>
         </div>
       ) : (
-        <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm relative">
+        <div className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-lg shadow-sm relative overflow-hidden">
           {/* Select All Header */}
           {notifications.length > 0 && (
             <div className="p-4 border-b border-neutral-200 dark:border-[#3a3a3a] flex items-center gap-3 bg-neutral-50 dark:bg-[#1a1a1a]">
@@ -440,7 +440,7 @@ export default function NotificationsPage({ user }) {
                 <select
                   value={rowsPerPage}
                   onChange={handleRowsPerPageChange}
-                  className="px-2 py-1 bg-white dark:bg-[#1a1a1a] border border-neutral-300 dark:border-neutral-600 rounded text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 relative z-20 cursor-pointer"
+                  className="pl-2 pr-8 py-1 bg-white dark:bg-[#1a1a1a] border border-neutral-300 dark:border-neutral-600 rounded text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 relative z-20 cursor-pointer appearance-none"
                 >
                   <option value={5}>5</option>
                   <option value={10}>10</option>
