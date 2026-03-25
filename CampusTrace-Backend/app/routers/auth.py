@@ -47,11 +47,19 @@ async def signup_manual(
                 status_code=400, detail="A user with this email already exists."
             )
 
-        # Prepare redirect URL for email confirmation
+        # Prepare redirect URL for email confirmation based on request origin
         redirect_url = None
         if settings.PENDING_APPROVAL_REDIRECT_URL:
             if isinstance(settings.PENDING_APPROVAL_REDIRECT_URL, list):
-                redirect_url = settings.PENDING_APPROVAL_REDIRECT_URL[0]
+                # Try to match the origin from the request
+                origin = request.headers.get("origin", "")
+                redirect_url = settings.PENDING_APPROVAL_REDIRECT_URL[0]  # Default to first
+                
+                # If request is from production, use production URL
+                for url in settings.PENDING_APPROVAL_REDIRECT_URL:
+                    if origin and origin in url:
+                        redirect_url = url
+                        break
             else:
                 redirect_url = settings.PENDING_APPROVAL_REDIRECT_URL
 
@@ -200,11 +208,19 @@ async def signup_user(payload: SignupRequest, request: Request):
         )
 
     try:
-        # Prepare redirect URL for email confirmation
+        # Prepare redirect URL for email confirmation based on request origin
         redirect_url = None
         if settings.EMAIL_CONFIRM_REDIRECT:
             if isinstance(settings.EMAIL_CONFIRM_REDIRECT, list):
-                redirect_url = settings.EMAIL_CONFIRM_REDIRECT[0]
+                # Try to match the origin from the request
+                origin = request.headers.get("origin", "")
+                redirect_url = settings.EMAIL_CONFIRM_REDIRECT[0]  # Default to first
+                
+                # If request is from production, use production URL
+                for url in settings.EMAIL_CONFIRM_REDIRECT:
+                    if origin and origin in url:
+                        redirect_url = url
+                        break
             else:
                 redirect_url = settings.EMAIL_CONFIRM_REDIRECT
 
@@ -335,11 +351,19 @@ async def signup_user_mobile(payload: SignupRequest, request: Request):
         )
 
     try:
-        # Prepare redirect URL for email confirmation
+        # Prepare redirect URL for email confirmation based on request origin
         redirect_url = None
         if settings.EMAIL_CONFIRM_REDIRECT:
             if isinstance(settings.EMAIL_CONFIRM_REDIRECT, list):
-                redirect_url = settings.EMAIL_CONFIRM_REDIRECT[0]
+                # Try to match the origin from the request
+                origin = request.headers.get("origin", "")
+                redirect_url = settings.EMAIL_CONFIRM_REDIRECT[0]  # Default to first
+                
+                # If request is from production, use production URL
+                for url in settings.EMAIL_CONFIRM_REDIRECT:
+                    if origin and origin in url:
+                        redirect_url = url
+                        break
             else:
                 redirect_url = settings.EMAIL_CONFIRM_REDIRECT
 
@@ -462,11 +486,19 @@ async def signup_manual_mobile(
         if not university_check.data:
             raise HTTPException(status_code=400, detail="Invalid university selected.")
 
-        # Prepare redirect URL for email confirmation
+        # Prepare redirect URL for email confirmation based on request origin
         redirect_url = None
         if settings.PENDING_APPROVAL_REDIRECT_URL:
             if isinstance(settings.PENDING_APPROVAL_REDIRECT_URL, list):
-                redirect_url = settings.PENDING_APPROVAL_REDIRECT_URL[0]
+                # Try to match the origin from the request
+                origin = request.headers.get("origin", "")
+                redirect_url = settings.PENDING_APPROVAL_REDIRECT_URL[0]  # Default to first
+                
+                # If request is from production, use production URL
+                for url in settings.PENDING_APPROVAL_REDIRECT_URL:
+                    if origin and origin in url:
+                        redirect_url = url
+                        break
             else:
                 redirect_url = settings.PENDING_APPROVAL_REDIRECT_URL
 
