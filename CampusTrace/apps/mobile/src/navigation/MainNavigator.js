@@ -23,6 +23,7 @@ import NotificationScreen from "../screens/main/NotificationScreen";
 import ChatScreen from "../screens/main/ChatScreen";
 import MyPostsScreen from "../screens/main/MyPostsScreen";
 import HandoverScreen from "../screens/main/HandoverScreen";
+import ChatbotScreen from "../screens/main/ChatbotScreen";
 
 // --- IMPORT NEW SCREENS ---
 import SettingsScreen from "../screens/main/SettingsScreen";
@@ -44,6 +45,7 @@ function DashboardStack() {
       <Stack.Screen name="MyPosts" component={MyPostsScreen} />
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="Handover" component={HandoverScreen} />
+      <Stack.Screen name="Chatbot" component={ChatbotScreen} />
     </Stack.Navigator>
   );
 }
@@ -121,13 +123,13 @@ export default function MainNavigator() {
               },
               (payload) => {
                 setProfile((prev) => ({ ...prev, ...payload.new }));
-              }
+              },
             )
             .subscribe();
         } else if (event === "SIGNED_OUT") {
           setProfile(null);
         }
-      }
+      },
     );
 
     return () => {

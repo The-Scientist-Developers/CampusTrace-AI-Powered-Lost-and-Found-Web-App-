@@ -1,0 +1,114 @@
+[
+  {
+    "scenario": "Test 1 - Pink Hydroflask",
+    "lost_item_query": {
+      "text": "Lost a pink hydroflask water bottle",
+      "image_path": "c:/Documents/3rdyear1stSem/Software Engineering/CampusTrace-AI-Powered-Lost-and-Found-Web-App-/CampusTrace-Backend/scripts/testimages/test1.jpg"
+    },
+    "ground_truth_found_item_id": 172
+  },
+  {
+    "scenario": "Test 2 - Black RGB Gaming Mouse",
+    "lost_item_query": {
+      "text": "Left my black gaming mouse with RGB lights",
+      "image_path": "c:/Documents/3rdyear1stSem/Software Engineering/CampusTrace-AI-Powered-Lost-and-Found-Web-App-/CampusTrace-Backend/scripts/testimages/test2.jpg"
+    },
+    "ground_truth_found_item_id": 173
+  },
+  {
+    "scenario": "Test 3 - Over-ear Headphones",
+    "lost_item_query": {
+      "text": "Lost my black wireless over-ear headphones",
+      "image_path": "c:/Documents/3rdyear1stSem/Software Engineering/CampusTrace-AI-Powered-Lost-and-Found-Web-App-/CampusTrace-Backend/scripts/testimages/test3.jpg"
+    },
+    "ground_truth_found_item_id": 171
+  },
+  {
+    "scenario": "Test 4 - Brown Leather Journal/Wallet",
+    "lost_item_query": {
+      "text": "Lost a brown leather tie-around journal or wallet",
+      "image_path": "c:/Documents/3rdyear1stSem/Software Engineering/CampusTrace-AI-Powered-Lost-and-Found-Web-App-/CampusTrace-Backend/scripts/testimages/test4.jpg"
+    },
+    "ground_truth_found_item_id": 170
+  },
+  {
+    "scenario": "Test 5 - DSLR Camera with Lens",
+    "lost_item_query": {
+      "text": "Left my black Canon DSLR camera",
+      "image_path": "c:/Documents/3rdyear1stSem/Software Engineering/CampusTrace-AI-Powered-Lost-and-Found-Web-App-/CampusTrace-Backend/scripts/testimages/test5.jpg"
+    },
+    "ground_truth_found_item_id": 169
+  },
+  {
+    "scenario": "Test 6 - Denim Jacket",
+    "lost_item_query": {
+      "text": "Lost a blue denim jacket",
+      "image_path": "c:/Documents/3rdyear1stSem/Software Engineering/CampusTrace-AI-Powered-Lost-and-Found-Web-App-/CampusTrace-Backend/scripts/testimages/test6.jpg"
+    },
+    "ground_truth_found_item_id": 168
+  },
+  {
+    "scenario": "Test 7 - Black Wristwatch",
+    "lost_item_query": {
+      "text": "Lost a black wristwatch with gold details",
+      "image_path": "c:/Documents/3rdyear1stSem/Software Engineering/CampusTrace-AI-Powered-Lost-and-Found-Web-App-/CampusTrace-Backend/scripts/testimages/test7.jpg"
+    },
+    "ground_truth_found_item_id": 167
+  },
+  {
+    "scenario": "Test 8 - Striped Tote Bag",
+    "lost_item_query": {
+      "text": "Lost a colorful striped tote bag",
+      "image_path": "c:/Documents/3rdyear1stSem/Software Engineering/CampusTrace-AI-Powered-Lost-and-Found-Web-App-/CampusTrace-Backend/scripts/testimages/test8.jpg"
+    },
+    "ground_truth_found_item_id": 166
+  },
+  {
+    "scenario": "Test 9 - Car Key Fob",
+    "lost_item_query": {
+      "text": "Lost a black car key fob with a key attached",
+      "image_path": "c:/Documents/3rdyear1stSem/Software Engineering/CampusTrace-AI-Powered-Lost-and-Found-Web-App-/CampusTrace-Backend/scripts/testimages/test9.jpg"
+    },
+    "ground_truth_found_item_id": 165
+  },
+  {
+    "scenario": "Test 10 - Scientific Calculator",
+    "lost_item_query": {
+      "text": "Left my black scientific calculator",
+      "image_path": "c:/Documents/3rdyear1stSem/Software Engineering/CampusTrace-AI-Powered-Lost-and-Found-Web-App-/CampusTrace-Backend/scripts/testimages/test10.jpg"
+    },
+    "ground_truth_found_item_id": 164
+  },
+  {
+    "scenario": "Test 11 - Black Eyeglasses",
+    "lost_item_query": {
+      "text": "Lost my black framed eyeglasses",
+      "image_path": "c:/Documents/3rdyear1stSem/Software Engineering/CampusTrace-AI-Powered-Lost-and-Found-Web-App-/CampusTrace-Backend/scripts/testimages/test11.jpg"
+    },
+    "ground_truth_found_item_id": 163
+  },
+  {
+    "scenario": "Test 12 - Baseball Cap",
+    "lost_item_query": {
+      "text": "Lost a white and camo baseball cap with a fish logo",
+      "image_path": "c:/Documents/3rdyear1stSem/Software Engineering/CampusTrace-AI-Powered-Lost-and-Found-Web-App-/CampusTrace-Backend/scripts/testimages/test12.jpg"
+    },
+    "ground_truth_found_item_id": 162
+  },
+  {
+    "scenario": "Test 13 - USB Dongle/Adapter",
+    "lost_item_query": {
+      "text": "Lost a grey multi-port USB-C adapter dongle",
+      "image_path": "c:/Documents/3rdyear1stSem/Software Engineering/CampusTrace-AI-Powered-Lost-and-Found-Web-App-/CampusTrace-Backend/scripts/testimages/test13.jpg"
+    },
+    "ground_truth_found_item_id": 161
+  },
+  {
+    "scenario": "Test 15 - Blue/Black Mouse",
+    "lost_item_query": {
+      "text": "Lost a black gaming mouse with blue glowing logo",
+      "image_path": "c:/Documents/3rdyear1stSem/Software Engineering/CampusTrace-AI-Powered-Lost-and-Found-Web-App-/CampusTrace-Backend/scripts/testimages/test15.jpg"
+    },
+    "ground_truth_found_item_id": 148
+  }
+]

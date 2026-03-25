@@ -15,10 +15,10 @@ class Settings(BaseSettings):
     RESEND_API_KEY: Optional[str] = None
     RESEND_SENDER_EMAIL: str = "CampusTrace <noreply@campustrace.site>"
     RECAPTCHA_SECRET_KEY: Optional[str] = None
-    CORS_ORIGINS: Union[str, List[str]] = ["http://localhost:5173", "http://127.0.0.1:5173", "https://campustrace.site", "https://www.campustrace.site"]
+    CORS_ORIGINS: Union[str, List[str]] = ["https://campustrace.site", "https://www.campustrace.site", "http://localhost:5173", "http://127.0.0.1:5173"]
     DEBUG: bool = False
-    EMAIL_CONFIRM_REDIRECT: Union[str, List[str]] = ["http://localhost:5173/confirm-email", "https://campustrace.site/confirm-email", "https://www.campustrace.site/confirm-email"]
-    PENDING_APPROVAL_REDIRECT_URL: Union[str, List[str]] = ["http://localhost:5173/pending-approval", "https://campustrace.site/pending-approval", "https://www.campustrace.site/pending-approval"]
+    EMAIL_CONFIRM_REDIRECT: Union[str, List[str]] = ["https://campustrace.site/confirm-email", "https://www.campustrace.site/confirm-email", "http://localhost:5173/confirm-email"]
+    PENDING_APPROVAL_REDIRECT_URL: Union[str, List[str]] = ["https://campustrace.site/pending-approval", "https://www.campustrace.site/pending-approval", "http://localhost:5173/pending-approval"]
     
     MAX_ID_IMAGE_SIZE: int = 10485760  # 10MB in bytes
     MAX_IMAGE_SIZE: int = Field(5242880, env="MAX_IMAGE_SIZE")

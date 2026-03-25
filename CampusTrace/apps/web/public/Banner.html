@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CampusTrace Banner</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+
+      body {
+        font-family: "Poppins", sans-serif;
+        background: #0b1a33;
+      }
+
+      .banner {
+        width: 100%;
+        max-width: 100vw;
+        height: 100vh;
+        background: linear-gradient(
+          135deg,
+          #0a1628 0%,
+          #0f3d91 45%,
+          #1f5ed6 75%,
+          #4a8af4 100%
+        );
+        color: #fff;
+        display: flex;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Decorative glows */
+      .banner::before {
+        content: "";
+        position: absolute;
+        top: -150px;
+        right: -50px;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(
+          circle,
+          rgba(79, 140, 255, 0.15) 0%,
+          transparent 70%
+        );
+        border-radius: 50%;
+      }
+      .banner::after {
+        content: "";
+        position: absolute;
+        bottom: -100px;
+        left: 150px;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(
+          circle,
+          rgba(255, 255, 255, 0.04) 0%,
+          transparent 70%
+        );
+        border-radius: 50%;
+      }
+
+      /* Decorative line accent */
+      .decor-line {
+        position: absolute;
+        top: 0;
+        left: 48%;
+        width: 2px;
+        height: 100%;
+        background: linear-gradient(
+          to bottom,
+          transparent 0%,
+          rgba(255, 255, 255, 0.08) 30%,
+          rgba(255, 255, 255, 0.08) 70%,
+          transparent 100%
+        );
+        z-index: 1;
+      }
+
+      /* Decorative circles */
+      .decor-circle {
+        position: absolute;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 50%;
+        z-index: 1;
+      }
+      .decor-circle-1 {
+        width: 300px;
+        height: 300px;
+        top: -80px;
+        right: 20%;
+      }
+      .decor-circle-2 {
+        width: 200px;
+        height: 200px;
+        bottom: 60px;
+        right: 10%;
+      }
+      .decor-circle-3 {
+        width: 150px;
+        height: 150px;
+        top: 30%;
+        left: 42%;
+      }
+
+      /* Decorative dots pattern */
+      .decor-dots {
+        position: absolute;
+        bottom: 50px;
+        left: 50px;
+        width: 100px;
+        height: 100px;
+        background-image: radial-gradient(
+          rgba(255, 255, 255, 0.1) 1.5px,
+          transparent 1.5px
+        );
+        background-size: 12px 12px;
+        z-index: 1;
+      }
+
+      /* Accent glow behind mockups */
+      .decor-glow {
+        position: absolute;
+        right: 10%;
+        top: 40%;
+        width: 350px;
+        height: 350px;
+        background: radial-gradient(
+          circle,
+          rgba(79, 140, 255, 0.12) 0%,
+          transparent 65%
+        );
+        border-radius: 50%;
+        z-index: 1;
+      }
+
+      /* Horizontal accent lines */
+      .decor-hline-1 {
+        position: absolute;
+        top: 15%;
+        left: 0;
+        width: 120px;
+        height: 1px;
+        background: linear-gradient(
+          to right,
+          rgba(255, 255, 255, 0.1),
+          transparent
+        );
+        z-index: 1;
+      }
+      .decor-hline-2 {
+        position: absolute;
+        bottom: 20%;
+        right: 0;
+        width: 150px;
+        height: 1px;
+        background: linear-gradient(
+          to left,
+          rgba(255, 255, 255, 0.08),
+          transparent
+        );
+        z-index: 1;
+      }
+
+      /* Corner accent */
+      .decor-corner {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 40px;
+        height: 40px;
+        border-top: 2px solid rgba(255, 255, 255, 0.08);
+        border-right: 2px solid rgba(255, 255, 255, 0.08);
+        z-index: 1;
+      }
+      .decor-corner-bl {
+        position: absolute;
+        bottom: 50px;
+        left: 20px;
+        width: 40px;
+        height: 40px;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.06);
+        border-left: 2px solid rgba(255, 255, 255, 0.06);
+        z-index: 1;
+      }
+
+      /* Small diamond accent */
+      .decor-diamond {
+        position: absolute;
+        top: 50%;
+        left: 47%;
+        width: 10px;
+        height: 10px;
+        background: rgba(125, 180, 255, 0.25);
+        transform: rotate(45deg);
+        z-index: 2;
+      }
+
+      /* ====== LEFT ====== */
+      .left {
+        width: 50%;
+        padding: 28px 45px 40px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        position: relative;
+        z-index: 2;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 4px;
+      }
+
+      .brand img {
+        width: 65px;
+        height: 65px;
+        object-fit: contain;
+        filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3));
+      }
+
+      .brand h1 {
+        font-size: 52px;
+        font-weight: 800;
+        letter-spacing: -1px;
+        background: linear-gradient(135deg, #fff 0%, #a8ccff 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .subtitle {
+        font-size: 28px;
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.9);
+        margin-bottom: 10px;
+        line-height: 1.3;
+      }
+
+      .tagline {
+        font-size: 16px;
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.55);
+        line-height: 1.55;
+        margin-bottom: 22px;
+        max-width: 520px;
+        border-left: 3px solid rgba(79, 140, 255, 0.4);
+        padding-left: 14px;
+      }
+
+      .features {
+        display: flex;
+        gap: 45px;
+      }
+
+      .feature-col h3 {
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: #7db4ff;
+        margin-bottom: 14px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid rgba(125, 180, 255, 0.2);
+        display: inline-block;
+      }
+
+      .feature-col ul {
+        list-style: none;
+      }
+
+      .feature-col li {
+        font-size: 16px;
+        color: rgba(255, 255, 255, 0.85);
+        margin-bottom: 9px;
+        padding-left: 20px;
+        position: relative;
+      }
+
+      .feature-col li::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 8px;
+        width: 8px;
+        height: 8px;
+        background: linear-gradient(135deg, #4a8af4, #7db4ff);
+        border-radius: 50%;
+        box-shadow: 0 0 6px rgba(74, 138, 244, 0.4);
+      }
+
+      /* ====== RIGHT ====== */
+      .right {
+        width: 50%;
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 30px 30px 45px 10px;
+      }
+
+      .mockup-stack {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+
+      .mockup-laptop {
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 72%;
+        filter: drop-shadow(0 15px 35px rgba(0, 0, 0, 0.4));
+      }
+
+      .mockup-laptop img {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 6px;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .mockup-phone {
+        position: absolute;
+        left: 3%;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 27%;
+        z-index: 3;
+        filter: drop-shadow(0 15px 35px rgba(0, 0, 0, 0.45));
+      }
+
+      .mockup-phone img {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 18px;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+      }
+
+      /* ====== DEVELOPER BAR ====== */
+      .dev-bar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 10px 45px;
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.55);
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .dev-bar strong {
+        color: rgba(255, 255, 255, 0.85);
+        font-weight: 600;
+      }
+
+      .tech-badges {
+        display: flex;
+        gap: 8px;
+      }
+
+      .badge {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 3px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="banner">
+      <!-- Decorative elements -->
+      <div class="decor-line"></div>
+      <div class="decor-circle decor-circle-1"></div>
+      <div class="decor-circle decor-circle-2"></div>
+      <div class="decor-circle decor-circle-3"></div>
+      <div class="decor-dots"></div>
+      <div class="decor-glow"></div>
+      <div class="decor-hline-1"></div>
+      <div class="decor-hline-2"></div>
+      <div class="decor-corner"></div>
+      <div class="decor-corner-bl"></div>
+      <div class="decor-diamond"></div>
+
+      <!-- LEFT CONTENT -->
+      <div class="left">
+        <div class="brand">
+          <img src="logo.png" alt="CampusTrace Logo" />
+          <h1>CampusTrace</h1>
+        </div>
+
+        <div class="subtitle">
+          AI-Powered Lost &amp; Found<br />Management System
+        </div>
+
+        <div class="tagline">
+          A smart campus platform that helps students and staff report, match,
+          and recover lost items efficiently and securely using artificial
+          intelligence.
+        </div>
+
+        <div class="features">
+          <div class="feature-col">
+            <h3>Key Features</h3>
+            <ul>
+              <li>AI Item Matching</li>
+              <li>Secure Messaging</li>
+              <li>Claim Verification System</li>
+              <li>Handover Code Authentication</li>
+            </ul>
+          </div>
+          <div class="feature-col">
+            <h3>Technologies</h3>
+            <ul>
+              <li>Python / AI Backend</li>
+              <li>Supabase Database</li>
+              <li>React Web Framework</li>
+              <li>React Native Mobile</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT MOCKUPS -->
+      <div class="right">
+        <div class="mockup-stack">
+          <div class="mockup-phone">
+            <img src="phone.png" alt="CampusTrace Mobile App" />
+          </div>
+          <div class="mockup-laptop">
+            <img src="BrowseAll.png" alt="CampusTrace Dashboard" />
+          </div>
+        </div>
+      </div>
+
+      <!-- DEVELOPER BAR -->
+      <div class="dev-bar">
+        <div>
+          <strong>Developers:</strong>
+          John Franklin Bugauisan &bull; William Ray Respicio &bull; Jerome
+          Cacho
+        </div>
+        <div class="tech-badges">
+          <span class="badge">React</span>
+          <span class="badge">Python</span>
+          <span class="badge">Supabase</span>
+          <span class="badge">AI</span>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

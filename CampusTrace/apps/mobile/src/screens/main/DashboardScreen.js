@@ -122,7 +122,7 @@ const DashboardScreen = ({ navigation }) => {
           {
             headers: { Authorization: `Bearer ${token}` },
             signal: controller.signal,
-          }
+          },
         );
 
         clearTimeout(timeoutId);
@@ -140,13 +140,13 @@ const DashboardScreen = ({ navigation }) => {
 
         // Set all data from consolidated response - filter out recovered items
         const activeRecentPosts = (data.myRecentPosts || []).filter(
-          (item) => item.status?.toLowerCase() !== "recovered"
+          (item) => item.status?.toLowerCase() !== "recovered",
         );
         const activeRecentActivity = (data.recentActivity || []).filter(
-          (item) => item.status?.toLowerCase() !== "recovered"
+          (item) => item.status?.toLowerCase() !== "recovered",
         );
         const activeMatches = (data.aiMatches || []).filter(
-          (item) => item.status?.toLowerCase() !== "recovered"
+          (item) => item.status?.toLowerCase() !== "recovered",
         );
 
         setMyRecentPosts(activeRecentPosts);
@@ -170,14 +170,14 @@ const DashboardScreen = ({ navigation }) => {
           (item) =>
             item.status === "Lost" &&
             item.moderation_status !== "recovered" &&
-            item.moderation_status !== "rejected"
+            item.moderation_status !== "rejected",
         );
         setMyLostItem(latestLostItem || null);
       } catch (fetchError) {
         clearTimeout(timeoutId);
         if (fetchError.name === "AbortError") {
           console.error(
-            "Dashboard request timed out. Please check your connection."
+            "Dashboard request timed out. Please check your connection.",
           );
         }
         throw fetchError;
@@ -242,7 +242,7 @@ const DashboardScreen = ({ navigation }) => {
         colors={colors}
       />
     ),
-    [navigation, styles, colors]
+    [navigation, styles, colors],
   );
 
   const renderMatchItem = useCallback(
@@ -255,7 +255,7 @@ const DashboardScreen = ({ navigation }) => {
         colors={colors}
       />
     ),
-    [navigation, styles, colors]
+    [navigation, styles, colors],
   );
 
   return (
@@ -311,6 +311,21 @@ const DashboardScreen = ({ navigation }) => {
                   name="message-circle"
                   size={22}
                   color={colors.primary}
+                />
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.headerIconButton}
+              onPress={() => navigation.navigate("Chatbot")}
+              activeOpacity={0.7}
+            >
+              <View
+                style={[styles.iconBubble, { backgroundColor: "#6366F120" }]}
+              >
+                <MaterialCommunityIcons
+                  name="robot-excited-outline"
+                  size={22}
+                  color="#6366F1"
                 />
               </View>
             </TouchableOpacity>
@@ -737,8 +752,8 @@ const AnimatedMatchCard = memo(({ item, index, onPress, styles, colors }) => {
     matchPercentage >= 80
       ? "#10B981"
       : matchPercentage >= 60
-      ? "#F59E0B"
-      : "#6B7280";
+        ? "#F59E0B"
+        : "#6B7280";
 
   return (
     <Animated.View
@@ -781,9 +796,34 @@ const AnimatedMatchCard = memo(({ item, index, onPress, styles, colors }) => {
           <Text style={styles.matchCardTitle} numberOfLines={2}>
             {item.title}
           </Text>
-          <Text style={styles.matchCardLocation} numberOfLines={1}>
-            <Feather name="map-pin" size={10} /> {item.location || "Campus"}
-          </Text>
+          {item.match_explanation ? (
+            <Text
+              style={[styles.matchExplanation, { color: colors.textSecondary }]}
+              numberOfLines={2}
+            >
+              {item.match_explanation}
+            </Text>
+          ) : (
+            <Text style={styles.matchCardLocation} numberOfLines={1}>
+              <Feather name="map-pin" size={10} /> {item.location || "Campus"}
+            </Text>
+          )}
+          <View style={styles.matchSimilarityRow}>
+            {item.text_similarity !== undefined && (
+              <View style={styles.simChip}>
+                <MaterialCommunityIcons name="text" size={9} color="#6366F1" />
+                <Text style={styles.simChipText}>{item.text_similarity}%</Text>
+              </View>
+            )}
+            {item.image_similarity !== undefined && (
+              <View style={[styles.simChip, { backgroundColor: "#10B98115" }]}>
+                <MaterialCommunityIcons name="image" size={9} color="#10B981" />
+                <Text style={[styles.simChipText, { color: "#10B981" }]}>
+                  {item.image_similarity}%
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
       </TouchableOpacity>
     </Animated.View>
@@ -804,7 +844,7 @@ const EnhancedStatCard = memo(
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </TouchableOpacity>
-  )
+  ),
 );
 
 const ModernLostItemCard = memo(({ item, styles, colors, onPress }) => (
@@ -970,7 +1010,7 @@ const ModernEmptyState = memo(
         </TouchableOpacity>
       )}
     </View>
-  )
+  ),
 );
 
 const ModernChartCard = memo(({ title, data, type, styles, colors }) => {
@@ -1409,6 +1449,31 @@ const createStyles = (colors) => {
     matchCardLocation: {
       fontSize: 11,
       color: colors.textSecondary,
+    },
+    matchExplanation: {
+      fontSize: 11,
+      lineHeight: 15,
+      marginTop: 2,
+    },
+    matchSimilarityRow: {
+      flexDirection: "row",
+      gap: 4,
+      marginTop: 6,
+      flexWrap: "wrap",
+    },
+    simChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 3,
+      backgroundColor: "#6366F115",
+      borderRadius: 6,
+      paddingHorizontal: 5,
+      paddingVertical: 2,
+    },
+    simChipText: {
+      fontSize: 9,
+      color: "#6366F1",
+      fontWeight: "600",
     },
 
     // Item Cards
