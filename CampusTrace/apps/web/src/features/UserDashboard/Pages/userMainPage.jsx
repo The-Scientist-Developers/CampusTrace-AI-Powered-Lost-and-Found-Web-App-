@@ -60,6 +60,34 @@ const timeAgo = (dateString) => {
   return "just now";
 };
 
+// --- Animated count-up hook ---
+const useCountUp = (target, duration = 800) => {
+  const [count, setCount] = useState(0);
+  const frame = useRef(null);
+  useEffect(() => {
+    const startTime = performance.now();
+    const animate = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.round(target * eased));
+      if (progress < 1) {
+        frame.current = requestAnimationFrame(animate);
+      }
+    };
+    frame.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame.current);
+  }, [target, duration]);
+  return count;
+};
+
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+};
+
 // --- Status Badge (from RN layout) ---
 const StatusBadge = ({ status }) => {
   const statusConfig = {
@@ -109,24 +137,47 @@ const StatusBadge = ({ status }) => {
 };
 
 // --- Enhanced Stat Card with Gradient (Matching Mobile) ---
-const StatCard = ({ icon: Icon, label, value, color, gradient }) => {
+const StatCard = ({ icon: Icon, label, value, color, gradient, onClick, isActive }) => {
+  const animatedValue = useCountUp(value);
+  const [hovered, setHovered] = useState(false);
   return (
-    <div className="flex-1 bg-white dark:bg-[#2a2a2a] rounded-2xl p-5 flex flex-col items-center border border-neutral-200 dark:border-[#3a3a3a] shadow-sm hover:shadow-md transition-shadow duration-200">
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className={`flex-1 bg-white dark:bg-[#2a2a2a] rounded-2xl p-5 flex flex-col items-center border transition-all duration-200 ${
+        isActive
+          ? "border-2 scale-[1.03]"
+          : "border-neutral-200 dark:border-[#3a3a3a] hover:scale-[1.02] hover:-translate-y-0.5"
+      }`}
+      style={{
+        ...(isActive ? { borderColor: gradient[0] } : {}),
+        boxShadow: isActive
+          ? `0 8px 28px ${gradient[0]}45`
+          : hovered
+          ? `0 8px 28px ${gradient[0]}30`
+          : `0 1px 3px rgba(0,0,0,0.07)`,
+      }}
+    >
       <div
-        className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 shadow-sm"
+        className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3"
         style={{
           background: `linear-gradient(135deg, ${gradient[0]}, ${gradient[1]})`,
+          boxShadow: `0 4px 16px ${gradient[0]}55`,
         }}
       >
         <Icon className="w-7 h-7 text-white" />
       </div>
-      <p className="text-3xl font-bold text-neutral-800 dark:text-white mb-1">
-        {value}
+      <p className="text-3xl font-bold text-neutral-800 dark:text-white mb-1 tabular-nums">
+        {animatedValue}
       </p>
       <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
         {label}
       </p>
-    </div>
+      {isActive && (
+        <div className="mt-2 w-8 h-0.5 rounded-full" style={{ backgroundColor: gradient[0] }} />
+      )}
+    </button>
   );
 };
 
@@ -289,7 +340,8 @@ const ActivityItem = ({ item, onPress }) => {
   return (
     <button
       onClick={onPress}
-      className="flex items-center gap-3 p-4 w-full text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors duration-150"
+      className="flex items-center gap-3 p-4 w-full text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors duration-150 border-l-[3px]"
+      style={{ borderLeftColor: statusColor }}
     >
       <div className="relative flex-shrink-0">
         <ItemImage
@@ -415,6 +467,8 @@ const CustomTooltip = ({ active, payload, label }) => {
 // --- Chart Card (Styled like RN layout, uses recharts) ---
 const ChartCard = ({ title, data, type = "area" }) => {
   const { theme } = useTheme();
+  const [showLost, setShowLost] = useState(true);
+  const [showFound, setShowFound] = useState(true);
 
   const primaryColor = "#1877F2";
   const lostColor = "#EF4444";
@@ -424,10 +478,16 @@ const ChartCard = ({ title, data, type = "area" }) => {
 
   if (data.length === 0) {
     return (
-      <div className="bg-white dark:bg-[#2a2a2a] rounded-xl p-4 shadow-sm border border-neutral-200 dark:border-[#3a3a3a] mt-2">
-        <h3 className="text-base font-semibold text-neutral-800 dark:text-white mb-4">
-          {title}
-        </h3>
+      <div className="bg-white dark:bg-[#2a2a2a] rounded-xl shadow-sm border border-neutral-200 dark:border-[#3a3a3a] mt-2 overflow-hidden">
+        <div className="px-5 pt-5 pb-4 flex items-center gap-2.5 border-b border-neutral-100 dark:border-neutral-700/50">
+          <div
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: type === "area" ? "#EF4444" : "#1877F2" }}
+          />
+          <h3 className="text-base font-bold text-neutral-800 dark:text-white">
+            {title}
+          </h3>
+        </div>
         <div className="h-[200px] flex items-center justify-center">
           <p className="text-sm text-neutral-400">No data to display</p>
         </div>
@@ -436,10 +496,17 @@ const ChartCard = ({ title, data, type = "area" }) => {
   }
 
   return (
-    <div className="bg-white dark:bg-[#2a2a2a] rounded-xl p-5 shadow-sm border border-neutral-200 dark:border-[#3a3a3a] mt-2">
-      <h3 className="text-lg font-bold text-neutral-800 dark:text-white mb-6">
-        {title}
-      </h3>
+    <div className="bg-white dark:bg-[#2a2a2a] rounded-xl shadow-sm border border-neutral-200 dark:border-[#3a3a3a] mt-2 overflow-hidden">
+      <div className="px-5 pt-5 pb-4 flex items-center gap-2.5 border-b border-neutral-100 dark:border-neutral-700/50">
+        <div
+          className="w-2 h-2 rounded-full"
+          style={{ backgroundColor: type === "area" ? "#EF4444" : "#1877F2" }}
+        />
+        <h3 className="text-base font-bold text-neutral-800 dark:text-white">
+          {title}
+        </h3>
+      </div>
+      <div className="p-5">
       <div className="h-[260px]">
         <ResponsiveContainer width="100%" height="100%">
           {type === "area" ? (
@@ -480,26 +547,28 @@ const ChartCard = ({ title, data, type = "area" }) => {
                   <stop offset="95%" stopColor={foundColor} stopOpacity={0.2} />
                 </linearGradient>
               </defs>
-              <Area
-                type="monotone"
-                dataKey="Lost"
-                stackId="1"
-                strokeWidth={2.5}
-                stroke={lostColor}
-                fill="url(#colorLost)"
-                name="Lost"
-                animationDuration={800}
-              />
-              <Area
-                type="monotone"
-                dataKey="Found"
-                stackId="1"
-                strokeWidth={2.5}
-                stroke={foundColor}
-                fill="url(#colorFound)"
-                name="Found"
-                animationDuration={800}
-              />
+              {showLost && (
+                <Area
+                  type="monotone"
+                  dataKey="Lost"
+                  strokeWidth={2.5}
+                  stroke={lostColor}
+                  fill="url(#colorLost)"
+                  name="Lost"
+                  animationDuration={800}
+                />
+              )}
+              {showFound && (
+                <Area
+                  type="monotone"
+                  dataKey="Found"
+                  strokeWidth={2.5}
+                  stroke={foundColor}
+                  fill="url(#colorFound)"
+                  name="Found"
+                  animationDuration={800}
+                />
+              )}
             </AreaChart>
           ) : (
             <BarChart
@@ -552,27 +621,38 @@ const ChartCard = ({ title, data, type = "area" }) => {
         </ResponsiveContainer>
       </div>
       {type === "area" && (
-        <div className="flex justify-center items-center gap-6 mt-4">
-          <div className="flex items-center gap-2">
-            <div
-              className="w-2.5 h-2.5 rounded-full"
-              style={{ backgroundColor: lostColor }}
-            ></div>
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">
-              Lost
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div
-              className="w-2.5 h-2.5 rounded-full"
-              style={{ backgroundColor: foundColor }}
-            ></div>
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">
-              Found
-            </span>
-          </div>
+        <div className="flex justify-center items-center gap-3 mt-4">
+          <button
+            onClick={() => setShowLost(!showLost)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-150 ${
+              showLost ? "" : "opacity-40"
+            }`}
+            style={
+              showLost
+                ? { backgroundColor: lostColor + "20", borderColor: lostColor + "60" }
+                : { borderColor: "#d1d5db" }
+            }
+          >
+            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: lostColor }}></div>
+            <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">Lost</span>
+          </button>
+          <button
+            onClick={() => setShowFound(!showFound)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-150 ${
+              showFound ? "" : "opacity-40"
+            }`}
+            style={
+              showFound
+                ? { backgroundColor: foundColor + "20", borderColor: foundColor + "60" }
+                : { borderColor: "#d1d5db" }
+            }
+          >
+            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: foundColor }}></div>
+            <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">Found</span>
+          </button>
         </div>
       )}
+      </div>
     </div>
   );
 };
@@ -641,6 +721,12 @@ export default function UserMainPage({ user }) {
   const themeColors = getThemeColors(colorMode);
   const primaryColor = themeColors.primary;
   const hasFetched = useRef(false);
+
+  const [activeStatFilter, setActiveStatFilter] = useState(null);
+  const [showAllFeed, setShowAllFeed] = useState(false);
+  const [chartsOpen, setChartsOpen] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [feedFilter, setFeedFilter] = useState("all");
 
   const [stats, setStats] = useState({
     totalItems: 0,
@@ -951,12 +1037,16 @@ export default function UserMainPage({ user }) {
   };
 
   const handleRefresh = () => {
-    // Clear cache on manual refresh
     dashboardCache.data = null;
     dashboardCache.timestamp = null;
-    console.log("🔄 Manual refresh - cache cleared");
-    fetchDashboardData();
+    setRefreshing(true);
+    fetchDashboardData().finally(() => setRefreshing(false));
   };
+
+  const filteredFeed =
+    feedFilter === "all"
+      ? communityActivity
+      : communityActivity.filter((item) => item.status === feedFilter);
 
   // This is the main loading state
   if (loading) {
@@ -998,41 +1088,106 @@ export default function UserMainPage({ user }) {
       {/* Modern Welcome Card with Theme-Responsive Gradient */}
       <div className="p-4 md:p-6">
         <div
-          className="rounded-2xl p-6 shadow-lg relative overflow-hidden"
+          className="rounded-2xl p-6 shadow-xl relative overflow-hidden"
           style={{
-            background: `linear-gradient(135deg, ${themeColors.primary}, ${themeColors.dark})`,
+            background: `linear-gradient(135deg, ${themeColors.primary} 0%, ${themeColors.dark} 100%)`,
           }}
         >
-          <div className="relative z-10">
-            <h2 className="text-2xl font-bold text-white mb-2">
-              Welcome back! 👋
-            </h2>
-            <p className="text-white/90 text-sm font-medium">
-              {stats.lostItems > 0
-                ? `You have ${stats.lostItems} active lost item${
-                    stats.lostItems > 1 ? "s" : ""
-                  }`
-                : "Everything looks good today!"}
-            </p>
+          {/* Decorative background circles */}
+          <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-white/10 pointer-events-none" />
+          <div className="absolute -bottom-14 right-14 w-36 h-36 rounded-full bg-white/[0.07] pointer-events-none" />
+          <div className="absolute top-2 right-24 w-16 h-16 rounded-full bg-white/[0.06] pointer-events-none" />
+
+          <div className="relative z-10 flex items-start justify-between gap-4 mb-5">
+            <div>
+              <p className="text-white/60 text-[11px] font-semibold uppercase tracking-[0.12em] mb-1.5">{getGreeting()}</p>
+              <h2 className="text-2xl font-bold text-white mb-1.5">
+                {user?.user_metadata?.full_name
+                  ? `${user.user_metadata.full_name.split(" ")[0]}! 👋`
+                  : "Welcome back! 👋"}
+              </h2>
+              <p className="text-white/70 text-sm">
+                {stats.lostItems > 0
+                  ? `You have ${stats.lostItems} active lost item${
+                      stats.lostItems > 1 ? "s" : ""
+                    }`
+                  : "Everything looks good today!"}
+              </p>
+            </div>
+            <button
+              onClick={handleRefresh}
+              disabled={loading || refreshing}
+              className="flex-shrink-0 w-9 h-9 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 flex items-center justify-center transition-all duration-200 disabled:opacity-50"
+              title="Refresh dashboard"
+            >
+              <svg
+                className={`w-4 h-4 text-white ${refreshing || loading ? "animate-spin" : ""}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+            </button>
           </div>
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-20">
-            <Package className="w-20 h-20 text-white" />
+
+          {/* Mini stats strip */}
+          <div className="relative z-10 flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-4 border-t border-white/15">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-white/70" />
+              <span className="text-white/75 text-xs font-medium">{stats.totalItems} Total</span>
+            </div>
+            <div className="hidden sm:block w-px h-3.5 bg-white/20" />
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#FCA5A5" }} />
+              <span className="text-white/75 text-xs font-medium">{stats.lostItems} Lost</span>
+            </div>
+            <div className="hidden sm:block w-px h-3.5 bg-white/20" />
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#6EE7B7" }} />
+              <span className="text-white/75 text-xs font-medium">{stats.foundItems} Found</span>
+            </div>
+            <div className="hidden sm:block w-px h-3.5 bg-white/20" />
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#FCD34D" }} />
+              <span className="text-white/75 text-xs font-medium">{stats.recoveredItems} Recovered</span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Enhanced Stats Grid */}
       <div className="px-4 md:px-6 mb-6">
-        <h3 className="text-xl font-bold text-neutral-800 dark:text-white mb-4">
-          Quick Overview
-        </h3>
-        <div className="grid grid-cols-2 gap-3 md:gap-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
+            <span className="w-[3px] h-5 rounded-full" style={{ backgroundColor: primaryColor }} />
+            <h3 className="text-xl font-bold text-neutral-800 dark:text-white">
+              Quick Overview
+            </h3>
+          </div>
+          {activeStatFilter && (
+            <button
+              onClick={() => setActiveStatFilter(null)}
+              className="text-xs font-medium text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 underline transition-colors"
+            >
+              Clear filter
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <StatCard
             icon={Package}
             label="Total Items"
             value={stats.totalItems}
             color={primaryColor}
             gradient={[themeColors.primary, themeColors.light]}
+            onClick={() => setActiveStatFilter(activeStatFilter === "total" ? null : "total")}
+            isActive={activeStatFilter === "total"}
           />
           <StatCard
             icon={AlertCircle}
@@ -1040,6 +1195,8 @@ export default function UserMainPage({ user }) {
             value={stats.lostItems}
             color="#EF4444"
             gradient={["#EF4444", "#F87171"]}
+            onClick={() => setActiveStatFilter(activeStatFilter === "lost" ? null : "lost")}
+            isActive={activeStatFilter === "lost"}
           />
           <StatCard
             icon={CheckCircle}
@@ -1047,6 +1204,8 @@ export default function UserMainPage({ user }) {
             value={stats.foundItems}
             color="#10B981"
             gradient={["#10B981", "#34D399"]}
+            onClick={() => setActiveStatFilter(activeStatFilter === "found" ? null : "found")}
+            isActive={activeStatFilter === "found"}
           />
           <StatCard
             icon={Activity}
@@ -1054,6 +1213,8 @@ export default function UserMainPage({ user }) {
             value={stats.recoveredItems}
             color="#F59E0B"
             gradient={["#F59E0B", "#FCD34D"]}
+            onClick={() => setActiveStatFilter(activeStatFilter === "recovered" ? null : "recovered")}
+            isActive={activeStatFilter === "recovered"}
           />
         </div>
       </div>
@@ -1061,19 +1222,39 @@ export default function UserMainPage({ user }) {
       {/* Charts Section with Modern Styling */}
       {(chartData.weekly.length > 0 || chartData.categories.length > 0) && (
         <div className="px-4 md:px-6 mb-6">
-          <h3 className="text-xl font-bold text-neutral-800 dark:text-white mb-4">
-            Activity Insights
-          </h3>
-          {chartData.weekly.length > 0 && (
-            <ChartCard title="This Week" data={chartData.weekly} type="area" />
-          )}
-          {chartData.categories.length > 0 && (
-            <ChartCard
-              title="Top Categories"
-              data={chartData.categories}
-              type="bar"
-            />
-          )}
+          <button
+            onClick={() => setChartsOpen(!chartsOpen)}
+            className="flex items-center justify-between w-full mb-4 group"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="w-[3px] h-5 rounded-full" style={{ backgroundColor: primaryColor }} />
+              <h3 className="text-xl font-bold text-neutral-800 dark:text-white">
+                Activity Insights
+              </h3>
+            </div>
+            <div
+              className={`w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center transition-transform duration-200 ${
+                chartsOpen ? "rotate-90" : "-rotate-90"
+              }`}
+            >
+              <ChevronRight className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+            </div>
+          </button>
+          <div
+            className="overflow-hidden transition-all duration-300"
+            style={{ maxHeight: chartsOpen ? "9999px" : "0px", opacity: chartsOpen ? 1 : 0 }}
+          >
+            {chartData.weekly.length > 0 && (
+              <ChartCard title="This Week" data={chartData.weekly} type="area" />
+            )}
+            {chartData.categories.length > 0 && (
+              <ChartCard
+                title="Top Categories"
+                data={chartData.categories}
+                type="bar"
+              />
+            )}
+          </div>
         </div>
       )}
 
@@ -1188,9 +1369,12 @@ export default function UserMainPage({ user }) {
       {/* My Active Posts with Modern Styling */}
       <div className="px-4 md:px-6 mb-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-neutral-800 dark:text-white">
-            My Active Posts
-          </h3>
+          <div className="flex items-center gap-2.5">
+            <span className="w-[3px] h-5 rounded-full" style={{ backgroundColor: primaryColor }} />
+            <h3 className="text-xl font-bold text-neutral-800 dark:text-white">
+              My Active Posts
+            </h3>
+          </div>
           {myRecentPosts.length > 0 && (
             <Link
               to="/dashboard/my-posts"
@@ -1229,10 +1413,13 @@ export default function UserMainPage({ user }) {
 
       {/* Community Feed with Modern Styling */}
       <div className="px-4 md:px-6 mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-neutral-800 dark:text-white">
-            Community Feed
-          </h3>
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex items-center gap-2.5">
+            <span className="w-[3px] h-5 rounded-full" style={{ backgroundColor: primaryColor }} />
+            <h3 className="text-xl font-bold text-neutral-800 dark:text-white">
+              Community Feed
+            </h3>
+          </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
             <span className="text-sm font-semibold text-green-600 dark:text-green-400">
@@ -1240,24 +1427,65 @@ export default function UserMainPage({ user }) {
             </span>
           </div>
         </div>
-        {communityActivity.length > 0 ? (
-          <div className="bg-white dark:bg-[#2a2a2a] rounded-2xl border border-neutral-200 dark:border-[#3a3a3a] shadow-sm overflow-hidden divide-y divide-neutral-100 dark:divide-neutral-700">
-            {communityActivity.slice(0, 5).map((item) => (
-              <ActivityItem
-                key={item.id}
-                item={item}
-                onPress={() =>
-                  navigate("/dashboard/browse-all", {
-                    state: { itemId: item.id },
-                  })
+
+        {communityActivity.length > 0 && (
+          <div className="flex gap-2 mb-4">
+            {["all", "Lost", "Found"].map((f) => (
+              <button
+                key={f}
+                onClick={() => { setFeedFilter(f); setShowAllFeed(false); }}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-150 ${
+                  feedFilter === f
+                    ? "text-white shadow-sm"
+                    : "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                }`}
+                style={
+                  feedFilter === f
+                    ? {
+                        background:
+                          f === "all"
+                            ? primaryColor
+                            : f === "Lost"
+                            ? "#EF4444"
+                            : "#10B981",
+                      }
+                    : {}
                 }
-              />
+              >
+                {f === "all" ? "All" : f}
+              </button>
             ))}
           </div>
+        )}
+
+        {filteredFeed.length > 0 ? (
+          <>
+            <div className="bg-white dark:bg-[#2a2a2a] rounded-2xl border border-neutral-200 dark:border-[#3a3a3a] shadow-sm overflow-hidden divide-y divide-neutral-100 dark:divide-neutral-700">
+              {(showAllFeed ? filteredFeed : filteredFeed.slice(0, 3)).map((item) => (
+                <ActivityItem
+                  key={item.id}
+                  item={item}
+                  onPress={() =>
+                    navigate("/dashboard/browse-all", {
+                      state: { itemId: item.id },
+                    })
+                  }
+                />
+              ))}
+            </div>
+            {filteredFeed.length > 3 && (
+              <button
+                onClick={() => setShowAllFeed(!showAllFeed)}
+                className="mt-3 w-full py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-sm font-semibold text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors duration-150"
+              >
+                {showAllFeed ? "Show less" : `Show ${filteredFeed.length - 3} more`}
+              </button>
+            )}
+          </>
         ) : (
           <EmptyState
             icon={Activity}
-            title="No recent activity"
+            title={feedFilter === "all" ? "No recent activity" : `No ${feedFilter} items`}
             description="Check back later for updates"
           />
         )}
