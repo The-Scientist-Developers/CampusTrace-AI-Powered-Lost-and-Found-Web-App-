@@ -137,7 +137,7 @@ export default function LoginPage() {
   const recaptchaRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
-
+  
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [cooldownTime, setCooldownTime] = useState(0);
   const [lastAttemptTime, setLastAttemptTime] = useState(null);
@@ -414,9 +414,6 @@ export default function LoginPage() {
     }
 
     setLoading(true);
-    const currentAttempt = loginAttempts + 1;
-    setLoginAttempts(currentAttempt);
-    setLastAttemptTime(Date.now());
 
     try {
       const { data: authData, error: authError } =
@@ -433,10 +430,6 @@ export default function LoginPage() {
         }
 
         if (msg.includes("Invalid login credentials")) {
-          if (currentAttempt >= 5) {
-            setCooldownTime(60);
-          }
-
           throw new Error("Invalid email or password");
         }
 
@@ -484,6 +477,9 @@ export default function LoginPage() {
         throw new Error("Authentication failed unexpectedly.");
       }
     } catch (err) {
+      const currentAttempt = loginAttempts + 1;
+      setLoginAttempts(currentAttempt);
+      setLastAttemptTime(Date.now());
       if (currentAttempt >= 5) {
         setCooldownTime(60);
       }
@@ -1043,6 +1039,8 @@ export default function LoginPage() {
                     <label className="flex items-center cursor-pointer">
                       <input
                         type="checkbox"
+                        name="rememberMe"
+                        data-testid="rememberMe"
                         className="w-4 h-4 text-primary-600 bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 rounded focus:ring-primary-500"
                       />
                       <span className="ml-2 text-sm text-neutral-600 dark:text-neutral-400">
@@ -1059,17 +1057,17 @@ export default function LoginPage() {
                 )}
 
                 <div className="flex justify-center py-4">
-                  <ReCAPTCHA
-                    ref={recaptchaRef}
-                    sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-                    onChange={setCaptchaToken}
-                    theme={
-                      window.matchMedia("(prefers-color-scheme: dark)").matches
-                        ? "dark"
-                        : "light"
-                    }
-                  />
-                </div>
+                    <ReCAPTCHA
+                      ref={recaptchaRef}
+                      sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                      onChange={setCaptchaToken}
+                      theme={
+                        window.matchMedia("(prefers-color-scheme: dark)").matches
+                          ? "dark"
+                          : "light"
+                      }
+                    />
+                  </div>
 
                 <button
                   type="submit"
