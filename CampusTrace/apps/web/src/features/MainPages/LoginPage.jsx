@@ -137,7 +137,7 @@ export default function LoginPage() {
   const recaptchaRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [cooldownTime, setCooldownTime] = useState(0);
   const [lastAttemptTime, setLastAttemptTime] = useState(null);
@@ -155,7 +155,11 @@ export default function LoginPage() {
   const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
   const [filteredEmails, setFilteredEmails] = useState([]);
 
-  // Load saved emails from localStorage on mount
+  // University selection state
+  const [universities, setUniversities] = useState([]);
+  const [selectedUniversity, setSelectedUniversity] = useState(null);
+
+  // Load saved emails and universities from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem("campustrace_saved_emails");
     if (saved) {
@@ -166,13 +170,31 @@ export default function LoginPage() {
         console.error("Error loading saved emails:", error);
       }
     }
+
+    // Fetch universities
+    const fetchUniversities = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/public/universities`);
+        const data = await response.json();
+        if (response.ok && data.universities) {
+          setUniversities(data.universities);
+          // Auto-select if only one university
+          if (data.universities.length === 1) {
+            setSelectedUniversity(data.universities[0]);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching universities:", error);
+      }
+    };
+    fetchUniversities();
   }, []);
 
   // Filter emails based on input
   useEffect(() => {
     if (formData.email && savedEmails.length > 0) {
       const filtered = savedEmails.filter((email) =>
-        email.toLowerCase().includes(formData.email.toLowerCase())
+        email.toLowerCase().includes(formData.email.toLowerCase()),
       );
       setFilteredEmails(filtered);
     } else {
@@ -210,7 +232,7 @@ export default function LoginPage() {
         {
           duration: 5000,
           position: "top-center",
-        }
+        },
       );
       navigate(location.pathname, { replace: true, state: {} });
     }
@@ -226,7 +248,7 @@ export default function LoginPage() {
       (_event, session) => {
         if (!session) {
         }
-      }
+      },
     );
     return () => listener.subscription.unsubscribe();
   }, [navigate]);
@@ -253,6 +275,12 @@ export default function LoginPage() {
 
   const validate = () => {
     const newErrors = {};
+
+    // Validate university selection
+    if (!selectedUniversity) {
+      newErrors.university = "Please select your university";
+    }
+
     if (!formData.email) {
       newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -283,6 +311,7 @@ export default function LoginPage() {
 
     setErrors(newErrors);
     setTouched({
+      university: true,
       email: true,
       password: true,
       fullName: !isLogin,
@@ -375,7 +404,7 @@ export default function LoginPage() {
         emails = emails.slice(0, 5);
         localStorage.setItem(
           "campustrace_saved_emails",
-          JSON.stringify(emails)
+          JSON.stringify(emails),
         );
         setSavedEmails(emails);
       } else {
@@ -384,7 +413,7 @@ export default function LoginPage() {
         emails.unshift(email);
         localStorage.setItem(
           "campustrace_saved_emails",
-          JSON.stringify(emails)
+          JSON.stringify(emails),
         );
         setSavedEmails(emails);
       }
@@ -395,7 +424,7 @@ export default function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setTouched({ email: true, password: true });
+    setTouched({ university: true, email: true, password: true });
 
     if (!validate()) {
       return;
@@ -410,6 +439,62 @@ export default function LoginPage() {
         duration: 4000,
         position: "top-center",
       });
+      return;
+    }
+
+    // Validate email domain matches selected university
+    const emailDomain = formData.email.split("@")[1];
+    if (!emailDomain) {
+      toast.error("Please enter a valid email address", {
+        duration: 5000,
+        position: "top-center",
+      });
+      return;
+    }
+
+    // Check if email domain matches selected university
+    try {
+      const { data: domainData, error: domainError } = await supabase
+        .from("allowed_domains")
+        .select("university_id, universities(name)")
+        .eq("domain_name", emailDomain)
+        .single();
+
+      if (domainError || !domainData) {
+        toast.error(
+          `Your email domain '${emailDomain}' is not registered with ${selectedUniversity.name}. Please use your official university email or select the correct university.`,
+          {
+            duration: 7000,
+            position: "top-center",
+          },
+        );
+        resetCaptcha();
+        return;
+      }
+
+      // Check if domain matches selected university
+      if (domainData.university_id !== selectedUniversity.id) {
+        const actualUniversityName =
+          domainData.universities?.name || "another university";
+        toast.error(
+          `Your email domain '${emailDomain}' is registered with ${actualUniversityName}, not ${selectedUniversity.name}. Please select the correct university.`,
+          {
+            duration: 7000,
+            position: "top-center",
+          },
+        );
+        resetCaptcha();
+        return;
+      }
+    } catch (err) {
+      toast.error(
+        `Your email domain '${emailDomain}' is not registered with ${selectedUniversity.name}. Please use your official university email.`,
+        {
+          duration: 7000,
+          position: "top-center",
+        },
+      );
+      resetCaptcha();
       return;
     }
 
@@ -446,7 +531,7 @@ export default function LoginPage() {
         if (profileError) {
           await supabase.auth.signOut();
           throw new Error(
-            "Could not verify account status. Please try again later."
+            "Could not verify account status. Please try again later.",
           );
         }
 
@@ -458,7 +543,7 @@ export default function LoginPage() {
         if (profileData && profileData.is_verified === false) {
           await supabase.auth.signOut();
           throw new Error(
-            "Your account is awaiting administrator approval. Please check back later."
+            "Your account is awaiting administrator approval. Please check back later.",
           );
         }
 
@@ -498,6 +583,7 @@ export default function LoginPage() {
     e.preventDefault();
 
     setTouched({
+      university: true,
       email: true,
       password: true,
       fullName: true,
@@ -515,7 +601,7 @@ export default function LoginPage() {
         {
           duration: 5000,
           position: "top-center",
-        }
+        },
       );
       return;
     }
@@ -542,17 +628,33 @@ export default function LoginPage() {
     try {
       const { data: domainData, error: domainError } = await supabase
         .from("allowed_domains")
-        .select("university_id")
+        .select("university_id, universities(name)")
         .eq("domain_name", emailDomain)
         .single();
 
       if (domainError || !domainData) {
         toast.error(
-          `The email domain "${emailDomain}" is not registered with CampusTrace. Please contact your university administrator or register your university.`,
+          `Your email domain '${emailDomain}' is not registered with ${selectedUniversity.name}. Please use your official university email or contact your administrator.`,
           {
             duration: 7000,
             position: "top-center",
-          }
+          },
+        );
+        setLoading(false);
+        resetCaptcha();
+        return;
+      }
+
+      // Check if domain matches selected university
+      if (domainData.university_id !== selectedUniversity.id) {
+        const actualUniversityName =
+          domainData.universities?.name || "another university";
+        toast.error(
+          `Your email domain '${emailDomain}' is registered with ${actualUniversityName}, not ${selectedUniversity.name}. Please select the correct university.`,
+          {
+            duration: 7000,
+            position: "top-center",
+          },
         );
         setLoading(false);
         resetCaptcha();
@@ -560,11 +662,11 @@ export default function LoginPage() {
       }
     } catch (err) {
       toast.error(
-        `The email domain "${emailDomain}" is not registered with CampusTrace. Please use a registered university email.`,
+        `Your email domain '${emailDomain}' is not registered with ${selectedUniversity.name}. Please use your official university email.`,
         {
           duration: 7000,
           position: "top-center",
-        }
+        },
       );
       setLoading(false);
       resetCaptcha();
@@ -601,7 +703,7 @@ export default function LoginPage() {
         {
           duration: 5000,
           position: "top-center",
-        }
+        },
       );
 
       // Store email in localStorage and redirect to confirm page
@@ -849,6 +951,53 @@ export default function LoginPage() {
                 className="space-y-5"
                 noValidate
               >
+                {/* University Selection Dropdown */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                    University
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={selectedUniversity?.id || ""}
+                      onChange={(e) => {
+                        const university = universities.find(
+                          (u) => u.id === parseInt(e.target.value),
+                        );
+                        setSelectedUniversity(university);
+                        setErrors((prev) => ({ ...prev, university: "" }));
+                        setTouched((prev) => ({ ...prev, university: true }));
+                      }}
+                      className={`block w-full rounded-sm py-2 px-3 text-sm bg-neutral-50 dark:bg-neutral-900 text-neutral-900 dark:text-white border ${
+                        errors.university && touched.university
+                          ? "border-red-500 focus:border-red-500"
+                          : "border-neutral-300 dark:border-neutral-700 focus:border-neutral-400 dark:focus:border-neutral-600"
+                      } focus:outline-none transition-colors duration-150`}
+                      aria-required="true"
+                      aria-invalid={!!errors.university && touched.university}
+                    >
+                      <option value="">Select your university...</option>
+                      {universities.map((university) => (
+                        <option key={university.id} value={university.id}>
+                          {university.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <AnimatePresence>
+                    {errors.university && touched.university && (
+                      <motion.p
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="text-xs text-red-500 flex items-center gap-1"
+                      >
+                        <AlertCircle className="w-3 h-3 flex-shrink-0" />{" "}
+                        {errors.university}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
+                </div>
+
                 <AnimatePresence mode="wait">
                   {!isLogin && (
                     <motion.div
@@ -1057,17 +1206,17 @@ export default function LoginPage() {
                 )}
 
                 <div className="flex justify-center py-4">
-                    <ReCAPTCHA
-                      ref={recaptchaRef}
-                      sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-                      onChange={setCaptchaToken}
-                      theme={
-                        window.matchMedia("(prefers-color-scheme: dark)").matches
-                          ? "dark"
-                          : "light"
-                      }
-                    />
-                  </div>
+                  <ReCAPTCHA
+                    ref={recaptchaRef}
+                    sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                    onChange={setCaptchaToken}
+                    theme={
+                      window.matchMedia("(prefers-color-scheme: dark)").matches
+                        ? "dark"
+                        : "light"
+                    }
+                  />
+                </div>
 
                 <button
                   type="submit"
@@ -1152,7 +1301,7 @@ export default function LoginPage() {
                     console.log(
                       `🔄 [UI] Toggling to ${
                         newMode ? "Sign Up" : "Sign In"
-                      } mode`
+                      } mode`,
                     );
                     setIsLogin(newMode);
                     setErrors({});

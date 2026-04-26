@@ -55,9 +55,10 @@ class GeminiKeyManager:
             self._current_index = (self._current_index + 1) % len(self._keys)
             return key
     
-    def get_model(self, model_name: str = "gemini-2.0-flash-exp") -> Optional[genai.GenerativeModel]:
+    def get_model(self, model_name: str = "gemini-2.5-flash") -> Optional[genai.GenerativeModel]:
         """
         Get a Gemini model instance with the next API key
+        Uses Gemini 2.5 Flash - the latest and most capable model
         Returns None if no keys available
         """
         key = self.get_next_key()
@@ -109,9 +110,10 @@ def get_key_manager() -> GeminiKeyManager:
     return _key_manager
 
 
-def get_gemini_model(model_name: str = "gemini-2.0-flash-exp") -> Optional[genai.GenerativeModel]:
+def get_gemini_model(model_name: str = "gemini-2.5-flash") -> Optional[genai.GenerativeModel]:
     """
     Convenience function to get a Gemini model with round-robin key selection
+    Uses Gemini 2.5 Flash - the latest and most capable model
     
     Usage:
         model = get_gemini_model()

@@ -153,7 +153,7 @@ const LoginScreen = ({ navigation }) => {
       console.log("Error fetching universities:", error);
       Alert.alert(
         "Error",
-        "Could not load universities. Please check your connection."
+        "Could not load universities. Please check your connection.",
       );
     }
   };
@@ -229,7 +229,7 @@ const LoginScreen = ({ navigation }) => {
       accounts = accounts.slice(0, 3);
       await AsyncStorage.setItem(
         "campustrace_saved_accounts",
-        JSON.stringify(accounts)
+        JSON.stringify(accounts),
       );
       setSavedAccounts(accounts);
     } catch (error) {
@@ -245,7 +245,7 @@ const LoginScreen = ({ navigation }) => {
         accounts = accounts.filter((acc) => acc.email !== emailToRemove);
         await AsyncStorage.setItem(
           "campustrace_saved_accounts",
-          JSON.stringify(accounts)
+          JSON.stringify(accounts),
         );
         setSavedAccounts(accounts);
         if (accounts.length === 0) {
@@ -273,7 +273,7 @@ const LoginScreen = ({ navigation }) => {
       Alert.alert(
         "Too Many Attempts",
         `Please wait ${cooldownTime} seconds before trying again.`,
-        [{ text: "OK" }]
+        [{ text: "OK" }],
       );
       return false;
     }
@@ -282,7 +282,7 @@ const LoginScreen = ({ navigation }) => {
       Alert.alert(
         "Too Many Attempts",
         "Too many login attempts. Please wait 60 seconds.",
-        [{ text: "OK" }]
+        [{ text: "OK" }],
       );
       return false;
     }
@@ -291,6 +291,11 @@ const LoginScreen = ({ navigation }) => {
 
   const validate = () => {
     const newErrors = {};
+
+    // Validate university selection
+    if (!selectedUniversity) {
+      newErrors.university = "Please select your university";
+    }
 
     if (!email) {
       newErrors.email = "Email is required";
@@ -330,6 +335,7 @@ const LoginScreen = ({ navigation }) => {
 
     setErrors(newErrors);
     setTouched({
+      university: true,
       email: true,
       password: true,
       fullName: !isLogin,
@@ -344,9 +350,45 @@ const LoginScreen = ({ navigation }) => {
     if (!validate()) return;
     if (!checkRateLimit()) return;
 
+    // Validate email domain matches selected university
+    const emailDomain = email.split("@")[1];
+    if (!emailDomain) {
+      Alert.alert("Error", "Please enter a valid email address");
+      return;
+    }
+
     setLoading(true);
     try {
       const supabase = getSupabaseClient();
+
+      // Check if email domain matches selected university
+      const { data: domainData, error: domainError } = await supabase
+        .from("allowed_domains")
+        .select("university_id, universities(name)")
+        .eq("domain_name", emailDomain)
+        .single();
+
+      if (domainError || !domainData) {
+        Alert.alert(
+          "Email Domain Not Registered",
+          `Your email domain '${emailDomain}' is not registered with ${selectedUniversity.name}. Please use your official university email or select the correct university.`,
+        );
+        setLoading(false);
+        return;
+      }
+
+      // Check if domain matches selected university
+      if (domainData.university_id !== selectedUniversity.id) {
+        const actualUniversityName =
+          domainData.universities?.name || "another university";
+        Alert.alert(
+          "Wrong University Selected",
+          `Your email domain '${emailDomain}' is registered with ${actualUniversityName}, not ${selectedUniversity.name}. Please select the correct university.`,
+        );
+        setLoading(false);
+        return;
+      }
+
       let result = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
@@ -393,6 +435,45 @@ const LoginScreen = ({ navigation }) => {
 
     try {
       if (registerType === "regular") {
+        // Validate email domain matches selected university
+        const emailDomain = email.split("@")[1];
+        if (!emailDomain) {
+          Alert.alert("Error", "Please enter a valid email address");
+          setLoading(false);
+          return;
+        }
+
+        // Check if email domain matches selected university
+        const supabase = getSupabaseClient();
+        const { data: domainData, error: domainError } = await supabase
+          .from("allowed_domains")
+          .select("university_id, universities(name)")
+          .eq("domain_name", emailDomain)
+          .single();
+
+        if (domainError || !domainData) {
+          Alert.alert(
+            "Email Domain Not Registered",
+            `Your email domain '${emailDomain}' is not registered with ${selectedUniversity.name}.\n\nOptions:\n1. Use your official university email address\n2. Or tap "Manual (University ID)" above to register with a personal email and your university ID photo`,
+            [{ text: "OK" }],
+          );
+          setLoading(false);
+          return;
+        }
+
+        // Check if domain matches selected university
+        if (domainData.university_id !== selectedUniversity.id) {
+          const actualUniversityName =
+            domainData.universities?.name || "another university";
+          Alert.alert(
+            "Wrong University Selected",
+            `Your email domain '${emailDomain}' is registered with ${actualUniversityName}, not ${selectedUniversity.name}. Please select the correct university.`,
+            [{ text: "OK" }],
+          );
+          setLoading(false);
+          return;
+        }
+
         // Regular signup
         const response = await fetch(`${API_BASE_URL}/api/auth/signup-mobile`, {
           method: "POST",
@@ -426,7 +507,7 @@ const LoginScreen = ({ navigation }) => {
                 `Options:\n` +
                 `1. Use your official university email address\n` +
                 `2. Or tap "Manual (University ID)" above to register with a personal email and your university ID photo`,
-              [{ text: "OK" }]
+              [{ text: "OK" }],
             );
           } else if (errorMsg.toLowerCase().includes("already exists")) {
             Alert.alert(
@@ -435,7 +516,7 @@ const LoginScreen = ({ navigation }) => {
               [
                 { text: "Cancel", style: "cancel" },
                 { text: "Go to Login", onPress: () => toggleForm(true) },
-              ]
+              ],
             );
           } else {
             Alert.alert("Sign Up Failed", errorMsg);
@@ -446,7 +527,7 @@ const LoginScreen = ({ navigation }) => {
         Alert.alert(
           "Success",
           "Account created! Please check your email to verify your account.",
-          [{ text: "OK", onPress: () => toggleForm(true) }]
+          [{ text: "OK", onPress: () => toggleForm(true) }],
         );
       } else {
         // Manual signup
@@ -471,7 +552,7 @@ const LoginScreen = ({ navigation }) => {
           {
             method: "POST",
             body: formData,
-          }
+          },
         );
 
         const responseData = await response.json();
@@ -484,7 +565,7 @@ const LoginScreen = ({ navigation }) => {
             Alert.alert(
               "Account Already Exists",
               "An account with this email already exists.",
-              [{ text: "OK" }]
+              [{ text: "OK" }],
             );
           } else if (errorMsg.toLowerCase().includes("university")) {
             Alert.alert("Invalid University", errorMsg, [{ text: "OK" }]);
@@ -504,7 +585,7 @@ const LoginScreen = ({ navigation }) => {
       console.error("Signup error:", error);
       Alert.alert(
         "Sign Up Failed",
-        error.message || "Could not complete registration. Please try again."
+        error.message || "Could not complete registration. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -522,7 +603,7 @@ const LoginScreen = ({ navigation }) => {
           onPress: () =>
             Linking.openURL("https://campustrace.site/forgot-password"),
         },
-      ]
+      ],
     );
   };
 
@@ -546,7 +627,7 @@ const LoginScreen = ({ navigation }) => {
       if (status !== "granted") {
         Alert.alert(
           "Permission Denied",
-          "Sorry, we need camera roll permissions to make this work!"
+          "Sorry, we need camera roll permissions to make this work!",
         );
         return;
       }
@@ -584,7 +665,7 @@ const LoginScreen = ({ navigation }) => {
       if (status !== "granted") {
         Alert.alert(
           "Permission Denied",
-          "Sorry, we need camera permissions to make this work!"
+          "Sorry, we need camera permissions to make this work!",
         );
         return;
       }
@@ -1259,6 +1340,45 @@ const LoginScreen = ({ navigation }) => {
                 </>
               )}
 
+              {/* University Selection Dropdown - Always show for both login and signup */}
+              <View style={styles.inputWrapper}>
+                <Text style={styles.idUploadLabel}>Select Your University</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.inputContainer,
+                    errors.university &&
+                      touched.university &&
+                      styles.inputError,
+                  ]}
+                  onPress={() => setShowUniversityPicker(true)}
+                >
+                  <User
+                    size={20}
+                    color={themeColors.textSecondary}
+                    style={styles.inputIcon}
+                  />
+                  <Text
+                    style={[
+                      styles.input,
+                      !selectedUniversity && {
+                        color: themeColors.textSecondary,
+                      },
+                    ]}
+                  >
+                    {selectedUniversity
+                      ? selectedUniversity.name
+                      : "Choose university..."}
+                  </Text>
+                  <ChevronRight size={20} color={themeColors.textSecondary} />
+                </TouchableOpacity>
+                {errors.university && touched.university && (
+                  <View style={styles.errorContainer}>
+                    <AlertCircle size={14} color={themeColors.error} />
+                    <Text style={styles.errorText}>{errors.university}</Text>
+                  </View>
+                )}
+              </View>
+
               <View style={styles.inputWrapper}>
                 <View
                   style={[
@@ -1292,8 +1412,50 @@ const LoginScreen = ({ navigation }) => {
 
               {!isLogin && registerType === "manual" && (
                 <View style={styles.inputWrapper}>
+                  <Text style={styles.idUploadLabel}>University ID Photo</Text>
+                  <View style={styles.idUploadButtons}>
+                    <TouchableOpacity
+                      style={styles.idUploadButton}
+                      onPress={handleImagePick}
+                    >
+                      <UploadCloud size={18} color={themeColors.text} />
+                      <Text style={styles.idUploadButtonText}>Upload</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.idUploadButton}
+                      onPress={handleCameraCapture}
+                    >
+                      <Camera size={18} color={themeColors.text} />
+                      <Text style={styles.idUploadButtonText}>Take Photo</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {idImage && (
+                    <View style={styles.idImagePreviewContainer}>
+                      <Image
+                        source={{ uri: idImage.uri }}
+                        style={styles.idImagePreview}
+                      />
+                      <TouchableOpacity
+                        style={styles.removeImageButton}
+                        onPress={() => setIdImage(null)}
+                      >
+                        <X size={20} color="#FFFFFF" />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  {errors.idImage && touched.idImage && (
+                    <View style={[styles.errorContainer, { marginTop: 8 }]}>
+                      <AlertCircle size={14} color={themeColors.error} />
+                      <Text style={styles.errorText}>{errors.idImage}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {!isLogin && registerType === "manual" && (
+                <View style={styles.inputWrapper}>
                   <Text style={styles.idUploadLabel}>
-                    Select Your University
+                    Additional University Selection (for manual registration)
                   </Text>
                   <TouchableOpacity
                     style={[
@@ -1552,8 +1714,8 @@ const LoginScreen = ({ navigation }) => {
                             ? "rgba(239, 68, 68, 0.1)"
                             : "rgba(239, 68, 68, 0.15)"
                           : isDark
-                          ? "rgba(251, 191, 36, 0.1)"
-                          : "rgba(251, 191, 36, 0.15)",
+                            ? "rgba(251, 191, 36, 0.1)"
+                            : "rgba(251, 191, 36, 0.15)",
                       borderRadius: 12,
                       padding: 12,
                       marginBottom: 12,
@@ -1564,8 +1726,8 @@ const LoginScreen = ({ navigation }) => {
                             ? "rgba(239, 68, 68, 0.3)"
                             : "rgba(239, 68, 68, 0.4)"
                           : isDark
-                          ? "rgba(251, 191, 36, 0.3)"
-                          : "rgba(251, 191, 36, 0.4)",
+                            ? "rgba(251, 191, 36, 0.3)"
+                            : "rgba(251, 191, 36, 0.4)",
                     }}
                   >
                     <View
@@ -1585,8 +1747,8 @@ const LoginScreen = ({ navigation }) => {
                                 ? "#FCA5A5"
                                 : "#DC2626"
                               : isDark
-                              ? "#FCD34D"
-                              : "#D97706",
+                                ? "#FCD34D"
+                                : "#D97706",
                           flex: 1,
                         }}
                       >
@@ -1617,8 +1779,8 @@ const LoginScreen = ({ navigation }) => {
                     {cooldownTime > 0
                       ? `Wait ${cooldownTime}s`
                       : isLogin
-                      ? "Log In"
-                      : "Sign Up"}
+                        ? "Log In"
+                        : "Sign Up"}
                   </Text>
                 )}
               </TouchableOpacity>

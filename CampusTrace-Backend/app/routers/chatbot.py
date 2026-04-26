@@ -215,8 +215,8 @@ async def generate_response(
     if not ensure_ai_model():
         return "I'm sorry, I'm currently unavailable. Please try again later."
     
-    # Get a model with round-robin key selection
-    model = get_gemini_model("gemini-2.0-flash-exp")
+    # Get a model with round-robin key selection (uses Gemini 2.5 Flash by default)
+    model = get_gemini_model()
     if not model:
         return "I'm sorry, I'm currently unavailable. Please try again later."
     
