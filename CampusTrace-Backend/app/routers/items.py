@@ -37,8 +37,9 @@ def ensure_ai_model():
 async def generate_match_explanation(lost_item: dict, found_item: dict, match_score: float, text_sim: float, image_sim: float) -> str:
     """
     Generate an XAI (Explainable AI) explanation for why two items match.
-    Uses Gemini AI with round-robin key selection to provide human-readable explanations.
+    Uses Gemini 2.5 Flash with round-robin key selection to provide intelligent, human-readable explanations.
     Caches results to avoid regenerating on every page load.
+    Returns both short and detailed explanations.
     """
     # Check cache first
     lost_id = lost_item.get("id")
@@ -51,18 +52,45 @@ async def generate_match_explanation(lost_item: dict, found_item: dict, match_sc
     
     ensure_ai_model()
     
-    # Fallback explanation if AI is not available
+    # Enhanced fallback explanation with more intelligence
     def get_fallback_explanation():
         reasons = []
-        if text_sim > 0.7:
-            reasons.append(f"Description similarity: {round(text_sim * 100)}%")
-        if image_sim > 0.7:
-            reasons.append(f"Visual similarity: {round(image_sim * 100)}%")
+        
+        # Analyze category match
         if lost_item.get("category") == found_item.get("category"):
-            reasons.append(f"Same category: {lost_item.get('category')}")
+            reasons.append(f"Same category ({lost_item.get('category')})")
+        
+        # Analyze location match
         if lost_item.get("location") == found_item.get("location"):
-            reasons.append(f"Same location: {lost_item.get('location')}")
-        return " • ".join(reasons) if reasons else "Potential match based on AI analysis"
+            reasons.append(f"Found at same location ({lost_item.get('location')})")
+        
+        # Analyze text similarity
+        if text_sim > 0.8:
+            reasons.append(f"Very similar descriptions ({round(text_sim * 100)}%)")
+        elif text_sim > 0.6:
+            reasons.append(f"Similar descriptions ({round(text_sim * 100)}%)")
+        
+        # Analyze image similarity
+        if image_sim > 0.8:
+            reasons.append(f"Visually very similar ({round(image_sim * 100)}%)")
+        elif image_sim > 0.6:
+            reasons.append(f"Visually similar ({round(image_sim * 100)}%)")
+        
+        # Analyze color match
+        lost_color = lost_item.get("color", "").lower()
+        found_color = found_item.get("color", "").lower()
+        if lost_color and found_color and lost_color == found_color:
+            reasons.append(f"Same color ({lost_color})")
+        
+        # Analyze brand match
+        lost_brand = lost_item.get("brand", "").lower()
+        found_brand = found_item.get("brand", "").lower()
+        if lost_brand and found_brand and lost_brand == found_brand:
+            reasons.append(f"Same brand ({lost_brand})")
+        
+        if reasons:
+            return " • ".join(reasons[:3])  # Top 3 reasons
+        return "Potential match based on AI similarity analysis"
     
     if not shared.model:
         print(f"⚠️ Gemini model not available, using fallback explanation")
@@ -71,51 +99,71 @@ async def generate_match_explanation(lost_item: dict, found_item: dict, match_sc
         return explanation
     
     try:
-        # Create detailed prompt for XAI explanation
-        prompt = f"""You are an AI assistant helping users understand why items might match in a lost and found system.
+        # Create enhanced prompt for intelligent XAI explanation
+        prompt = f"""You are an expert AI assistant for a lost and found system. Analyze these items and provide an intelligent, detailed explanation of why they match.
 
-Lost Item:
+LOST ITEM:
 - Title: {lost_item.get('title', 'N/A')}
-- Description: {lost_item.get('description', 'N/A')[:200]}
+- Description: {lost_item.get('description', 'N/A')[:300]}
 - Category: {lost_item.get('category', 'N/A')}
-- Location: {lost_item.get('location', 'N/A')}
+- Color: {lost_item.get('color', 'N/A')}
+- Brand: {lost_item.get('brand', 'N/A')}
+- Location Lost: {lost_item.get('location', 'N/A')}
+- Date Lost: {lost_item.get('date_lost', 'N/A')}
 
-Found Item:
+FOUND ITEM:
 - Title: {found_item.get('title', 'N/A')}
-- Description: {found_item.get('description', 'N/A')[:200]}
+- Description: {found_item.get('description', 'N/A')[:300]}
 - Category: {found_item.get('category', 'N/A')}
-- Location: {found_item.get('location', 'N/A')}
+- Color: {found_item.get('color', 'N/A')}
+- Brand: {found_item.get('brand', 'N/A')}
+- Location Found: {found_item.get('location', 'N/A')}
+- Date Found: {found_item.get('date_found', 'N/A')}
 
-Match Metrics:
-- Overall Match: {match_score}%
-- Text Similarity: {round(text_sim * 100)}%
-- Image Similarity: {round(image_sim * 100)}%
+MATCH METRICS:
+- Overall Match Score: {match_score}%
+- Text/Description Similarity: {round(text_sim * 100)}%
+- Visual/Image Similarity: {round(image_sim * 100)}%
 
-Generate a brief, friendly explanation (1-2 sentences, max 150 characters) explaining WHY these items might match. Focus on the strongest matching factors. Be concise and user-friendly. Use only English language."""
+TASK:
+Generate a detailed, intelligent explanation (2-4 sentences, max 400 characters) that:
+1. Identifies the STRONGEST matching factors (category, color, brand, location, visual features, description keywords)
+2. Explains WHY these factors make it a good match
+3. Mentions any notable differences or considerations
+4. Uses natural, friendly language that helps users make informed decisions
 
-        print(f"🤖 Calling Gemini AI for match explanation (score: {match_score}%)")
+Focus on being specific and actionable. For example:
+- Instead of "similar descriptions", say "both mention 'black leather' and 'zipper pocket'"
+- Instead of "same location", say "both at Engineering Building, increasing likelihood"
+- Instead of "high visual match", say "similar shape, color, and size visible in images"
+
+Be concise but informative. Use only English."""
+
+        print(f"🤖 Calling Gemini 2.5 Flash for intelligent XAI explanation (score: {match_score}%)")
         
-        # Get model with round-robin key selection
+        # Get model with round-robin key selection (uses Gemini 2.5 Flash)
         model = get_gemini_model()
         if not model:
-            return "Items match based on similarity analysis."
+            return get_fallback_explanation()
         
         response = await model.generate_content_async(prompt)
         explanation = response.text.strip()
-        print(f"✅ Gemini response: {explanation[:100]}...")
+        print(f"✅ Gemini 2.5 response: {explanation[:150]}...")
         
-        # Limit explanation length
-        if len(explanation) > 150:
-            explanation = explanation[:147] + "..."
+        # Limit explanation length but allow more detail
+        if len(explanation) > 400:
+            explanation = explanation[:397] + "..."
         
         # Cache the result
         shared.match_explanation_cache[cache_key] = explanation
-        print(f"💾 Cached explanation for match ({lost_id}, {found_id})")
+        print(f"💾 Cached detailed explanation for match ({lost_id}, {found_id})")
         
         return explanation
         
     except Exception as e:
         print(f"⚠️ Error generating match explanation: {e}")
+        import traceback
+        traceback.print_exc()
         # Fallback explanation on error
         explanation = get_fallback_explanation()
         shared.match_explanation_cache[cache_key] = explanation

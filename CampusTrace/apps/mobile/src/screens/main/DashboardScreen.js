@@ -705,6 +705,7 @@ const AnimatedItemCard = memo(({ item, index, onPress, styles, colors }) => {
 const AnimatedMatchCard = memo(({ item, index, onPress, styles, colors }) => {
   const slideAnim = React.useRef(new Animated.Value(50)).current;
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const [isExpanded, setIsExpanded] = useState(false);
 
   React.useEffect(() => {
     Animated.parallel([
@@ -773,12 +774,35 @@ const AnimatedMatchCard = memo(({ item, index, onPress, styles, colors }) => {
             {item.title}
           </Text>
           {item.match_explanation ? (
-            <Text
-              style={[styles.matchExplanation, { color: colors.textSecondary }]}
-              numberOfLines={2}
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                setIsExpanded(!isExpanded);
+              }}
+              activeOpacity={0.7}
             >
-              {item.match_explanation}
-            </Text>
+              <Text
+                style={[
+                  styles.matchExplanation,
+                  { color: colors.textSecondary },
+                ]}
+                numberOfLines={isExpanded ? undefined : 2}
+              >
+                {item.match_explanation}
+              </Text>
+              {item.match_explanation.length > 80 && (
+                <View style={styles.expandIndicator}>
+                  <Feather
+                    name={isExpanded ? "chevron-up" : "chevron-down"}
+                    size={12}
+                    color={colors.primary}
+                  />
+                  <Text style={[styles.expandText, { color: colors.primary }]}>
+                    {isExpanded ? "Less" : "More"}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
           ) : (
             <Text style={styles.matchCardLocation} numberOfLines={1}>
               <Feather name="map-pin" size={10} /> {item.location || "Campus"}
@@ -1355,7 +1379,17 @@ const createStyles = (colors) => {
     matchExplanation: {
       fontSize: 11,
       lineHeight: 15,
-      marginTop: 2,
+      color: colors.textSecondary,
+    },
+    expandIndicator: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 4,
+      gap: 4,
+    },
+    expandText: {
+      fontSize: 10,
+      fontWeight: "600",
     },
     matchSimilarityRow: {
       flexDirection: "row",

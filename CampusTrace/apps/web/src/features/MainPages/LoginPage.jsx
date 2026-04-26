@@ -276,8 +276,8 @@ export default function LoginPage() {
   const validate = () => {
     const newErrors = {};
 
-    // Validate university selection
-    if (!selectedUniversity) {
+    // Only validate university selection if universities have been loaded
+    if (universities.length > 0 && !selectedUniversity) {
       newErrors.university = "Please select your university";
     }
 

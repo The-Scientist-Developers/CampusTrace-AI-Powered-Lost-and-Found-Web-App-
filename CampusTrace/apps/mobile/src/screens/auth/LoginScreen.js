@@ -292,8 +292,8 @@ const LoginScreen = ({ navigation }) => {
   const validate = () => {
     const newErrors = {};
 
-    // Validate university selection
-    if (!selectedUniversity) {
+    // Only validate university selection if universities have been loaded
+    if (universities.length > 0 && !selectedUniversity) {
       newErrors.university = "Please select your university";
     }
 
@@ -317,7 +317,7 @@ const LoginScreen = ({ navigation }) => {
         if (!idImage) {
           newErrors.idImage = "University ID photo is required";
         }
-        if (!selectedUniversity) {
+        if (universities.length > 0 && !selectedUniversity) {
           newErrors.university = "Please select your university";
         }
       }
@@ -350,6 +350,26 @@ const LoginScreen = ({ navigation }) => {
     if (!validate()) return;
     if (!checkRateLimit()) return;
 
+    // Check if universities have been loaded
+    if (universities.length === 0) {
+      Alert.alert(
+        "Loading",
+        "Please wait while universities are being loaded...",
+        [{ text: "OK" }],
+      );
+      return;
+    }
+
+    // Check if university is selected
+    if (!selectedUniversity) {
+      Alert.alert(
+        "University Required",
+        "Please select your university before logging in.",
+        [{ text: "OK" }],
+      );
+      return;
+    }
+
     // Validate email domain matches selected university
     const emailDomain = email.split("@")[1];
     if (!emailDomain) {
@@ -367,7 +387,7 @@ const LoginScreen = ({ navigation }) => {
         .select("university_id, universities(name)")
         .eq("domain_name", emailDomain)
         .single();
-
+      
       if (domainError || !domainData) {
         Alert.alert(
           "Email Domain Not Registered",
