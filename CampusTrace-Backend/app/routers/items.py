@@ -23,25 +23,21 @@ from app.utils import (
 from app import jina_embedding_util
 from app import shared
 from fastapi.concurrency import run_in_threadpool
+from app.gemini_key_manager import get_gemini_model
 
 router = APIRouter(prefix="/api/items", tags=["Items"])
 settings = get_settings()
 
 def ensure_ai_model():
-    if shared.model is None and settings.GEMINI_API_KEY:
-        try:
-            print("🔄 Lazy loading Gemini AI model...")
-            genai.configure(api_key=settings.GEMINI_API_KEY)
-            shared.model = genai.GenerativeModel("gemini-2.5-flash")
-            print("✅ Gemini AI model loaded successfully.")
-        except Exception as e:
-            print(f"❌ Failed to lazy load AI model: {e}")
-            traceback.print_exc()
+    """Check if AI models are available (uses round-robin key manager)"""
+    from app.gemini_key_manager import get_key_manager
+    manager = get_key_manager()
+    return manager.get_key_count() > 0
 
 async def generate_match_explanation(lost_item: dict, found_item: dict, match_score: float, text_sim: float, image_sim: float) -> str:
     """
     Generate an XAI (Explainable AI) explanation for why two items match.
-    Uses Gemini AI to provide human-readable explanations.
+    Uses Gemini AI with round-robin key selection to provide human-readable explanations.
     Caches results to avoid regenerating on every page load.
     """
     # Check cache first
@@ -98,7 +94,13 @@ Match Metrics:
 Generate a brief, friendly explanation (1-2 sentences, max 150 characters) explaining WHY these items might match. Focus on the strongest matching factors. Be concise and user-friendly. Use only English language."""
 
         print(f"🤖 Calling Gemini AI for match explanation (score: {match_score}%)")
-        response = await shared.model.generate_content_async(prompt)
+        
+        # Get model with round-robin key selection
+        model = get_gemini_model()
+        if not model:
+            return "Items match based on similarity analysis."
+        
+        response = await model.generate_content_async(prompt)
         explanation = response.text.strip()
         print(f"✅ Gemini response: {explanation[:100]}...")
         
@@ -260,8 +262,16 @@ async def generate_description(payload: DescriptionRequest):
         - Add placeholders like [Specify Color] if missing.
         - Return only the improved description text.
         """
-        response = await shared.model.generate_content_async(prompt)
+        
+        # Get model with round-robin key selection
+        model = get_gemini_model()
+        if not model:
+            raise HTTPException(status_code=503, detail="AI service temporarily unavailable")
+        
+        response = await model.generate_content_async(prompt)
         return {"description": response.text.strip()}
+    except HTTPException:
+        raise
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to generate description: {str(e)}")
@@ -270,9 +280,8 @@ async def generate_description(payload: DescriptionRequest):
 async def suggest_details_from_image(
     image_file: UploadFile = File(...), user_id: str = Depends(get_current_user_id)
 ):
-    ensure_ai_model()
-    if not shared.model:
-        raise HTTPException(status_code=503, detail="AI features are not available. Model failed to load.")
+    if not ensure_ai_model():
+        raise HTTPException(status_code=503, detail="AI features are not available.")
 
     try:
         print("\n🤖 [AI SUGGEST] Analyzing image...")
@@ -292,7 +301,12 @@ async def suggest_details_from_image(
         Keywords: [comma-separated keywords]
         """
 
-        response = await shared.model.generate_content_async([prompt, pil_image])
+        # Get model with round-robin key selection
+        model = get_gemini_model()
+        if not model:
+            raise HTTPException(status_code=503, detail="AI service temporarily unavailable")
+
+        response = await model.generate_content_async([prompt, pil_image])
         analysis_text = response.text.strip()
         lines = analysis_text.split("\n")
         object_type = ""

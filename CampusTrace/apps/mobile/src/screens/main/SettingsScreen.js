@@ -188,7 +188,7 @@ const SettingsScreen = ({ navigation }) => {
           setMessageNotifications(prefs.message_notifications ?? true);
           setModerationNotifications(prefs.moderation_notifications ?? true);
           setEmailNotificationsEnabled(
-            prefs.email_notifications_enabled ?? true
+            prefs.email_notifications_enabled ?? true,
           );
         }
       } catch (error) {
@@ -252,12 +252,12 @@ const SettingsScreen = ({ navigation }) => {
             Linking.openURL(webAppUrl).catch(() => {
               Alert.alert(
                 "Error",
-                `Could not open the web app. Please visit ${webAppUrl} manually.`
+                `Could not open the web app. Please visit ${webAppUrl} manually.`,
               );
             });
           },
         },
-      ]
+      ],
     );
   };
 
@@ -314,7 +314,7 @@ const SettingsScreen = ({ navigation }) => {
 
               Alert.alert(
                 "Success",
-                "Account deleted successfully. You will be logged out."
+                "Account deleted successfully. You will be logged out.",
               );
               await supabase.auth.signOut();
             } catch (err) {
@@ -325,7 +325,7 @@ const SettingsScreen = ({ navigation }) => {
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -612,6 +612,7 @@ const SettingsScreen = ({ navigation }) => {
                     style={[
                       styles.colorThemeButton,
                       {
+                        backgroundColor: colors.surface,
                         borderColor:
                           colorMode === "blue" ? colors.primary : colors.border,
                       },
@@ -647,6 +648,7 @@ const SettingsScreen = ({ navigation }) => {
                     style={[
                       styles.colorThemeButton,
                       {
+                        backgroundColor: colors.surface,
                         borderColor:
                           colorMode === "purple"
                             ? colors.primary
@@ -684,6 +686,7 @@ const SettingsScreen = ({ navigation }) => {
                     style={[
                       styles.colorThemeButton,
                       {
+                        backgroundColor: colors.surface,
                         borderColor:
                           colorMode === "pink" ? colors.primary : colors.border,
                       },
@@ -719,6 +722,7 @@ const SettingsScreen = ({ navigation }) => {
                     style={[
                       styles.colorThemeButton,
                       {
+                        backgroundColor: colors.surface,
                         borderColor:
                           colorMode === "green"
                             ? colors.primary
@@ -1181,7 +1185,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#E5E7EB",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
   },
   colorThemeCircle: {
     width: 40,

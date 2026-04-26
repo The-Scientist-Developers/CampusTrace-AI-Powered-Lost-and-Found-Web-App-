@@ -19,6 +19,7 @@ from app.config import get_settings
 from app import jina_embedding_util
 from app import shared
 from app import chunk_processor
+from app.gemini_key_manager import get_gemini_model
 import google.generativeai as genai
 
 router = APIRouter(prefix="/api/chatbot", tags=["Chatbot"])
@@ -101,32 +102,37 @@ class ChatResponse(BaseModel):
     
 
 def ensure_ai_model():
-    """Ensure Gemini AI model is loaded"""
-    if shared.model is None and settings.GEMINI_API_KEY:
-        try:
-            print("🔄 Loading Gemini AI model for chatbot...")
-            genai.configure(api_key=settings.GEMINI_API_KEY)
-            shared.model = genai.GenerativeModel("gemini-2.5-flash")
-            print("✅ Gemini AI model loaded for chatbot")
-        except Exception as e:
-            print(f"❌ Failed to load AI model: {e}")
+    """
+    Ensure Gemini AI model is loaded
+    Note: With round-robin, we get a fresh model for each request
+    """
+    # Check if at least one key is available
+    from app.gemini_key_manager import get_key_manager
+    manager = get_key_manager()
+    
+    if manager.get_key_count() == 0:
+        print("❌ No Gemini API keys available")
+        return False
+    
+    print(f"✅ {manager.get_key_count()} Gemini API key(s) available for round-robin")
+    return True
 
 
 async def retrieve_faq_chunks(query: str, limit: int = 3) -> List[Dict]:
     """
-    Retrieve relevant FAQ chunks using cosine similarity
+    Retrieve relevant FAQ/Knowledge chunks using cosine similarity
     Returns minimal data to save tokens
     """
     try:
         chunks = await chunk_processor.retrieve_relevant_chunks(
             query=query,
-            university_id=None,  # FAQ is universal
+            university_id=None,  # Knowledge base is universal
             top_k=limit,
-            similarity_threshold=0.3
+            similarity_threshold=0.25  # Lower threshold for better knowledge retrieval
         )
         return chunks
     except Exception as e:
-        print(f"⚠️ FAQ chunk retrieval failed: {e}")
+        print(f"⚠️ Knowledge chunk retrieval failed: {e}")
         return []
 
 
@@ -204,46 +210,59 @@ async def generate_response(
     """
     Generate chatbot response using retrieved items and FAQ chunks
     Optimized for minimal token usage
+    Uses round-robin API key selection for load balancing
     """
-    ensure_ai_model()
-    
-    if not shared.model:
+    if not ensure_ai_model():
         return "I'm sorry, I'm currently unavailable. Please try again later."
     
-    # Format FAQ chunks (small context)
-    faq_context = ""
+    # Get a model with round-robin key selection
+    model = get_gemini_model("gemini-2.0-flash-exp")
+    if not model:
+        return "I'm sorry, I'm currently unavailable. Please try again later."
+    
+    # Format FAQ/Knowledge chunks (prioritize these for system questions)
+    knowledge_context = ""
     if faq_chunks:
-        faq_context = "\nFAQ Knowledge:\n"
-        for chunk in faq_chunks[:2]:  # Max 2 chunks
-            text = chunk.get("chunk_text", "")[:200]  # Truncate
-            faq_context += f"- {text}\n"
+        knowledge_context = "\n=== SYSTEM KNOWLEDGE (Use this to answer questions about CampusTrace) ===\n"
+        for chunk in faq_chunks[:3]:  # Max 3 chunks
+            text = chunk.get("chunk_text", "")[:400]  # More context for knowledge
+            knowledge_context += f"{text}\n\n"
+        knowledge_context += "=== END KNOWLEDGE ===\n"
     
     # Format items context (minimal)
     items_context = ""
     if relevant_items:
-        items_context = "\nFound Items:\n"
+        items_context = "\nRelevant Lost/Found Items:\n"
         for item in relevant_items[:MAX_ITEMS_IN_CONTEXT]:
             items_context += f"- {item.get('title', 'N/A')} ({item.get('status')}) at {item.get('location', 'N/A')}\n"
     
     # Minimal history (last 2 only)
     history_context = ""
     if conversation_history:
-        history_context = "\nRecent:\n"
+        history_context = "\nRecent conversation:\n"
         for msg in conversation_history[-2:]:
-            role = "U" if msg.get("role") == "user" else "A"
-            content = msg.get("content", "")[:50]
+            role = "User" if msg.get("role") == "user" else "You"
+            content = msg.get("content", "")[:80]
             history_context += f"{role}: {content}\n"
     
-    # Concise prompt
-    prompt = f"""You are CampusTrace assistant. Be helpful and concise.
-{faq_context}{items_context}{history_context}
-User: {query}
+    # Improved prompt with emphasis on using knowledge base
+    prompt = f"""You are the CampusTrace AI assistant. You help users with the lost and found platform.
 
-Reply in under {MAX_RESPONSE_WORDS} words. If items found, mention them. Be friendly."""
+IMPORTANT INSTRUCTIONS:
+- If the user asks about HOW to do something (report, claim, handover, etc.), use the SYSTEM KNOWLEDGE provided above
+- Answer based on the actual app features and processes described in the knowledge base
+- Be specific about the steps and screens users need to use
+- Keep responses under {MAX_RESPONSE_WORDS} words but be accurate and helpful
+- If you don't have enough information in the knowledge base, say so honestly
+{knowledge_context}{items_context}{history_context}
+User Question: {query}
+
+Your Response:"""
 
     try:
         print(f"🤖 Generating response for: {query[:30]}...")
-        response = await shared.model.generate_content_async(prompt)
+        print(f"📚 Using {len(faq_chunks)} knowledge chunks")
+        response = await model.generate_content_async(prompt)
         answer = response.text.strip()
         # Truncate if too long
         words = answer.split()
@@ -287,10 +306,11 @@ async def chat(
                 chunks_used=cached.get("chunks", 0)
             )
         
-        # Retrieve FAQ chunks first (for general questions)
-        print(f"🔍 Searching FAQ for: {message.message[:30]}")
-        faq_chunks = await retrieve_faq_chunks(message.message, limit=2)
+        # Retrieve FAQ/Knowledge chunks first (for general questions about the system)
+        print(f"🔍 Searching knowledge base for: {message.message[:30]}")
+        faq_chunks = await retrieve_faq_chunks(message.message, limit=3)
         chunks_used = len(faq_chunks)
+        print(f"📚 Retrieved {chunks_used} knowledge chunks")
         
         # Retrieve relevant items
         print(f"🔍 Searching items for: {message.message[:30]}")
@@ -346,13 +366,17 @@ async def get_suggested_questions(user_id: str = Depends(get_current_user_id)):
 @router.get("/cache-stats")
 async def get_cache_stats(user_id: str = Depends(get_current_user_id)):
     """
-    Get cache statistics
+    Get cache statistics and API key info
     """
+    from app.gemini_key_manager import get_key_manager
+    manager = get_key_manager()
+    
     return {
         "response_cache_size": len(response_cache),
         "embedding_cache_size": len(embedding_cache),
         "max_size": CACHE_MAX_SIZE,
-        "ttl_seconds": CACHE_TTL_SECONDS
+        "ttl_seconds": CACHE_TTL_SECONDS,
+        "api_keys": manager.get_stats()
     }
 
 

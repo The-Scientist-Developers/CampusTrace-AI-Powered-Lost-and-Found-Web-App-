@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     PYTHON_SUPABASE_KEY: str
 
     GEMINI_API_KEY: Optional[str] = None 
+    GEMINI_API_KEY_2: Optional[str] = None  # Additional key for round-robin
+    GEMINI_API_KEY_3: Optional[str] = None  # Additional key for round-robin
 
     JINA_API_KEY: Optional[str] = None
 

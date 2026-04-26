@@ -23,14 +23,13 @@ function AppContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [session, setSession] = useState(null);
   const { colors, isDark } = useTheme();
-  const navigation = useNavigation();
 
   // Effect to run ONCE for listeners
   useEffect(() => {
     const apiUrl =
       process.env.EXPO_PUBLIC_API_URL ||
       Constants.expoConfig?.extra?.apiUrl ||
-      "http://localhost:8000";
+      "https://campustrace-ai-powered-lost-and-found-bcho.onrender.com";
     const supabaseUrl =
       process.env.EXPO_PUBLIC_SUPABASE_URL ||
       Constants.expoConfig?.extra?.supabaseUrl;
@@ -67,24 +66,22 @@ function AppContent() {
           Notifications.addNotificationResponseReceivedListener((response) => {
             const url = response.notification.request.content.data?.url;
             if (url) {
-              // Let the router handle auth checks
-              if (url.includes("/messages")) {
-                navigation.navigate("Messages");
-              }
-              // Add other routes here
+              // Note: Navigation will be handled by the navigator itself
+              // You can use a navigation ref or deep linking for this
+              console.log("Notification tapped with URL:", url);
             }
           });
 
         return () => {
           subscription?.unsubscribe();
-          responseListener.remove(); // This is the correct way
+          responseListener.remove();
         };
       }
     } else {
       console.warn("[App] Supabase credentials missing");
       setIsLoading(false);
     }
-  }, [navigation]); // Only depends on navigation, which is stable
+  }, []); // No dependencies needed
 
   // --- NEW Effect ---
   // This effect runs ONLY when the session state changes

@@ -264,19 +264,30 @@ async def health_check():
 async def startup_event():
     """Load AI models on application startup."""
     
-    # Initialize Gemini AI for generating descriptions and tags
-    if settings.GEMINI_API_KEY:
-        try:
-            genai.configure(api_key=settings.GEMINI_API_KEY)
-            # Assign the model to the shared module variable
-            shared.model = genai.GenerativeModel("gemini-2.5-flash")
-            print("✅ Gemini AI generation/vision model (gemini-2.5-flash) configured successfully.")
-        except Exception as e:
-            print(f"❌ ERROR: Could not configure Gemini AI: {e}")
-            traceback.print_exc()
+    # Initialize Gemini AI Key Manager for round-robin load balancing
+    from app.gemini_key_manager import get_key_manager
+    
+    try:
+        manager = get_key_manager()
+        key_count = manager.get_key_count()
+        
+        if key_count > 0:
+            # Test that we can create a model
+            test_model = manager.get_model()
+            if test_model:
+                print(f"✅ Gemini AI configured with {key_count} API key(s) for round-robin")
+                print(f"📊 Estimated capacity: {key_count * 15} RPM, {key_count * 1500} RPD")
+                # Store a reference for backward compatibility (though chatbot uses round-robin)
+                shared.model = test_model
+            else:
+                print("⚠️ WARNING: Could not create Gemini model. AI features may be limited.")
+                shared.model = None
+        else:
+            print("⚠️ WARNING: No GEMINI_API_KEY found. AI generation features disabled.")
             shared.model = None
-    else:
-        print("⚠️ WARNING: GEMINI_API_KEY not found. AI generation features disabled.")
+    except Exception as e:
+        print(f"❌ ERROR: Could not configure Gemini AI: {e}")
+        traceback.print_exc()
         shared.model = None
     
     # Note: Jina embedding test removed from startup for faster cold starts

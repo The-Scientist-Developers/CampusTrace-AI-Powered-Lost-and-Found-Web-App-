@@ -1,0 +1,51 @@
+```mermaid
+%% CampusTrace Web App Deployment Diagram
+%% Three-layer architecture: Application, Network, System & Database
+
+%% Define subgraphs for each layer
+subgraph ApplicationLayer[Application Layer]
+    direction TB
+    Desktop[Desktop Browser]:::client
+    Mobile[Mobile Browser]:::client
+end
+
+subgraph NetworkLayer[Network Layer]
+    direction TB
+    Internet[Internet Cloud]:::network
+    Router[Router / Access Point]:::network
+end
+
+subgraph SystemLayer[System & Database Layer]
+    direction TB
+    FastAPI[FastAPI Backend]:::service
+    Supabase[Supabase
+    (PostgreSQL DB)]:::database
+    Gemini[Gemini AI Service]:::external
+    Jina["Jina Embedding Service"]:::external
+end
+
+%% Styling
+classDef client fill:#1f78b4,color:#fff,stroke:#333,stroke-width:2px;
+classDef network fill:#33a02c,color:#fff,stroke:#333,stroke-width:2px;
+classDef service fill:#e31a1c,color:#fff,stroke:#333,stroke-width:2px;
+classDef database fill:#ff7f00,color:#fff,stroke:#333,stroke-width:2px;
+classDef external fill:#6a3d9a,color:#fff,stroke:#333,stroke-width:2px;
+
+%% Connections with protocol labels
+Desktop -- "HTTPS (GET/POST)" --> Internet
+Mobile -- "HTTPS (GET/POST)" --> Internet
+Internet -- "HTTPS (REST/JSON)" --> Router
+Router -- "HTTPS (REST/JSON)" --> FastAPI
+FastAPI -- "SQL Queries (PostgreSQL)" --> Supabase
+FastAPI -- "API Call (JSON)\nGemini AI" --> Gemini
+FastAPI -- "API Call (JSON)\nJina Embedding" --> Jina
+
+%% Return paths (responses)
+FastAPI -- "HTTPS Response" --> Router
+Router -- "HTTPS Response" --> Internet
+Internet -- "HTTPS Response" --> Desktop
+Internet -- "HTTPS Response" --> Mobile
+Supabase -- "SQL Result" --> FastAPI
+Gemini -- "AI Response (JSON)" --> FastAPI
+Jina -- "Embedding Data (JSON)" --> FastAPI
+```

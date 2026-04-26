@@ -9,11 +9,11 @@ export default ({ config }) => {
   console.log("API URL:", process.env.EXPO_PUBLIC_API_URL);
   console.log(
     "Supabase URL:",
-    process.env.EXPO_PUBLIC_SUPABASE_URL ? "Set" : "Missing"
+    process.env.EXPO_PUBLIC_SUPABASE_URL ? "Set" : "Missing",
   );
   console.log(
     "Supabase Key:",
-    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ? "Set" : "Missing"
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ? "Set" : "Missing",
   );
 
   return {
@@ -49,7 +49,9 @@ export default ({ config }) => {
     },
     extra: {
       // These will be accessible via Constants.expoConfig.extra
-      apiUrl: process.env.EXPO_PUBLIC_API_URL || "http://10.0.0.37:8000",
+      apiUrl:
+        process.env.EXPO_PUBLIC_API_URL ||
+        "https://campustrace-ai-powered-lost-and-found-bcho.onrender.com",
       supabaseUrl:
         process.env.EXPO_PUBLIC_SUPABASE_URL ||
         "https://cvcxqsdwtcvwgdftsdtp.supabase.co",

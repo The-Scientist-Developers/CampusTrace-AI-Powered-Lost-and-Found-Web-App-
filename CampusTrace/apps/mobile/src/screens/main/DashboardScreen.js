@@ -65,7 +65,6 @@ const DashboardScreen = ({ navigation }) => {
     foundItems: 0,
     recoveredItems: 0,
   });
-  const [recentActivity, setRecentActivity] = useState([]);
   const [myRecentPosts, setMyRecentPosts] = useState([]);
   const [possibleMatches, setPossibleMatches] = useState([]);
   const [myLostItem, setMyLostItem] = useState(null);
@@ -109,13 +108,17 @@ const DashboardScreen = ({ navigation }) => {
       // Optimized: Use consolidated endpoint with timeout
       const token = await getAccessToken();
       if (!token) {
-        throw new Error("Authentication required.");
+        console.error("❌ [Dashboard] No auth token available");
+        setLoading(false);
+        setRefreshing(false);
+        return;
       }
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
       try {
+        console.log("📡 [Dashboard] Fetching dashboard data...");
         // Fetch dashboard data (includes university name now)
         const dashboardResponse = await fetch(
           `${API_BASE_URL}/api/items/dashboard-summary`,
@@ -128,10 +131,14 @@ const DashboardScreen = ({ navigation }) => {
         clearTimeout(timeoutId);
 
         if (!dashboardResponse.ok) {
+          console.error(
+            `❌ [Dashboard] API returned ${dashboardResponse.status}`,
+          );
           throw new Error("Failed to fetch dashboard data.");
         }
 
         const data = await dashboardResponse.json();
+        console.log("✅ [Dashboard] Data loaded successfully");
 
         // Set university name from dashboard response
         if (data.universityName) {
@@ -142,15 +149,15 @@ const DashboardScreen = ({ navigation }) => {
         const activeRecentPosts = (data.myRecentPosts || []).filter(
           (item) => item.status?.toLowerCase() !== "recovered",
         );
-        const activeRecentActivity = (data.recentActivity || []).filter(
-          (item) => item.status?.toLowerCase() !== "recovered",
-        );
         const activeMatches = (data.aiMatches || []).filter(
           (item) => item.status?.toLowerCase() !== "recovered",
         );
 
+        console.log(
+          `📊 [Dashboard] My posts: ${activeRecentPosts.length} items`,
+        );
+
         setMyRecentPosts(activeRecentPosts);
-        setRecentActivity(activeRecentActivity);
         setPossibleMatches(activeMatches);
 
         setStats({
@@ -177,14 +184,17 @@ const DashboardScreen = ({ navigation }) => {
         clearTimeout(timeoutId);
         if (fetchError.name === "AbortError") {
           console.error(
-            "Dashboard request timed out. Please check your connection.",
+            "⏱️ [Dashboard] Request timed out. Please check your connection.",
           );
+        } else {
+          console.error("❌ [Dashboard] Fetch error:", fetchError.message);
         }
-        throw fetchError;
+        // Don't throw - just log and continue with empty data
       }
     } catch (error) {
-      console.error("Error loading dashboard:", error);
+      console.error("❌ [Dashboard] Error loading dashboard:", error);
     } finally {
+      // ALWAYS clear loading states
       setLoading(false);
       setRefreshing(false);
     }
@@ -320,12 +330,15 @@ const DashboardScreen = ({ navigation }) => {
               activeOpacity={0.7}
             >
               <View
-                style={[styles.iconBubble, { backgroundColor: "#6366F120" }]}
+                style={[
+                  styles.iconBubble,
+                  { backgroundColor: colors.primary + "20" },
+                ]}
               >
                 <MaterialCommunityIcons
                   name="robot-excited-outline"
                   size={22}
-                  color="#6366F1"
+                  color={colors.primary}
                 />
               </View>
             </TouchableOpacity>
@@ -503,16 +516,18 @@ const DashboardScreen = ({ navigation }) => {
           {/* AI Matches Section */}
           <View style={styles.aiSection}>
             <View style={styles.aiHeader}>
-              <LinearGradient
-                colors={["#6366F1", "#A855F7"]}
-                style={styles.aiIconGradient}
+              <View
+                style={[
+                  styles.aiIconGradient,
+                  { backgroundColor: colors.primary },
+                ]}
               >
                 <MaterialCommunityIcons
                   name="robot-excited"
                   size={24}
                   color="white"
                 />
-              </LinearGradient>
+              </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.aiTitle}>Smart Matching</Text>
                 <Text style={styles.aiSubtitle}>AI-powered suggestions</Text>
@@ -578,7 +593,7 @@ const DashboardScreen = ({ navigation }) => {
           </View>
 
           {/* My Active Posts */}
-          <View style={styles.section}>
+          <View style={[styles.section, { paddingBottom: 32 }]}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>My Active Posts</Text>
               <TouchableOpacity
@@ -607,45 +622,6 @@ const DashboardScreen = ({ navigation }) => {
                 description="Start by reporting a lost or found item"
                 buttonText="Create Post"
                 onButtonPress={() => navigation.navigate("PostItem")}
-                colors={colors}
-                styles={styles}
-              />
-            )}
-          </View>
-
-          {/* Community Activity Feed */}
-          <View style={[styles.section, { paddingBottom: 32 }]}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Community Feed
-              </Text>
-              <View style={styles.liveIndicator}>
-                <View style={styles.liveDot} />
-                <Text style={styles.liveText}>Live</Text>
-              </View>
-            </View>
-
-            {recentActivity && recentActivity.length > 0 ? (
-              recentActivity
-                .slice(0, 5)
-                .map((item, index) => (
-                  <ModernActivityItem
-                    key={item.id}
-                    item={item}
-                    index={index}
-                    onPress={() =>
-                      navigation.navigate("Browse", { itemId: item.id })
-                    }
-                    styles={styles}
-                    colors={colors}
-                  />
-                ))
-            ) : (
-              <ModernEmptyState
-                icon={MaterialCommunityIcons}
-                iconName="account-group"
-                title="No recent activity"
-                description="Check back later for updates"
                 colors={colors}
                 styles={styles}
               />
@@ -900,80 +876,6 @@ const ModernLostItemCard = memo(({ item, styles, colors, onPress }) => (
     </LinearGradient>
   </TouchableOpacity>
 ));
-
-const ModernActivityItem = memo(({ item, index, onPress, styles, colors }) => {
-  const fadeAnim = React.useRef(new Animated.Value(0)).current;
-
-  React.useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 500,
-      delay: index * 100,
-      useNativeDriver: true,
-    }).start();
-  }, []);
-
-  const statusIcon = item.status === "Lost" ? "error" : "check-circle";
-  const statusColor = item.status === "Lost" ? "#EF4444" : "#10B981";
-
-  return (
-    <Animated.View style={{ opacity: fadeAnim }}>
-      <TouchableOpacity
-        style={styles.modernActivityItem}
-        onPress={onPress}
-        activeOpacity={0.9}
-      >
-        <View style={styles.activityLeft}>
-          {item.thumbnail_url || item.image_url ? (
-            <Image
-              source={{ uri: item.thumbnail_url || item.image_url }}
-              style={styles.activityImage}
-              contentFit="cover"
-              transition={200}
-              cachePolicy="memory-disk"
-            />
-          ) : (
-            <View style={[styles.activityImage, styles.imagePlaceholder]}>
-              <Feather name="package" size={20} color="#9CA3AF" />
-            </View>
-          )}
-          <View
-            style={[styles.activityStatusDot, { backgroundColor: statusColor }]}
-          />
-        </View>
-
-        <View style={styles.activityContent}>
-          <View style={styles.activityHeader}>
-            <Text style={styles.activityTitle} numberOfLines={1}>
-              {item.title}
-            </Text>
-            <MaterialIcons name={statusIcon} size={16} color={statusColor} />
-          </View>
-          <Text style={styles.activityUser}>
-            {item.profiles?.full_name || "Anonymous User"}
-          </Text>
-          <View style={styles.activityFooter}>
-            <Text style={styles.activityTime}>{timeAgo(item.created_at)}</Text>
-            <View style={styles.activityTags}>
-              <View
-                style={[
-                  styles.miniTag,
-                  { backgroundColor: colors.primary + "15" },
-                ]}
-              >
-                <Text style={[styles.miniTagText, { color: colors.primary }]}>
-                  {item.category}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        <Feather name="chevron-right" size={20} color={colors.textSecondary} />
-      </TouchableOpacity>
-    </Animated.View>
-  );
-});
 
 const ModernEmptyState = memo(
   ({

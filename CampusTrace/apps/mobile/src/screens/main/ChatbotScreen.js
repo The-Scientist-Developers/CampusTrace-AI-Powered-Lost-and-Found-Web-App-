@@ -39,14 +39,9 @@ const SUGGESTED_QUESTIONS = [
 // ─── Bot Bubble ──────────────────────────────────────────────────────────────
 const BotBubble = ({ message, colors }) => (
   <View style={styles.botRow}>
-    <LinearGradient
-      colors={["#6366F1", "#A855F7"]}
-      style={styles.botAvatar}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-    >
+    <View style={[styles.botAvatar, { backgroundColor: colors.primary }]}>
       <Bot size={16} color="white" />
-    </LinearGradient>
+    </View>
 
     <View style={{ flex: 1 }}>
       <View
@@ -164,14 +159,9 @@ const TypingIndicator = ({ colors }) => {
 
   return (
     <View style={styles.botRow}>
-      <LinearGradient
-        colors={["#6366F1", "#A855F7"]}
-        style={styles.botAvatar}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
+      <View style={[styles.botAvatar, { backgroundColor: colors.primary }]}>
         <Bot size={16} color="white" />
-      </LinearGradient>
+      </View>
       <View
         style={[
           styles.botBubble,
@@ -331,12 +321,7 @@ export default function ChatbotScreen({ navigation }) {
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       {/* Header */}
-      <LinearGradient
-        colors={["#6366F1", "#A855F7"]}
-        style={styles.header}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-      >
+      <View style={[styles.header, { backgroundColor: colors.primary }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
@@ -357,7 +342,7 @@ export default function ChatbotScreen({ navigation }) {
             </View>
           </View>
         </View>
-      </LinearGradient>
+      </View>
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -437,18 +422,15 @@ export default function ChatbotScreen({ navigation }) {
             disabled={!input.trim() || isLoading}
             activeOpacity={0.8}
           >
-            <LinearGradient
-              colors={["#6366F1", "#A855F7"]}
-              style={styles.sendGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+            <View
+              style={[styles.sendGradient, { backgroundColor: colors.primary }]}
             >
               {isLoading ? (
                 <ActivityIndicator size="small" color="white" />
               ) : (
                 <Send size={18} color="white" />
               )}
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

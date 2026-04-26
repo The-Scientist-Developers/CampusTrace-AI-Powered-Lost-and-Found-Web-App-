@@ -192,7 +192,7 @@ export default function ManualRegisterPage() {
         } catch (jsonError) {
           console.error("Failed to parse response as JSON:", jsonError);
           throw new Error(
-            "Server returned an invalid response. Please try again later."
+            "Server returned an invalid response. Please try again later.",
           );
         }
       } catch (fetchError) {
@@ -202,11 +202,11 @@ export default function ManualRegisterPage() {
           fetchError.message.includes("NetworkError")
         ) {
           throw new Error(
-            "Network error. Please check your internet connection and try again."
+            "Network error. Please check your internet connection and try again.",
           );
         }
         throw new Error(
-          "Unable to connect to the server. Please try again later."
+          "Unable to connect to the server. Please try again later.",
         );
       }
 
@@ -230,7 +230,7 @@ export default function ManualRegisterPage() {
         ) {
           setErrors({ ...errors, idFile: "Invalid file type" });
           throw new Error(
-            "Invalid ID file type. Please upload JPG, PNG, or WEBP."
+            "Invalid ID file type. Please upload JPG, PNG, or WEBP.",
           );
         }
         if (
@@ -239,7 +239,7 @@ export default function ManualRegisterPage() {
         ) {
           setErrors({ ...errors, password: "Password is too weak" });
           throw new Error(
-            "Password is too weak. Please include uppercase, lowercase, numbers, and symbols."
+            "Password is too weak. Please include uppercase, lowercase, numbers, and symbols.",
           );
         }
         if (
@@ -252,7 +252,7 @@ export default function ManualRegisterPage() {
         if (errorDetail.toLowerCase().includes("university")) {
           setErrors({ ...errors, university: "Invalid university selection" });
           throw new Error(
-            "Invalid university selected. Please choose a valid university."
+            "Invalid university selected. Please choose a valid university.",
           );
         }
         if (
@@ -261,39 +261,48 @@ export default function ManualRegisterPage() {
         ) {
           setErrors({ ...errors, email: "Invalid email format" });
           throw new Error(
-            "Invalid email format. Please enter a valid email address."
+            "Invalid email format. Please enter a valid email address.",
           );
         }
 
         if (response.status === 400) {
           throw new Error(
             errorDetail ||
-              "Invalid request. Please check your information and try again."
+              "Invalid request. Please check your information and try again.",
           );
         }
         if (response.status === 403) {
           throw new Error(
-            "Access denied. Please try again or contact support."
+            "Access denied. Please try again or contact support.",
           );
         }
         if (response.status === 409) {
           throw new Error(
-            "This email is already registered. Please use a different email."
+            "This email is already registered. Please use a different email.",
           );
         }
         if (response.status === 413) {
           throw new Error(
-            "File size too large. Please upload a smaller image (max 5MB)."
+            "File size too large. Please upload a smaller image (max 5MB).",
           );
         }
         if (response.status === 429) {
           throw new Error(
-            "Too many requests. Please wait a few minutes and try again."
+            "Too many requests. Please wait a few minutes and try again.",
           );
         }
         if (response.status >= 500) {
+          // Check if it's an email rate limit error
+          if (
+            errorDetail.toLowerCase().includes("email") &&
+            errorDetail.toLowerCase().includes("rate limit")
+          ) {
+            throw new Error(
+              "⏱️ Email rate limit exceeded. Supabase limits confirmation emails to prevent spam. Please wait 1 hour before trying again, or contact support to manually verify your account.",
+            );
+          }
           throw new Error(
-            "Server error. Please try again later or contact support."
+            "Server error. Please try again later or contact support.",
           );
         }
 
@@ -525,6 +534,12 @@ export default function ManualRegisterPage() {
             </InputField>
 
             <div>
+              {errors.captcha && (
+                <div className="mb-3 flex items-center justify-center text-sm font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                  <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+                  {errors.captcha}
+                </div>
+              )}
               <div className="flex justify-center pt-2">
                 <ReCAPTCHA
                   ref={recaptchaRef}
@@ -552,12 +567,6 @@ export default function ManualRegisterPage() {
                   }
                 />
               </div>
-              {errors.captcha && (
-                <div className="mt-2 flex items-center justify-center text-sm text-red-600 dark:text-red-400">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  {errors.captcha}
-                </div>
-              )}
             </div>
 
             <button

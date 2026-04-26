@@ -19,58 +19,22 @@ const getApiBaseUrl = () => {
   if (process.env.EXPO_PUBLIC_API_URL) {
     console.log(
       "📡 [API] Using URL from .env:",
-      process.env.EXPO_PUBLIC_API_URL
+      process.env.EXPO_PUBLIC_API_URL,
     );
     return process.env.EXPO_PUBLIC_API_URL;
   }
 
   // 2. Check for custom API URL in app.json/app.config.js
   const customApiUrl = Constants.expoConfig?.extra?.apiUrl;
-  if (customApiUrl && customApiUrl !== "http://localhost:8000") {
+  if (customApiUrl) {
     console.log("📡 [API] Using URL from app.config.js:", customApiUrl);
     return customApiUrl;
   }
 
-  // 3. Development mode - platform-specific defaults
-  if (__DEV__) {
-    const isAndroid = Platform.OS === "android";
-    const isDevice = Constants.isDevice;
-
-    // Android Emulator uses special IP 10.0.2.2 to access host machine
-    if (isAndroid && !isDevice) {
-      const url = "http://10.0.2.2:8000";
-      console.log("📡 [API] Android Emulator detected, using:", url);
-      return url;
-    }
-
-    // iOS Simulator can use localhost
-    if (Platform.OS === "ios" && !isDevice) {
-      const url = "http://localhost:8000";
-      console.log("📡 [API] iOS Simulator detected, using:", url);
-      return url;
-    }
-
-    // Physical Device - MUST use computer's IP address
-    if (isDevice) {
-      console.error("❌ [API] CRITICAL: Running on PHYSICAL DEVICE!");
-      console.error(
-        "❌ [API] You MUST set EXPO_PUBLIC_API_URL in your .env file!"
-      );
-      console.error(
-        "❌ [API] Example: EXPO_PUBLIC_API_URL=http://10.0.0.37:8081"
-      );
-      console.error("❌ [API] Falling back to localhost (THIS WILL NOT WORK)");
-    }
-
-    const url = "http://localhost:8000";
-    console.log("📡 [API] Using development URL:", url);
-    return url;
-  }
-
-  // 4. Production - use deployed backend
+  // 3. Fallback to production URL
   const productionUrl =
     "https://campustrace-ai-powered-lost-and-found-bcho.onrender.com";
-  console.log("📡 [API] Production mode, using:", productionUrl);
+  console.log("📡 [API] Using production URL:", productionUrl);
   return productionUrl;
 };
 
@@ -104,7 +68,7 @@ async function fetchWithTimeout(url, options = {}, timeout = DEFAULT_TIMEOUT) {
     clearTimeout(timeoutId);
     if (error.name === "AbortError") {
       throw new Error(
-        "Request timed out. Please check your internet connection and try again."
+        "Request timed out. Please check your internet connection and try again.",
       );
     }
     throw error;
@@ -152,7 +116,7 @@ export const apiClient = {
         const errorText = await response.text();
         console.error(
           `❌ [GET] ${url} failed (${response.status}):`,
-          errorText
+          errorText,
         );
         throw new Error(`Request failed: ${errorText}`);
       }
@@ -167,10 +131,10 @@ export const apiClient = {
         const text = await response.text();
         console.error(
           `❌ [GET] ${url} returned non-JSON:`,
-          text.substring(0, 200)
+          text.substring(0, 200),
         );
         throw new Error(
-          "Server returned HTML instead of JSON. Backend may be down or misconfigured."
+          "Server returned HTML instead of JSON. Backend may be down or misconfigured.",
         );
       }
     } catch (error) {
@@ -180,7 +144,7 @@ export const apiClient = {
       if (error.message.includes("Network request failed")) {
         console.error("💡 [HELP] Network error - Check:");
         console.error(
-          "   1. Is your backend running? (http://YOUR_IP:8000/health)"
+          "   1. Is your backend running? (http://YOUR_IP:8000/health)",
         );
         console.error("   2. Is EXPO_PUBLIC_API_URL set correctly in .env?");
         console.error("   3. Are phone and computer on same WiFi?");
@@ -217,7 +181,7 @@ export const apiClient = {
         const errorText = await response.text();
         console.error(
           `❌ [POST] ${url} failed (${response.status}):`,
-          errorText
+          errorText,
         );
         throw new Error(`Request failed: ${errorText}`);
       }
@@ -253,14 +217,14 @@ export const apiClient = {
           },
           body: formData,
         },
-        UPLOAD_TIMEOUT // Use longer timeout for file uploads
+        UPLOAD_TIMEOUT, // Use longer timeout for file uploads
       );
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error(
           `❌ [POST FormData] ${url} failed (${response.status}):`,
-          errorText
+          errorText,
         );
         throw new Error(`Upload failed: ${errorText}`);
       }
@@ -299,7 +263,7 @@ export const apiClient = {
         const errorText = await response.text();
         console.error(
           `❌ [PUT] ${url} failed (${response.status}):`,
-          errorText
+          errorText,
         );
         throw new Error(`Request failed: ${errorText}`);
       }
@@ -336,7 +300,7 @@ export const apiClient = {
         const errorText = await response.text();
         console.error(
           `❌ [DELETE] ${url} failed (${response.status}):`,
-          errorText
+          errorText,
         );
         throw new Error(`Request failed: ${errorText}`);
       }
