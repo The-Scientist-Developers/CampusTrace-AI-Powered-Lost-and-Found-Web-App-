@@ -554,7 +554,7 @@ async def search_by_image(
                 {
                     "p_university_id": university_id,
                     "p_query_embedding": query_embedding,
-                    "p_match_threshold": 0.7,
+                    "p_match_threshold": 0.75,
                     "p_match_count": 10,
                 },
             ).execute()
@@ -598,7 +598,7 @@ async def find_matches(item_id: int, user_id: str = Depends(get_current_user_id)
                 "p_item_id": item_id,
                 "p_text_weight": 0.6,
                 "p_image_weight": 0.4,
-                "p_match_threshold": 0.65,  # Lower threshold for more matches
+                "p_match_threshold": 0.75,  # Increased to 75% threshold
                 "p_match_count": 10,
             },
         ).execute()
@@ -708,7 +708,7 @@ async def get_dashboard_summary(user_id: str = Depends(get_current_user_id)):
                 lost_item = user_lost_items.data[0]
                 matches = supabase.rpc(
                     "find_matches_for_lost_item",
-                    {"p_item_id": lost_item["id"], "p_match_count": 4, "p_text_weight": 0.5, "p_image_weight": 0.5, "p_match_threshold": 0.65}
+                    {"p_item_id": lost_item["id"], "p_match_count": 4, "p_text_weight": 0.5, "p_image_weight": 0.5, "p_match_threshold": 0.75}
                 ).execute()
                 
                 # Convert matches to include percentage scores and XAI explanations

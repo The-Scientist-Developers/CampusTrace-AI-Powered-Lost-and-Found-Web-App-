@@ -2085,9 +2085,9 @@ const MarketplaceItem = ({ item, onClick }) => {
     >
       {/* Image - Fixed height on desktop like FB Marketplace */}
       <div className="w-full h-52 md:h-56 bg-neutral-100 dark:bg-zinc-800 relative flex-shrink-0 overflow-hidden">
-        {item.thumbnail_url || item.image_url ? (
+        {item.image_url || item.thumbnail_url ? (
           <img
-            src={item.thumbnail_url || item.image_url}
+            src={item.image_url || item.thumbnail_url}
             alt={item.title}
             className="w-full h-full object-cover"
             loading="lazy"

@@ -535,7 +535,7 @@ export default function PostItemScreen({ navigation, route }) {
               <View style={styles.labelContainer}>
                 <Tag color={colors.primary} size={16} />
                 <Text style={[styles.label, { color: colors.text }]}>
-                  What did you {status.toLowerCase()}? *
+                  What did you {status === "Lost" ? "lose" : "find"}? *
                 </Text>
               </View>
               <TextInput
@@ -916,10 +916,10 @@ const styles = StyleSheet.create({
   },
   statusButton: {
     flex: 1, // Make buttons take equal space
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderRadius: 999,
     backgroundColor: "#ffffff",
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: "#e5e7eb",
     alignItems: "center", // Center text
   },
@@ -947,16 +947,16 @@ const styles = StyleSheet.create({
   },
   formCard: {
     backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 20,
+    padding: 24,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   fieldContainer: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   labelContainer: {
     flexDirection: "row",
@@ -970,20 +970,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   label: {
-    fontSize: 14,
-    fontWeight: "500",
+    fontSize: 15,
+    fontWeight: "600",
     color: "#374151",
-    marginLeft: 8,
+    marginLeft: 10,
   },
   input: {
     width: "100%",
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 2,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
     borderColor: "#e5e7eb",
     backgroundColor: "#ffffff",
-    fontSize: 14,
+    fontSize: 15,
     color: "#111827",
   },
   categoryButton: {
@@ -992,28 +992,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: "100%",
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 2,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
     borderColor: "#e5e7eb",
     backgroundColor: "#ffffff",
   },
   categoryButtonText: {
-    fontSize: 14,
+    fontSize: 15,
     color: "#111827",
     fontWeight: "500",
   },
   textArea: {
     width: "100%",
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 2,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
     borderColor: "#e5e7eb",
     backgroundColor: "#ffffff",
-    fontSize: 14,
+    fontSize: 15,
     color: "#111827",
-    minHeight: 100,
+    minHeight: 120,
     textAlignVertical: "top",
   },
   aiButton: {
@@ -1072,10 +1072,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: "100%",
     height: 192,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderStyle: "dashed",
     borderColor: "#d1d5db",
-    borderRadius: 12,
+    borderRadius: 16,
     backgroundColor: "#f9fafb",
   },
   uploadButtonText: {
@@ -1098,9 +1098,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingVertical: 18,
     backgroundColor: BRAND_COLOR,
-    borderRadius: 12,
+    borderRadius: 16,
+    shadowColor: BRAND_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   submitButtonDisabled: {
     opacity: 0.5,

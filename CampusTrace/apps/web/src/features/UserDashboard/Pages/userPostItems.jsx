@@ -586,11 +586,6 @@
 //   );
 // }
 
-
-
-
-
-
 import { API_BASE_URL } from "../../../api/apiClient";
 import React, { useState, useEffect } from "react";
 import { supabase } from "../../../api/apiClient";
@@ -613,35 +608,35 @@ import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
 const PostNewItemSkeleton = () => (
-  <div className="max-w-3xl mx-auto px-4">
-    {/* Header */}
-    <div className="text-center mb-8">
-      <Skeleton circle height={64} width={64} className="mx-auto mb-4" />
-      <Skeleton height={36} width={250} className="mx-auto" />
-      <Skeleton height={20} width={350} className="mx-auto mt-2" />
+  <div className="max-w-6xl mx-auto px-4 pb-12">
+    <div className="text-center mb-8 pt-6">
+      <Skeleton height={40} width={250} className="mx-auto mb-2" />
+      <Skeleton height={20} width={350} className="mx-auto" />
     </div>
-
-    {/* Status Pills */}
     <div className="flex justify-center gap-4 mb-8">
       <Skeleton height={44} width={140} borderRadius={999} />
       <Skeleton height={44} width={140} borderRadius={999} />
     </div>
-
-    {/* Form Card */}
-    <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-sm">
-      <div className="p-6 space-y-6">
-        <Skeleton height={70} borderRadius={12} />
-        {/* ============================================================
-          == CHANGED: Removed grid for skeleton to match new layout ==
-          ============================================================
-        */}
-        <Skeleton height={70} borderRadius={12} />
-        <Skeleton height={70} borderRadius={12} />
-        <Skeleton height={120} borderRadius={12} />
-        <Skeleton height={180} borderRadius={12} />
-      </div>
-      <div className="p-6 border-t">
-        <Skeleton height={48} borderRadius={12} />
+    <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-12">
+        <div className="lg:col-span-5 border-b lg:border-b-0 lg:border-r border-neutral-200 dark:border-neutral-700 p-6 sm:p-8">
+           <Skeleton height={30} width={150} className="mb-4" />
+           <Skeleton height={40} className="mb-6" />
+           <Skeleton height={300} borderRadius={16} />
+        </div>
+        <div className="lg:col-span-7 p-6 sm:p-8 space-y-6">
+           <Skeleton height={30} width={150} className="mb-4" />
+           <Skeleton height={60} borderRadius={12} />
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Skeleton height={60} borderRadius={12} />
+              <Skeleton height={60} borderRadius={12} />
+           </div>
+           <Skeleton height={60} borderRadius={12} />
+           <Skeleton height={150} borderRadius={12} />
+           <div className="pt-6 mt-6 border-t border-neutral-200 dark:border-neutral-700">
+             <Skeleton height={60} borderRadius={12} />
+           </div>
+        </div>
       </div>
     </div>
   </div>
@@ -698,7 +693,7 @@ export default function PostNewItem() {
             Authorization: `Bearer ${session?.access_token}`,
           },
           body: formData,
-        }
+        },
       );
 
       if (!response.ok) {
@@ -741,7 +736,7 @@ export default function PostNewItem() {
   const handleImproveDescription = async () => {
     if (!description.trim()) {
       toast.error(
-        "Please write a brief description first for the AI to improve."
+        "Please write a brief description first for the AI to improve.",
       );
       return;
     }
@@ -768,7 +763,7 @@ export default function PostNewItem() {
             category,
             draft_description: description,
           }),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -868,13 +863,11 @@ export default function PostNewItem() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4">
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full mb-4 shadow-lg">
-          <UploadCloud className="w-8 h-8 text-white" />
-        </div>
-        <p className="text-neutral-500 dark:text-gray-400">
-          Help reunite lost items with their owners
+    <div className="max-w-6xl mx-auto px-4 pb-12">
+      <div className="text-center mb-8 pt-6">
+        <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-3">Create a Post</h1>
+        <p className="text-neutral-500 dark:text-neutral-400">
+          Help reunite lost items with their owners quickly and easily.
         </p>
       </div>
 
@@ -886,7 +879,7 @@ export default function PostNewItem() {
           className={`px-6 py-2.5 rounded-full font-medium transition-all ${
             status === "Lost"
               ? "bg-green-500 text-white shadow-lg transform scale-105"
-              : "bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-2 border-neutral-200 dark:border-neutral-700"
+              : "bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-2 border-neutral-200 dark:border-neutral-700 hover:border-green-500/50"
           }`}
         >
           I Lost Something
@@ -897,17 +890,17 @@ export default function PostNewItem() {
           className={`px-6 py-2.5 rounded-full font-medium transition-all ${
             status === "Found"
               ? "bg-green-500 text-white shadow-lg transform scale-105"
-              : "bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-2 border-neutral-200 dark:border-neutral-700"
+              : "bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-2 border-neutral-200 dark:border-neutral-700 hover:border-green-500/50"
           }`}
         >
           I Found Something
         </button>
       </div>
 
-      {/* Instructional text (from previous request) */}
+      {/* Instructional text */}
       {status === "Found" && (
         <div
-          className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 px-4 py-3 rounded-xl mb-8 text-center text-sm"
+          className="max-w-3xl mx-auto bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 px-4 py-3 rounded-xl mb-8 text-center text-sm"
           role="alert"
         >
           <p>
@@ -925,257 +918,265 @@ export default function PostNewItem() {
         onSubmit={handleSubmit}
         className="bg-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-neutral-200 dark:border-neutral-700 overflow-hidden"
       >
-        <div className="p-6 sm:p-8 space-y-6">
-          {/* Title with Icon */}
-          <div>
-            <label
-              htmlFor="title"
-              className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
-            >
-              <Tag className="w-4 h-4 text-primary-500" />
-              What did you {status.toLowerCase()}? *
-              {isAnalyzingImage && (
-                <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1 animate-pulse ml-auto">
-                  <Sparkles className="w-3 h-3" />
-                  AI analyzing...
-                </span>
-              )}
-            </label>
-            <input
-              type="text"
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-              disabled={isAnalyzingImage}
-              className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors disabled:opacity-60"
-              placeholder="e.g., Black Backpack, iPhone 13"
-            />
-          </div>
-
-          {/* ============================================================
-            == CHANGED: Removed the grid layout wrapper.
-            == Fields will now stack vertically because of the parent "space-y-6".
-            ============================================================
-          */}
-
-          {/* Category (Now stacked) */}
-          <div>
-            <label
-              htmlFor="category"
-              className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
-            >
-              <FileText className="w-4 h-4 text-primary-500" />
-              Category
-              {isAnalyzingImage && (
-                <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1 animate-pulse ml-auto">
-                  <Sparkles className="w-3 h-3" />
-                  AI analyzing...
-                </span>
-              )}
-            </label>
-            <select
-              id="category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              disabled={isAnalyzingImage}
-              className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors disabled:opacity-60"
-            >
-              <option value="Electronics">Electronics</option>
-              <option value="Documents">Documents</option>
-              <option value="Clothing">Clothing</option>
-              <option value="Accessories"> Accessories</option>
-              <option value="Other"> Other</option>
-            </select>
-          </div>
-
-          {/* Location (Now stacked) */}
-          <div>
-            <label
-              htmlFor="location"
-              className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
-            >
-              <MapPin className="w-4 h-4 text-primary-500" />
-              Location *
-            </label>
-            <input
-              type="text"
-              id="location"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              required
-              className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors"
-              placeholder="e.g., CCSICT building, 2nd floor"
-            />
-          </div>
-          {/* ============================================================
-            == END OF LAYOUT CHANGE
-            ============================================================
-          */}
-
-          {/* Contact Info - Full Width */}
-          <div>
-            <label
-              htmlFor="contactInfo"
-              className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
-            >
-              <Phone className="w-4 h-4 text-primary-500" />
-              Contact Info (Optional)
-            </label>
-            <input
-              type="text"
-              id="contactInfo"
-              value={contactInfo}
-              onChange={(e) => setContactInfo(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors"
-              placeholder="How can someone reach you? (Phone, Email, Messenger)"
-            />
-          </div>
-
-          {/* Description with improved AI button */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label
-                htmlFor="description"
-                className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300"
-              >
-                <FileText className="w-4 h-4 text-primary-500" />
-                Description *
-              </label>
-              <button
-                type="button"
-                onClick={handleImproveDescription}
-                disabled={isGenerating || !description.trim()}
-                className={`flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-full transition-all ${
-                  description.trim()
-                    ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-md"
-                    : "bg-neutral-100 dark:bg-neutral-700 text-neutral-400 cursor-not-allowed"
-                }`}
-                title={
-                  !description.trim()
-                    ? "Write a description first"
-                    : "Improve with AI"
-                }
-              >
-                {isGenerating ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Sparkles className="w-3.5 h-3.5" />
-                )}
-                Enhance with AI
-              </button>
-            </div>
-            <textarea
-              id="description"
-              rows="4"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-              className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors resize-none"
-              placeholder="Describe the item in detail... (color, brand, distinguishing features, etc.)"
-            ></textarea>
-          </div>
-
-          {/* Image Upload - Improved Design */}
-          <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              <ImageIcon className="w-4 h-4 text-primary-500" />
-              Add Photo (Optional)
-            </label>
-            <div className="mt-2">
-              {imagePreview ? (
-                <div className="relative rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-900">
-                  <img
-                    src={imagePreview}
-                    alt="Item Preview"
-                    className="w-full h-64 object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={removeImage}
-                    className="absolute top-3 right-3 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-4">
-                    <p className="text-white text-sm font-medium">
-                      Photo uploaded successfully
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {/* Camera Capture Button */}
-                  <label
-                    htmlFor="camera-capture"
-                    className="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-primary-500 text-primary-600 dark:text-primary-400 rounded-xl cursor-pointer hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-all font-medium"
-                  >
-                    <Camera className="w-5 h-5" />
-                    Take Photo with Camera
-                    <input
-                      type="file"
-                      id="camera-capture"
-                      onChange={handleCameraCapture}
-                      accept="image/*"
-                      capture="environment"
-                      className="hidden"
+        <div className="grid grid-cols-1 lg:grid-cols-12">
+          
+          {/* LEFT COLUMN: IMAGE UPLOAD */}
+          <div className="lg:col-span-5 border-b lg:border-b-0 lg:border-r border-neutral-200 dark:border-neutral-700 p-6 sm:p-8 bg-neutral-50/50 dark:bg-neutral-900/20">
+            <div className="sticky top-6">
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">Item Photo</h3>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6">
+                 Upload a clear photo. Our AI will analyze the image and automatically suggest the title and category!
+              </p>
+              
+              <div className="mt-2">
+                {imagePreview ? (
+                  <div className="relative rounded-2xl overflow-hidden bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
+                    <img
+                      src={imagePreview}
+                      alt="Item Preview"
+                      className="w-full h-80 object-cover"
                     />
-                  </label>
-
-                  {/* File Upload Area */}
-                  <label
-                    htmlFor="image-upload"
-                    className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-xl cursor-pointer hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-all"
-                  >
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <UploadCloud className="w-10 h-10 mb-3 text-neutral-400" />
-                      <p className="mb-2 text-sm text-neutral-700 dark:text-neutral-300">
-                        <span className="font-semibold">Click to upload</span>{" "}
-                        or drag and drop
-                      </p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                        PNG, JPG, GIF up to 10MB
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      className="absolute top-4 right-4 p-2 bg-neutral-900/80 hover:bg-neutral-900 text-white rounded-full shadow-lg transition-colors backdrop-blur-sm"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-5">
+                      <p className="text-white text-sm font-medium flex items-center gap-2">
+                        <ImageIcon className="w-4 h-4" /> Photo attached
                       </p>
                     </div>
-                    <input
-                      type="file"
-                      id="image-upload"
-                      onChange={handleImageChange}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-              )}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* File Upload Area */}
+                    <label
+                      htmlFor="image-upload"
+                      className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-2xl cursor-pointer hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-all bg-white dark:bg-neutral-800"
+                    >
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center">
+                        <div className="w-16 h-16 bg-primary-50 dark:bg-primary-900/20 rounded-full flex items-center justify-center mb-4">
+                           <UploadCloud className="w-8 h-8 text-primary-500" />
+                        </div>
+                        <p className="mb-2 text-sm text-neutral-700 dark:text-neutral-300">
+                          <span className="font-semibold text-primary-600 dark:text-primary-400">Click to upload</span> or drag and drop
+                        </p>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                          PNG, JPG up to 10MB
+                        </p>
+                      </div>
+                      <input
+                        type="file"
+                        id="image-upload"
+                        onChange={handleImageChange}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                    </label>
+
+                    {/* Camera Capture Button */}
+                    <div className="relative flex py-2 items-center">
+                        <div className="flex-grow border-t border-neutral-200 dark:border-neutral-700"></div>
+                        <span className="flex-shrink-0 mx-4 text-neutral-400 text-xs">OR</span>
+                        <div className="flex-grow border-t border-neutral-200 dark:border-neutral-700"></div>
+                    </div>
+
+                    <label
+                      htmlFor="camera-capture"
+                      className="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-primary-500 text-primary-600 dark:text-primary-400 bg-white dark:bg-neutral-800 rounded-xl cursor-pointer hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-all font-medium shadow-sm"
+                    >
+                      <Camera className="w-5 h-5" />
+                      Take Photo with Camera
+                      <input
+                        type="file"
+                        id="camera-capture"
+                        onChange={handleCameraCapture}
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Footer with Submit Button */}
-        <div className="p-6 bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-neutral-900 dark:to-neutral-800 border-t border-neutral-200 dark:border-neutral-700">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-xl hover:from-primary-700 hover:to-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Submitting...
-              </>
-            ) : (
-              <>
-                <UploadCloud className="w-5 h-5" />
-                Post Item
-              </>
-            )}
-          </button>
-          <p className="text-center text-xs text-neutral-500 dark:text-neutral-400 mt-3">
-            Your post will be reviewed before appearing publicly
-          </p>
+          {/* RIGHT COLUMN: FORM DETAILS */}
+          <div className="lg:col-span-7 p-6 sm:p-8 space-y-6">
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">Item Details</h3>
+            
+            {/* Title */}
+            <div>
+              <label
+                htmlFor="title"
+                className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
+              >
+                <Tag className="w-4 h-4 text-primary-500" />
+                What did you {status.toLowerCase()}? *
+                {isAnalyzingImage && (
+                  <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1 animate-pulse ml-auto">
+                    <Sparkles className="w-3 h-3" />
+                    AI analyzing...
+                  </span>
+                )}
+              </label>
+              <input
+                type="text"
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+                disabled={isAnalyzingImage}
+                className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors disabled:opacity-60 outline-none"
+                placeholder="e.g., Black Backpack, iPhone 13"
+              />
+            </div>
+
+            {/* Grid Layout for Category and Location */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Category */}
+              <div>
+                <label
+                  htmlFor="category"
+                  className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
+                >
+                  <FileText className="w-4 h-4 text-primary-500" />
+                  Category
+                  {isAnalyzingImage && (
+                    <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1 animate-pulse ml-auto">
+                      <Sparkles className="w-3 h-3" />
+                      AI analyzing...
+                    </span>
+                  )}
+                </label>
+                <select
+                  id="category"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  disabled={isAnalyzingImage}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors disabled:opacity-60 outline-none"
+                >
+                  <option value="Electronics">Electronics</option>
+                  <option value="Documents">Documents</option>
+                  <option value="Clothing">Clothing</option>
+                  <option value="Accessories"> Accessories</option>
+                  <option value="Other"> Other</option>
+                </select>
+              </div>
+
+              {/* Location */}
+              <div>
+                <label
+                  htmlFor="location"
+                  className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
+                >
+                  <MapPin className="w-4 h-4 text-primary-500" />
+                  Location *
+                </label>
+                <input
+                  type="text"
+                  id="location"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors outline-none"
+                  placeholder="e.g., CCSICT building, 2nd floor"
+                />
+              </div>
+            </div>
+
+            {/* Contact Info - Full Width */}
+            <div>
+              <label
+                htmlFor="contactInfo"
+                className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
+              >
+                <Phone className="w-4 h-4 text-primary-500" />
+                Contact Info (Optional)
+              </label>
+              <input
+                type="text"
+                id="contactInfo"
+                value={contactInfo}
+                onChange={(e) => setContactInfo(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors outline-none"
+                placeholder="How can someone reach you? (Phone, Email, Messenger)"
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label
+                  htmlFor="description"
+                  className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300"
+                >
+                  <FileText className="w-4 h-4 text-primary-500" />
+                  Description *
+                </label>
+                <button
+                  type="button"
+                  onClick={handleImproveDescription}
+                  disabled={isGenerating || !description.trim()}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-full transition-all ${
+                    description.trim()
+                      ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-md"
+                      : "bg-neutral-100 dark:bg-neutral-700 text-neutral-400 cursor-not-allowed"
+                  }`}
+                  title={
+                    !description.trim()
+                      ? "Write a description first"
+                      : "Improve with AI"
+                  }
+                >
+                  {isGenerating ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-3.5 h-3.5" />
+                  )}
+                  Enhance with AI
+                </button>
+              </div>
+              <textarea
+                id="description"
+                rows="5"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+                className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors resize-none outline-none"
+                placeholder="Describe the item in detail... (color, brand, distinguishing features, etc.)"
+              ></textarea>
+            </div>
+
+            {/* Footer with Submit Button */}
+            <div className="pt-8 mt-6 border-t border-neutral-200 dark:border-neutral-700">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-xl hover:from-primary-700 hover:to-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-base"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    Post Item
+                  </>
+                )}
+              </button>
+              <p className="text-center text-xs text-neutral-500 dark:text-neutral-400 mt-4">
+                Your post will be reviewed before appearing publicly
+              </p>
+            </div>
+          </div>
+
         </div>
       </form>
     </div>
   );
 }
-

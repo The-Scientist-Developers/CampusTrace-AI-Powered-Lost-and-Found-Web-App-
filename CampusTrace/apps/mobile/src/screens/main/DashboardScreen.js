@@ -532,13 +532,6 @@ const DashboardScreen = ({ navigation }) => {
                 <Text style={styles.aiTitle}>Smart Matching</Text>
                 <Text style={styles.aiSubtitle}>AI-powered suggestions</Text>
               </View>
-              <TouchableOpacity style={styles.aiSettingsButton}>
-                <Feather
-                  name="settings"
-                  size={20}
-                  color={colors.textSecondary}
-                />
-              </TouchableOpacity>
             </View>
 
             {myLostItem ? (

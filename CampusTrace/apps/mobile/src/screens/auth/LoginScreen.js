@@ -381,65 +381,198 @@ const LoginScreen = ({ navigation }) => {
     try {
       const supabase = getSupabaseClient();
 
-      // Check if email domain matches selected university
-      const { data: domainData, error: domainError } = await supabase
-        .from("allowed_domains")
-        .select("university_id, universities(name)")
-        .eq("domain_name", emailDomain)
-        .single();
-      
-      if (domainError || !domainData) {
-        Alert.alert(
-          "Email Domain Not Registered",
-          `Your email domain '${emailDomain}' is not registered with ${selectedUniversity.name}. Please use your official university email or select the correct university.`,
-        );
-        setLoading(false);
-        return;
+      // List of public email domains
+      const publicDomains = [
+        "gmail.com",
+        "yahoo.com",
+        "hotmail.com",
+        "outlook.com",
+        "aol.com",
+        "icloud.com",
+        "mail.com",
+        "protonmail.com",
+        "zoho.com",
+        "yandex.com",
+        "live.com",
+        "msn.com",
+        "gmx.com",
+        "inbox.com",
+        "fastmail.com",
+      ];
+
+      const isPublicDomain = publicDomains.includes(emailDomain.toLowerCase());
+
+      if (isPublicDomain) {
+        // For public domains, check if the full email exists in the selected university
+        console.log("🔍 Checking public domain email:", email.trim());
+        console.log("🏫 Selected university ID:", selectedUniversity.id);
+
+        const { data: profileDataArray, error: profileError } = await supabase
+          .from("profiles")
+          .select("id, email, university_id")
+          .ilike("email", email.trim()) // Use ilike for case-insensitive match
+          .eq("university_id", selectedUniversity.id);
+
+        console.log("📊 Query result:", { profileDataArray, profileError });
+
+        if (profileError) {
+          console.error("❌ Profile query error:", profileError);
+          throw profileError;
+        }
+
+        const profileData =
+          profileDataArray && profileDataArray.length > 0
+            ? profileDataArray[0]
+            : null;
+
+        console.log("👤 Profile found:", profileData);
+
+        if (!profileData) {
+          // Email doesn't exist for this university
+          console.log(
+            "❌ No profile found for email:",
+            email.trim(),
+            "at university:",
+            selectedUniversity.name,
+          );
+          Alert.alert(
+            "Email Not Registered",
+            `The email '${email.trim()}' is not registered with ${selectedUniversity.name}. Please check your email or select the correct university.`,
+          );
+          setLoading(false);
+          return;
+        }
+
+        console.log("✅ Profile exists, attempting login...");
+
+        // Email exists, now try to login (password will be validated by Supabase)
+        let result = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+
+        if (result.error) {
+          // Check if it's an invalid password error
+          if (
+            result.error.message.toLowerCase().includes("invalid") ||
+            result.error.message.toLowerCase().includes("password") ||
+            result.error.message.toLowerCase().includes("credentials")
+          ) {
+            Alert.alert(
+              "Invalid Password",
+              "The password you entered is incorrect. Please try again.",
+            );
+            setLoginAttempts((prev) => prev + 1);
+            setLastAttemptTime(Date.now());
+            setLoading(false);
+            return;
+          }
+          throw result.error;
+        }
+
+        const { data: fullProfileData } = await supabase
+          .from("profiles")
+          .select("full_name, avatar_url, is_verified")
+          .eq("id", result.data.user.id)
+          .single();
+
+        // Check if user is verified
+        if (fullProfileData && fullProfileData.is_verified === false) {
+          // Sign them out and navigate to pending approval
+          await supabase.auth.signOut();
+          navigation.navigate("PendingApproval");
+          return;
+        }
+
+        const userName =
+          fullProfileData?.full_name ||
+          result.data?.user?.user_metadata?.full_name;
+        const avatarUrl = fullProfileData?.avatar_url || null;
+
+        await saveEmail(email);
+        await saveAccount(email, userName, avatarUrl);
+
+        setLoginAttempts(0);
+        setCooldownTime(0);
+        setLastAttemptTime(null);
+      } else {
+        // For university domains, check if domain matches selected university
+        const { data: domainData, error: domainError } = await supabase
+          .from("allowed_domains")
+          .select("university_id, universities(name)")
+          .eq("domain_name", emailDomain)
+          .single();
+
+        if (domainError || !domainData) {
+          Alert.alert(
+            "Email Domain Not Registered",
+            `Your email domain '${emailDomain}' is not registered with ${selectedUniversity.name}. Please use your official university email or select the correct university.`,
+          );
+          setLoading(false);
+          return;
+        }
+
+        // Check if domain matches selected university
+        if (domainData.university_id !== selectedUniversity.id) {
+          const actualUniversityName =
+            domainData.universities?.name || "another university";
+          Alert.alert(
+            "Wrong University Selected",
+            `Your email domain '${emailDomain}' is registered with ${actualUniversityName}, not ${selectedUniversity.name}. Please select the correct university.`,
+          );
+          setLoading(false);
+          return;
+        }
+
+        let result = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+
+        if (result.error) {
+          // Check if it's an invalid password error
+          if (
+            result.error.message.toLowerCase().includes("invalid") ||
+            result.error.message.toLowerCase().includes("password") ||
+            result.error.message.toLowerCase().includes("credentials")
+          ) {
+            Alert.alert(
+              "Invalid Password",
+              "The password you entered is incorrect. Please try again.",
+            );
+            setLoginAttempts((prev) => prev + 1);
+            setLastAttemptTime(Date.now());
+            setLoading(false);
+            return;
+          }
+          throw result.error;
+        }
+
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("full_name, avatar_url, is_verified")
+          .eq("id", result.data.user.id)
+          .single();
+
+        // Check if user is verified
+        if (profileData && profileData.is_verified === false) {
+          // Sign them out and navigate to pending approval
+          await supabase.auth.signOut();
+          navigation.navigate("PendingApproval");
+          return;
+        }
+
+        const userName =
+          profileData?.full_name || result.data?.user?.user_metadata?.full_name;
+        const avatarUrl = profileData?.avatar_url || null;
+
+        await saveEmail(email);
+        await saveAccount(email, userName, avatarUrl);
+
+        setLoginAttempts(0);
+        setCooldownTime(0);
+        setLastAttemptTime(null);
       }
-
-      // Check if domain matches selected university
-      if (domainData.university_id !== selectedUniversity.id) {
-        const actualUniversityName =
-          domainData.universities?.name || "another university";
-        Alert.alert(
-          "Wrong University Selected",
-          `Your email domain '${emailDomain}' is registered with ${actualUniversityName}, not ${selectedUniversity.name}. Please select the correct university.`,
-        );
-        setLoading(false);
-        return;
-      }
-
-      let result = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-
-      if (result.error) throw result.error;
-
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("full_name, avatar_url, is_verified")
-        .eq("id", result.data.user.id)
-        .single();
-
-      // Check if user is verified
-      if (profileData && profileData.is_verified === false) {
-        // Sign them out and navigate to pending approval
-        await supabase.auth.signOut();
-        navigation.navigate("PendingApproval");
-        return;
-      }
-
-      const userName =
-        profileData?.full_name || result.data?.user?.user_metadata?.full_name;
-      const avatarUrl = profileData?.avatar_url || null;
-
-      await saveEmail(email);
-      await saveAccount(email, userName, avatarUrl);
-
-      setLoginAttempts(0);
-      setCooldownTime(0);
-      setLastAttemptTime(null);
     } catch (error) {
       setLoginAttempts((prev) => prev + 1);
       setLastAttemptTime(Date.now());
@@ -1509,48 +1642,6 @@ const LoginScreen = ({ navigation }) => {
                     <View style={styles.errorContainer}>
                       <AlertCircle size={14} color={themeColors.error} />
                       <Text style={styles.errorText}>{errors.university}</Text>
-                    </View>
-                  )}
-                </View>
-              )}
-
-              {!isLogin && registerType === "manual" && (
-                <View style={styles.idUploadContainer}>
-                  <Text style={styles.idUploadLabel}>University ID Photo</Text>
-                  <View style={styles.idUploadButtons}>
-                    <TouchableOpacity
-                      style={styles.idUploadButton}
-                      onPress={handleImagePick}
-                    >
-                      <UploadCloud size={18} color={themeColors.text} />
-                      <Text style={styles.idUploadButtonText}>Upload</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.idUploadButton}
-                      onPress={handleCameraCapture}
-                    >
-                      <Camera size={18} color={themeColors.text} />
-                      <Text style={styles.idUploadButtonText}>Take Photo</Text>
-                    </TouchableOpacity>
-                  </View>
-                  {idImage && (
-                    <View style={styles.idImagePreviewContainer}>
-                      <Image
-                        source={{ uri: idImage.uri }}
-                        style={styles.idImagePreview}
-                      />
-                      <TouchableOpacity
-                        style={styles.removeImageButton}
-                        onPress={() => setIdImage(null)}
-                      >
-                        <X size={20} color="#FFFFFF" />
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                  {errors.idImage && touched.idImage && (
-                    <View style={[styles.errorContainer, { marginTop: 8 }]}>
-                      <AlertCircle size={14} color={themeColors.error} />
-                      <Text style={styles.errorText}>{errors.idImage}</Text>
                     </View>
                   )}
                 </View>

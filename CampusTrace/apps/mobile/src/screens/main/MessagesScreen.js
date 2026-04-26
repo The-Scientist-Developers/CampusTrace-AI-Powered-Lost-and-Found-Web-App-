@@ -175,7 +175,7 @@ const MessagesScreen = ({ navigation }) => {
           finder:profiles!conversations_finder_id_fkey(id, full_name, avatar_url),
           claimant:profiles!conversations_claimant_id_fkey(id, full_name, avatar_url),
           messages(id, content, created_at, sender_id)
-        `
+        `,
         )
         .or(`finder_id.eq.${user.id},claimant_id.eq.${user.id}`)
         .order("created_at", { referencedTable: "messages", ascending: false })
@@ -238,19 +238,19 @@ const MessagesScreen = ({ navigation }) => {
 
               // Remove from UI on success
               setConversations((prev) =>
-                prev.filter((convo) => convo.id !== conversationId)
+                prev.filter((convo) => convo.id !== conversationId),
               );
             } catch (err) {
               console.error("Delete error:", err);
               Alert.alert(
                 "Error",
                 err.message ||
-                  "Could not delete conversation. Please try again."
+                  "Could not delete conversation. Please try again.",
               );
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -309,8 +309,19 @@ const MessagesScreen = ({ navigation }) => {
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <MessageCircle size={64} color={colors.border} />
-            <Text style={[styles.emptyStateText, { color: colors.text }]}>
+            <View
+              style={[
+                styles.emptyIconContainer,
+                { backgroundColor: colors.primary + "15" },
+              ]}
+            >
+              <MessageCircle
+                size={48}
+                color={colors.primary}
+                strokeWidth={1.5}
+              />
+            </View>
+            <Text style={[styles.emptyStateTitle, { color: colors.text }]}>
               No messages yet
             </Text>
             <Text
@@ -319,7 +330,8 @@ const MessagesScreen = ({ navigation }) => {
                 { color: colors.textSecondary },
               ]}
             >
-              Start a conversation about an item
+              When you start a conversation about an item,{"\n"}
+              your messages will appear here
             </Text>
           </View>
         }
@@ -433,15 +445,16 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 18,
     backgroundColor: "#FAFAFA",
-    borderBottomWidth: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5E5",
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 28,
     fontWeight: "700",
     color: "#000000",
-    letterSpacing: -0.5,
+    letterSpacing: -0.8,
   },
   loadingContainer: {
     flex: 1,
@@ -458,31 +471,39 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: "center",
-    paddingVertical: 80,
-    paddingHorizontal: 20,
+    paddingVertical: 100,
+    paddingHorizontal: 32,
     flex: 1,
     justifyContent: "center",
   },
-  emptyStateText: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#8E8E93",
-    marginTop: 16,
+  emptyIconContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  emptyStateTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#000000",
+    marginBottom: 12,
+    letterSpacing: -0.5,
   },
   emptyStateSubtext: {
-    fontSize: 14,
+    fontSize: 15,
     color: "#8E8E93",
-    marginTop: 8,
     textAlign: "center",
+    lineHeight: 22,
   },
   conversationItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 16,
-    backgroundColor: "#FFFFFF", // Added background color
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#DBDBDB",
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 0,
   },
   avatarContainer: {
     position: "relative",
@@ -532,14 +553,16 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#000000",
     flex: 1,
+    letterSpacing: -0.3,
   },
   userNameUnread: {
     fontWeight: "700",
   },
   timestamp: {
-    fontSize: 12,
-    color: "#8E8E93",
+    fontSize: 13,
+    color: "#65676B",
     marginLeft: 8,
+    fontWeight: "400",
   },
   messagePreview: {
     flexDirection: "row",
@@ -547,9 +570,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   lastMessage: {
-    fontSize: 14,
-    color: "#8E8E93",
+    fontSize: 15,
+    color: "#65676B",
     flex: 1,
+    lineHeight: 20,
   },
   lastMessageUnread: {
     color: "#000000",
@@ -570,9 +594,8 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   itemReference: {
-    fontSize: 12,
-    color: "#8E8E93",
-    fontStyle: "italic",
+    fontSize: 13,
+    color: "#65676B",
     marginTop: 2,
   },
   // --- 6. ADD DELETE BUTTON STYLE ---

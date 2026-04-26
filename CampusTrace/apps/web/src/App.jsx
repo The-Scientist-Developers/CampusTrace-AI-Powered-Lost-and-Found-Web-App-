@@ -16,99 +16,101 @@ import ErrorBoundary from "./components/errorBoundary.jsx";
 import LoadingScreen from "./components/LoadingScreen.jsx";
 
 // Lazy load all page components for code splitting
-const NotFoundPage = lazy(() =>
-  import("./features/MainPages/notFoundPage.jsx")
+const NotFoundPage = lazy(
+  () => import("./features/MainPages/notFoundPage.jsx"),
 );
 const LandingPage = lazy(() => import("./features/MainPages/landingPage.jsx"));
 const LoginPage = lazy(() => import("./features/MainPages/LoginPage.jsx"));
-const DashboardLayout = lazy(() =>
-  import("./features/UserDashboard/DashboardLayout.jsx")
+const DashboardLayout = lazy(
+  () => import("./features/UserDashboard/DashboardLayout.jsx"),
 );
-const UserMainPage = lazy(() =>
-  import("./features/UserDashboard/Pages/userMainPage.jsx")
+const UserMainPage = lazy(
+  () => import("./features/UserDashboard/Pages/userMainPage.jsx"),
 );
-const AdminDashboardLayout = lazy(() =>
-  import("./features/AdminDashboard/adminDashboardLayout.jsx")
+const AdminDashboardLayout = lazy(
+  () => import("./features/AdminDashboard/adminDashboardLayout.jsx"),
 );
-const UserProfilePage = lazy(() =>
-  import("./features/UserDashboard/Pages/userProfilePage.jsx")
+const UserProfilePage = lazy(
+  () => import("./features/UserDashboard/Pages/userProfilePage.jsx"),
 );
-const AdminMainPage = lazy(() =>
-  import("./features/AdminDashboard/Pages/AdminMainPage.jsx")
+const AdminMainPage = lazy(
+  () => import("./features/AdminDashboard/Pages/AdminMainPage.jsx"),
 );
-const PostNewItem = lazy(() =>
-  import("./features/UserDashboard/Pages/userPostItems.jsx")
+const PostNewItem = lazy(
+  () => import("./features/UserDashboard/Pages/userPostItems.jsx"),
 );
-const UserManagement = lazy(() =>
-  import("./features/AdminDashboard/Pages/adminUserManagement.jsx")
+const UserManagement = lazy(
+  () => import("./features/AdminDashboard/Pages/adminUserManagement.jsx"),
 );
-const PostModerationPage = lazy(() =>
-  import("./features/AdminDashboard/Pages/postModerationPage.jsx")
+const PostModerationPage = lazy(
+  () => import("./features/AdminDashboard/Pages/postModerationPage.jsx"),
 );
-const AdminSettingsPage = lazy(() =>
-  import("./features/AdminDashboard/Pages/adminSettings.jsx")
+const AdminSettingsPage = lazy(
+  () => import("./features/AdminDashboard/Pages/adminSettings.jsx"),
 );
-const MyPostsPage = lazy(() =>
-  import("./features/UserDashboard/Pages/userMypostPage.jsx")
+const MyPostsPage = lazy(
+  () => import("./features/UserDashboard/Pages/userMypostPage.jsx"),
 );
 const AboutUsPage = lazy(() => import("./features/MainPages/aboutPage.jsx"));
-const LearnMorePage = lazy(() =>
-  import("./features/MainPages/learnMorePage.jsx")
+const LearnMorePage = lazy(
+  () => import("./features/MainPages/learnMorePage.jsx"),
 );
-const BrowseAllPage = lazy(() =>
-  import("./features/UserDashboard/Pages/browseAllPage.jsx")
+const BrowseAllPage = lazy(
+  () => import("./features/UserDashboard/Pages/browseAllPage.jsx"),
 );
-const HelpPage = lazy(() =>
-  import("./features/UserDashboard/Pages/userHelpPage.jsx")
+const HelpPage = lazy(
+  () => import("./features/UserDashboard/Pages/userHelpPage.jsx"),
 );
-const NotificationPage = lazy(() =>
-  import("./features/UserDashboard/Pages/userNotificationPage.jsx")
+const NotificationPage = lazy(
+  () => import("./features/UserDashboard/Pages/userNotificationPage.jsx"),
 );
-const UserSettingsPage = lazy(() =>
-  import("./features/UserDashboard/Pages/userSettingsPage.jsx")
+const UserSettingsPage = lazy(
+  () => import("./features/UserDashboard/Pages/userSettingsPage.jsx"),
 );
-const RegisterUniversityPage = lazy(() =>
-  import("./features/MainPages/RegisterUniversityPage.jsx")
+const RegisterUniversityPage = lazy(
+  () => import("./features/MainPages/RegisterUniversityPage.jsx"),
 );
-const UpdatePasswordPage = lazy(() =>
-  import("./features/MainPages/UpdatePasswordPage.jsx")
+const UpdatePasswordPage = lazy(
+  () => import("./features/MainPages/UpdatePasswordPage.jsx"),
 );
-const AdminNotificationPage = lazy(() =>
-  import("./features/AdminDashboard/Pages/adminNotificationPage.jsx")
+const AdminNotificationPage = lazy(
+  () => import("./features/AdminDashboard/Pages/adminNotificationPage.jsx"),
 );
-const LeaderboardPage = lazy(() =>
-  import("./features/UserDashboard/Pages/leaderBoardPage.jsx")
+const LeaderboardPage = lazy(
+  () => import("./features/UserDashboard/Pages/leaderBoardPage.jsx"),
 );
-const AdminProfilePage = lazy(() =>
-  import("./features/AdminDashboard/Pages/adminProfile.jsx")
+const AdminProfilePage = lazy(
+  () => import("./features/AdminDashboard/Pages/adminProfile.jsx"),
 );
-const MessagesPage = lazy(() =>
-  import("./features/UserDashboard/Pages/userMessageApp.jsx")
+const MessagesPage = lazy(
+  () => import("./features/UserDashboard/Pages/userMessageApp.jsx"),
 );
-const ManualRegisterPage = lazy(() =>
-  import("./features/MainPages/manualRegisterPage.jsx")
+const ManualRegisterPage = lazy(
+  () => import("./features/MainPages/manualRegisterPage.jsx"),
 );
-const ManualVerificationAdminPage = lazy(() =>
-  import("./features/AdminDashboard/Pages/adminVerificationPage.jsx")
+const ManualVerificationAdminPage = lazy(
+  () => import("./features/AdminDashboard/Pages/adminVerificationPage.jsx"),
 );
-const PendingApprovalPage = lazy(() =>
-  import("./features/MainPages/pendingApprovalPage.jsx")
+const PendingApprovalPage = lazy(
+  () => import("./features/MainPages/pendingApprovalPage.jsx"),
 );
-const ForgotPasswordPage = lazy(() =>
-  import("./features/MainPages/forgotPasswordPage.jsx")
+const ForgotPasswordPage = lazy(
+  () => import("./features/MainPages/forgotPasswordPage.jsx"),
 );
-const ConfirmEmailPage = lazy(() =>
-  import("./features/MainPages/confirmPage.jsx")
+const ConfirmEmailPage = lazy(
+  () => import("./features/MainPages/confirmPage.jsx"),
 );
-const AdminBackupPage = lazy(() =>
-  import("./features/AdminDashboard/Pages/adminBackupPage.jsx")
+const AdminBackupPage = lazy(
+  () => import("./features/AdminDashboard/Pages/adminBackupPage.jsx"),
 );
-const AdminRestorePage = lazy(() =>
-  import("./features/AdminDashboard/Pages/adminRestorePage.jsx")
+const AdminRestorePage = lazy(
+  () => import("./features/AdminDashboard/Pages/adminRestorePage.jsx"),
 );
-const HandoverPage = lazy(() =>
-  import("./features/UserDashboard/Pages/HandoverPage.jsx")
+const HandoverPage = lazy(
+  () => import("./features/UserDashboard/Pages/HandoverPage.jsx"),
 );
+const PrivacyPage = lazy(() => import("./features/MainPages/PrivacyPage.jsx"));
+const TermsPage = lazy(() => import("./features/MainPages/TermsPage.jsx"));
 
 function PrivateRouter({ children, isLoading, session }) {
   if (isLoading) return <LoadingScreen />;
@@ -236,7 +238,7 @@ function AppContent() {
         "Auth event:",
         event,
         "Session:",
-        session ? "exists" : "null"
+        session ? "exists" : "null",
       );
       setSession(session);
       if (event === "SIGNED_OUT") {
@@ -303,6 +305,8 @@ function AppContent() {
               <Route path="/confirm-email" element={<ConfirmEmailPage />} />
               <Route path="/about" element={<AboutUsPage />} />
               <Route path="/learn-more" element={<LearnMorePage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/terms" element={<TermsPage />} />
               <Route
                 path="/pending-approval"
                 element={<PendingApprovalPage />}

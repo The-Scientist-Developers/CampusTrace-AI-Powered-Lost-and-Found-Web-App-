@@ -452,114 +452,220 @@ export default function LoginPage() {
       return;
     }
 
-    // Check if email domain matches selected university
-    try {
-      const { data: domainData, error: domainError } = await supabase
-        .from("allowed_domains")
-        .select("university_id, universities(name)")
-        .eq("domain_name", emailDomain)
-        .single();
-
-      if (domainError || !domainData) {
-        toast.error(
-          `Your email domain '${emailDomain}' is not registered with ${selectedUniversity.name}. Please use your official university email or select the correct university.`,
-          {
-            duration: 7000,
-            position: "top-center",
-          },
-        );
-        resetCaptcha();
-        return;
-      }
-
-      // Check if domain matches selected university
-      if (domainData.university_id !== selectedUniversity.id) {
-        const actualUniversityName =
-          domainData.universities?.name || "another university";
-        toast.error(
-          `Your email domain '${emailDomain}' is registered with ${actualUniversityName}, not ${selectedUniversity.name}. Please select the correct university.`,
-          {
-            duration: 7000,
-            position: "top-center",
-          },
-        );
-        resetCaptcha();
-        return;
-      }
-    } catch (err) {
-      toast.error(
-        `Your email domain '${emailDomain}' is not registered with ${selectedUniversity.name}. Please use your official university email.`,
-        {
-          duration: 7000,
-          position: "top-center",
-        },
-      );
-      resetCaptcha();
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const { data: authData, error: authError } =
-        await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password,
-        });
+      // List of public email domains
+      const publicDomains = [
+        "gmail.com",
+        "yahoo.com",
+        "hotmail.com",
+        "outlook.com",
+        "aol.com",
+        "icloud.com",
+        "mail.com",
+        "protonmail.com",
+        "zoho.com",
+        "yandex.com",
+        "live.com",
+        "msn.com",
+        "gmx.com",
+        "inbox.com",
+        "fastmail.com",
+      ];
 
-      if (authError) {
-        const msg = authError.message || "";
+      const isPublicDomain = publicDomains.includes(emailDomain.toLowerCase());
 
-        if (msg.includes("Email not confirmed")) {
-          throw new Error("Please confirm your email address first");
-        }
-
-        if (msg.includes("Invalid login credentials")) {
-          throw new Error("Invalid email or password");
-        }
-
-        throw authError;
-      }
-
-      if (authData.user) {
-        const { data: profileData, error: profileError } = await supabase
+      if (isPublicDomain) {
+        // For public domains, check if the full email exists in the selected university
+        const { data: profileDataArray, error: profileError } = await supabase
           .from("profiles")
-          .select("is_verified, is_banned")
-          .eq("id", authData.user.id)
-          .single();
+          .select("id, email, university_id")
+          .ilike("email", formData.email.trim()) // Use ilike for case-insensitive match
+          .eq("university_id", selectedUniversity.id);
 
         if (profileError) {
-          await supabase.auth.signOut();
-          throw new Error(
-            "Could not verify account status. Please try again later.",
+          throw profileError;
+        }
+
+        const profileData =
+          profileDataArray && profileDataArray.length > 0
+            ? profileDataArray[0]
+            : null;
+
+        if (!profileData) {
+          // Email doesn't exist for this university
+          toast.error(
+            `The email '${formData.email.trim()}' is not registered with ${selectedUniversity.name}. Please check your email or select the correct university.`,
+            {
+              duration: 7000,
+              position: "top-center",
+            },
           );
+          resetCaptcha();
+          setLoading(false);
+          return;
         }
 
-        if (profileData?.is_banned) {
-          await supabase.auth.signOut();
-          throw new Error("Your account has been suspended.");
+        // Email exists, now try to login (password will be validated by Supabase)
+        const { data: authData, error: authError } =
+          await supabase.auth.signInWithPassword({
+            email: formData.email,
+            password: formData.password,
+          });
+
+        if (authError) {
+          const msg = authError.message || "";
+
+          if (msg.includes("Email not confirmed")) {
+            throw new Error("Please confirm your email address first");
+          }
+
+          if (msg.includes("Invalid login credentials")) {
+            throw new Error("Invalid password");
+          }
+
+          throw authError;
         }
 
-        if (profileData && profileData.is_verified === false) {
-          await supabase.auth.signOut();
-          throw new Error(
-            "Your account is awaiting administrator approval. Please check back later.",
-          );
+        if (authData.user) {
+          const { data: fullProfileData, error: fullProfileError } =
+            await supabase
+              .from("profiles")
+              .select("is_verified, is_banned")
+              .eq("id", authData.user.id)
+              .single();
+
+          if (fullProfileError) {
+            await supabase.auth.signOut();
+            throw new Error(
+              "Could not verify account status. Please try again later.",
+            );
+          }
+
+          if (fullProfileData?.is_banned) {
+            await supabase.auth.signOut();
+            throw new Error("Your account has been suspended.");
+          }
+
+          if (fullProfileData && fullProfileData.is_verified === false) {
+            await supabase.auth.signOut();
+            throw new Error(
+              "Your account is awaiting administrator approval. Please check back later.",
+            );
+          }
+
+          setLoginAttempts(0);
+          setLastAttemptTime(null);
+          setCooldownTime(0);
+
+          // Save email to localStorage for future suggestions
+          saveEmailToLocalStorage(formData.email);
+
+          toast.success("Welcome back!", {
+            duration: 3000,
+            position: "top-center",
+          });
+        } else {
+          throw new Error("Authentication failed unexpectedly.");
         }
-
-        setLoginAttempts(0);
-        setLastAttemptTime(null);
-        setCooldownTime(0);
-
-        // Save email to localStorage for future suggestions
-        saveEmailToLocalStorage(formData.email);
-
-        toast.success("Welcome back!", {
-          duration: 3000,
-          position: "top-center",
-        });
       } else {
-        throw new Error("Authentication failed unexpectedly.");
+        // For university domains, check if domain matches selected university
+        const { data: domainData, error: domainError } = await supabase
+          .from("allowed_domains")
+          .select("university_id, universities(name)")
+          .eq("domain_name", emailDomain)
+          .single();
+
+        if (domainError || !domainData) {
+          toast.error(
+            `Your email domain '${emailDomain}' is not registered with ${selectedUniversity.name}. Please use your official university email or select the correct university.`,
+            {
+              duration: 7000,
+              position: "top-center",
+            },
+          );
+          resetCaptcha();
+          setLoading(false);
+          return;
+        }
+
+        // Check if domain matches selected university
+        if (domainData.university_id !== selectedUniversity.id) {
+          const actualUniversityName =
+            domainData.universities?.name || "another university";
+          toast.error(
+            `Your email domain '${emailDomain}' is registered with ${actualUniversityName}, not ${selectedUniversity.name}. Please select the correct university.`,
+            {
+              duration: 7000,
+              position: "top-center",
+            },
+          );
+          resetCaptcha();
+          setLoading(false);
+          return;
+        }
+
+        const { data: authData, error: authError } =
+          await supabase.auth.signInWithPassword({
+            email: formData.email,
+            password: formData.password,
+          });
+
+        if (authError) {
+          const msg = authError.message || "";
+
+          if (msg.includes("Email not confirmed")) {
+            throw new Error("Please confirm your email address first");
+          }
+
+          if (msg.includes("Invalid login credentials")) {
+            throw new Error("Invalid password");
+          }
+
+          throw authError;
+        }
+
+        if (authData.user) {
+          const { data: profileData, error: profileError } = await supabase
+            .from("profiles")
+            .select("is_verified, is_banned")
+            .eq("id", authData.user.id)
+            .single();
+
+          if (profileError) {
+            await supabase.auth.signOut();
+            throw new Error(
+              "Could not verify account status. Please try again later.",
+            );
+          }
+
+          if (profileData?.is_banned) {
+            await supabase.auth.signOut();
+            throw new Error("Your account has been suspended.");
+          }
+
+          if (profileData && profileData.is_verified === false) {
+            await supabase.auth.signOut();
+            throw new Error(
+              "Your account is awaiting administrator approval. Please check back later.",
+            );
+          }
+
+          setLoginAttempts(0);
+          setLastAttemptTime(null);
+          setCooldownTime(0);
+
+          // Save email to localStorage for future suggestions
+          saveEmailToLocalStorage(formData.email);
+
+          toast.success("Welcome back!", {
+            duration: 3000,
+            position: "top-center",
+          });
+        } else {
+          throw new Error("Authentication failed unexpectedly.");
+        }
       }
     } catch (err) {
       const currentAttempt = loginAttempts + 1;

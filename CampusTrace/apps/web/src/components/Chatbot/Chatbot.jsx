@@ -91,8 +91,22 @@ const SuggestedQuestion = ({ question, onClick, primaryColor }) => (
 );
 
 const Chatbot = () => {
-  const { theme } = useTheme();
-  const primaryColor = THEME_COLORS[theme] || THEME_COLORS.light;
+  const { theme, colorMode } = useTheme();
+  
+  const getThemeColors = (mode) => {
+    const colorMap = {
+      default: { primary: "#1877F2", light: "#60A5FA", dark: "#1565D8" },
+      blue: { primary: "#3B82F6", light: "#60A5FA", dark: "#2563EB" },
+      purple: { primary: "#A855F7", light: "#C084FC", dark: "#9333EA" },
+      pink: { primary: "#EC4899", light: "#F472B6", dark: "#DB2777" },
+      green: { primary: "#22C55E", light: "#4ADE80", dark: "#16A34A" },
+    };
+    return colorMap[mode] || colorMap.default;
+  };
+  
+  const themeColors = getThemeColors(colorMode);
+  // Use the darker accent color to match the dashboard update
+  const primaryColor = themeColors.dark;
 
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
@@ -238,7 +252,7 @@ const Chatbot = () => {
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
+              <Bot className="w-5 h-5 text-white" />
             </div>
             <div>
               <h3 className="text-white font-semibold">CampusTrace AI</h3>

@@ -71,7 +71,7 @@ const RightSuggestions = ({ profile, isOpen = true, onToggle }) => {
           `${API_BASE_URL}/api/items/leaderboard?limit=5`,
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
         if (!res.ok) throw new Error("Failed to fetch leaderboard");
         const data = await res.json();
@@ -103,7 +103,7 @@ const RightSuggestions = ({ profile, isOpen = true, onToggle }) => {
             // Refetch leaderboard when any profile in the university updates
             console.log("Profile updated, refreshing leaderboard...");
             fetchLeaderboard();
-          }
+          },
         )
         .subscribe();
 
@@ -229,7 +229,7 @@ const RightSuggestions = ({ profile, isOpen = true, onToggle }) => {
                     src={
                       user.avatar_url ||
                       `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                        user.full_name || "User"
+                        user.full_name || "User",
                       )}`
                     }
                     alt={user.full_name}
@@ -298,10 +298,16 @@ const RightSuggestions = ({ profile, isOpen = true, onToggle }) => {
             Help Center
           </Link>
           <Link
-            to="/dashboard/settings"
+            to="/privacy"
             className="hover:text-gray-900 dark:hover:text-gray-300 transition-colors"
           >
-            Privacy & Terms
+            Privacy
+          </Link>
+          <Link
+            to="/terms"
+            className="hover:text-gray-900 dark:hover:text-gray-300 transition-colors"
+          >
+            Terms
           </Link>
         </div>
         <div

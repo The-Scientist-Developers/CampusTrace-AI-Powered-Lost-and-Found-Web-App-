@@ -441,9 +441,9 @@ const ItemDetailsModal = memo(
 
           {/* Image with Title Overlay */}
           <View style={styles.imageSection}>
-            {item.thumbnail_url || item.image_url ? (
+            {item.image_url || item.thumbnail_url ? (
               <Image
-                source={{ uri: item.thumbnail_url || item.image_url }}
+                source={{ uri: item.image_url || item.thumbnail_url }}
                 style={styles.detailImageFixed}
                 resizeMode="cover"
               />

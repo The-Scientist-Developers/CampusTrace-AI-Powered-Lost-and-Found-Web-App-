@@ -22,6 +22,7 @@ import {
   Send,
   ArrowLeft,
   User,
+  MessageCircle,
 } from "lucide-react-native";
 
 // --- Handover Controls Component ---
@@ -53,14 +54,14 @@ const HandoverControls = ({
     setHandoverCode(null);
     try {
       const { data } = await apiClient.post(
-        `/handover/items/${conversationDetails.item_id}/start-handover`
+        `/handover/items/${conversationDetails.item_id}/start-handover`,
       );
       setHandoverCode(data.code);
       onCodeGenerated(data.code); // Pass code up
     } catch (error) {
       console.error("Error starting handover:", error);
       setHandoverError(
-        error.response?.data?.detail || "Could not start handover."
+        error.response?.data?.detail || "Could not start handover.",
       );
     } finally {
       setCodeLoading(false);
@@ -173,10 +174,11 @@ const ChatScreen = ({ navigation }) => {
       borderRadius: 20,
       paddingVertical: 10,
       paddingHorizontal: 16,
-      fontSize: 16,
+      fontSize: 15,
       marginRight: 10,
       backgroundColor: colors.background,
       color: colors.text,
+      maxHeight: 100,
     },
     sendButton: {
       width: 44,
@@ -189,22 +191,26 @@ const ChatScreen = ({ navigation }) => {
     messageBubble: {
       paddingVertical: 10,
       paddingHorizontal: 14,
-      borderRadius: 20,
-      maxWidth: "80%",
+      borderRadius: 18,
+      maxWidth: "75%",
     },
     myMessageBubble: {
       backgroundColor: colors.primary,
+      borderBottomRightRadius: 4,
     },
     otherMessageBubble: {
       backgroundColor: colors.card,
+      borderBottomLeftRadius: 4,
     },
     myMessageText: {
       color: "#FFFFFF",
       fontSize: 15,
+      lineHeight: 20,
     },
     otherMessageText: {
       fontSize: 15,
       color: colors.text,
+      lineHeight: 20,
     },
     handoverContainer: {
       padding: 16,
@@ -351,7 +357,7 @@ const ChatScreen = ({ navigation }) => {
           if (newMsg && !error) {
             setMessages((prevMessages) => [newMsg, ...prevMessages]);
           }
-        }
+        },
       )
       .subscribe();
 
@@ -515,6 +521,44 @@ const ChatScreen = ({ navigation }) => {
           renderItem={renderMessageItem}
           inverted
           style={dynamicStyles.messageList}
+          contentContainerStyle={{ paddingVertical: 10 }}
+          ListEmptyComponent={
+            <View
+              style={[
+                styles.emptyMessagesContainer,
+                { transform: [{ scaleY: -1 }] },
+              ]}
+            >
+              <View
+                style={[
+                  styles.emptyMessagesIconContainer,
+                  { backgroundColor: colors.primary + "15" },
+                ]}
+              >
+                <MessageCircle
+                  size={40}
+                  color={colors.primary}
+                  strokeWidth={1.5}
+                />
+              </View>
+              <Text
+                style={[
+                  styles.emptyMessagesText,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                No messages yet
+              </Text>
+              <Text
+                style={[
+                  styles.emptyMessagesSubtext,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                Start the conversation by sending a message
+              </Text>
+            </View>
+          }
         />
 
         {/* Handover Controls */}
@@ -537,6 +581,8 @@ const ChatScreen = ({ navigation }) => {
             onChangeText={setNewMessage}
             placeholder="Type a message..."
             placeholderTextColor={colors.textSecondary}
+            multiline
+            maxLength={1000}
           />
           <TouchableOpacity
             onPress={handleSendMessage}
@@ -582,7 +628,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   messageRow: {
-    marginVertical: 4,
+    marginVertical: 2,
     flexDirection: "row",
     alignItems: "flex-end",
     paddingHorizontal: 4,
@@ -639,15 +685,17 @@ const styles = StyleSheet.create({
   messageBubble: {
     paddingVertical: 10,
     paddingHorizontal: 14,
-    borderRadius: 20,
-    maxWidth: "80%",
+    borderRadius: 18,
+    maxWidth: "75%",
   },
   myMessageText: {
     color: "#FFFFFF",
     fontSize: 15,
+    lineHeight: 20,
   },
   otherMessageText: {
     fontSize: 15,
+    lineHeight: 20,
   },
   inputContainer: {
     flexDirection: "row",
@@ -661,8 +709,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 10,
     paddingHorizontal: 16,
-    fontSize: 16,
+    fontSize: 15,
     marginRight: 10,
+    maxHeight: 100,
   },
   sendButton: {
     width: 44,
@@ -673,6 +722,32 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.5,
+  },
+  // Empty messages state
+  emptyMessagesContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+    paddingHorizontal: 32,
+  },
+  emptyMessagesIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  emptyMessagesText: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  emptyMessagesSubtext: {
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 20,
   },
   // Handover Styles
   handoverContainer: {
