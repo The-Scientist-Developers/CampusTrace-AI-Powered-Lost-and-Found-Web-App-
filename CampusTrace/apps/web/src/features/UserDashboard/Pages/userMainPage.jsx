@@ -1347,62 +1347,79 @@ export default function UserMainPage({ user }) {
 
           {myLostItem ? (
             <div>
-              {/* Your Lost Item Card with Modern Gradient */}
+              {/* Your Lost Item Card with Premium Modern Design */}
               <div
-                className="rounded-xl p-4 mb-4 border border-red-200 dark:border-red-900/30 relative"
+                className="rounded-2xl p-5 mb-5 border border-red-200/50 dark:border-red-900/20 relative overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300"
                 style={{
                   background:
                     theme === "light"
-                      ? "linear-gradient(135deg, #FEF2F2, #FEE2E2)"
-                      : "rgba(239, 68, 68, 0.1)",
+                      ? "linear-gradient(135deg, rgba(254, 242, 242, 0.8), rgba(254, 226, 226, 0.5))"
+                      : "linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(239, 68, 68, 0.02))",
+                  backdropFilter: "blur(8px)",
                 }}
               >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-red-500" />
-                    <h4 className="text-sm font-bold text-red-600 dark:text-red-400">
-                      Your Lost Item {myLostItemsList.length > 1 ? `(${currentLostItemIndex + 1}/${myLostItemsList.length})` : ''}
-                    </h4>
+                {/* Left accent line */}
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500"></div>
+                
+                {/* Decorative background circle */}
+                <div className="absolute -right-10 -top-10 w-40 h-40 bg-red-500/5 dark:bg-red-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+                <div className="flex items-center justify-between mb-4 relative z-10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                      <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-red-700 dark:text-red-400">
+                        Your Lost Item
+                      </h4>
+                      {myLostItemsList.length > 1 && (
+                        <p className="text-[10px] font-semibold text-red-500/70 uppercase tracking-wider mt-0.5">
+                          Item {currentLostItemIndex + 1} of {myLostItemsList.length}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                  <div className="flex items-center gap-4">
+                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 bg-white/50 dark:bg-black/20 px-2.5 py-1 rounded-md shadow-sm border border-red-100/30 dark:border-red-900/20">
                       {timeAgo(myLostItem.created_at)}
                     </span>
                     {myLostItemsList.length > 1 && (
-                      <div className="flex items-center gap-1 bg-white/50 dark:bg-black/20 rounded-full p-0.5">
+                      <div className="flex items-center gap-1.5 bg-white/80 dark:bg-black/30 rounded-lg p-1 border border-red-100 dark:border-red-900/20 shadow-sm backdrop-blur-sm">
                         <button 
                           onClick={handlePrevLostItem}
                           disabled={isSearchingMatches}
-                          className="p-1 rounded-full hover:bg-white dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                          className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/40 text-neutral-600 hover:text-red-600 dark:text-neutral-400 dark:hover:text-red-300 transition-all disabled:opacity-30"
                         >
-                          <ChevronLeft className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
+                          <ChevronLeft className="w-4 h-4" />
                         </button>
+                        <div className="w-px h-4 bg-red-200 dark:bg-red-900/40"></div>
                         <button 
                           onClick={handleNextLostItem}
                           disabled={isSearchingMatches}
-                          className="p-1 rounded-full hover:bg-white dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                          className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/40 text-neutral-600 hover:text-red-600 dark:text-neutral-400 dark:hover:text-red-300 transition-all disabled:opacity-30"
                         >
-                          <ChevronRight className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
+                          <ChevronRight className="w-4 h-4" />
                         </button>
                       </div>
                     )}
                   </div>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-4 relative z-10 bg-white/60 dark:bg-[#2a2a2a]/60 p-3 rounded-xl border border-white/40 dark:border-[#3a3a3a]/40 backdrop-blur-md">
                   <ItemImage
                     imageUrl={myLostItem.thumbnail_url || myLostItem.image_url}
-                    className="w-20 h-20 rounded-xl flex-shrink-0 shadow-sm"
+                    className="w-20 h-20 rounded-lg flex-shrink-0 shadow-sm border border-neutral-100 dark:border-neutral-700"
                   />
-                  <div className="flex-1 min-w-0">
-                    <h5 className="text-base font-bold text-neutral-800 dark:text-white truncate">
+                  <div className="flex-1 min-w-0 flex flex-col justify-center">
+                    <h5 className="text-base font-extrabold text-neutral-800 dark:text-white truncate tracking-tight">
                       {myLostItem.title}
                     </h5>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2 mt-1">
+                    <p className="text-sm text-neutral-600 dark:text-neutral-300 line-clamp-1 mt-0.5 opacity-90 leading-relaxed">
                       {myLostItem.description}
                     </p>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-white dark:bg-neutral-800 rounded-lg text-xs font-medium text-neutral-700 dark:text-neutral-300 shadow-sm">
-                        <Tag className="w-3 h-3" />
+                    <div className="flex flex-wrap gap-2 mt-2.5">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/90 dark:bg-[#1a1a1a]/90 rounded-md text-[11px] font-bold text-neutral-700 dark:text-neutral-300 shadow-sm border border-neutral-100/50 dark:border-neutral-800/50">
+                        <Tag className="w-3 h-3 text-red-500" />
                         {myLostItem.category}
                       </span>
                     </div>
@@ -1412,9 +1429,19 @@ export default function UserMainPage({ user }) {
 
               {/* Matches List */}
               {isSearchingMatches ? (
-                <div className="flex flex-col items-center justify-center p-8 bg-neutral-50 dark:bg-neutral-800/30 rounded-xl border border-neutral-100 dark:border-neutral-800">
-                  <div className="w-8 h-8 rounded-full border-2 border-primary-500 border-t-transparent animate-spin mb-3"></div>
-                  <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Searching for matches...</p>
+                <div className="flex flex-col items-center justify-center p-10 bg-gradient-to-b from-transparent to-neutral-50 dark:to-neutral-800/20 rounded-xl relative overflow-hidden">
+                  <div className="relative flex items-center justify-center mb-6">
+                    {/* Radar rings */}
+                    <div className="absolute w-16 h-16 rounded-full border-2 border-primary-500/20 animate-ping" style={{ animationDuration: '2s' }}></div>
+                    <div className="absolute w-24 h-24 rounded-full border border-primary-500/10 animate-ping" style={{ animationDuration: '2s', animationDelay: '0.3s' }}></div>
+                    <div className="relative z-10 w-10 h-10 bg-white dark:bg-neutral-800 rounded-full flex items-center justify-center shadow-lg border border-neutral-100 dark:border-neutral-700">
+                      <Sparkles className="w-5 h-5 text-primary-500 animate-pulse" />
+                    </div>
+                  </div>
+                  <p className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-primary-400 dark:from-primary-400 dark:to-primary-300 animate-pulse">
+                    AI Searching Database...
+                  </p>
+                  <p className="text-xs text-neutral-400 mt-2 font-medium tracking-wide">Analyzing visual and text similarities</p>
                 </div>
               ) : possibleMatches.length > 0 ? (
                 <div>
