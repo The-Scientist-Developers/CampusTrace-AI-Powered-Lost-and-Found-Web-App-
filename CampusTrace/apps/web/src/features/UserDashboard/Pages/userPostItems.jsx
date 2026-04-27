@@ -655,6 +655,7 @@ export default function PostNewItem() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [suggestedDescription, setSuggestedDescription] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -772,13 +773,23 @@ export default function PostNewItem() {
       }
 
       const { description: aiDescription } = await response.json();
-      setDescription(aiDescription);
-      toast.success("Description improved!", { id: toastId });
+      setSuggestedDescription(aiDescription);
+      toast.success("AI suggestion generated!", { id: toastId });
     } catch (error) {
       toast.error(error.message, { id: toastId });
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const applySuggestion = () => {
+    setDescription(suggestedDescription);
+    setSuggestedDescription("");
+    toast.success("Description updated!");
+  };
+
+  const discardSuggestion = () => {
+    setSuggestedDescription("");
   };
 
   const handleSubmit = async (e) => {
@@ -1144,7 +1155,10 @@ export default function PostNewItem() {
                 id="description"
                 rows="5"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(e) => {
+                  setDescription(e.target.value);
+                  if (suggestedDescription) setSuggestedDescription("");
+                }}
                 required
                 disabled={isGenerating}
                 className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-500 resize-none outline-none ${
@@ -1154,6 +1168,35 @@ export default function PostNewItem() {
                 }`}
                 placeholder="Describe the item in detail... (color, brand, distinguishing features, etc.)"
               ></textarea>
+
+              {/* AI Suggestion Preview */}
+              {suggestedDescription && (
+                <div className="mt-4 p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-700/50 rounded-xl animate-in fade-in slide-in-from-top-4 duration-300">
+                  <div className="flex items-center gap-2 mb-3 text-purple-700 dark:text-purple-300 font-semibold text-sm">
+                    <Sparkles className="w-4 h-4" />
+                    <span>AI Suggested Description</span>
+                  </div>
+                  <p className="text-sm text-neutral-700 dark:text-neutral-300 italic mb-4 leading-relaxed">
+                    "{suggestedDescription}"
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={applySuggestion}
+                      className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                    >
+                      Apply Suggestion
+                    </button>
+                    <button
+                      type="button"
+                      onClick={discardSuggestion}
+                      className="px-4 py-2 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 text-sm font-medium rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+                    >
+                      Discard
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Footer with Submit Button */}
