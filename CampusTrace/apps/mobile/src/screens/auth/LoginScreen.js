@@ -150,7 +150,6 @@ const LoginScreen = ({ navigation }) => {
         }
       }
     } catch (error) {
-      console.log("Error fetching universities:", error);
       Alert.alert(
         "Error",
         "Could not load universities. Please check your connection.",
@@ -193,7 +192,6 @@ const LoginScreen = ({ navigation }) => {
         setShowSavedAccounts(false);
       }
     } catch (error) {
-      console.log("Error loading saved accounts:", error);
       setShowSavedAccounts(false);
     }
   };
@@ -203,7 +201,7 @@ const LoginScreen = ({ navigation }) => {
       const savedEmail = await AsyncStorage.getItem("userEmail");
       if (savedEmail) setEmail(savedEmail);
     } catch (error) {
-      console.log("Error loading saved email:", error);
+      // Silent fail
     }
   };
 
@@ -211,7 +209,7 @@ const LoginScreen = ({ navigation }) => {
     try {
       await AsyncStorage.setItem("userEmail", email);
     } catch (error) {
-      console.log("Error saving email:", error);
+      // Silent fail
     }
   };
 
@@ -233,7 +231,7 @@ const LoginScreen = ({ navigation }) => {
       );
       setSavedAccounts(accounts);
     } catch (error) {
-      console.log("Error saving account:", error);
+      // Silent fail
     }
   };
 
@@ -253,7 +251,7 @@ const LoginScreen = ({ navigation }) => {
         }
       }
     } catch (error) {
-      console.log("Error removing account:", error);
+      // Silent fail
     }
   };
 
@@ -403,61 +401,51 @@ const LoginScreen = ({ navigation }) => {
       const isPublicDomain = publicDomains.includes(emailDomain.toLowerCase());
 
       if (isPublicDomain) {
-        // For public domains, check if the full email exists in the selected university
-        console.log("🔍 Checking public domain email:", email.trim());
-        console.log("🏫 Selected university ID:", selectedUniversity.id);
-
-        const { data: profileDataArray, error: profileError } = await supabase
-          .from("profiles")
-          .select("id, email, university_id")
-          .ilike("email", email.trim()) // Use ilike for case-insensitive match
-          .eq("university_id", selectedUniversity.id);
-
-        console.log("📊 Query result:", { profileDataArray, profileError });
-
-        if (profileError) {
-          console.error("❌ Profile query error:", profileError);
-          throw profileError;
-        }
-
-        const profileData =
-          profileDataArray && profileDataArray.length > 0
-            ? profileDataArray[0]
-            : null;
-
-        console.log("👤 Profile found:", profileData);
-
-        if (!profileData) {
-          // Email doesn't exist for this university
-          console.log(
-            "❌ No profile found for email:",
-            email.trim(),
-            "at university:",
-            selectedUniversity.name,
-          );
-          Alert.alert(
-            "Email Not Registered",
-            `The email '${email.trim()}' is not registered with ${selectedUniversity.name}. Please check your email or select the correct university.`,
-          );
-          setLoading(false);
-          return;
-        }
-
-        console.log("✅ Profile exists, attempting login...");
-
-        // Email exists, now try to login (password will be validated by Supabase)
+        // For public domains, try to authenticate first
         let result = await supabase.auth.signInWithPassword({
           email: email.trim(),
           password,
         });
 
         if (result.error) {
+          const errorMsg = result.error.message || "";
+
           // Check if it's an invalid password error
           if (
-            result.error.message.toLowerCase().includes("invalid") ||
-            result.error.message.toLowerCase().includes("password") ||
-            result.error.message.toLowerCase().includes("credentials")
+            errorMsg.toLowerCase().includes("invalid") ||
+            errorMsg.toLowerCase().includes("password") ||
+            errorMsg.toLowerCase().includes("credentials")
           ) {
+            // Now check if email exists in the database for this university
+            // Now check if email exists in the database for this university via backend
+            try {
+              const checkResponse = await fetch(`${API_BASE_URL}/api/auth/check-user`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                  email: email.trim(), 
+                  university_id: selectedUniversity.id 
+                })
+              });
+              
+              if (checkResponse.ok) {
+                const checkData = await checkResponse.json();
+                if (!checkData.exists) {
+                  // Email doesn't exist for this university
+                  Alert.alert(
+                    "Email Not Registered",
+                    `The email '${email.trim()}' is not registered with ${selectedUniversity.name}. Please check your email or select the correct university.`,
+                  );
+                  setLoading(false);
+                  return;
+                }
+              }
+            } catch (err) {
+              console.error("Error checking user:", err);
+              // Fall through to invalid password if check fails
+            }
+
+            // Email exists but password is wrong
             Alert.alert(
               "Invalid Password",
               "The password you entered is incorrect. Please try again.",
@@ -470,14 +458,28 @@ const LoginScreen = ({ navigation }) => {
           throw result.error;
         }
 
-        const { data: fullProfileData } = await supabase
+        // Verify that the authenticated user belongs to the selected university
+        const { data: userProfileData } = await supabase
           .from("profiles")
-          .select("full_name, avatar_url, is_verified")
+          .select("full_name, avatar_url, is_verified, university_id")
           .eq("id", result.data.user.id)
           .single();
 
+        if (
+          !userProfileData ||
+          userProfileData.university_id !== selectedUniversity.id
+        ) {
+          await supabase.auth.signOut();
+          Alert.alert(
+            "University Mismatch",
+            `This email is registered with a different university. Please select the correct university.`,
+          );
+          setLoading(false);
+          return;
+        }
+
         // Check if user is verified
-        if (fullProfileData && fullProfileData.is_verified === false) {
+        if (userProfileData && userProfileData.is_verified === false) {
           // Sign them out and navigate to pending approval
           await supabase.auth.signOut();
           navigation.navigate("PendingApproval");
@@ -485,9 +487,9 @@ const LoginScreen = ({ navigation }) => {
         }
 
         const userName =
-          fullProfileData?.full_name ||
+          userProfileData?.full_name ||
           result.data?.user?.user_metadata?.full_name;
-        const avatarUrl = fullProfileData?.avatar_url || null;
+        const avatarUrl = userProfileData?.avatar_url || null;
 
         await saveEmail(email);
         await saveAccount(email, userName, avatarUrl);
@@ -772,10 +774,8 @@ const LoginScreen = ({ navigation }) => {
 
   const handleImagePick = async () => {
     try {
-      console.log("Requesting media library permissions...");
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
-      console.log("Permission status:", status);
 
       if (status !== "granted") {
         Alert.alert(
@@ -785,7 +785,6 @@ const LoginScreen = ({ navigation }) => {
         return;
       }
 
-      console.log("Launching image library...");
       let result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -793,13 +792,10 @@ const LoginScreen = ({ navigation }) => {
         quality: 0.7,
       });
 
-      console.log("Image picker result:", result);
-
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const { uri } = result.assets[0];
         const fileName = uri.split("/").pop();
         const fileType = `image/${fileName.split(".").pop()}`;
-        console.log("Image selected:", { uri, fileName, fileType });
         setIdImage({ uri, name: fileName, type: fileType });
         setErrors((prev) => ({ ...prev, idImage: null }));
       }
@@ -811,9 +807,7 @@ const LoginScreen = ({ navigation }) => {
 
   const handleCameraCapture = async () => {
     try {
-      console.log("Requesting camera permissions...");
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      console.log("Camera permission status:", status);
 
       if (status !== "granted") {
         Alert.alert(
@@ -823,20 +817,16 @@ const LoginScreen = ({ navigation }) => {
         return;
       }
 
-      console.log("Launching camera...");
       let result = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.7,
       });
 
-      console.log("Camera result:", result);
-
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const { uri } = result.assets[0];
         const fileName = uri.split("/").pop();
         const fileType = `image/${fileName.split(".").pop()}`;
-        console.log("Photo captured:", { uri, fileName, fileType });
         setIdImage({ uri, name: fileName, type: fileType });
         setErrors((prev) => ({ ...prev, idImage: null }));
       }

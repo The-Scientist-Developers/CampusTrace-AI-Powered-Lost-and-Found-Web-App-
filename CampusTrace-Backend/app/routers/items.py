@@ -701,9 +701,9 @@ async def get_dashboard_summary(user_id: str = Depends(get_current_user_id)):
         unread = supabase.table("notifications").select("id", count="exact").eq("recipient_id", user_id).eq("status", "unread").execute()
 
         ai_matches = []
-        user_lost_items = supabase.table("items").select("id, title, description, category, location").eq("user_id", user_id).eq("status", "Lost").eq("moderation_status", "approved").order("created_at", desc=True).limit(1).execute()
+        user_lost_items = supabase.table("items").select("id, title, description, category, location, image_url, thumbnail_url, created_at, status, moderation_status").eq("user_id", user_id).eq("status", "Lost").neq("moderation_status", "recovered").neq("moderation_status", "rejected").order("created_at", desc=True).limit(10).execute()
 
-        if user_lost_items.data:
+        if user_lost_items.data and len(user_lost_items.data) > 0:
             try:
                 lost_item = user_lost_items.data[0]
                 matches = supabase.rpc(
@@ -754,6 +754,7 @@ async def get_dashboard_summary(user_id: str = Depends(get_current_user_id)):
             },
             "unreadNotifications": unread.count or 0,
             "aiMatches": ai_matches,
+            "userLostItems": user_lost_items.data or [],
             "universityName": university_name
         }
     except Exception as e:

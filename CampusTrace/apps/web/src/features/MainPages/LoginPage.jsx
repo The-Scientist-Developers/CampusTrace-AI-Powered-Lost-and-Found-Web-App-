@@ -477,37 +477,7 @@ export default function LoginPage() {
       const isPublicDomain = publicDomains.includes(emailDomain.toLowerCase());
 
       if (isPublicDomain) {
-        // For public domains, check if the full email exists in the selected university
-        const { data: profileDataArray, error: profileError } = await supabase
-          .from("profiles")
-          .select("id, email, university_id")
-          .ilike("email", formData.email.trim()) // Use ilike for case-insensitive match
-          .eq("university_id", selectedUniversity.id);
-
-        if (profileError) {
-          throw profileError;
-        }
-
-        const profileData =
-          profileDataArray && profileDataArray.length > 0
-            ? profileDataArray[0]
-            : null;
-
-        if (!profileData) {
-          // Email doesn't exist for this university
-          toast.error(
-            `The email '${formData.email.trim()}' is not registered with ${selectedUniversity.name}. Please check your email or select the correct university.`,
-            {
-              duration: 7000,
-              position: "top-center",
-            },
-          );
-          resetCaptcha();
-          setLoading(false);
-          return;
-        }
-
-        // Email exists, now try to login (password will be validated by Supabase)
+        // For public domains, try to authenticate first
         const { data: authData, error: authError } =
           await supabase.auth.signInWithPassword({
             email: formData.email,
@@ -522,10 +492,59 @@ export default function LoginPage() {
           }
 
           if (msg.includes("Invalid login credentials")) {
+            // Now check if email exists in the database for this university
+            try {
+              const checkResponse = await fetch(`${API_BASE_URL}/api/auth/check-user`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                  email: formData.email.trim(), 
+                  university_id: selectedUniversity.id 
+                })
+              });
+              
+              if (checkResponse.ok) {
+                const checkData = await checkResponse.json();
+                if (!checkData.exists) {
+                  // Email doesn't exist for this university
+                  throw new Error(
+                    `The email '${formData.email.trim()}' is not registered with ${selectedUniversity.name}. Please check your email or select the correct university.`
+                  );
+                }
+              }
+            } catch (err) {
+              if (err.message.includes("not registered with")) {
+                throw err;
+              }
+              // If check fails for other reasons, fall through to invalid password
+            }
+
+            // Email exists but password is wrong
             throw new Error("Invalid password");
           }
 
           throw authError;
+        }
+
+        // Verify that the authenticated user belongs to the selected university
+        if (authData.user) {
+          const { data: profileData, error: profileError } = await supabase
+            .from("profiles")
+            .select("id, university_id")
+            .eq("id", authData.user.id)
+            .single();
+
+          if (profileError || !profileData) {
+            await supabase.auth.signOut();
+            throw new Error("Could not verify your account. Please try again.");
+          }
+
+          if (profileData.university_id !== selectedUniversity.id) {
+            await supabase.auth.signOut();
+            throw new Error(
+              `This email is registered with a different university. Please select the correct university.`,
+            );
+          }
         }
 
         if (authData.user) {

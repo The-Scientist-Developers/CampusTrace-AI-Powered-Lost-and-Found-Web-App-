@@ -5,7 +5,7 @@ import traceback
 
 
 from app.dependencies import get_current_user_id, supabase
-from app.models import SignupRequest, ManualSignupRequest
+from app.models import SignupRequest, ManualSignupRequest, CheckUserRequest
 from app.utils import (
     verify_captcha,
     create_notification,
@@ -19,6 +19,28 @@ settings = get_settings()
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
+
+@router.post("/check-user")
+async def check_user(payload: CheckUserRequest):
+    """
+    Check if an email exists for a specific university.
+    Used by the frontend to distinguish between invalid password and unregistered email
+    when Supabase returns 'Invalid login credentials'.
+    """
+    try:
+        user_res = (
+            supabase.from_("profiles")
+            .select("id")
+            .ilike("email", payload.email.strip())
+            .eq("university_id", payload.university_id)
+            .execute()
+        )
+        if user_res.data and len(user_res.data) > 0:
+            return {"exists": True}
+        return {"exists": False}
+    except Exception as e:
+        print(f"Error checking user: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.post("/signup-manual")
 async def signup_manual(

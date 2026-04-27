@@ -42,6 +42,11 @@ class SignupRequest(BaseModel):
     full_name: str
     captchaToken: str
 
+class CheckUserRequest(BaseModel):
+    email: str
+    university_id: int
+
+
 class ItemCreate(BaseModel):
     title: str
     description: str

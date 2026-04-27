@@ -742,6 +742,9 @@ export default function UserMainPage({ user }) {
   const [communityActivity, setCommunityActivity] = useState([]);
   const [possibleMatches, setPossibleMatches] = useState([]);
   const [myLostItem, setMyLostItem] = useState(null);
+  const [myLostItemsList, setMyLostItemsList] = useState([]);
+  const [currentLostItemIndex, setCurrentLostItemIndex] = useState(0);
+  const [isSearchingMatches, setIsSearchingMatches] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -792,13 +795,14 @@ export default function UserMainPage({ user }) {
     setCommunityActivity(activeCommunityActivity);
     setPossibleMatches(activeMatches);
 
-    const latestLost = (data.myRecentPosts || []).find(
-      (item) =>
-        item.status === "Lost" &&
-        item.moderation_status !== "recovered" &&
-        item.moderation_status !== "rejected",
-    );
-    setMyLostItem(latestLost || null);
+    setMyLostItemsList(data.userLostItems || []);
+    if (data.userLostItems && data.userLostItems.length > 0) {
+      setMyLostItem(data.userLostItems[0]);
+      setCurrentLostItemIndex(0);
+    } else {
+      setMyLostItem(null);
+      setCurrentLostItemIndex(0);
+    }
 
     const lostCount = data.userStats?.lost || 0;
     const foundCount = data.userStats?.found || 0;
@@ -888,6 +892,39 @@ export default function UserMainPage({ user }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchMatchesForItem = async (item, index) => {
+    if (!item) return;
+    setIsSearchingMatches(true);
+    setCurrentLostItemIndex(index);
+    setMyLostItem(item);
+    try {
+      const token = await getAccessToken();
+      const response = await fetch(`${API_BASE_URL}/api/items/find-matches/${item.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const matches = await response.json();
+      if (response.ok) {
+        setPossibleMatches(matches);
+      }
+    } catch (e) {
+      console.error("Error fetching matches:", e);
+    } finally {
+      setIsSearchingMatches(false);
+    }
+  };
+
+  const handleNextLostItem = () => {
+    if (myLostItemsList.length <= 1) return;
+    const nextIndex = (currentLostItemIndex + 1) % myLostItemsList.length;
+    fetchMatchesForItem(myLostItemsList[nextIndex], nextIndex);
+  };
+
+  const handlePrevLostItem = () => {
+    if (myLostItemsList.length <= 1) return;
+    const prevIndex = (currentLostItemIndex - 1 + myLostItemsList.length) % myLostItemsList.length;
+    fetchMatchesForItem(myLostItemsList[prevIndex], prevIndex);
   };
 
   const generateChartData = async (posts) => {
@@ -1310,9 +1347,9 @@ export default function UserMainPage({ user }) {
 
           {myLostItem ? (
             <div>
-              {/* Your Latest Lost Item Card with Modern Gradient */}
+              {/* Your Lost Item Card with Modern Gradient */}
               <div
-                className="rounded-xl p-4 mb-4 border border-red-200 dark:border-red-900/30"
+                className="rounded-xl p-4 mb-4 border border-red-200 dark:border-red-900/30 relative"
                 style={{
                   background:
                     theme === "light"
@@ -1324,12 +1361,32 @@ export default function UserMainPage({ user }) {
                   <div className="flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 text-red-500" />
                     <h4 className="text-sm font-bold text-red-600 dark:text-red-400">
-                      Your Lost Item
+                      Your Lost Item {myLostItemsList.length > 1 ? `(${currentLostItemIndex + 1}/${myLostItemsList.length})` : ''}
                     </h4>
                   </div>
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {timeAgo(myLostItem.created_at)}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                      {timeAgo(myLostItem.created_at)}
+                    </span>
+                    {myLostItemsList.length > 1 && (
+                      <div className="flex items-center gap-1 bg-white/50 dark:bg-black/20 rounded-full p-0.5">
+                        <button 
+                          onClick={handlePrevLostItem}
+                          disabled={isSearchingMatches}
+                          className="p-1 rounded-full hover:bg-white dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                        >
+                          <ChevronLeft className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
+                        </button>
+                        <button 
+                          onClick={handleNextLostItem}
+                          disabled={isSearchingMatches}
+                          className="p-1 rounded-full hover:bg-white dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                        >
+                          <ChevronRight className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex gap-3">
                   <ItemImage
@@ -1354,7 +1411,12 @@ export default function UserMainPage({ user }) {
               </div>
 
               {/* Matches List */}
-              {possibleMatches.length > 0 ? (
+              {isSearchingMatches ? (
+                <div className="flex flex-col items-center justify-center p-8 bg-neutral-50 dark:bg-neutral-800/30 rounded-xl border border-neutral-100 dark:border-neutral-800">
+                  <div className="w-8 h-8 rounded-full border-2 border-primary-500 border-t-transparent animate-spin mb-3"></div>
+                  <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Searching for matches...</p>
+                </div>
+              ) : possibleMatches.length > 0 ? (
                 <div>
                   <h4 className="text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-3">
                     {possibleMatches.length} Possible Match
