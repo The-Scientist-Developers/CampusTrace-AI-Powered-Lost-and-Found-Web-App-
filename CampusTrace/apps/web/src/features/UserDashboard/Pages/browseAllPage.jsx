@@ -2080,18 +2080,26 @@ const MarketplaceItem = ({ item, onClick }) => {
 
   return (
     <div
-      className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden flex flex-col transition-all duration-300 hover:shadow-md cursor-pointer"
+      className="group bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden flex flex-col transition-all duration-300 hover:shadow-md cursor-pointer"
       onClick={() => onClick(item)}
     >
       {/* Image - Fixed height on desktop like FB Marketplace */}
       <div className="w-full h-52 md:h-56 bg-neutral-100 dark:bg-zinc-800 relative flex-shrink-0 overflow-hidden">
         {item.image_url || item.thumbnail_url ? (
-          <img
-            src={item.image_url || item.thumbnail_url}
-            alt={item.title}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
+          <>
+            <img
+              src={item.thumbnail_url || item.image_url}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover blur-xl opacity-60 scale-110"
+              loading="lazy"
+            />
+            <img
+              src={item.image_url || item.thumbnail_url}
+              alt={item.title}
+              className="relative w-full h-full object-contain z-10 transition-transform duration-300 group-hover:scale-105"
+              loading="lazy"
+            />
+          </>
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <Camera className="w-10 h-10 md:w-8 md:h-8 text-neutral-300 dark:text-neutral-600" />

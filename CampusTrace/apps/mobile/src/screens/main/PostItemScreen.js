@@ -53,6 +53,7 @@ export default function PostItemScreen({ navigation, route }) {
   const [newImageUri, setNewImageUri] = useState(null); // This holds a *newly picked* local image
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [suggestedDescription, setSuggestedDescription] = useState(null);
   const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
 
@@ -278,8 +279,8 @@ export default function PostItemScreen({ navigation, route }) {
       }
 
       const { description: aiDescription } = await response.json();
-      setDescription(aiDescription);
-      Alert.alert("Success", "Description improved!");
+      setSuggestedDescription(aiDescription);
+      // Remove auto-replace and alert, let user preview it instead.
     } catch (error) {
       Alert.alert("Error", error.message);
     } finally {
@@ -683,20 +684,52 @@ export default function PostItemScreen({ navigation, route }) {
               <TextInput
                 value={description}
                 onChangeText={setDescription}
-                placeholder="Describe the item in detail..."
-                placeholderTextColor={colors.textTertiary}
+                placeholder={isGenerating ? "AI is typing..." : "Describe the item in detail..."}
+                placeholderTextColor={isGenerating ? colors.primary : colors.textTertiary}
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
+                editable={!isGenerating}
                 style={[
                   styles.textArea,
                   {
-                    backgroundColor: colors.surface,
-                    color: colors.text,
-                    borderColor: colors.border,
+                    backgroundColor: isGenerating ? colors.primary + "1A" : colors.surface,
+                    color: isGenerating ? colors.primary : colors.text,
+                    borderColor: isGenerating ? colors.primary + "80" : colors.border,
+                    borderWidth: isGenerating ? 2 : 1,
                   },
                 ]}
               />
+              
+              {/* AI Suggestion Preview */}
+              {suggestedDescription && (
+                <View style={[styles.suggestedBox, { backgroundColor: colors.primary + "10", borderColor: colors.primary + "40" }]}>
+                  <View style={styles.suggestedHeader}>
+                    <Sparkles size={16} color={colors.primary} />
+                    <Text style={[styles.suggestedTitle, { color: colors.primary }]}>AI Suggestion</Text>
+                  </View>
+                  <Text style={[styles.suggestedText, { color: colors.text }]}>{suggestedDescription}</Text>
+                  <View style={styles.suggestedActions}>
+                    <TouchableOpacity 
+                      style={[styles.suggestedBtn, { backgroundColor: 'transparent', borderColor: colors.border, borderWidth: 1 }]}
+                      onPress={() => setSuggestedDescription(null)}
+                    >
+                      <X size={14} color={colors.textSecondary} />
+                      <Text style={{ color: colors.textSecondary, marginLeft: 4, fontSize: 13, fontWeight: "600" }}>Discard</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.suggestedBtn, { backgroundColor: colors.primary }]}
+                      onPress={() => {
+                        setDescription(suggestedDescription);
+                        setSuggestedDescription(null);
+                      }}
+                    >
+                      <Check size={14} color="#FFF" />
+                      <Text style={{ color: "#FFF", marginLeft: 4, fontSize: 13, fontWeight: "600" }}>Apply</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
             </View>
 
             {/* Image Upload */}
@@ -1205,5 +1238,38 @@ const styles = StyleSheet.create({
   aiAnalysisText: {
     fontSize: 14,
     fontWeight: "600",
+  },
+  suggestedBox: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+  },
+  suggestedHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  suggestedTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    marginLeft: 6,
+  },
+  suggestedText: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  suggestedActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 8,
+  },
+  suggestedBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
   },
 });

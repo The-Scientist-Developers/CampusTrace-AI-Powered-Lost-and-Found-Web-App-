@@ -137,7 +137,11 @@ Focus on being specific and actionable. For example:
 - Instead of "same location", say "both at Engineering Building, increasing likelihood"
 - Instead of "high visual match", say "similar shape, color, and size visible in images"
 
-Be concise but informative. Use only English."""
+IMPORTANT FORMATTING RULES:
+1. Do NOT use any Markdown formatting (no asterisks, no bolding, no lists). Return plain text only.
+2. Add a blank line (spacing) between your sentences/paragraphs to make it easy to read.
+3. Be concise but informative. Use only English.
+"""
 
         print(f"🤖 Calling Gemini 2.5 Flash for intelligent XAI explanation (score: {match_score}%)")
         
@@ -308,6 +312,7 @@ async def generate_description(payload: DescriptionRequest):
         - Refine the language to be clear and concise.
         - Organize the details logically.
         - Add placeholders like [Specify Color] if missing.
+        - IMPORTANT: Do NOT use any Markdown formatting (no asterisks, no bolding, no lists). Return plain text only.
         - Return only the improved description text.
         """
         

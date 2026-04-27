@@ -11,6 +11,7 @@ import {
   Platform,
   Image,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../../contexts/ThemeContext";
 import { getSupabaseClient } from "@campustrace/core";
@@ -171,14 +172,19 @@ const ChatScreen = ({ navigation }) => {
       flex: 1,
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: 20,
-      paddingVertical: 10,
-      paddingHorizontal: 16,
+      borderRadius: 24,
+      paddingVertical: 12,
+      paddingHorizontal: 20,
       fontSize: 15,
       marginRight: 10,
       backgroundColor: colors.background,
       color: colors.text,
-      maxHeight: 100,
+      maxHeight: 120,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 3,
+      elevation: 1,
     },
     sendButton: {
       width: 44,
@@ -189,18 +195,24 @@ const ChatScreen = ({ navigation }) => {
       backgroundColor: colors.primary,
     },
     messageBubble: {
-      paddingVertical: 10,
-      paddingHorizontal: 14,
-      borderRadius: 18,
-      maxWidth: "75%",
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 20,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 1,
     },
     myMessageBubble: {
       backgroundColor: colors.primary,
       borderBottomRightRadius: 4,
     },
     otherMessageBubble: {
-      backgroundColor: colors.card,
+      backgroundColor: colors.card || "#2A2A2A",
       borderBottomLeftRadius: 4,
+      borderWidth: 0.5,
+      borderColor: colors.border,
     },
     myMessageText: {
       color: "#FFFFFF",
@@ -392,6 +404,19 @@ const ChatScreen = ({ navigation }) => {
   const renderMessageItem = ({ item }) => {
     const isMyMessage = item.sender_id === user?.id;
     const showAvatar = !isMyMessage && otherUser;
+    
+    // Format the time securely
+    let messageTime = "";
+    try {
+      if (item.created_at) {
+        messageTime = new Date(item.created_at).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+    } catch (e) {
+      // Ignored
+    }
 
     return (
       <View
@@ -419,23 +444,45 @@ const ChatScreen = ({ navigation }) => {
             )}
           </View>
         )}
-        <View
-          style={[
-            dynamicStyles.messageBubble,
-            isMyMessage
-              ? dynamicStyles.myMessageBubble
-              : dynamicStyles.otherMessageBubble,
-          ]}
-        >
-          <Text
-            style={
-              isMyMessage
-                ? dynamicStyles.myMessageText
-                : dynamicStyles.otherMessageText
-            }
-          >
-            {item.content}
-          </Text>
+        <View style={isMyMessage ? styles.myMessageContainer : styles.otherMessageContainer}>
+          {isMyMessage ? (
+            <LinearGradient
+              colors={[colors.primary, colors.primary + "CC"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[
+                dynamicStyles.messageBubble,
+                dynamicStyles.myMessageBubble,
+              ]}
+            >
+              <Text style={dynamicStyles.myMessageText}>
+                {item.content}
+              </Text>
+            </LinearGradient>
+          ) : (
+            <View
+              style={[
+                dynamicStyles.messageBubble,
+                dynamicStyles.otherMessageBubble,
+              ]}
+            >
+              <Text style={dynamicStyles.otherMessageText}>
+                {item.content}
+              </Text>
+            </View>
+          )}
+          {messageTime ? (
+            <Text
+              style={[
+                styles.timestamp,
+                isMyMessage
+                  ? { alignSelf: "flex-end", color: colors.textSecondary }
+                  : { alignSelf: "flex-start", color: colors.textSecondary },
+              ]}
+            >
+              {messageTime}
+            </Text>
+          ) : null}
         </View>
       </View>
     );
@@ -469,7 +516,7 @@ const ChatScreen = ({ navigation }) => {
           </TouchableOpacity>
 
           <View style={styles.headerCenter}>
-            {otherUser && (
+            {otherUser ? (
               <View style={styles.headerUserInfo}>
                 {otherUser.avatar_url ? (
                   <Image
@@ -503,11 +550,22 @@ const ChatScreen = ({ navigation }) => {
                   )}
                 </View>
               </View>
-            )}
-            {!otherUser && (
-              <Text style={dynamicStyles.headerTitle}>
-                {itemTitle || "Chat"}
-              </Text>
+            ) : (
+              <View style={styles.headerUserInfo}>
+                <View
+                  style={[
+                    styles.headerAvatarPlaceholder,
+                    { backgroundColor: colors.primary + "33" }, // Subtle placeholder
+                  ]}
+                >
+                  <User size={20} color={colors.primary} />
+                </View>
+                <View style={styles.headerTextContainer}>
+                  <Text style={dynamicStyles.headerTitle}>
+                    {itemTitle || "Chat"}
+                  </Text>
+                </View>
+              </View>
             )}
           </View>
 
@@ -639,9 +697,23 @@ const styles = StyleSheet.create({
   otherMessageRow: {
     justifyContent: "flex-start",
   },
+  myMessageContainer: {
+    alignItems: "flex-end",
+    maxWidth: "80%",
+  },
+  otherMessageContainer: {
+    alignItems: "flex-start",
+    maxWidth: "80%",
+  },
+  timestamp: {
+    fontSize: 10,
+    marginTop: 4,
+    marginBottom: 2,
+    marginHorizontal: 4,
+  },
   avatarContainer: {
     marginRight: 8,
-    marginBottom: 2,
+    marginBottom: 16, // Align with bubble taking timestamp into account
   },
   avatar: {
     width: 32,

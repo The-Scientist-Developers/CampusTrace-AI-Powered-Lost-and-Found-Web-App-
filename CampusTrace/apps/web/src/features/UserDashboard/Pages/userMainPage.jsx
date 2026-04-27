@@ -183,18 +183,24 @@ const StatCard = ({
 
 // --- Image Placeholder (from RN layout) ---
 const ItemImage = ({ imageUrl, className }) => (
-  <div
-    className={`bg-neutral-100 dark:bg-neutral-800 overflow-hidden ${className}`}
-  >
+  <div className={`relative bg-neutral-100 dark:bg-zinc-800 overflow-hidden group ${className}`}>
     {imageUrl ? (
-      <img
-        src={imageUrl}
-        alt="item"
-        className="w-full h-full object-cover"
-        loading="lazy"
-      />
+      <>
+        <img
+          src={imageUrl}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover blur-xl opacity-60 scale-110"
+          loading="lazy"
+        />
+        <img
+          src={imageUrl}
+          alt="item"
+          className="relative w-full h-full object-contain z-10 transition-transform duration-300 group-hover:scale-105"
+          loading="lazy"
+        />
+      </>
     ) : (
-      <div className="w-full h-full flex items-center justify-center">
+      <div className="w-full h-full flex items-center justify-center relative z-10">
         <Camera className="w-8 h-8 text-neutral-300 dark:text-neutral-600" />
       </div>
     )}
@@ -208,7 +214,7 @@ const ItemCard = ({ item, onPress }) => (
     className="w-[70vw] sm:w-64 bg-white dark:bg-[#2a2a2a] rounded-2xl border border-neutral-200 dark:border-[#3a3a3a] overflow-hidden flex-shrink-0 snap-start shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
   >
     <ItemImage
-      imageUrl={item.thumbnail_url || item.image_url}
+      imageUrl={item.image_url || item.thumbnail_url}
       className="w-full aspect-square"
     />
     <div className="p-4">
@@ -268,7 +274,7 @@ const MatchCard = ({ item, onPress }) => {
     >
       <div className="relative">
         <ItemImage
-          imageUrl={item.thumbnail_url || item.image_url}
+          imageUrl={item.image_url || item.thumbnail_url}
           className="w-full aspect-square"
         />
         {/* Match Score Badge Overlay */}
@@ -317,7 +323,7 @@ const MatchCard = ({ item, onPress }) => {
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <p className="text-[11px] text-neutral-700 dark:text-neutral-300 leading-snug">
+              <p className="text-[11px] text-neutral-700 dark:text-neutral-300 leading-snug whitespace-pre-wrap">
                 {item.match_explanation}
               </p>
             </div>
@@ -345,7 +351,7 @@ const ActivityItem = ({ item, onPress }) => {
     >
       <div className="relative flex-shrink-0">
         <ItemImage
-          imageUrl={item.thumbnail_url || item.image_url}
+          imageUrl={item.image_url || item.thumbnail_url}
           className="w-14 h-14 rounded-xl shadow-sm"
         />
         <div
@@ -1407,7 +1413,7 @@ export default function UserMainPage({ user }) {
                 </div>
                 <div className="flex gap-4 relative z-10 bg-white/60 dark:bg-[#2a2a2a]/60 p-3 rounded-xl border border-white/40 dark:border-[#3a3a3a]/40 backdrop-blur-md">
                   <ItemImage
-                    imageUrl={myLostItem.thumbnail_url || myLostItem.image_url}
+                    imageUrl={myLostItem.image_url || myLostItem.thumbnail_url}
                     className="w-20 h-20 rounded-lg flex-shrink-0 shadow-sm border border-neutral-100 dark:border-neutral-700"
                   />
                   <div className="flex-1 min-w-0 flex flex-col justify-center">

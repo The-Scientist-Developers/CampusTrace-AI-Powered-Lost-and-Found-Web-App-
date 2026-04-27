@@ -68,6 +68,9 @@ const DashboardScreen = ({ navigation }) => {
   const [myRecentPosts, setMyRecentPosts] = useState([]);
   const [possibleMatches, setPossibleMatches] = useState([]);
   const [myLostItem, setMyLostItem] = useState(null);
+  const [myLostItemsList, setMyLostItemsList] = useState([]);
+  const [currentLostItemIndex, setCurrentLostItemIndex] = useState(0);
+  const [isSearchingMatches, setIsSearchingMatches] = useState(false);
   const [chartData, setChartData] = useState({
     weekly: [],
     categories: [],
@@ -172,14 +175,17 @@ const DashboardScreen = ({ navigation }) => {
           setChartData(data.chartData);
         }
 
-        // Find latest lost item
-        const latestLostItem = (data.myRecentPosts || []).find(
-          (item) =>
-            item.status === "Lost" &&
-            item.moderation_status !== "recovered" &&
-            item.moderation_status !== "rejected",
-        );
-        setMyLostItem(latestLostItem || null);
+        // Setup lost items list
+        const lostItemsList = data.userLostItems || [];
+        setMyLostItemsList(lostItemsList);
+        
+        if (lostItemsList.length > 0) {
+          setMyLostItem(lostItemsList[0]);
+          setCurrentLostItemIndex(0);
+        } else {
+          setMyLostItem(null);
+          setCurrentLostItemIndex(0);
+        }
       } catch (fetchError) {
         clearTimeout(timeoutId);
         if (fetchError.name === "AbortError") {
@@ -199,6 +205,39 @@ const DashboardScreen = ({ navigation }) => {
       setRefreshing(false);
     }
   }, []);
+
+  const fetchMatchesForItem = useCallback(async (item, index) => {
+    if (!item) return;
+    setIsSearchingMatches(true);
+    setCurrentLostItemIndex(index);
+    setMyLostItem(item);
+    try {
+      const token = await getAccessToken();
+      const response = await fetch(`${API_BASE_URL}/api/items/find-matches/${item.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const matches = await response.json();
+        setPossibleMatches(matches);
+      }
+    } catch (e) {
+      console.error("Error fetching matches:", e);
+    } finally {
+      setIsSearchingMatches(false);
+    }
+  }, []);
+
+  const handleNextLostItem = useCallback(() => {
+    if (myLostItemsList.length <= 1) return;
+    const nextIndex = (currentLostItemIndex + 1) % myLostItemsList.length;
+    fetchMatchesForItem(myLostItemsList[nextIndex], nextIndex);
+  }, [myLostItemsList, currentLostItemIndex, fetchMatchesForItem]);
+
+  const handlePrevLostItem = useCallback(() => {
+    if (myLostItemsList.length <= 1) return;
+    const prevIndex = (currentLostItemIndex - 1 + myLostItemsList.length) % myLostItemsList.length;
+    fetchMatchesForItem(myLostItemsList[prevIndex], prevIndex);
+  }, [myLostItemsList, currentLostItemIndex, fetchMatchesForItem]);
 
   const processChartData = useCallback((items) => {
     const weeklyData = [];
@@ -540,12 +579,21 @@ const DashboardScreen = ({ navigation }) => {
                   item={myLostItem}
                   styles={styles}
                   colors={colors}
+                  totalItems={myLostItemsList.length}
+                  currentIndex={currentLostItemIndex}
+                  onNext={handleNextLostItem}
+                  onPrev={handlePrevLostItem}
+                  isSearching={isSearchingMatches}
                   onPress={() =>
                     navigation.navigate("Browse", { itemId: myLostItem.id })
                   }
                 />
 
-                {possibleMatches.length > 0 ? (
+                {isSearchingMatches ? (
+                  <View style={[styles.modernEmptyState, { paddingVertical: 40, backgroundColor: 'transparent' }]}>
+                    <RadarAnimation colors={colors} />
+                  </View>
+                ) : possibleMatches.length > 0 ? (
                   <View style={styles.matchesContainer}>
                     <Text style={styles.matchesTitle}>
                       {possibleMatches.length} Possible Match
@@ -650,15 +698,22 @@ const AnimatedItemCard = memo(({ item, index, onPress, styles, colors }) => {
         onPress={onPress}
         activeOpacity={0.9}
       >
-        <View style={styles.itemCardImageContainer}>
-          {item.thumbnail_url || item.image_url ? (
-            <Image
-              source={{ uri: item.thumbnail_url || item.image_url }}
-              style={styles.itemCardImage}
-              contentFit="cover"
-              transition={200}
-              cachePolicy="memory-disk"
-            />
+        <View style={[styles.itemCardImageContainer, { overflow: 'hidden' }]}>
+          {item.image_url || item.thumbnail_url ? (
+            <>
+              <Image
+                source={{ uri: item.thumbnail_url || item.image_url }}
+                style={[styles.itemCardImage, { position: 'absolute', opacity: 0.6 }]}
+                contentFit="cover"
+              />
+              <Image
+                source={{ uri: item.image_url || item.thumbnail_url }}
+                style={styles.itemCardImage}
+                contentFit="contain"
+                transition={200}
+                cachePolicy="memory-disk"
+              />
+            </>
           ) : (
             <LinearGradient
               colors={["#E0E7FF", "#C7D2FE"]}
@@ -746,15 +801,22 @@ const AnimatedMatchCard = memo(({ item, index, onPress, styles, colors }) => {
           <Text style={styles.matchLabel}>Match</Text>
         </View>
 
-        <View style={styles.matchCardImageContainer}>
-          {item.thumbnail_url || item.image_url ? (
-            <Image
-              source={{ uri: item.thumbnail_url || item.image_url }}
-              style={styles.matchCardImage}
-              contentFit="cover"
-              transition={200}
-              cachePolicy="memory-disk"
-            />
+        <View style={[styles.matchCardImageContainer, { overflow: 'hidden' }]}>
+          {item.image_url || item.thumbnail_url ? (
+            <>
+              <Image
+                source={{ uri: item.thumbnail_url || item.image_url }}
+                style={[styles.matchCardImage, { position: 'absolute', opacity: 0.6 }]}
+                contentFit="cover"
+              />
+              <Image
+                source={{ uri: item.image_url || item.thumbnail_url }}
+                style={styles.matchCardImage}
+                contentFit="contain"
+                transition={200}
+                cachePolicy="memory-disk"
+              />
+            </>
           ) : (
             <View style={styles.imagePlaceholder}>
               <Feather name="package" size={24} color="#9CA3AF" />
@@ -840,59 +902,177 @@ const EnhancedStatCard = memo(
   ),
 );
 
-const ModernLostItemCard = memo(({ item, styles, colors, onPress }) => (
+const RadarAnimation = memo(({ colors }) => {
+  const scale = React.useRef(new Animated.Value(0)).current;
+  const opacity = React.useRef(new Animated.Value(1)).current;
+
+  React.useEffect(() => {
+    Animated.loop(
+      Animated.parallel([
+        Animated.timing(scale, {
+          toValue: 2.5,
+          duration: 1800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 1800,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
+
+  return (
+    <View style={{ alignItems: "center", justifyContent: "center", height: 160 }}>
+      <Animated.View
+        style={{
+          position: "absolute",
+          top: 20,
+          width: 60,
+          height: 60,
+          borderRadius: 30,
+          borderWidth: 2,
+          borderColor: colors.primary,
+          transform: [{ scale }],
+          opacity,
+        }}
+      />
+      <View style={{ 
+        width: 60, height: 60, borderRadius: 30, 
+        backgroundColor: colors.surface, 
+        alignItems: "center", justifyContent: "center",
+        borderWidth: 1, borderColor: colors.border,
+        elevation: 8, shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8,
+        marginTop: 10
+      }}>
+        <MaterialCommunityIcons name="robot-excited" size={32} color={colors.primary} />
+      </View>
+      <Text style={{ marginTop: 32, fontSize: 16, fontWeight: "700", color: colors.primary }}>
+        AI Searching Database...
+      </Text>
+      <Text style={{ marginTop: 6, fontSize: 13, color: colors.textSecondary }}>
+        Analyzing visual and text similarities
+      </Text>
+    </View>
+  );
+});
+
+const ModernLostItemCard = memo(({ item, styles, colors, totalItems, currentIndex, onNext, onPrev, isSearching, onPress }) => {
+  const isDark = colors.background === "#121212" || colors.background === "#000000" || colors.text === "#FFFFFF" || colors.text === "#F9FAFB";
+  
+  return (
   <TouchableOpacity
-    style={styles.lostItemCard}
+    style={[
+      styles.lostItemCard, 
+      { 
+        backgroundColor: isDark ? "rgba(239, 68, 68, 0.04)" : "rgba(239, 68, 68, 0.02)", 
+        borderWidth: 1, 
+        borderColor: isDark ? "rgba(239, 68, 68, 0.15)" : "rgba(239, 68, 68, 0.15)",
+        borderLeftWidth: 4,
+        borderLeftColor: "#EF4444",
+        padding: 16,
+        borderRadius: 16,
+        marginBottom: 16,
+        position: 'relative',
+        overflow: 'hidden'
+      }
+    ]}
     onPress={onPress}
     activeOpacity={0.9}
   >
-    <LinearGradient
-      colors={["#FEF2F2", "#FEE2E2"]}
-      style={styles.lostItemGradient}
-    >
-      <View style={styles.lostItemHeader}>
-        <View style={styles.lostItemBadge}>
-          <MaterialIcons name="error" size={16} color="#EF4444" />
-          <Text style={styles.lostItemBadgeText}>Your Lost Item</Text>
-        </View>
-        <Text style={styles.lostItemTime}>{timeAgo(item.created_at)}</Text>
-      </View>
+    {/* Decorative background blur equivalent */}
+    <View style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: 60, backgroundColor: isDark ? 'rgba(239, 68, 68, 0.06)' : 'rgba(239, 68, 68, 0.04)' }} />
 
-      <View style={styles.lostItemContent}>
-        {item.thumbnail_url || item.image_url ? (
-          <Image
-            source={{ uri: item.thumbnail_url || item.image_url }}
-            style={styles.lostItemImage}
-            contentFit="cover"
-            transition={200}
-            cachePolicy="memory-disk"
-          />
-        ) : (
-          <View style={[styles.lostItemImage, styles.imagePlaceholder]}>
-            <Feather name="package" size={24} color="#9CA3AF" />
+    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+        <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: isDark ? "rgba(239, 68, 68, 0.2)" : "#FEE2E2", alignItems: "center", justifyContent: "center", marginRight: 10 }}>
+          <MaterialIcons name="error" size={14} color="#EF4444" />
+        </View>
+        <View>
+          <Text style={{ fontSize: 14, fontWeight: "700", color: isDark ? "#F87171" : "#DC2626" }}>
+            Your Lost Item
+          </Text>
+          {totalItems > 1 && (
+            <Text style={{ fontSize: 10, fontWeight: "600", color: isDark ? "rgba(248, 113, 113, 0.7)" : "rgba(220, 38, 38, 0.7)", textTransform: 'uppercase', marginTop: 2 }}>
+              Item {currentIndex + 1} of {totalItems}
+            </Text>
+          )}
+        </View>
+      </View>
+      
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <Text style={{ fontSize: 12, color: colors.textSecondary, marginRight: totalItems > 1 ? 8 : 0, backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, overflow: 'hidden' }}>
+          {timeAgo(item.created_at)}
+        </Text>
+        
+        {totalItems > 1 && (
+          <View style={{ flexDirection: "row", backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)", borderRadius: 10, padding: 2, borderWidth: 1, borderColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+            <TouchableOpacity 
+              onPress={(e) => { e.stopPropagation(); onPrev(); }}
+              disabled={isSearching}
+              style={{ padding: 6, opacity: isSearching ? 0.3 : 1 }}
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+            >
+              <Feather name="chevron-left" size={16} color={colors.textSecondary} />
+            </TouchableOpacity>
+            <View style={{ width: 1, height: 16, backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)", alignSelf: 'center' }} />
+            <TouchableOpacity 
+              onPress={(e) => { e.stopPropagation(); onNext(); }}
+              disabled={isSearching}
+              style={{ padding: 6, opacity: isSearching ? 0.3 : 1 }}
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+            >
+              <Feather name="chevron-right" size={16} color={colors.textSecondary} />
+            </TouchableOpacity>
           </View>
         )}
+      </View>
+    </View>
 
-        <View style={styles.lostItemDetails}>
-          <Text style={styles.lostItemTitle}>{item.title}</Text>
-          <Text style={styles.lostItemDescription} numberOfLines={2}>
-            {item.description}
-          </Text>
-          <View style={styles.lostItemTags}>
-            <View style={styles.tag}>
-              <Feather name="tag" size={12} color="#6B7280" />
-              <Text style={styles.tagText}>{item.category}</Text>
-            </View>
-            <View style={styles.tag}>
-              <Feather name="map-pin" size={12} color="#6B7280" />
-              <Text style={styles.tagText}>{item.location || "Campus"}</Text>
-            </View>
+    <View style={{ flexDirection: "row", gap: 14, backgroundColor: isDark ? "rgba(0, 0, 0, 0.2)" : "rgba(255, 255, 255, 0.6)", padding: 12, borderRadius: 12, borderWidth: 1, borderColor: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.03)" }}>
+      {item.image_url || item.thumbnail_url ? (
+        <View style={{ width: 70, height: 70, borderRadius: 10, overflow: 'hidden', borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }}>
+          <Image
+            source={{ uri: item.thumbnail_url || item.image_url }}
+            style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0.6 }}
+            contentFit="cover"
+          />
+          <Image
+            source={{ uri: item.image_url || item.thumbnail_url }}
+            style={{ width: '100%', height: '100%' }}
+            contentFit="contain"
+            transition={200}
+          />
+        </View>
+      ) : (
+        <View style={{ width: 70, height: 70, borderRadius: 10, backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)', alignItems: "center", justifyContent: "center" }}>
+          <Feather name="package" size={24} color={colors.textSecondary} />
+        </View>
+      )}
+
+      <View style={{ flex: 1, justifyContent: "center" }}>
+        <Text style={{ fontSize: 16, fontWeight: "700", color: colors.text, marginBottom: 4 }} numberOfLines={1}>
+          {item.title}
+        </Text>
+        <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 8, lineHeight: 18 }} numberOfLines={1}>
+          {item.description}
+        </Text>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: isDark ? "rgba(239, 68, 68, 0.15)" : "rgba(239, 68, 68, 0.1)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
+            <Feather name="tag" size={10} color={isDark ? "#F87171" : "#DC2626"} />
+            <Text style={{ fontSize: 11, fontWeight: "600", color: isDark ? "#FCA5A5" : "#991B1B" }}>{item.category}</Text>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
+            <Feather name="map-pin" size={10} color={colors.textSecondary} />
+            <Text style={{ fontSize: 11, fontWeight: "600", color: colors.textSecondary }}>{item.location || "Campus"}</Text>
           </View>
         </View>
       </View>
-    </LinearGradient>
+    </View>
   </TouchableOpacity>
-));
+  );
+});
 
 const ModernEmptyState = memo(
   ({
@@ -1319,7 +1499,7 @@ const createStyles = (colors) => {
       paddingRight: 20,
     },
     matchCard: {
-      width: 140,
+      width: 220,
       backgroundColor: colors.surface,
       borderRadius: 16,
       padding: 12,
@@ -1348,7 +1528,7 @@ const createStyles = (colors) => {
     },
     matchCardImageContainer: {
       width: "100%",
-      height: 100,
+      height: 120,
       borderRadius: 12,
       marginBottom: 8,
       overflow: "hidden",

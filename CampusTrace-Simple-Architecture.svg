@@ -1,0 +1,143 @@
+<!-- CampusTrace Simple System Architecture -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800">
+  <defs>
+    <style>
+      .title { font-family: 'Arial', sans-serif; font-size: 28px; font-weight: bold; fill: #ffffff; }
+      .subtitle { font-family: 'Arial', sans-serif; font-size: 14px; fill: #a0a0a0; }
+      .box-title { font-family: 'Arial', sans-serif; font-size: 18px; font-weight: 600; fill: #ffffff; }
+      .box-text { font-family: 'Arial', sans-serif; font-size: 13px; fill: #e0e0e0; }
+      .tech-label { font-family: 'Arial', sans-serif; font-size: 11px; fill: #1877F2; font-weight: 500; }
+      
+      .component-box { fill: #2a2a2a; stroke: #1877F2; stroke-width: 2; }
+      .arrow { stroke: #1877F2; stroke-width: 3; fill: none; marker-end: url(#arrowhead); }
+      .arrow-label { font-family: 'Arial', sans-serif; font-size: 11px; fill: #60a5fa; }
+    </style>
+    
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#1877F2" />
+    </marker>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="800" fill="#1a1a1a"/>
+  
+  <!-- Title -->
+  <text x="600" y="50" text-anchor="middle" class="title">CampusTrace System Architecture</text>
+  <text x="600" y="75" text-anchor="middle" class="subtitle">AI-Powered Lost and Found Platform</text>
+  
+  <!-- ========== FRONTEND LAYER ========== -->
+  
+  <!-- Web App -->
+  <rect x="100" y="150" width="220" height="140" class="component-box" rx="8"/>
+  <text x="210" y="180" text-anchor="middle" class="box-title">Web Application</text>
+  <line x1="120" y1="190" x2="300" y2="190" stroke="#1877F2" stroke-width="1"/>
+  <text x="210" y="215" text-anchor="middle" class="tech-label">React 19.1.0</text>
+  <text x="130" y="240" class="box-text">&#8226; Dashboard</text>
+  <text x="130" y="260" class="box-text">&#8226; Browse Items</text>
+  <text x="130" y="280" class="box-text">&#8226; Admin Panel</text>
+  
+  <!-- Mobile App -->
+  <rect x="360" y="150" width="220" height="140" class="component-box" rx="8"/>
+  <text x="470" y="180" text-anchor="middle" class="box-title">Mobile App</text>
+  <line x1="380" y1="190" x2="560" y2="190" stroke="#1877F2" stroke-width="1"/>
+  <text x="470" y="215" text-anchor="middle" class="tech-label">React Native + Expo</text>
+  <text x="390" y="240" class="box-text">&#8226; iOS and Android</text>
+  <text x="390" y="260" class="box-text">&#8226; Push Notifications</text>
+  <text x="390" y="280" class="box-text">&#8226; Camera Integration</text>
+  
+  <!-- ========== BACKEND LAYER ========== -->
+  
+  <!-- Backend API -->
+  <rect x="100" y="380" width="480" height="160" class="component-box" rx="8"/>
+  <text x="340" y="410" text-anchor="middle" class="box-title">Backend API Server</text>
+  <line x1="120" y1="420" x2="560" y2="420" stroke="#1877F2" stroke-width="1"/>
+  <text x="340" y="445" text-anchor="middle" class="tech-label">Python FastAPI</text>
+  
+  <text x="130" y="475" class="box-text">&#8226; RESTful API Endpoints</text>
+  <text x="130" y="495" class="box-text">&#8226; JWT Authentication</text>
+  <text x="130" y="515" class="box-text">&#8226; Item Management</text>
+  
+  <text x="360" y="475" class="box-text">&#8226; Claim Processing</text>
+  <text x="360" y="495" class="box-text">&#8226; Handover System</text>
+  <text x="360" y="515" class="box-text">&#8226; Real-time Messaging</text>
+  
+  <!-- ========== AI SERVICES ========== -->
+  
+  <!-- AI Service -->
+  <rect x="680" y="150" width="420" height="140" class="component-box" rx="8"/>
+  <text x="890" y="180" text-anchor="middle" class="box-title">AI Services</text>
+  <line x1="700" y1="190" x2="1080" y2="190" stroke="#1877F2" stroke-width="1"/>
+  <text x="890" y="215" text-anchor="middle" class="tech-label">Google Gemini AI</text>
+  <text x="710" y="240" class="box-text">&#8226; Image Analysis and Matching</text>
+  <text x="710" y="260" class="box-text">&#8226; Text Similarity (60-100%)</text>
+  <text x="710" y="280" class="box-text">&#8226; Auto-tagging and Moderation</text>
+  
+  <!-- ========== DATABASE LAYER ========== -->
+  
+  <!-- Database -->
+  <rect x="680" y="380" width="200" height="160" class="component-box" rx="8"/>
+  <text x="780" y="410" text-anchor="middle" class="box-title">Database</text>
+  <line x1="700" y1="420" x2="860" y2="420" stroke="#1877F2" stroke-width="1"/>
+  <text x="780" y="445" text-anchor="middle" class="tech-label">Supabase PostgreSQL</text>
+  <text x="710" y="475" class="box-text">&#8226; Users and Items</text>
+  <text x="710" y="495" class="box-text">&#8226; Claims and Messages</text>
+  <text x="710" y="515" class="box-text">&#8226; Real-time Sync</text>
+  
+  <!-- Storage -->
+  <rect x="900" y="380" width="200" height="160" class="component-box" rx="8"/>
+  <text x="1000" y="410" text-anchor="middle" class="box-title">File Storage</text>
+  <line x1="920" y1="420" x2="1080" y2="420" stroke="#1877F2" stroke-width="1"/>
+  <text x="1000" y="445" text-anchor="middle" class="tech-label">Supabase Storage</text>
+  <text x="930" y="475" class="box-text">&#8226; Item Images</text>
+  <text x="930" y="495" class="box-text">&#8226; User Avatars</text>
+  <text x="930" y="515" class="box-text">&#8226; CDN Delivery</text>
+  
+  <!-- ========== CONNECTIONS ========== -->
+  
+  <!-- Frontend to Backend -->
+  <path d="M 210 290 L 210 380" class="arrow"/>
+  <text x="220" y="340" class="arrow-label">HTTPS/REST</text>
+  
+  <path d="M 470 290 L 470 380" class="arrow"/>
+  <text x="480" y="340" class="arrow-label">HTTPS/REST</text>
+  
+  <!-- Backend to AI -->
+  <path d="M 580 420 L 680 240" class="arrow"/>
+  <text x="610" y="320" class="arrow-label">AI Requests</text>
+  
+  <!-- Backend to Database -->
+  <path d="M 580 460 L 680 460" class="arrow"/>
+  <text x="600" y="450" class="arrow-label">SQL Queries</text>
+  
+  <!-- Backend to Storage -->
+  <path d="M 580 500 L 900 500" class="arrow"/>
+  <text x="710" y="490" class="arrow-label">File Upload/Download</text>
+  
+  <!-- AI to Storage (for image analysis) -->
+  <path d="M 890 290 L 1000 380" class="arrow"/>
+  <text x="920" y="340" class="arrow-label">Image Access</text>
+  
+  <!-- ========== LEGEND ========== -->
+  <rect x="100" y="620" width="1000" height="140" fill="#2a2a2a" stroke="#3a3a3a" stroke-width="1" rx="8"/>
+  
+  <text x="120" y="650" class="box-title">Key Features</text>
+  <text x="120" y="675" class="box-text">&#10003; Smart AI Matching (60-100% accuracy)</text>
+  <text x="120" y="695" class="box-text">&#10003; Real-time Notifications</text>
+  <text x="120" y="715" class="box-text">&#10003; Secure Handover System</text>
+  <text x="120" y="735" class="box-text">&#10003; Multi-platform Support</text>
+  
+  <text x="450" y="650" class="box-title">Security</text>
+  <text x="450" y="675" class="box-text">&#128274; JWT Authentication</text>
+  <text x="450" y="695" class="box-text">&#128737; Row Level Security</text>
+  <text x="450" y="715" class="box-text">&#128274; HTTPS Encryption</text>
+  <text x="450" y="735" class="box-text">&#9993; Magic Link Auth</text>
+  
+  <text x="750" y="650" class="box-title">Technologies</text>
+  <text x="750" y="675" class="box-text">Frontend: React, React Native</text>
+  <text x="750" y="695" class="box-text">Backend: Python FastAPI</text>
+  <text x="750" y="715" class="box-text">AI: Google Gemini</text>
+  <text x="750" y="735" class="box-text">Database: PostgreSQL</text>
+  
+  <!-- Footer -->
+  <text x="600" y="785" text-anchor="middle" class="subtitle">campustrace.site</text>
+</svg>

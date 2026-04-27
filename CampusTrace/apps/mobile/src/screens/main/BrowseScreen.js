@@ -878,15 +878,22 @@ const MarketplaceItem = memo(({ item, colors, styles }) => {
       ]}
     >
       {/* Image with expo-image for lazy loading */}
-      <View style={styles.marketplaceImageContainer}>
-        {item.thumbnail_url || item.image_url ? (
-          <Image
-            source={{ uri: item.thumbnail_url || item.image_url }}
-            style={styles.marketplaceImage}
-            contentFit="cover"
-            transition={200}
-            cachePolicy="memory-disk"
-          />
+      <View style={[styles.marketplaceImageContainer, { overflow: 'hidden' }]}>
+        {item.image_url || item.thumbnail_url ? (
+          <>
+            <Image
+              source={{ uri: item.thumbnail_url || item.image_url }}
+              style={[styles.marketplaceImage, { position: 'absolute', opacity: 0.6 }]}
+              contentFit="cover"
+            />
+            <Image
+              source={{ uri: item.image_url || item.thumbnail_url }}
+              style={styles.marketplaceImage}
+              contentFit="contain"
+              transition={200}
+              cachePolicy="memory-disk"
+            />
+          </>
         ) : (
           <View
             style={[

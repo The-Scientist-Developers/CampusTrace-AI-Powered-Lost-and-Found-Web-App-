@@ -1,0 +1,353 @@
+<!-- CampusTrace Formal System Architecture Diagram -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1800" width="1400" height="1800">
+  <!-- Define styles -->
+  <defs>
+    <style>
+      .title { font-family: 'Arial', sans-serif; font-size: 32px; font-weight: bold; fill: #1a1a1a; }
+      .subtitle { font-family: 'Arial', sans-serif; font-size: 18px; font-weight: 600; fill: #1877F2; }
+      .layer-title { font-family: 'Arial', sans-serif; font-size: 16px; font-weight: bold; fill: #1a1a1a; }
+      .component-title { font-family: 'Arial', sans-serif; font-size: 14px; font-weight: 600; fill: #1a1a1a; }
+      .component-text { font-family: 'Arial', sans-serif; font-size: 11px; fill: #4a4a4a; }
+      .label { font-family: 'Arial', sans-serif; font-size: 10px; fill: #666; }
+      
+      /* Component boxes */
+      .client-box { fill: #E3F2FD; stroke: #1877F2; stroke-width: 2; }
+      .api-box { fill: #F3E5F5; stroke: #A855F7; stroke-width: 2; }
+      .service-box { fill: #FFF3E0; stroke: #FF9800; stroke-width: 2; }
+      .data-box { fill: #E8F5E9; stroke: #22C55E; stroke-width: 2; }
+      .external-box { fill: #FCE4EC; stroke: #EC4899; stroke-width: 2; }
+      
+      /* Arrows */
+      .arrow { stroke: #666; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .arrow-bi { stroke: #666; stroke-width: 2; fill: none; marker-end: url(#arrowhead); marker-start: url(#arrowhead-start); }
+      .arrow-data { stroke: #22C55E; stroke-width: 2; fill: none; marker-end: url(#arrowhead-green); }
+      .arrow-auth { stroke: #1877F2; stroke-width: 2; fill: none; marker-end: url(#arrowhead-blue); stroke-dasharray: 5,5; }
+    </style>
+    
+    <!-- Arrow markers -->
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#666" />
+    </marker>
+    <marker id="arrowhead-start" markerWidth="10" markerHeight="10" refX="1" refY="3" orient="auto">
+      <polygon points="10 0, 0 3, 10 6" fill="#666" />
+    </marker>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#22C55E" />
+    </marker>
+    <marker id="arrowhead-blue" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#1877F2" />
+    </marker>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1400" height="1800" fill="#FAFAFA"/>
+  
+  <!-- Title -->
+  <text x="700" y="50" text-anchor="middle" class="title">CampusTrace System Architecture</text>
+  <text x="700" y="80" text-anchor="middle" class="subtitle">AI-Powered Lost and Found Platform</text>
+  
+  <!-- ========== PRESENTATION LAYER ========== -->
+  <rect x="50" y="120" width="1300" height="280" fill="none" stroke="#1877F2" stroke-width="3" rx="10"/>
+  <text x="70" y="145" class="layer-title">PRESENTATION LAYER</text>
+  
+  <!-- Web Application -->
+  <rect x="100" y="170" width="280" height="200" class="client-box" rx="8"/>
+  <text x="240" y="195" text-anchor="middle" class="component-title">Web Application</text>
+  <text x="240" y="215" text-anchor="middle" class="component-text">React 19.1.0</text>
+  <line x1="120" y1="225" x2="360" y2="225" stroke="#1877F2" stroke-width="1"/>
+  
+  <text x="120" y="245" class="component-text">• Dashboard</text>
+  <text x="120" y="265" class="component-text">• Browse Items</text>
+  <text x="120" y="285" class="component-text">• Post Items</text>
+  <text x="120" y="305" class="component-text">• Messaging</text>
+  <text x="120" y="325" class="component-text">• Admin Panel</text>
+  <text x="120" y="345" class="component-text">• Profile & Settings</text>
+  
+  <!-- Mobile Application -->
+  <rect x="420" y="170" width="280" height="200" class="client-box" rx="8"/>
+  <text x="560" y="195" text-anchor="middle" class="component-title">Mobile Application</text>
+  <text x="560" y="215" text-anchor="middle" class="component-text">React Native + Expo 54</text>
+  <line x1="440" y1="225" x2="680" y2="225" stroke="#1877F2" stroke-width="1"/>
+  
+  <text x="440" y="245" class="component-text">• Native Navigation</text>
+  <text x="440" y="265" class="component-text">• Push Notifications</text>
+  <text x="440" y="285" class="component-text">• Camera Integration</text>
+  <text x="440" y="305" class="component-text">• Offline Support</text>
+  <text x="440" y="325" class="component-text">• Biometric Auth</text>
+  <text x="440" y="345" class="component-text">• Theme System</text>
+  
+  <!-- Shared Core Package -->
+  <rect x="740" y="170" width="280" height="200" class="client-box" rx="8"/>
+  <text x="880" y="195" text-anchor="middle" class="component-title">Shared Core Package</text>
+  <text x="880" y="215" text-anchor="middle" class="component-text">@campustrace/core</text>
+  <line x1="760" y1="225" x2="1000" y2="225" stroke="#1877F2" stroke-width="1"/>
+  
+  <text x="760" y="245" class="component-text">• API Client</text>
+  <text x="760" y="265" class="component-text">• Auth Context</text>
+  <text x="760" y="285" class="component-text">• Supabase Client</text>
+  <text x="760" y="305" class="component-text">• Shared Utils</text>
+  <text x="760" y="325" class="component-text">• Theme Constants</text>
+  <text x="760" y="345" class="component-text">• Type Definitions</text>
+  
+  <!-- User Devices -->
+  <rect x="1060" y="170" width="260" height="200" class="client-box" rx="8"/>
+  <text x="1190" y="195" text-anchor="middle" class="component-title">User Devices</text>
+  <line x1="1080" y1="205" x2="1300" y2="205" stroke="#1877F2" stroke-width="1"/>
+  
+  <text x="1080" y="230" class="component-text">🖥️ Desktop Browsers</text>
+  <text x="1100" y="250" class="label">Chrome, Firefox, Safari</text>
+  
+  <text x="1080" y="280" class="component-text">📱 iOS Devices</text>
+  <text x="1100" y="300" class="label">iPhone, iPad</text>
+  
+  <text x="1080" y="330" class="component-text">🤖 Android Devices</text>
+  <text x="1100" y="350" class="label">Phones, Tablets</text>
+  
+  <!-- ========== API GATEWAY LAYER ========== -->
+  <rect x="50" y="440" width="1300" height="180" fill="none" stroke="#A855F7" stroke-width="3" rx="10"/>
+  <text x="70" y="465" class="layer-title">API GATEWAY & ROUTING LAYER</text>
+  
+  <!-- FastAPI Backend -->
+  <rect x="100" y="490" width="400" height="110" class="api-box" rx="8"/>
+  <text x="300" y="515" text-anchor="middle" class="component-title">FastAPI Backend Server</text>
+  <text x="300" y="535" text-anchor="middle" class="component-text">Python 3.11 + FastAPI</text>
+  <line x1="120" y1="545" x2="480" y2="545" stroke="#A855F7" stroke-width="1"/>
+  
+  <text x="120" y="565" class="component-text">• RESTful API Endpoints</text>
+  <text x="120" y="585" class="component-text">• JWT Authentication</text>
+  
+  <text x="300" y="565" class="component-text">• CORS Middleware</text>
+  <text x="300" y="585" class="component-text">• Rate Limiting</text>
+  
+  <!-- API Routers -->
+  <rect x="540" y="490" width="760" height="110" class="api-box" rx="8"/>
+  <text x="920" y="515" text-anchor="middle" class="component-title">API Router Modules</text>
+  <line x1="560" y1="525" x2="1280" y2="525" stroke="#A855F7" stroke-width="1"/>
+  
+  <text x="560" y="545" class="component-text">• /items - Item CRUD</text>
+  <text x="560" y="565" class="component-text">• /claims - Claim Management</text>
+  <text x="560" y="585" class="component-text">• /handover - Handover Process</text>
+  
+  <text x="760" y="545" class="component-text">• /messages - Messaging</text>
+  <text x="760" y="565" class="component-text">• /notifications - Alerts</text>
+  <text x="760" y="585" class="component-text">• /dashboard - Analytics</text>
+  
+  <text x="960" y="545" class="component-text">• /badges - Gamification</text>
+  <text x="960" y="565" class="component-text">• /user_actions - Activity</text>
+  <text x="960" y="585" class="component-text">• /push_notifications</text>
+  
+  <text x="1160" y="545" class="component-text">• /admin - Admin Panel</text>
+  <text x="1160" y="565" class="component-text">• /profile - User Profile</text>
+  <text x="1160" y="585" class="component-text">• /auth - Authentication</text>
+  
+  <!-- ========== BUSINESS LOGIC LAYER ========== -->
+  <rect x="50" y="660" width="1300" height="240" fill="none" stroke="#FF9800" stroke-width="3" rx="10"/>
+  <text x="70" y="685" class="layer-title">BUSINESS LOGIC & SERVICES LAYER</text>
+  
+  <!-- AI Services -->
+  <rect x="100" y="710" width="280" height="170" class="service-box" rx="8"/>
+  <text x="240" y="735" text-anchor="middle" class="component-title">AI Services</text>
+  <line x1="120" y1="745" x2="360" y2="745" stroke="#FF9800" stroke-width="1"/>
+  
+  <text x="120" y="765" class="component-text">🤖 Gemini AI Integration</text>
+  <text x="130" y="785" class="label">• Image Analysis</text>
+  <text x="130" y="800" class="label">• Text Similarity</text>
+  <text x="130" y="815" class="label">• Smart Matching (60-100%)</text>
+  <text x="130" y="830" class="label">• Auto-tagging</text>
+  <text x="130" y="845" class="label">• Content Moderation</text>
+  <text x="130" y="860" class="label">• Chatbot Assistant</text>
+  
+  <!-- Core Services -->
+  <rect x="420" y="710" width="280" height="170" class="service-box" rx="8"/>
+  <text x="560" y="735" text-anchor="middle" class="component-title">Core Services</text>
+  <line x1="440" y1="745" x2="680" y2="745" stroke="#FF9800" stroke-width="1"/>
+  
+  <text x="440" y="765" class="component-text">• Item Management</text>
+  <text x="440" y="785" class="component-text">• Claim Processing</text>
+  <text x="440" y="805" class="component-text">• Handover Coordination</text>
+  <text x="440" y="825" class="component-text">• User Actions Tracking</text>
+  <text x="440" y="845" class="component-text">• Badge System</text>
+  <text x="440" y="865" class="component-text">• Leaderboard Logic</text>
+  
+  <!-- Communication Services -->
+  <rect x="740" y="710" width="280" height="170" class="service-box" rx="8"/>
+  <text x="880" y="735" text-anchor="middle" class="component-title">Communication Services</text>
+  <line x1="760" y1="745" x2="1000" y2="745" stroke="#FF9800" stroke-width="1"/>
+  
+  <text x="760" y="765" class="component-text">📧 Email Service</text>
+  <text x="770" y="785" class="label">• Magic Link Auth</text>
+  <text x="770" y="800" class="label">• Notifications</text>
+  
+  <text x="760" y="825" class="component-text">💬 Real-time Messaging</text>
+  <text x="770" y="845" class="label">• WebSocket Support</text>
+  
+  <text x="760" y="865" class="component-text">🔔 Push Notifications</text>
+  
+  <!-- Security & Utils -->
+  <rect x="1060" y="710" width="260" height="170" class="service-box" rx="8"/>
+  <text x="1190" y="735" text-anchor="middle" class="component-title">Security & Utils</text>
+  <line x1="1080" y1="745" x2="1300" y2="745" stroke="#FF9800" stroke-width="1"/>
+  
+  <text x="1080" y="765" class="component-text">🔐 Authentication</text>
+  <text x="1090" y="785" class="label">• JWT Tokens</text>
+  <text x="1090" y="800" class="label">• Session Management</text>
+  
+  <text x="1080" y="825" class="component-text">🛡️ Authorization</text>
+  <text x="1090" y="845" class="label">• Role-based Access</text>
+  
+  <text x="1080" y="865" class="component-text">📊 Analytics Utils</text>
+  
+  <!-- ========== DATA LAYER ========== -->
+  <rect x="50" y="940" width="1300" height="200" fill="none" stroke="#22C55E" stroke-width="3" rx="10"/>
+  <text x="70" y="965" class="layer-title">DATA PERSISTENCE LAYER</text>
+  
+  <!-- Supabase -->
+  <rect x="100" y="990" width="400" height="130" class="data-box" rx="8"/>
+  <text x="300" y="1015" text-anchor="middle" class="component-title">Supabase (PostgreSQL)</text>
+  <text x="300" y="1035" text-anchor="middle" class="component-text">Primary Database</text>
+  <line x1="120" y1="1045" x2="480" y2="1045" stroke="#22C55E" stroke-width="1"/>
+  
+  <text x="120" y="1065" class="component-text">📋 Tables:</text>
+  <text x="130" y="1085" class="label">• users, profiles, items</text>
+  <text x="130" y="1100" class="label">• claims, handovers, messages</text>
+  
+  <text x="300" y="1065" class="component-text">🔍 Features:</text>
+  <text x="310" y="1085" class="label">• Real-time subscriptions</text>
+  <text x="310" y="1100" class="label">• Row Level Security (RLS)</text>
+  
+  <!-- Storage -->
+  <rect x="540" y="990" width="380" height="130" class="data-box" rx="8"/>
+  <text x="730" y="1015" text-anchor="middle" class="component-title">Supabase Storage</text>
+  <text x="730" y="1035" text-anchor="middle" class="component-text">File Storage Service</text>
+  <line x1="560" y1="1045" x2="900" y2="1045" stroke="#22C55E" stroke-width="1"/>
+  
+  <text x="560" y="1065" class="component-text">📁 Buckets:</text>
+  <text x="570" y="1085" class="label">• item-images (public)</text>
+  <text x="570" y="1100" class="label">• avatars (public)</text>
+  
+  <text x="730" y="1065" class="component-text">🖼️ Features:</text>
+  <text x="740" y="1085" class="label">• Image optimization</text>
+  <text x="740" y="1100" class="label">• CDN delivery</text>
+  
+  <!-- Cache & Session -->
+  <rect x="960" y="990" width="360" height="130" class="data-box" rx="8"/>
+  <text x="1140" y="1015" text-anchor="middle" class="component-title">Cache & Session Store</text>
+  <line x1="980" y1="1025" x2="1300" y2="1025" stroke="#22C55E" stroke-width="1"/>
+  
+  <text x="980" y="1045" class="component-text">💾 AsyncStorage (Mobile)</text>
+  <text x="990" y="1065" class="label">• Offline data</text>
+  <text x="990" y="1080" class="label">• User preferences</text>
+  
+  <text x="980" y="1100" class="component-text">🍪 LocalStorage (Web)</text>
+  
+  <!-- ========== EXTERNAL SERVICES ========== -->
+  <rect x="50" y="1180" width="1300" height="180" fill="none" stroke="#EC4899" stroke-width="3" rx="10"/>
+  <text x="70" y="1205" class="layer-title">EXTERNAL SERVICES & INTEGRATIONS</text>
+  
+  <!-- Google AI -->
+  <rect x="100" y="1230" width="280" height="110" class="external-box" rx="8"/>
+  <text x="240" y="1255" text-anchor="middle" class="component-title">Google Gemini AI</text>
+  <line x1="120" y1="1265" x2="360" y2="1265" stroke="#EC4899" stroke-width="1"/>
+  <text x="120" y="1285" class="component-text">• Vision API</text>
+  <text x="120" y="1305" class="component-text">• Text Analysis</text>
+  <text x="120" y="1325" class="component-text">• Matching Algorithm</text>
+  
+  <!-- Email Service -->
+  <rect x="420" y="1230" width="280" height="110" class="external-box" rx="8"/>
+  <text x="560" y="1255" text-anchor="middle" class="component-title">Email Service</text>
+  <line x1="440" y1="1265" x2="680" y2="1265" stroke="#EC4899" stroke-width="1"/>
+  <text x="440" y="1285" class="component-text">• SMTP Server</text>
+  <text x="440" y="1305" class="component-text">• Magic Link Delivery</text>
+  <text x="440" y="1325" class="component-text">• Notification Emails</text>
+  
+  <!-- Push Notification -->
+  <rect x="740" y="1230" width="280" height="110" class="external-box" rx="8"/>
+  <text x="880" y="1255" text-anchor="middle" class="component-title">Expo Push Service</text>
+  <line x1="760" y1="1265" x2="1000" y2="1265" stroke="#EC4899" stroke-width="1"/>
+  <text x="760" y="1285" class="component-text">• Mobile Push Tokens</text>
+  <text x="760" y="1305" class="component-text">• Notification Delivery</text>
+  <text x="760" y="1325" class="component-text">• Badge Updates</text>
+  
+  <!-- Deployment -->
+  <rect x="1060" y="1230" width="260" height="110" class="external-box" rx="8"/>
+  <text x="1190" y="1255" text-anchor="middle" class="component-title">Deployment</text>
+  <line x1="1080" y1="1265" x2="1300" y2="1265" stroke="#EC4899" stroke-width="1"/>
+  <text x="1080" y="1285" class="component-text">☁️ Render (Backend)</text>
+  <text x="1080" y="1305" class="component-text">📱 EAS Build (Mobile)</text>
+  <text x="1080" y="1325" class="component-text">🌐 Vercel/Netlify (Web)</text>
+  
+  <!-- ========== CONNECTIONS ========== -->
+  
+  <!-- Presentation to API Gateway -->
+  <path d="M 240 370 L 240 490" class="arrow"/>
+  <path d="M 560 370 L 560 490" class="arrow"/>
+  <path d="M 880 370 L 880 490" class="arrow"/>
+  
+  <!-- API Gateway to Business Logic -->
+  <path d="M 300 600 L 240 710" class="arrow"/>
+  <path d="M 300 600 L 560 710" class="arrow"/>
+  <path d="M 920 600 L 880 710" class="arrow"/>
+  <path d="M 920 600 L 1190 710" class="arrow"/>
+  
+  <!-- Business Logic to Data Layer -->
+  <path d="M 240 880 L 300 990" class="arrow-data"/>
+  <path d="M 560 880 L 300 990" class="arrow-data"/>
+  <path d="M 560 880 L 730 990" class="arrow-data"/>
+  <path d="M 880 880 L 730 990" class="arrow-data"/>
+  <path d="M 1190 880 L 1140 990" class="arrow-data"/>
+  
+  <!-- Business Logic to External Services -->
+  <path d="M 240 880 L 240 1230" class="arrow"/>
+  <path d="M 560 880 L 560 1230" class="arrow"/>
+  <path d="M 880 880 L 880 1230" class="arrow"/>
+  
+  <!-- Auth flow -->
+  <path d="M 1190 880 L 1190 920 L 300 920 L 300 990" class="arrow-auth"/>
+  
+  <!-- Legend -->
+  <rect x="50" y="1400" width="1300" height="360" fill="white" stroke="#ccc" stroke-width="1" rx="10"/>
+  <text x="70" y="1430" class="layer-title">SYSTEM INFORMATION & DATA FLOW</text>
+  
+  <!-- Technology Stack -->
+  <text x="70" y="1460" class="component-title">Technology Stack:</text>
+  <text x="70" y="1480" class="component-text">• Frontend: React 19.1.0, React Native 0.81.5, Expo 54</text>
+  <text x="70" y="1500" class="component-text">• Backend: Python 3.11, FastAPI, Uvicorn</text>
+  <text x="70" y="1520" class="component-text">• Database: PostgreSQL (via Supabase)</text>
+  <text x="70" y="1540" class="component-text">• AI: Google Gemini AI (Vision + Text)</text>
+  <text x="70" y="1560" class="component-text">• Auth: Supabase Auth (Magic Link, JWT)</text>
+  <text x="70" y="1580" class="component-text">• Storage: Supabase Storage (CDN)</text>
+  
+  <!-- Key Features -->
+  <text x="700" y="1460" class="component-title">Key Features:</text>
+  <text x="700" y="1480" class="component-text">✓ AI-Powered Smart Matching (60-100% accuracy)</text>
+  <text x="700" y="1500" class="component-text">✓ Real-time Messaging & Notifications</text>
+  <text x="700" y="1520" class="component-text">✓ Secure Handover System</text>
+  <text x="700" y="1540" class="component-text">✓ Gamification (Badges & Leaderboard)</text>
+  <text x="700" y="1560" class="component-text">✓ Multi-platform (Web + iOS + Android)</text>
+  <text x="700" y="1580" class="component-text">✓ Accessibility Features (Themes, Font Sizes)</text>
+  
+  <!-- Data Flow -->
+  <text x="70" y="1620" class="component-title">Data Flow Patterns:</text>
+  <line x1="70" y1="1635" x2="120" y2="1635" class="arrow" stroke-width="3"/>
+  <text x="130" y="1640" class="component-text">Standard API Request/Response</text>
+  
+  <line x1="70" y1="1655" x2="120" y2="1655" class="arrow-bi" stroke-width="3"/>
+  <text x="130" y="1660" class="component-text">Bidirectional Communication (WebSocket)</text>
+  
+  <line x1="70" y1="1675" x2="120" y2="1675" class="arrow-data" stroke-width="3"/>
+  <text x="130" y="1680" class="component-text">Database Operations</text>
+  
+  <line x1="70" y1="1695" x2="120" y2="1695" class="arrow-auth" stroke-width="3"/>
+  <text x="130" y="1700" class="component-text">Authentication Flow</text>
+  
+  <!-- Security -->
+  <text x="700" y="1620" class="component-title">Security Measures:</text>
+  <text x="700" y="1640" class="component-text">🔐 JWT Token Authentication</text>
+  <text x="700" y="1660" class="component-text">🛡️ Row Level Security (RLS) in Database</text>
+  <text x="700" y="1680" class="component-text">🔒 HTTPS/TLS Encryption</text>
+  <text x="700" y="1700" class="component-text">✉️ Magic Link Email Authentication</text>
+  <text x="700" y="1720" class="component-text">👤 Role-based Access Control (User/Admin)</text>
+  
+  <!-- Footer -->
+  <text x="700" y="1750" text-anchor="middle" class="label">CampusTrace © 2024 | campustrace.site</text>
+</svg>

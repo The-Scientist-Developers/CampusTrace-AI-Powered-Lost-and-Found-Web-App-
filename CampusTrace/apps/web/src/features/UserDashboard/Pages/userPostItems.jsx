@@ -1146,7 +1146,12 @@ export default function PostNewItem() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 required
-                className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500 transition-colors resize-none outline-none"
+                disabled={isGenerating}
+                className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-500 resize-none outline-none ${
+                  isGenerating 
+                    ? "border-purple-400 dark:border-purple-500 bg-purple-50/50 dark:bg-purple-900/20 text-purple-800 dark:text-purple-200 shadow-[0_0_15px_rgba(168,85,247,0.4)] animate-pulse" 
+                    : "border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white focus:border-primary-500 dark:focus:border-primary-500"
+                }`}
                 placeholder="Describe the item in detail... (color, brand, distinguishing features, etc.)"
               ></textarea>
             </div>
