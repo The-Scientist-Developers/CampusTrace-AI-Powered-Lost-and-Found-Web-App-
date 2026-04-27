@@ -33,7 +33,7 @@ export default ({ config }) => {
     assetBundlePatterns: ["**/*"],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "app.campustrace.site",
+      bundleIdentifier: "site.campustrace.app",
     },
     android: {
       adaptiveIcon: {
@@ -41,7 +41,7 @@ export default ({ config }) => {
         backgroundColor: "#ffffff",
       },
       edgeToEdgeEnabled: true,
-      package: "app.campustrace.site",
+      package: "site.campustrace.app",
       permissions: [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
@@ -53,13 +53,10 @@ export default ({ config }) => {
       [
         "expo-notifications",
         {
-          icon: "./assets/notification-icon.png",
           color: "#2563EB",
-          sounds: ["./assets/notification-sound.wav"],
         },
       ],
     ],
-    privacy: "https://campustrace.site/privacy",
     web: {
       favicon: "./assets/favicon.png",
       bundler: "metro",

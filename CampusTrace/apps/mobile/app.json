@@ -14,14 +14,14 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.campustrace.mobile"
+      "bundleIdentifier": "site.campustrace.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-Icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.campustrace.mobile"
+      "package": "site.campustrace.app"
     },
     "web": {
       "favicon": "./assets/favIcon.png"

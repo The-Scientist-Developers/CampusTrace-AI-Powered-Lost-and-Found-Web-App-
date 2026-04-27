@@ -9,7 +9,7 @@ const workspaceRoot = path.resolve(projectRoot, "../../");
 const config = getDefaultConfig(projectRoot);
 
 // Watch the monorepo root so local packages are picked up
-config.watchFolders = [workspaceRoot];
+config.watchFolders = [...(config.watchFolders || []), workspaceRoot];
 
 // Ensure Metro resolves dependencies from the app's node_modules first
 config.resolver.nodeModulesPaths = [

@@ -127,7 +127,7 @@ const HandoverControls = ({
 const ChatScreen = ({ navigation }) => {
   const { colors } = useTheme();
   const route = useRoute();
-  const { conversationId, itemTitle, itemStatus } = route.params || {};
+  const { conversationId, itemTitle, itemStatus, otherUser: routeOtherUser } = route.params || {};
 
   // Create dynamic styles with theme colors
   const dynamicStyles = StyleSheet.create({
@@ -163,7 +163,9 @@ const ChatScreen = ({ navigation }) => {
     inputContainer: {
       flexDirection: "row",
       alignItems: "center",
-      padding: 10,
+      paddingTop: 10,
+      paddingBottom: Platform.OS === "android" ? 16 : 10,
+      paddingHorizontal: 10,
       borderTopWidth: 1,
       borderTopColor: colors.border,
       backgroundColor: colors.surface,
@@ -275,7 +277,7 @@ const ChatScreen = ({ navigation }) => {
   const [user, setUser] = useState(null);
   const [conversationDetails, setConversationDetails] = useState(null);
   const [isSending, setIsSending] = useState(false);
-  const [otherUser, setOtherUser] = useState(null);
+  const [otherUser, setOtherUser] = useState(routeOtherUser || null);
 
   // Get user
   useEffect(() => {
@@ -297,6 +299,13 @@ const ChatScreen = ({ navigation }) => {
         setLoading(true);
         const supabase = getSupabaseClient();
 
+        // Get the current user directly (no dependency on state)
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (!currentUser) {
+          setLoading(false);
+          return;
+        }
+
         // Fetch conversation details (to know who is finder/claimant)
         const { data: convoData, error: convoError } = await supabase
           .from("conversations")
@@ -309,19 +318,21 @@ const ChatScreen = ({ navigation }) => {
 
         // Determine the other user in the conversation
         const otherUserId =
-          convoData.user1_id === user?.id
-            ? convoData.user2_id
-            : convoData.user1_id;
+          convoData.finder_id === currentUser.id
+            ? convoData.claimant_id
+            : convoData.finder_id;
 
-        // Fetch other user's profile
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("id, full_name, avatar_url")
-          .eq("id", otherUserId)
-          .single();
+        // Fetch other user's profile if not already provided via navigation
+        if (!routeOtherUser && otherUserId) {
+          const { data: profileData, error: profileError } = await supabase
+            .from("profiles")
+            .select("id, full_name, avatar_url")
+            .eq("id", otherUserId)
+            .single();
 
-        if (!profileError && profileData) {
-          setOtherUser(profileData);
+          if (!profileError && profileData) {
+            setOtherUser(profileData);
+          }
         }
 
         // Fetch messages
@@ -329,7 +340,7 @@ const ChatScreen = ({ navigation }) => {
           .from("messages")
           .select("*, sender:profiles(id, full_name, avatar_url)")
           .eq("conversation_id", conversationId)
-          .order("created_at", { ascending: false }); // Fetch in reverse for FlatList
+          .order("created_at", { ascending: false });
 
         if (msgError) throw msgError;
         setMessages(msgData || []);
@@ -376,7 +387,7 @@ const ChatScreen = ({ navigation }) => {
     return () => {
       supabase.removeChannel(subscription);
     };
-  }, [conversationId]);
+  }, [conversationId, user]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !user || !conversationId || isSending) return;
@@ -503,11 +514,10 @@ const ChatScreen = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={dynamicStyles.container}>
+    <SafeAreaView style={dynamicStyles.container} edges={Platform.OS === "android" ? ["top"] : ["top", "bottom"]}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
         {/* Header */}
         <View style={dynamicStyles.header}>

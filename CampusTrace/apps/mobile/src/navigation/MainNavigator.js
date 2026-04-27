@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { View, Image, StyleSheet } from "react-native";
+import { View, Image, StyleSheet, Platform } from "react-native";
 import {
   Feather,
   MaterialIcons,
@@ -192,9 +192,9 @@ export default function MainNavigator() {
           backgroundColor: colors.background,
           borderTopWidth: 0.5,
           borderTopColor: colors.border,
-          paddingBottom: 20,
+          paddingBottom: Platform.OS === "android" ? 12 : 20,
           paddingTop: 8,
-          height: 68,
+          height: Platform.OS === "android" ? 72 : 68,
         },
         tabBarShowLabel: false,
         headerShown: false,
