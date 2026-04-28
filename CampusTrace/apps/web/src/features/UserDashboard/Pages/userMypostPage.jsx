@@ -1894,6 +1894,7 @@ function MyPostsPage({ user }) {
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [claims, setClaims] = useState({});
+  const [receivedClaims, setReceivedClaims] = useState([]);
   const [myClaims, setMyClaims] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("myPosts");
@@ -1923,6 +1924,27 @@ function MyPostsPage({ user }) {
       toast.error("Could not load incoming claims.");
     }
   };
+
+  const fetchReceivedClaims = useCallback(async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("claims")
+        .select("*, claimant:profiles!claimant_id(full_name, email), item:items(*)")
+        .eq("finder_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      console.log("📥 Received claims:", data);
+      setReceivedClaims(data || []);
+    } catch (err) {
+      console.error("❌ Error fetching received claims:", err);
+      toast.error("Failed to load received claims.");
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
 
   const fetchPosts = useCallback(async () => {
     if (!user?.id) {
@@ -1994,9 +2016,9 @@ function MyPostsPage({ user }) {
     } else if (activeTab === "myClaims") {
       fetchMyClaims();
     } else if (activeTab === "claims") {
-      fetchPosts(); // fetchPosts also fetches claims for found items
+      fetchReceivedClaims();
     }
-  }, [fetchPosts, fetchMyClaims, activeTab]);
+  }, [fetchPosts, fetchMyClaims, fetchReceivedClaims, activeTab]);
 
   const handleDeletePost = async (postId) => {
     if (
@@ -2160,10 +2182,7 @@ function MyPostsPage({ user }) {
       ["recovered", "rejected"].includes(p.moderation_status) ||
       p.status?.toLowerCase() === "recovered"
   ).length;
-  const claimsCount = Object.values(claims).reduce(
-    (acc, claimList) => acc + (claimList?.length || 0),
-    0
-  );
+  const claimsCount = receivedClaims.length;
   const myClaimsCount = myClaims.length;
 
   if (loading) {
@@ -2601,7 +2620,7 @@ function MyPostsPage({ user }) {
           </>
         ) : (
           <div className="space-y-6">
-            {posts.filter((p) => (p.status?.toLowerCase() === "found" || p.status?.toLowerCase() === "pending handover") && claims[p.id]?.length > 0).length === 0 ? (
+            {receivedClaims.length === 0 ? (
               <div className="text-center p-16 bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl">
                 <MessageSquare className="w-16 h-16 text-neutral-300 dark:text-neutral-600 mx-auto mb-4" />
                 <p className="text-neutral-500 dark:text-gray-400 text-lg font-medium mb-2">
@@ -2612,62 +2631,68 @@ function MyPostsPage({ user }) {
                 </p>
               </div>
             ) : (
-            posts
-              .filter((p) => (p.status?.toLowerCase() === "found" || p.status?.toLowerCase() === "pending handover") && claims[p.id]?.length > 0)
-              .map((post) => (
-                <div
-                  key={`claim-item-${post.id}`}
-                  className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden"
-                >
-                  <div className="p-6 bg-gradient-to-r from-neutral-50 to-neutral-100 dark:bg-gradient-to-r dark:from-[#2a2a2a] dark:to-[#2e2e2e] border-b border-neutral-200 dark:border-neutral-700">
-                    <div className="flex items-center gap-4">
-                      {post.image_url ? (
-                        <LazyLoadImage
-                          src={post.image_url}
-                          alt={post.title}
-                          effect="blur"
-                          className="w-16 h-16 object-cover rounded-lg"
-                        />
-                      ) : (
-                        <div className="w-16 h-16 bg-neutral-200 dark:bg-neutral-700 rounded-lg flex items-center justify-center">
-                          <Camera className="w-8 h-8 text-neutral-400 dark:text-neutral-500" />
+              (() => {
+                // Group receivedClaims by item
+                const grouped = receivedClaims.reduce((acc, claim) => {
+                  const itemId = claim.item_id;
+                  if (!acc[itemId]) acc[itemId] = { item: claim.item, claims: [] };
+                  acc[itemId].claims.push(claim);
+                  return acc;
+                }, {});
+                return Object.values(grouped).map(({ item, claims: itemClaims }) => (
+                  <div
+                    key={`claim-item-${item?.id}`}
+                    className="bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl shadow-sm overflow-hidden"
+                  >
+                    <div className="p-6 bg-gradient-to-r from-neutral-50 to-neutral-100 dark:bg-gradient-to-r dark:from-[#2a2a2a] dark:to-[#2e2e2e] border-b border-neutral-200 dark:border-neutral-700">
+                      <div className="flex items-center gap-4">
+                        {item?.image_url ? (
+                          <LazyLoadImage
+                            src={item.image_url}
+                            alt={item.title}
+                            effect="blur"
+                            className="w-16 h-16 object-cover rounded-lg"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 bg-neutral-200 dark:bg-neutral-700 rounded-lg flex items-center justify-center">
+                            <Camera className="w-8 h-8 text-neutral-400 dark:text-neutral-500" />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
+                            {item?.title || "Unknown Item"}
+                          </h3>
+                          <div className="flex items-center gap-4 mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3.5 h-3.5" />
+                              {item?.location || "N/A"}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3.5 h-3.5" />
+                              {item?.created_at ? new Date(item.created_at).toLocaleDateString() : ""}
+                            </span>
+                          </div>
                         </div>
-                      )}
-                      <div className="flex-1">
-                        <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
-                          {post.title}
-                        </h3>
-                        <div className="flex items-center gap-4 mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3.5 h-3.5" />
-                            {post.location || "N/A"}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3.5 h-3.5" />
-                            {new Date(post.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
+                        <span className="text-xs font-medium px-3 py-1 rounded-full bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400">
+                          {itemClaims.length} Claim{itemClaims.length !== 1 ? "s" : ""}
+                        </span>
                       </div>
-                      <span className="text-xs font-medium px-3 py-1 rounded-full bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400">
-                        {claims[post.id]?.length || 0} Claim
-                        {claims[post.id]?.length !== 1 ? "s" : ""}
-                      </span>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      {itemClaims.map((claim) => (
+                        <ClaimCard
+                          key={claim.id}
+                          claim={claim}
+                          onRespond={handleRespondToClaim}
+                          item={item}
+                          onStartHandover={handleStartHandover}
+                          navigate={navigate}
+                        />
+                      ))}
                     </div>
                   </div>
-                  <div className="p-6 space-y-4">
-                    {claims[post.id]?.map((claim) => (
-                      <ClaimCard
-                        key={claim.id}
-                        claim={claim}
-                        onRespond={handleRespondToClaim}
-                        item={post}
-                        onStartHandover={handleStartHandover}
-                        navigate={navigate}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
+                ));
+              })()
             )}
           </div>
         )}

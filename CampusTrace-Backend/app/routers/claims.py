@@ -596,7 +596,7 @@ async def get_claims_for_item(
             supabase.table("claims")
             .select("*, claimant:profiles!claimant_id(full_name, email)")
             .eq("item_id", item_id)
-            .eq("status", "pending")
+            .order("created_at", desc=True)
             .execute()
         )
         return claims_res.data

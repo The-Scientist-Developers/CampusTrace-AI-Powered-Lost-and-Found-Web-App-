@@ -22,19 +22,30 @@ class GeminiKeyManager:
         self._load_keys()
     
     def _load_keys(self):
-        """Load API keys from environment"""
+        """Load API keys from environment dynamically to support any number of keys"""
         settings = get_settings()
+        import os
+        from dotenv import load_dotenv
         
-        # Load all available keys
-        if settings.GEMINI_API_KEY:
-            self._keys.append(settings.GEMINI_API_KEY)
+        # Ensure .env is loaded into os.environ
+        load_dotenv()
         
-        # Load additional keys if available
-        if hasattr(settings, 'GEMINI_API_KEY_2') and settings.GEMINI_API_KEY_2:
-            self._keys.append(settings.GEMINI_API_KEY_2)
+        keys_set = set()
         
-        if hasattr(settings, 'GEMINI_API_KEY_3') and settings.GEMINI_API_KEY_3:
-            self._keys.append(settings.GEMINI_API_KEY_3)
+        # Add predefined keys from settings
+        if getattr(settings, 'GEMINI_API_KEY', None):
+            keys_set.add(settings.GEMINI_API_KEY)
+        if getattr(settings, 'GEMINI_API_KEY_2', None):
+            keys_set.add(settings.GEMINI_API_KEY_2)
+        if getattr(settings, 'GEMINI_API_KEY_3', None):
+            keys_set.add(settings.GEMINI_API_KEY_3)
+            
+        # Dynamically scan os.environ for any variable starting with GEMINI_API_KEY
+        for env_key, env_val in os.environ.items():
+            if env_key.startswith('GEMINI_API_KEY') and env_val and env_val.strip():
+                keys_set.add(env_val.strip())
+                
+        self._keys = list(keys_set)
         
         if not self._keys:
             print("⚠️ No Gemini API keys found!")
