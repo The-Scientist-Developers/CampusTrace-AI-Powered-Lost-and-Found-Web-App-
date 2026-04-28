@@ -1946,7 +1946,7 @@ function MyPostsPage({ user }) {
       const fetchedPosts = data || [];
       setPosts(fetchedPosts); // Store ALL posts
 
-      const foundItems = fetchedPosts.filter((p) => p.status === "Found");
+      const foundItems = fetchedPosts.filter((p) => p.status?.toLowerCase() === "found" || p.status?.toLowerCase() === "pending handover");
       if (foundItems.length > 0) {
         await fetchClaims(foundItems);
       }
@@ -2600,7 +2600,7 @@ function MyPostsPage({ user }) {
         ) : (
           <div className="space-y-6">
             {posts
-              .filter((p) => p.status === "Found" && claims[p.id]?.length > 0)
+              .filter((p) => (p.status?.toLowerCase() === "found" || p.status?.toLowerCase() === "pending handover") && claims[p.id]?.length > 0)
               .map((post) => (
                 <div
                   key={`claim-item-${post.id}`}
