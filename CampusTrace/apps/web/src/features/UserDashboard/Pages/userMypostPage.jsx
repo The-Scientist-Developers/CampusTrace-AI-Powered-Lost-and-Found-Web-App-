@@ -1993,6 +1993,8 @@ function MyPostsPage({ user }) {
       fetchPosts();
     } else if (activeTab === "myClaims") {
       fetchMyClaims();
+    } else if (activeTab === "claims") {
+      fetchPosts(); // fetchPosts also fetches claims for found items
     }
   }, [fetchPosts, fetchMyClaims, activeTab]);
 
@@ -2599,7 +2601,18 @@ function MyPostsPage({ user }) {
           </>
         ) : (
           <div className="space-y-6">
-            {posts
+            {posts.filter((p) => (p.status?.toLowerCase() === "found" || p.status?.toLowerCase() === "pending handover") && claims[p.id]?.length > 0).length === 0 ? (
+              <div className="text-center p-16 bg-white dark:bg-[#2a2a2a] border border-neutral-200 dark:border-[#3a3a3a] rounded-xl">
+                <MessageSquare className="w-16 h-16 text-neutral-300 dark:text-neutral-600 mx-auto mb-4" />
+                <p className="text-neutral-500 dark:text-gray-400 text-lg font-medium mb-2">
+                  No received claims yet
+                </p>
+                <p className="text-neutral-400 dark:text-neutral-500 text-sm">
+                  When someone claims an item you posted as found, it will appear here
+                </p>
+              </div>
+            ) : (
+            posts
               .filter((p) => (p.status?.toLowerCase() === "found" || p.status?.toLowerCase() === "pending handover") && claims[p.id]?.length > 0)
               .map((post) => (
                 <div
@@ -2655,6 +2668,7 @@ function MyPostsPage({ user }) {
                   </div>
                 </div>
               ))}
+            )}
           </div>
         )}
       </div>
