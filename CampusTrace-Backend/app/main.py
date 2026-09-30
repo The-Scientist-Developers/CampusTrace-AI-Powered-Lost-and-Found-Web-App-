@@ -318,6 +318,7 @@ app.add_middleware(
         "http://192.168.100.14:5173",
         "http://192.168.56.1:5173",
         "http://localhost:3000",
+        "https://campustrace.sanx.dev",
         "https://www.campustrace.site",
         "https://campustrace.site",
     ],

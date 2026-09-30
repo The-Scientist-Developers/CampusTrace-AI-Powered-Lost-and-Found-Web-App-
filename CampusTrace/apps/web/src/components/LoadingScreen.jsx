@@ -39,7 +39,7 @@ export default function LoadingScreen() {
         </motion.h1>
       </motion.div>
 
-      {/* "from Meta" style footer - Instagram branding */}
+
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

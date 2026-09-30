@@ -240,7 +240,7 @@ const SettingsScreen = ({ navigation }) => {
   };
 
   const handleOpenWebApp = (section) => {
-    const webAppUrl = `https://campustrace.site/dashboard/profile`; // Your web app URL
+    const webAppUrl = `https://campustrace.sanx.dev/dashboard/profile`; // Your web app URL
     Alert.alert(
       `Update ${section}`,
       `To update your ${section.toLowerCase()}, you will be redirected to the secure web app.`,

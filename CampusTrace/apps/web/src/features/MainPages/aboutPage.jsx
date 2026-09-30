@@ -93,14 +93,14 @@ export default function AboutUsPage() {
           name="keywords"
           content="CampusTrace, about CampusTrace, team, student developers, Isabela State University, campus innovation, AI lost and found, university lost and found platform"
         />
-        <link rel="canonical" href="https://www.campustrace.site/about/" />
+        <link rel="canonical" href="https://campustrace.sanx.dev/about/" />
         
         {/* Open Graph */}
         <meta property="og:title" content="About CampusTrace - AI-Powered Lost and Found for Universities" />
         <meta property="og:description" content="Meet the team behind CampusTrace and learn about our mission to solve campus lost and found challenges with AI technology." />
-        <meta property="og:url" content="https://www.campustrace.site/about/" />
+        <meta property="og:url" content="https://campustrace.sanx.dev/about/" />
         <meta property="og:type" content="website" />
-        <meta property="og:image" content="https://www.campustrace.site/og-image.png" />
+        <meta property="og:image" content="https://campustrace.sanx.dev/og-image.png" />
         
         {/* Organization Schema for About Page */}
         <script type="application/ld+json">
@@ -110,8 +110,8 @@ export default function AboutUsPage() {
             "mainEntity": {
               "@type": "Organization",
               "name": "CampusTrace",
-              "url": "https://www.campustrace.site",
-              "logo": "https://www.campustrace.site/logo.png",
+              "url": "https://campustrace.sanx.dev",
+              "logo": "https://campustrace.sanx.dev/logo.png",
               "description": "CampusTrace is an AI-powered lost and found web application designed for university communities. We help students and staff find lost items quickly using intelligent AI matching technology, secure messaging, and verified campus networks.",
               "foundingDate": "2024",
               "founders": [

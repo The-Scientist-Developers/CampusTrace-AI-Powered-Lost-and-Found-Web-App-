@@ -1283,16 +1283,16 @@ export default function LandingPage() {
           name="keywords"
           content="CampusTrace, campus trace, lost and found, university lost and found, AI lost and found, campus lost items, college lost and found, Isabela State University, lost item finder, found item reporting"
         />
-        <link rel="canonical" href="https://www.campustrace.site/" />
+        <link rel="canonical" href="https://campustrace.sanx.dev/" />
         {/* Open Graph Tags */}
         <meta property="og:title" content="CampusTrace | AI-Powered Lost and Found for Universities" />
         <meta property="og:description" content="Find what's lost, return what's found. CampusTrace uses AI to make recovering lost items on campus simple and fast." />
-        <meta property="og:image" content="https://www.campustrace.site/og-image.png" />
-        <meta property="og:url" content="https://www.campustrace.site/" />
+        <meta property="og:image" content="https://campustrace.sanx.dev/og-image.png" />
+        <meta property="og:url" content="https://campustrace.sanx.dev/" />
         {/* Twitter Tags */}
         <meta name="twitter:title" content="CampusTrace | AI-Powered Lost and Found for Universities" />
         <meta name="twitter:description" content="Find what's lost, return what's found. CampusTrace uses AI to make recovering lost items on campus simple and fast." />
-        <meta name="twitter:image" content="https://www.campustrace.site/og-image.png" />
+        <meta name="twitter:image" content="https://campustrace.sanx.dev/og-image.png" />
       </Helmet>
 
       {/* Mobile App Alert Banner */}

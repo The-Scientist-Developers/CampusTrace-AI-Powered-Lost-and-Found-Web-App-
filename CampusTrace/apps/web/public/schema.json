@@ -2,10 +2,10 @@
   "@context": "https://schema.org",
   "@type": "WebSite",
   "name": "CampusTrace",
-  "url": "https://www.campustrace.site/",
+  "url": "https://campustrace.sanx.dev/",
   "potentialAction": {
     "@type": "SearchAction",
-    "target": "https://www.campustrace.site/dashboard/browse-all?search={search_term_string}",
+    "target": "https://campustrace.sanx.dev/dashboard/browse-all?search={search_term_string}",
     "query-input": "required name=search_term_string"
   },
   "mainEntity": {
@@ -15,25 +15,25 @@
         "@type": "WebPage",
         "position": 1,
         "name": "Learn More",
-        "url": "https://www.campustrace.site/learn-more"
+        "url": "https://campustrace.sanx.dev/learn-more"
       },
       {
         "@type": "WebPage",
         "position": 2,
         "name": "About Us",
-        "url": "https://www.campustrace.site/about"
+        "url": "https://campustrace.sanx.dev/about"
       },
       {
         "@type": "WebPage",
         "position": 3,
         "name": "For Universities",
-        "url": "https://www.campustrace.site/register-university"
+        "url": "https://campustrace.sanx.dev/register-university"
       },
       {
         "@type": "WebPage",
         "position": 4,
         "name": "Login",
-        "url": "https://www.campustrace.site/login"
+        "url": "https://campustrace.sanx.dev/login"
       }
     ]
   }

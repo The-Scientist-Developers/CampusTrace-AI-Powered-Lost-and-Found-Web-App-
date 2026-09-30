@@ -1,0 +1,274 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1080" role="img" aria-labelledby="title desc">
+  <title id="title">CampusTrace Web Application Deployment Diagram</title>
+  <desc id="desc">Formal three-layer deployment diagram for the CampusTrace web application showing browser clients, network communication, frontend hosting, FastAPI backend services, Supabase database services, and external integrations.</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fbff"/>
+      <stop offset="100%" stop-color="#eef4ff"/>
+    </linearGradient>
+    <linearGradient id="appHeader" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="netHeader" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0f766e"/>
+      <stop offset="100%" stop-color="#0d9488"/>
+    </linearGradient>
+    <linearGradient id="sysHeader" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="7" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+    </marker>
+    <style>
+      .title { font: 700 30px 'Segoe UI', Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 500 14px 'Segoe UI', Arial, sans-serif; fill: #475569; }
+      .layer-title { font: 700 21px 'Segoe UI', Arial, sans-serif; fill: #ffffff; }
+      .card-title { font: 700 18px 'Segoe UI', Arial, sans-serif; fill: #0f172a; }
+      .card-sub { font: 600 13px 'Segoe UI', Arial, sans-serif; fill: #475569; }
+      .body { font: 13px 'Segoe UI', Arial, sans-serif; fill: #334155; }
+      .small { font: 12px 'Segoe UI', Arial, sans-serif; fill: #475569; }
+      .label { font: 700 12px 'Segoe UI', Arial, sans-serif; fill: #0f172a; }
+      .panel { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.4; }
+      .soft { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1.2; }
+      .soft-blue { fill: #eff6ff; stroke: #93c5fd; stroke-width: 1.2; }
+      .soft-green { fill: #ecfeff; stroke: #5eead4; stroke-width: 1.2; }
+      .soft-violet { fill: #f5f3ff; stroke: #c4b5fd; stroke-width: 1.2; }
+      .soft-amber { fill: #fffbeb; stroke: #fcd34d; stroke-width: 1.2; }
+      .soft-rose { fill: #fff1f2; stroke: #fda4af; stroke-width: 1.2; }
+      .connector { fill: none; stroke: #334155; stroke-width: 2.1; marker-end: url(#arrow); }
+      .connector-dash { fill: none; stroke: #475569; stroke-width: 2; stroke-dasharray: 7 6; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1800" height="1080" fill="url(#bg)"/>
+
+  <text x="44" y="52" class="title">CampusTrace Web Application Deployment Diagram</text>
+  <text x="44" y="78" class="subtitle">Three-layer architecture focused on the deployed web application, showing formal communication flow from browser clients to the hosted frontend, backend API, and database services.</text>
+
+  <g filter="url(#shadow)">
+    <rect x="30" y="112" width="1740" height="220" rx="22" class="panel"/>
+    <rect x="30" y="112" width="1740" height="46" rx="22" fill="url(#appHeader)"/>
+    <rect x="30" y="134" width="1740" height="24" fill="url(#appHeader)"/>
+    <text x="54" y="143" class="layer-title">Application Layer</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="30" y="354" width="1740" height="220" rx="22" class="panel"/>
+    <rect x="30" y="354" width="1740" height="46" rx="22" fill="url(#netHeader)"/>
+    <rect x="30" y="376" width="1740" height="24" fill="url(#netHeader)"/>
+    <text x="54" y="385" class="layer-title">Network Layer</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="30" y="596" width="1740" height="452" rx="22" class="panel"/>
+    <rect x="30" y="596" width="1740" height="46" rx="22" fill="url(#sysHeader)"/>
+    <rect x="30" y="618" width="1740" height="24" fill="url(#sysHeader)"/>
+    <text x="54" y="627" class="layer-title">System and Database Layer</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="80" y="170" width="230" height="120" rx="18" class="soft-amber"/>
+    <text x="102" y="200" class="card-title">Users</text>
+    <text x="102" y="224" class="body">- Students</text>
+    <text x="102" y="246" class="body">- Staff</text>
+    <text x="102" y="268" class="body">- University administrators</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="372" y="160" width="300" height="138" rx="18" class="soft-blue"/>
+    <text x="394" y="190" class="card-title">Desktop / Laptop Browser</text>
+    <text x="394" y="214" class="card-sub">CampusTrace web client</text>
+    <text x="394" y="244" class="body">- Accesses `campustrace.site`</text>
+    <text x="394" y="266" class="body">- Loads React + Vite single-page app</text>
+    <text x="394" y="288" class="body">- Used by members and admins</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="738" y="160" width="300" height="138" rx="18" class="soft-blue"/>
+    <text x="760" y="190" class="card-title">Mobile Browser</text>
+    <text x="760" y="214" class="card-sub">Responsive web access</text>
+    <text x="760" y="244" class="body">- Mobile users open the same website</text>
+    <text x="760" y="266" class="body">- Uses browser over Wi-Fi or mobile data</text>
+    <text x="760" y="288" class="body">- Same features through the web interface</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="1104" y="160" width="600" height="138" rx="18" class="soft-violet"/>
+    <text x="1126" y="190" class="card-title">Web Application Functions Visible to Users</text>
+    <text x="1126" y="220" class="body">- Account registration, login, email confirmation, and profile management</text>
+    <text x="1126" y="242" class="body">- Posting lost and found items with images</text>
+    <text x="1126" y="264" class="body">- Claims, messaging, notifications, handover, moderation, and admin dashboard</text>
+    <text x="1126" y="286" class="body">- AI-assisted description generation, matching, and chatbot support</text>
+  </g>
+
+  <path d="M 310 230 C 332 230, 346 229, 372 229" class="connector"/>
+  <path d="M 310 236 C 440 236, 560 236, 738 236" class="connector"/>
+
+  <g filter="url(#shadow)">
+    <rect x="120" y="418" width="290" height="98" rx="18" class="soft-green"/>
+    <text x="142" y="448" class="card-title">Local Network Access</text>
+    <text x="142" y="472" class="body">Wi-Fi access point or campus LAN</text>
+    <text x="142" y="494" class="body">Connects browser clients to the Internet</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="490" y="418" width="290" height="98" rx="18" class="soft-green"/>
+    <text x="512" y="448" class="card-title">Router / ISP Gateway</text>
+    <text x="512" y="472" class="body">Routes traffic from client devices</text>
+    <text x="512" y="494" class="body">Provides Internet connectivity</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <path d="M 938 512
+             C 868 512, 842 476, 854 446
+             C 810 444, 798 392, 840 378
+             C 858 344, 904 338, 938 358
+             C 964 326, 1016 326, 1044 358
+             C 1090 340, 1148 360, 1160 402
+             C 1212 404, 1232 458, 1198 490
+             C 1188 520, 1148 540, 1102 534
+             L 938 534
+             C 922 534, 922 512, 938 512 z"
+          fill="#ffffff" stroke="#94a3b8" stroke-width="2"/>
+    <text x="914" y="405" class="card-title">Internet</text>
+    <text x="885" y="432" class="body">Public network carrying web traffic</text>
+    <text x="870" y="454" class="body">Between browsers and cloud-hosted services</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="1318" y="406" width="360" height="122" rx="18" class="soft-amber"/>
+    <text x="1340" y="436" class="card-title">Communication Protocols</text>
+    <text x="1340" y="462" class="body">- HTTPS for website access</text>
+    <text x="1340" y="484" class="body">- HTTPS API requests and responses</text>
+    <text x="1340" y="506" class="body">- Bearer JWT for authenticated requests</text>
+  </g>
+
+  <path d="M 522 298 C 522 354, 265 362, 265 418" class="connector"/>
+  <path d="M 888 298 C 888 354, 635 362, 635 418" class="connector"/>
+  <path d="M 410 468 C 438 468, 452 468, 490 468" class="connector"/>
+  <path d="M 780 468 C 816 468, 828 468, 854 468" class="connector"/>
+
+  <rect x="486" y="438" width="124" height="26" rx="8" class="soft"/>
+  <text x="503" y="456" class="label">TCP / IP</text>
+
+  <g filter="url(#shadow)">
+    <rect x="70" y="662" width="380" height="310" rx="20" class="soft-blue"/>
+    <text x="92" y="692" class="card-title">Web Frontend Server</text>
+    <text x="92" y="716" class="card-sub">Hosted CampusTrace website</text>
+
+    <rect x="92" y="736" width="336" height="104" rx="14" class="soft"/>
+    <text x="110" y="762" class="body">Deployed component:</text>
+    <text x="126" y="784" class="body">- React + Vite web application bundle</text>
+    <text x="126" y="806" class="body">- Static HTML, CSS, JavaScript, and assets</text>
+    <text x="126" y="828" class="body">- Browser entry point for `campustrace.site`</text>
+
+    <rect x="92" y="862" width="336" height="88" rx="14" class="soft"/>
+    <text x="110" y="888" class="body">Main role:</text>
+    <text x="126" y="910" class="body">Serves the user interface and forwards user actions</text>
+    <text x="126" y="932" class="body">to the backend API through HTTPS requests</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="494" y="662" width="520" height="310" rx="20" class="soft-violet"/>
+    <text x="516" y="692" class="card-title">Application Server</text>
+    <text x="516" y="716" class="card-sub">FastAPI backend deployed with Uvicorn</text>
+
+    <rect x="516" y="736" width="476" height="82" rx="14" class="soft"/>
+    <text x="534" y="762" class="body">Main deployed services:</text>
+    <text x="550" y="784" class="body">- Authentication and registration endpoints</text>
+    <text x="550" y="806" class="body">- Item posting, claims, messaging, notifications, profile, admin functions</text>
+
+    <rect x="516" y="840" width="228" height="110" rx="14" class="soft"/>
+    <text x="534" y="866" class="body">Business modules</text>
+    <text x="534" y="888" class="small">- Items management</text>
+    <text x="534" y="906" class="small">- Claims and handover workflow</text>
+    <text x="534" y="924" class="small">- Conversations and notifications</text>
+
+    <rect x="764" y="840" width="228" height="110" rx="14" class="soft"/>
+    <text x="782" y="866" class="body">Supporting modules</text>
+    <text x="782" y="888" class="small">- Chatbot and AI assistance</text>
+    <text x="782" y="906" class="small">- Validation, moderation, admin control</text>
+    <text x="782" y="924" class="small">- Image and request processing</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="1058" y="662" width="420" height="310" rx="20" class="soft-green"/>
+    <text x="1080" y="692" class="card-title">Database and Cloud Service Server</text>
+    <text x="1080" y="716" class="card-sub">Supabase services used by CampusTrace</text>
+
+    <rect x="1080" y="736" width="376" height="86" rx="14" class="soft"/>
+    <text x="1098" y="762" class="body">Authentication service</text>
+    <text x="1114" y="784" class="small">- Manages user identity and sessions</text>
+    <text x="1114" y="804" class="small">- Issues tokens used in protected API requests</text>
+
+    <rect x="1080" y="842" width="376" height="86" rx="14" class="soft"/>
+    <text x="1098" y="868" class="body">PostgreSQL database</text>
+    <text x="1114" y="890" class="small">Main tables: profiles, items, claims, conversations,</text>
+    <text x="1114" y="910" class="small">messages, notifications, universities, allowed_domains</text>
+
+    <rect x="1080" y="948" width="376" height="86" rx="14" class="soft"/>
+    <text x="1098" y="974" class="body">Storage service</text>
+    <text x="1114" y="996" class="small">Stores uploaded item images, avatars, and verification files</text>
+    <text x="1114" y="1016" class="small">Supports the web application through cloud file storage</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="1520" y="662" width="220" height="310" rx="20" class="soft-rose"/>
+    <text x="1542" y="692" class="card-title">External Services</text>
+    <text x="1542" y="718" class="body">Google Gemini</text>
+    <text x="1542" y="740" class="small">AI-generated descriptions,</text>
+    <text x="1542" y="758" class="small">matching support, chatbot</text>
+
+    <text x="1542" y="808" class="body">Google reCAPTCHA</text>
+    <text x="1542" y="830" class="small">Web signup verification</text>
+
+    <text x="1542" y="880" class="body">Resend Email API</text>
+    <text x="1542" y="902" class="small">Email notifications and approval-related messages</text>
+  </g>
+
+  <path d="M 1044 468 C 1044 590, 260 566, 260 662" class="connector"/>
+  <rect x="260" y="562" width="176" height="28" rx="8" class="soft"/>
+  <text x="272" y="581" class="label">HTTPS web page request</text>
+
+  <path d="M 1044 472 C 1044 610, 754 586, 754 662" class="connector"/>
+  <rect x="632" y="584" width="266" height="28" rx="8" class="soft"/>
+  <text x="644" y="603" class="label">HTTPS API requests / responses (JSON)</text>
+
+  <path d="M 450 798 C 470 798, 478 798, 494 798" class="connector"/>
+  <rect x="456" y="764" width="178" height="28" rx="8" class="soft"/>
+  <text x="468" y="783" class="label">User actions from web UI</text>
+
+  <path d="M 1014 760 C 1030 760, 1040 760, 1058 760" class="connector"/>
+  <rect x="1018" y="726" width="210" height="28" rx="8" class="soft"/>
+  <text x="1030" y="745" class="label">JWT validation and auth lookup</text>
+
+  <path d="M 1014 840 C 1030 840, 1040 840, 1058 840" class="connector"/>
+  <rect x="1020" y="806" width="232" height="28" rx="8" class="soft"/>
+  <text x="1032" y="825" class="label">SQL queries for application data</text>
+
+  <path d="M 1014 932 C 1030 932, 1040 932, 1058 932" class="connector"/>
+  <rect x="1020" y="898" width="216" height="28" rx="8" class="soft"/>
+  <text x="1032" y="917" class="label">File storage access and retrieval</text>
+
+  <path d="M 1014 888 C 1270 888, 1370 754, 1520 754" class="connector"/>
+  <rect x="1256" y="778" width="166" height="28" rx="8" class="soft"/>
+  <text x="1268" y="797" class="label">HTTPS AI request</text>
+
+  <path d="M 754 736 C 920 736, 1320 828, 1520 828" class="connector"/>
+  <rect x="1176" y="824" width="220" height="28" rx="8" class="soft"/>
+  <text x="1188" y="843" class="label">CAPTCHA verification request</text>
+
+  <path d="M 1014 792 C 1270 792, 1388 902, 1520 902" class="connector"/>
+  <rect x="1268" y="868" width="152" height="28" rx="8" class="soft"/>
+  <text x="1280" y="887" class="label">Email API request</text>
+
+  <path d="M 330 986 C 640 1022, 1060 1022, 1436 986" class="connector-dash"/>
+  <rect x="676" y="986" width="460" height="28" rx="8" class="soft"/>
+  <text x="688" y="1005" class="label">Overall data flow: Browser → Network → Frontend → FastAPI → Supabase / External Services</text>
+</svg>

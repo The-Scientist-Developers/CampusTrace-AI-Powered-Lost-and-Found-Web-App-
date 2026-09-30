@@ -623,7 +623,7 @@ async def respond_to_verification(
             # Send approval email if configured
             if user_email and settings.RESEND_API_KEY:
                 try:
-                    login_url = "https://campustrace.site/login"
+                    login_url = "https://campustrace.sanx.dev/login"
 
                     email_html = f"""
                     <p>Hi {user_name},</p>

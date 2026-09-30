@@ -756,7 +756,7 @@ const LoginScreen = ({ navigation }) => {
         {
           text: "Open Web App",
           onPress: () =>
-            Linking.openURL("https://campustrace.site/forgot-password"),
+            Linking.openURL("https://campustrace.sanx.dev/forgot-password"),
         },
       ],
     );
